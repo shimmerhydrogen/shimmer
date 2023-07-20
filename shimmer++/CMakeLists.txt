@@ -10,6 +10,8 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 find_package(Qt6 COMPONENTS Core Widgets REQUIRED)
+set(LINK_LIBS ${LINK_LIBS} Qt6::Core Qt6::Widgets)
+
 
 #######################################################################
 # OpenXLSX stuff
@@ -19,10 +21,22 @@ set(OPENXLSX_BUILD_SAMPLES OFF CACHE BOOL "")
 set(OPENXLSX_BUILD_TESTS OFF CACHE BOOL "")
 set(OPENXLSX_CREATE_DOCS OFF CACHE BOOL "")
 add_subdirectory(deps/OpenXLSX)
+set(LINK_LIBS ${LINK_LIBS} OpenXLSX::OpenXLSX)
 
+#######################################################################
+# Boost stuff
 find_package(Boost REQUIRED COMPONENTS graph)
 
+#######################################################################
+# Lua stuff
+find_package(Lua REQUIRED)
+include_directories("${LUA_INCLUDE_DIR}")
+set(LINK_LIBS ${LINK_LIBS} ${LUA_LIBRARIES})
+set(BUILD_TESTING OFF CACHE BOOL "")
+set(SOL2_BUILD_LUA OFF CACHE BOOL "")
+add_subdirectory(deps/sol2)
+set(LINK_LIBS ${LINK_LIBS} sol2::sol2)
+
 add_executable(shimmer src/main.cpp)
-target_link_libraries(shimmer OpenXLSX::OpenXLSX)
-target_link_libraries(shimmer Qt6::Widgets)
+target_link_libraries(shimmer ${LINK_LIBS})
 

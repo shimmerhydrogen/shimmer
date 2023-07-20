@@ -1,3 +1,6 @@
 [submodule "shimmer++/deps/OpenXLSX"]
 	path = shimmer++/deps/OpenXLSX
 	url = git@github.com:troldal/OpenXLSX.git
+[submodule "shimmer++/deps/sol2"]
+	path = shimmer++/deps/sol2
+	url = git@github.com:ThePhD/sol2.git

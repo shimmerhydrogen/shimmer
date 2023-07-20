@@ -3,5 +3,5 @@ To build on debian:
 - qt6-base-dev
 - qt6-base-dev-tools
 - libboost-graph-dev
-
+- liblua5.4-dev
 

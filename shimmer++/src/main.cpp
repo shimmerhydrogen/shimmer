@@ -1,16 +1,21 @@
 #include <iostream>
+#include <fstream>
 #include <string>
 
 #include <QApplication>
 #include <QtGui>
 #include <QWidget>
 
-#include "OpenXLSX.hpp"
+//#include <boost/graph/graph_traits.hpp>
+//
+
 #include "sol/sol.hpp"
 
-using namespace OpenXLSX;
+#include "infrastructure_graph.h"
+#include "xlsx_io.h"
 
-bool init_lua(sol::state& lua)
+static bool
+init_lua(sol::state& lua)
 {
     lua.open_libraries(sol::lib::base);
     lua.create_table("config");
@@ -23,6 +28,21 @@ bool init_lua(sol::state& lua)
     return true;
 }
 
+static void
+make_dummy_infrastructure(infrastructure_graph& igraph)
+{
+    std::vector<vertex_descriptor> vds;
+    vds.push_back( boost::add_vertex( { "station1", 1, 100., 10. }, igraph) );
+    vds.push_back( boost::add_vertex( { "station2", 2, 120., 30. }, igraph) );
+    vds.push_back( boost::add_vertex( { "station3", 3,  90., 20. }, igraph) );
+    vds.push_back( boost::add_vertex( { "station4", 4, 160., 40. }, igraph) );
+
+    edge_properties ep;
+    boost::add_edge( vds[0], vds[1], ep, igraph);
+    boost::add_edge( vds[1], vds[2], ep, igraph);
+    boost::add_edge( vds[1], vds[3], ep, igraph);
+}
+
 int main(int argc, char **argv)
 {
     QApplication app(argc, argv);
@@ -31,24 +51,16 @@ int main(int argc, char **argv)
     if (not init_lua(lua))
         return 1;
 
-    XLDocument doc;
-    std::string path = lua["config"]["xlsx_input_file"];
-    doc.open(path);
-    std::string worksheet_name = lua["config"]["node_worksheet"];
-    auto wks = doc.workbook().worksheet(worksheet_name);
+    infrastructure_graph igraph;
 
-    size_t nrows = 0;
-    for (auto& row : wks.rows())
-    {
-        nrows++;
-    }
+    //import_infrastructure_from_xlsx(lua, igraph);
+    make_dummy_infrastructure(igraph);
+    write_graphviz("test_graph.dot", igraph);
 
-    std::cout << nrows << std::endl;
-
+    return 0;
 
     QWidget w;
     w.show();
-
     return app.exec();
 }
 

@@ -37,6 +37,6 @@ set(SOL2_BUILD_LUA OFF CACHE BOOL "")
 add_subdirectory(deps/sol2)
 set(LINK_LIBS ${LINK_LIBS} sol2::sol2)
 
-add_executable(shimmer src/main.cpp)
+add_executable(shimmer src/main.cpp src/xlsx_io.cpp src/infrastructure_graph.cpp)
 target_link_libraries(shimmer ${LINK_LIBS})
 

@@ -1,3 +1,10 @@
+/* This code is part of the SHIMMER project
+ *
+ * Politecnico di Torino, Dipartimento di Matematica (DISMA)
+ * 
+ * The authors (C) 2023 
+ */
+
 #pragma once
 
 #include "sol/sol.hpp"

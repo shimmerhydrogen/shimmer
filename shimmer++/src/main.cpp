@@ -1,3 +1,10 @@
+/* This code is part of the SHIMMER project
+ *
+ * Politecnico di Torino, Dipartimento di Matematica (DISMA)
+ * 
+ * The authors (C) 2023 
+ */
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -5,9 +12,6 @@
 #include <QApplication>
 #include <QtGui>
 #include <QWidget>
-
-//#include <boost/graph/graph_traits.hpp>
-//
 
 #include "sol/sol.hpp"
 

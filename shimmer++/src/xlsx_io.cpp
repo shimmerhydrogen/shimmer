@@ -1,3 +1,10 @@
+/* This code is part of the SHIMMER project
+ *
+ * Politecnico di Torino, Dipartimento di Matematica (DISMA)
+ * 
+ * The authors (C) 2023 
+ */
+
 /* Note: these import functions exist only for convenience. Xlsx is an horrible
  * format to work with, a more robust input format will be needed. */
 

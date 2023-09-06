@@ -1,5 +1,5 @@
 create table nodes (
-    n_name      TEXT NOT NULL,
+    n_name      TEXT,
     n_number    INTEGER,
     n_height    REAL,
     PRIMARY KEY(n_number)
@@ -21,6 +21,8 @@ create table edges (
         REFERENCES nodes(n_number),
     FOREIGN KEY (n_to)
         REFERENCES nodes(n_number)
+    FOREIGN KEY (e_type)
+        REFERENCES edge_types(e_type)
 );
 
 create table pipeline_parameters (

@@ -242,11 +242,9 @@ k = 1;        % linearization loop counter
 
 %initialization of the linearization loop (k-referred)
 p_k(:,k) = p_0(:,ii);
-%average pipeline pressure
-pm(:,1) = 2/3*(Aplus'*p_k(:,k).^2 + Aminus'*p_k(:,k).^2 ...
-				+ (Aplus'*p_k(:,k)).*(Aminus'*p_k(:,k))) ...
-				./((Aplus'*p_k(:,k)) + (Aminus'*p_k(:,k)));
-
+Pin  = Aplus' *p_k(:,k);
+Pout = Aminus'*p_k(:,k);
+pm(:,1) = (2.0/3.0) * averagePressure(Pin, Pout);
 MM = MolarMassGERG1(reshape(CC_gas(:,:,1),dimn,21)*100);%kg/kmol
 RR = UGC./MM'; %J/kg/K
 MolMass(:,1) = MM;
@@ -256,17 +254,17 @@ MolMass(:,1) = MM;
 %EoS: GERG-2008
 
 %NODAL BASED CALCULATION
-iFlag=0;
+iFlag = 0;
 %[Den, ierr, herr] = DensityGERG(iFlag, Tn, p_0(:,1)/1e3,reshape(CC_gas(:,:,1),dimn,21)); not of use
-[Tr,Dr] = ReducingParametersGERG(reshape(CC_gas(:,:,1),dimn,21));
-[Tcx,Dcx,Vcx]=PseudoCriticalPointGERG(reshape(CC_gas(:,:,1),dimn,21),dimn);
+x_ni = reshape(CC_gas(:,:,1),dimn,21);
+gerg_ni = UtilitiesGERG(x_ni, dimn );
 
 % Equation of State: it gives us the value of Zm
 % (compressibility factor) and the density related to the
 % pressure given (in this case the nodal pressure)
 % NB the pressure should be given in kPa
-[Pcheck, Zm, Den] = PropertiesGERG(iFlag, p_0(:,1)/1e3, Tn, reshape(CC_gas(:,:,1),dimn,21),dimn,Tr,Dr,Tcx,Dcx,Vcx);
-dPcheck = (Pcheck*1e3-p_0(:,1));
+[Pcheck, Zm, Den] = PropertiesGERG(iFlag, p_0(:,1)/1e3, Tn, x_ni, dimn, gerg_ni);
+dPcheck = (Pcheck*1e3 - p_0(:,1));
 if max(abs(dPcheck)>1e-3)
     %Pcheck is a way to check that the covergence for the
     %calculation of the properties from EoS has been reached.
@@ -292,8 +290,10 @@ rho_n(:,1) = Den.*MM'; % [kg/m3] actual density of the gas (node based)
 					% quantities at STANDARD CONDITION of T and p so to be able
 					% to calculate the quantities listed few lines below
 iFlag = 0;
-[Pcheck, Zm0(:,1), Den1] = PropertiesGERG(iFlag, p_std*ones(size(p_0(:,ii)))/1e3, T_std*ones(size(Tn)), reshape(CC_gas(:,:,1),dimn,21),dimn,Tr,Dr,Tcx,Dcx,Vcx);
-dPcheck = Pcheck*1e3-p_std*ones(size(p_0(:,ii)));
+p_is = p_std*ones(size(p_0(:,ii)))/1e3;
+T_is = T_std*ones(size(Tn));
+[Pcheck, Zm0(:,1), Den1] = PropertiesGERG(iFlag, p_is, T_is, x_ni, dimn, gerg_ni);
+dPcheck = 1e3 * (Pcheck - p_is);
 if max(abs(dPcheck)>1e-3)
     fprintf('warning')
 end
@@ -310,9 +310,9 @@ WI(:,1)  = HHV(:,1)./sqrt(RD(:,1));
 % Aplus'*reshape(CC_gas(:,:,1),dimn,21) -this is a way to
 % transfer the outlet nodal quantities to the related pipe
 iFlag = 0;
-[Tr_b,Dr_b] = ReducingParametersGERG(Aplus'*reshape(CC_gas(:,:,1),dimn,21));
-[Tcx_b,Dcx_b,Vcx_b]= PseudoCriticalPointGERG(Aplus'*reshape(CC_gas(:,:,1),dimn,21),dimb);
-[Pcheck, Zm, Den]  = PropertiesGERG(iFlag, pm(:,1)/1e3, Tb, Aplus'*reshape(CC_gas(:,:,1),dimn,21),dimb,Tr_b,Dr_b,Tcx_b,Dcx_b,Vcx_b);
+x_bi = Aplus'*reshape(CC_gas(:,:,1), dimn, 21);
+gerg_bi = UtilitiesGERG(x_bi, dimb);
+[Pcheck, Zm, Den]  = PropertiesGERG(iFlag, pm(:,1)/1e3, Tb, x_bi, dimb, gerg_bi);
 dPcheck = Pcheck*1e3-pm(:,1);
 if max(abs(dPcheck)>1e-3)
     fprintf('warning')
@@ -334,9 +334,9 @@ for ii = 2:dimt
     ii %time step counter
 
     k2  = 1;
-    res = 1;  %residue of the linearized fluid-dynamic problem
-    %res2=1; %another different calculation method for convergence gas quality
-    res3=1; %residue/error for the convergence loop on gas quality
+    res = 1;  % residue of the linearized fluid-dynamic problem
+    %res2=1;  % another different calculation method for convergence gas quality
+    res3= 1;  % residue/error for the convergence loop on gas quality
 
     CC_gasM_k(:,:,k2) = CC_gasM(:,:,ii-1);  %( tra 0-100)
     CC_gas_k(:,:,k2)  = CC_gas(:,:,ii-1);   %( tra 0-1)
@@ -354,11 +354,6 @@ for ii = 2:dimt
 
         CC_gasM_ext_k(:,:,k2) = CC_gasM_ext(:,:,ii-1);
 
-        [Tr_b,Dr_b] = ReducingParametersGERG(Aplus'*reshape(CC_gas_k(:,:,k2),dimn,21));
-        [Tcx_b,Dcx_b,Vcx_b] = PseudoCriticalPointGERG(Aplus'*reshape(CC_gas_k(:,:,k2),dimn,21),dimb);
-        [Tr,Dr] = ReducingParametersGERG(reshape(CC_gas_k(:,:,k2),dimn,21));
-        [Tcx,Dcx,Vcx] = PseudoCriticalPointGERG(reshape(CC_gas_k(:,:,k2),dimn,21),dimn);
-
 		p_n = p_0(:,ii-1);
 		G_n = G_0(:,ii-1);
 
@@ -366,12 +361,20 @@ for ii = 2:dimt
 		G_k(:,k) = G_0(:,ii-1);
 		L_k(:,k) = L_0(:,ii-1);
 
-		MM  = MolarMassGERG2(reshape(CC_gasM_k(:,:,k2),dimn,nComponents));%kg/kmol %% mappa concentrazioni di tutti i nodi all'istante iniziale
+		x_e = reshape(CC_gas_k_ext(:,:,k2),dimn,21);
+		x_n = reshape(CC_gas_k(:,:,k2),dimn,21);
+		x_b = Aplus' * x_n;
+
+		gerg_b = UtilitiesGERG(x_b, dimb);
+		gerg_n = UtilitiesGERG(x_n, dimn);
+
+		mass_frac = reshape(CC_gasM_k(:,:,k2), dimn, nComponents);
+		MM  = MolarMassGERG2(mass_frac);%kg/kmol %% mappa concentrazioni di tutti i nodi all'istante iniziale
 		RR  = UGC./MM';
 		RRb = Aplus'*RR;
 
-		% MHV_ext(:,k2)=MASS_HV(reshape(CC_gasM_ext_k(:,:,k2),[dimn 21])/100)';
-		MHV_ext(:,k2) = MASS_HV(reshape(CC_gasM_k(:,:,k2),[dimn 21])/100)';
+		% MHV_ext(:,k2)=MASS_HV(x_e/100)';
+		MHV_ext(:,k2) = MASS_HV(x_n/100)';
 		MHV_ext(find(isnan(MHV_ext(:,k2))),k2) = 1;
 		G_ext_t(:,ii) = H_ext_t(:,ii)./(MHV_ext(:,k2)*1e3);
 
@@ -408,12 +411,13 @@ for ii = 2:dimt
 			%% MOMENTUM EQUATION: each branch section CV - dimb
 
 			%average pressure update
-			pm(:,k) = 2/3*(Aplus'*p_k(:,k).^2+Aminus'*p_k(:,k).^2...
-						+(Aplus'*p_k(:,k)).*(Aminus'*p_k(:,k)))...
-						./((Aplus'*p_k(:,k))+(Aminus'*p_k(:,k)));
+			p_in_k  = Aplus' * p_k(:,k);
+			p_out_k = Aminus'* p_k(:,k);
+			pm(:,k) = (2.0/3.0) * averagePressure(p_in_k, p_out_k);
+
 			%update of all the PIPELINE BASED properties with Equation of State
-            [Pcheck, Zm, Den] = PropertiesGERG(iFlag, pm(:,k)/1e3, Tb, Aplus'*reshape(CC_gas_k(:,:,k2),dimn,21),dimb,Tr_b,Dr_b,Tcx_b,Dcx_b,Vcx_b);
-            dPcheck = (Pcheck*1e3-pm(:,k));
+            [Pcheck, Zm, Den] = PropertiesGERG(iFlag, pm(:,k)/1e3, Tb, x_n, dimb, gerg_b); %WK: why x_n instead of x_b?
+            dPcheck = (Pcheck*1e3 - pm(:,k));
             if max(abs(dPcheck))>1e-3
                 fprintf('warning')
             end
@@ -424,22 +428,23 @@ for ii = 2:dimt
 			rho(:,ii)  = Den.*(Aplus'*MM');       % [kg/m3] actual density of the gas (pipeline based)
 			vel(:,ii)  = G_k(:,k)./AA./rho(:,ii); % [m/s] velocity of the gas within pipes.
 
-			s = 2*9.81*delH./cc2b;
+			s = 2 * 9.81 * delH./cc2b;
 			Aminus_s  = Aminus.*repmat(exp(s),1,dimn)';
 			Aminus_s1 = Aminus.*repmat(exp(s/2),1,dimn)';
-			ADP = (-Aminus_s1+Aplus)';
+			ADP = (-Aminus_s1 + Aplus)';
 
 			Ri = zeros(dimb,1);                 % Inertia Resistance - initialization
 			Ri = 2*dxe.*pm(:,k)./(AA*dt)./(abs(ADP)*p_k(:,k)); % Inertia Resistance
 
-			[lambda Reyn viscosity] = Frictionfactoraverage(Tb,epsi,G_k(:,k),DD,Aplus'*reshape(CC_gas_k(:,:,k2),dimn,21));
+			MOLEFRAC = x_b;
+			[lambda Re viscosity] =  friction(Tb,epsi,G_k(:,k),DD,MOLEFRAC);
 			Rf = 16.*lambda.*cc2b.*dxe./(DD.^5.*pi.^2)./(abs(ADP)*p_k(:,k)); % Fluid-dynamikc Resistance
 			rr_k = (2*Rf.*(abs(G_k(:,k)))+Ri); % composite resistance linearized problem (R)
 			R_k = sparse(diag(rr_k));          % transformed into sparse diagonal matrix
 
 			%% CONTINUITY EQUATION: each node CV - dimn
 			%update of all the NODE BASED properties with Equation of State
-            [Pcheck, Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, reshape(CC_gas_k(:,:,k2),dimn,21),dimn,Tr,Dr,Tcx,Dcx,Vcx);
+            [Pcheck, Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_n, dimn, gerg_n);
             dPcheck = (Pcheck*1e3-p_k(:,k));
             if max(abs(dPcheck)>1e-3)
                 fprintf('warning')
@@ -503,7 +508,7 @@ for ii = 2:dimt
 				TN_L(1)=0;
 			end
 
-			 TN_k=[TN_P; TN_M_k; TN_L];        % full vector of KNOWN TERMs composition
+			TN_k=[TN_P; TN_M_k; TN_L];        % full vector of KNOWN TERMs composition
 
 			%% LINEAR SOLUTION OF THE LINEARIZED FLUID-DYNAMIC PROBLEM
 
@@ -525,9 +530,9 @@ for ii = 2:dimt
 			%% update of all the quantities and residual calculation
 		    % MOMENTUM EQUATION
 		    % average pressure update
-		    pm(:,ii) = 2/3*(Aplus'*p_k(:,k).^2+Aminus'*p_k(:,k).^2+(Aplus'*p_k(:,k)).*(Aminus'*p_k(:,k)))./((Aplus'*p_k(:,k))+(Aminus'*p_k(:,k)));
+		    pm(:,ii) = (2.0/3.0)*averagePressure(Aplus'*p_k(:,k), Aminus'*p_k(:,k));
 		    % update of all the PIPELINE BASED properties with Equation of State
-			[Pcheck, Zm, Den] = PropertiesGERG(iFlag, pm(:,ii)/1e3, Tb, Aplus'*reshape(CC_gas_k(:,:,k2),dimn,21),dimb,Tr_b,Dr_b,Tcx_b,Dcx_b,Vcx_b);
+			[Pcheck, Zm, Den] = PropertiesGERG(iFlag, pm(:,ii)/1e3, Tb, x_b, dimb, gerg_b);
 			dPcheck = (Pcheck*1e3-pm(:,ii));
 			if max(abs(dPcheck)>1e-3)
 				fprintf('warning')
@@ -547,7 +552,7 @@ for ii = 2:dimt
 			Ri = zeros(dimb,1);
 			Ri = 2*dxe.*pm(:,ii)./(AA*dt)./(abs(ADP)*p_k(:,k));
 
-			[lambda Reyn viscosity] = Frictionfactoraverage(Tb,epsi,G_k(:,k),DD,Aplus'*reshape(CC_gas_k(:,:,k2),dimn,21));
+			[lambda Re viscosity] = friction(Tb,epsi,G_k(:,k),DD,x_b);
 			Rf = 16.*lambda.*cc2b.*dxe./(DD.^5.*pi.^2)./(abs(ADP)*p_k(:,k));
 			rr_k = (2*Rf.*(abs(G_k(:,k)))+Ri);
 			R_k  = sparse(diag(rr_k));
@@ -557,7 +562,7 @@ for ii = 2:dimt
 
 			% CONTINUITY EQUATION
 			% update of all the NODE BASED properties with Equation of State
-            [Pcheck, Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, reshape(CC_gas_k(:,:,k2),dimn,21),dimn,Tr,Dr,Tcx,Dcx,Vcx);
+            [Pcheck, Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_n, dimn, gerg_n);
             dPcheck = (Pcheck*1e3-p_k(:,k));
             if max(abs(dPcheck)>1e-3)
                 fprintf('warning')
@@ -615,14 +620,15 @@ for ii = 2:dimt
 		% E_conc(find(isnan(E_conc)))=zeros(size(find(isnan(E_conc))));
 		% E_conc(find(isinf(E_conc)))=zeros(size(find(isinf(E_conc))));
 
-		ERR_C(k2)=max(max(abs(E_conc)));
-		res3= ERR_C(k2)/100
+		ERR_C(k2) = max(max(abs(E_conc)));
+		res3 = ERR_C(k2)/100
 
 		% Residui(ii).RES_C(1,k2)=RES_C(k2);
-		Residui(ii).RES_C(2,k2)=res3;
+		Residui(ii).RES_C(2,k2) = res3;
 		%
 		k2 = k2 + 1;
-		MM = MolarMassGERG2(reshape(CC_gasM_k(:,:,k2),dimn,nComponents));%kg/kmol %% mappa concentrazioni di tutti i nodi all'istante iniziale
+		mass_frac = reshape(CC_gasM_k(:,:,k2),dimn,nComponents);
+		MM = MolarMassGERG2(mass_frac);%kg/kmol %% mappa concentrazioni di tutti i nodi all'istante iniziale
 		CC_gas_k(:,:,k2) = MASS2MOL_CONV3(CC_gasM_k(:,:,k2),MM)./100;
 		CC_gasM(:,:,ii)  = CC_gasM_k(:,:,k2);
 		CC_gasM(:,:,ii)  = CC_gasM_k(:,:,k2);
@@ -653,9 +659,8 @@ for ii = 2:dimt
 	MHV(:,ii)=MASS_HV(reshape(CC_gasM(:,:,ii),[dimn 21])/100)';
 
     iFlag=0;
-	[Tr,Dr] = ReducingParametersGERG(reshape(CC_gas_k(:,:,k2),dimn,21));
-	[Tcx,Dcx,Vcx]=PseudoCriticalPointGERG(reshape(CC_gas_k(:,:,k2),dimn,21),dimn);
-	[Pcheck, Zm, Den, gamma]=PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, reshape(CC_gas_k(:,:,k2),dimn,21),dimn,Tr,Dr,Tcx,Dcx,Vcx);
+	gerg_nn = UtilitiesGERG(x_n, dimn);
+	[Pcheck, Zm, Den, gamma]=PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_n,dimn,gerg_nn);
 	dPcheck=(Pcheck*1e3-p_k(:,k));
 	if max(abs(dPcheck)>1e-3)
 		fprintf('warning')
@@ -667,7 +672,7 @@ for ii = 2:dimt
 	cc2n = ZZn.*RR.*Tn;
 	rho_n(:,ii) = Den.*MM';
 
-   [Pcheck, Zm0(:,ii), Den1] = PropertiesGERG(iFlag, p_std*ones(size(p_0(:,ii)))/1e3, T_std*ones(size(Tn)), reshape(CC_gas_k(:,:,k2),dimn,21),dimn,Tr,Dr,Tcx,Dcx,Vcx);
+	[Pcheck, Zm0(:,ii), Den1] = PropertiesGERG(iFlag, p_std*ones(size(p_0(:,ii)))/1e3, T_std*ones(size(Tn)), x_n,dimn,gerg_nn);
     dPcheck = (Pcheck*1e3-p_std*ones(size(p_0(:,ii))));
     if max(abs(dPcheck)>1e-3)
         fprintf('warning')

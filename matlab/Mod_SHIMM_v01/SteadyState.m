@@ -44,9 +44,9 @@ function [p_0 G_0] = SteadyState(A, Aplus, Aminus, P_in, Tb, G_ext_t, AA, DD, dx
 
 		% update of all the PIPELINE BASED properties with Equation of State
 		iFlag = 0;
-		[Tr_b, Dr_b] = ReducingParametersGERG(Aplus'*reshape(CC_gas_k(:,:,1),dimn,21));
-		[Tcx_b,Dcx_b,Vcx_b] = PseudoCriticalPointGERG(Aplus'*reshape(CC_gas_k(:,:,1),dimn,21),dimb);
-		[Pcheck, Zm, Den] = PropertiesGERG(iFlag, pm(:,k)/1e3, Tb, Aplus'*reshape(CC_gas_k(:,:,k2),dimn,21),dimb,Tr_b,Dr_b,Tcx_b,Dcx_b,Vcx_b);
+		x_bi = Aplus' * reshape(CC_gas_k(:,:,1),dimn,21);
+		gerg_b = UtilitiesGREG(x_b, dimb);
+		[Pcheck, Zm, Den] = PropertiesGERG(iFlag, pm(:,k)/1e3, Tb, Aplus'*reshape(CC_gas_k(:,:,k2),dimn,21),dimb,gerg_b);
 		dPcheck = (Pcheck*1e3-pm(:,k));
 
 		if max(abs(dPcheck))>1e-3
@@ -68,16 +68,16 @@ function [p_0 G_0] = SteadyState(A, Aplus, Aminus, P_in, Tb, G_ext_t, AA, DD, dx
 		Ri = zeros(dimb,1);                 % Inertia Resistance - initialization
 		% Ri=2*dxe.*pm(:,k)./(AA*dt)./(abs(ADP)*p_k(:,k)); % Inertia Resistance
 
-		[lambda Reyn viscosity] = Frictionfactoraverage(Tb,epsi,G_k(:,k),DD,Aplus'*reshape(CC_gas_k(:,:,k2),dimn,21));
+		[lambda Re viscosity] = friction(Tb,epsi,G_k(:,k),DD,Aplus'*reshape(CC_gas_k(:,:,k2),dimn,21));
 		Rf = 16.*lambda.*cc2b.*dxe./(DD.^5.*pi.^2)./(abs(ADP)*p_k(:,k)); % Fluid-dynamic Resistance
 		rr_k = (2*Rf.*(abs(G_k(:,k)))+Ri); % composite resistance linearized problem (R)
 		R_k  = sparse(diag(rr_k));         % transformed into sparse diagonal matrix
 
 		%% CONTINUITY EQUATION: each node CV - dimn
 		% update of all the NODE BASED properties with Equation of State
-		[Tr,Dr] = ReducingParametersGERG(reshape(CC_gas_k(:,:,1),dimn,21));
-		[Tcx,Dcx,Vcx] = PseudoCriticalPointGERG(reshape(CC_gas_k(:,:,1),dimn,21),dimn);
-		[Pcheck, Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, reshape(CC_gas_k(:,:,k2),dimn,21),dimn,Tr,Dr,Tcx,Dcx,Vcx);
+		x = reshape(CC_gas_k(:,:,1),dimn,21);
+		gerg = UtilitiesGREG(x, dimn);
+		[Pcheck, Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, reshape(CC_gas_k(:,:,k2),dimn,21),dimn, gerg);
 		dPcheck = Pcheck*1e3 - p_k(:,k);
 		if max(abs(dPcheck)>1e-3)
 			fprintf('warning')
@@ -166,7 +166,7 @@ function [p_0 G_0] = SteadyState(A, Aplus, Aminus, P_in, Tb, G_ext_t, AA, DD, dx
 							+(Aplus'*p_k(:,k)).*(Aminus'*p_k(:,k)))./...
 								((Aplus'*p_k(:,k))+(Aminus'*p_k(:,k)));
 		% update of all the PIPELINE BASED properties with Equation of State
-		[Pcheck, Zm, Den] = PropertiesGERG(iFlag, pm(:,ii)/1e3, Tb, Aplus'*reshape(CC_gas_k(:,:,k2),dimn,21),dimb,Tr_b,Dr_b,Tcx_b,Dcx_b,Vcx_b);
+		[Pcheck, Zm, Den] = PropertiesGERG(iFlag, pm(:,ii)/1e3, Tb, Aplus'*reshape(CC_gas_k(:,:,k2),dimn,21),dimb, gerg_b);
 		dPcheck = (Pcheck*1e3-pm(:,ii));
 		if max(abs(dPcheck)>1e-3)
 			fprintf('warning')
@@ -186,7 +186,7 @@ function [p_0 G_0] = SteadyState(A, Aplus, Aminus, P_in, Tb, G_ext_t, AA, DD, dx
 		Ri = zeros(dimb,1);
 		% Ri =2*dxe.*pm(:,ii)./(AA*dt)./(abs(ADP)*p_k(:,k));
 
-		[lambda Reyn viscosity] = Frictionfactoraverage(Tb,epsi,G_k(:,k),DD,Aplus'*reshape(CC_gas_k(:,:,k2),dimn,21));
+		[lambda Re viscosity] = friction(Tb,epsi,G_k(:,k),DD,Aplus'*reshape(CC_gas_k(:,:,k2),dimn,21));
 		Rf = 16.*lambda.*cc2b.*dxe./(DD.^5.*pi.^2)./(abs(ADP)*p_k(:,k));
 		rr_k = (2*Rf.*(abs(G_k(:,k)))+Ri);
 		R_k  = sparse(diag(rr_k));
@@ -196,7 +196,7 @@ function [p_0 G_0] = SteadyState(A, Aplus, Aminus, P_in, Tb, G_ext_t, AA, DD, dx
 
 		% CONTINUITY EQUATION
 		% update of all the NODE BASED properties with Equation of State
-		[Pcheck, Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, reshape(CC_gas_k(:,:,k2),dimn,21),dimn,Tr,Dr,Tcx,Dcx,Vcx);
+		[Pcheck, Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, reshape(CC_gas_k(:,:,k2),dimn,21),dimn,gerg);
 		dPcheck = (Pcheck*1e3-p_k(:,k));
 		if max(abs(dPcheck)>1e-3)
 			fprintf('warning')
@@ -235,6 +235,6 @@ function [p_0 G_0] = SteadyState(A, Aplus, Aminus, P_in, Tb, G_ext_t, AA, DD, dx
 
 end
 
-% KC questions:
+% WK questions:
 % What is k2 intended for? is only defined at the beginning
 

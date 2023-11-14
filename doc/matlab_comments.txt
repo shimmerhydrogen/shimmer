@@ -1,0 +1,11 @@
+A_GRID_CREATOR:
+
+LL_inner = size of each branck k
+LL_pipe  = size of a pipe in each branch. More or less, dx = L/num_grid_pts
+lung =
+
+To improve
+LLpipe doesnot need to be computed inside the loop. Take advantage of Vectorisation operations
+There is not need to do xx in branch. It could just be enough given a name to each row of xx.
+ex: branch.xx(1) = branch.positions
+

@@ -1,0 +1,15 @@
+
+Page 122: Gas network models and network managment
+    *   Our goal: to expand the capabilities of the existent network models available within the consortium (previous PoliTo, SINTEF or TNO developments)and to prepare them for open-source release. 
+    *   We are asked: Validation and benchmarking of the models against available data and commercial models
+
+Page 135: 
+    *   Schedule Fig 6. Our WP4.2 runs from 1st year to the middle of the last one. 
+
+Pag 157: Full description of our task 4.2.4
+    *   The open-source model will be able to handle the multi-component description of both high-pressure transmission networks and highly meshed distribution networks including non-pipe elements. The model can deliver relevant output throughout the network such as fluid dynamic data of velocity and pressure, gas composition and quality tracking, operational strategies for hydrogen injection aiming at its high and safe integration into the energy system
+
+Pag 147: 
+    *   Deliverable => Table 7. Open-source fluid-dynamic model with gas quality tracking released with handbook and tutorials
+    *   Due Date => Table 8. MS8 Open-source model validated Month 18.
+

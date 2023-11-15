@@ -62,13 +62,9 @@ function [p_0 G_0] = SteadyState(A, Aplus, Aminus, P_in, Tb, G_ext_t, AA, DD, dx
 		ADP = matrixADP(Aminus, Aplus, cc2b, delH, dimn);
 		%-----------------------------------------------------------------------
 		% A.3. COMPUTATION OF Rf/ Ri (Ri = 0 due to steady state assumption)
-		Ri = zeros(dimb,1);                 % Inertia Resistance - initialization
-		% Ri=2*dxe.*pm(:,k)./(AA*dt)./(abs(ADP)*p_k(:,k)); % Inertia Resistance
+		pm = zeros(dimb,1); % pm =0 to induce Ri = 0
+		[Ri, Rf, R_k] = Resistance(dxe, 1.0, pm, p_k(:,k), G_k(:,k), AA, ADP, Aplus'*x_k2, Tb, epsi, DD, cc2b);
 
-		[lambda Re viscosity] = friction(Tb,epsi,G_k(:,k),DD,Aplus'*x_k2);
-		Rf = 16.*lambda.*cc2b.*dxe./(DD.^5.*pi.^2)./(abs(ADP)*p_k(:,k)); % Fluid-dynamic Resistance
-		rr_k = (2*Rf.*(abs(G_k(:,k)))+Ri); % composite resistance linearized problem (R)
-		R_k  = sparse(diag(rr_k));         % transformed into sparse diagonal matrix
 		%-----------------------------------------------------------------------
 		%-----------------------------------------------------------------------
 		%% B. CONTINUITY EQUATION: each node CV - dimn
@@ -82,6 +78,7 @@ function [p_0 G_0] = SteadyState(A, Aplus, Aminus, P_in, Tb, G_ext_t, AA, DD, dx
 		% phi = Vol./(cc2n.*dt);
 		phi = zeros(size(Vol));
 		PHI = sparse(diag(phi));
+		II = sparse(eye(size(PHI)));
 
 		%-----------------------------------------------------------------------
 		%-----------------------------------------------------------------------
@@ -89,7 +86,6 @@ function [p_0 G_0] = SteadyState(A, Aplus, Aminus, P_in, Tb, G_ext_t, AA, DD, dx
 		%-----------------------------------------------------------------------
 		% C.1 MATRIX
 		Ap = A;
-		II = sparse(eye(size(PHI)));
 
 		MATRIX_P_k = [ADP,-R_k, zeros(dimb,dimn)];    %momentum equation
 		MATRIX_k   = [PHI,Ap,II;                      %cont. eq
@@ -152,47 +148,40 @@ function [p_0 G_0] = SteadyState(A, Aplus, Aminus, P_in, Tb, G_ext_t, AA, DD, dx
 		rho(:,ii) = Den.*(Aplus'*MM');
 		vel(:,ii) = G_k(:,k)./AA./rho(:,ii); %m/s
 		%---------------------------------------------------------------------------
-		%Find ADP
 		ADP = matrixADP(Aminus, Aplus, cc2b, delH, dimn);
 		%---------------------------------------------------------------------------
-		% 2. COMPUTATION OF Rf/ Ri (Ri = 0 due to steady state assumption)
-		Ri = zeros(dimb,1);
-		% Ri =2*dxe.*pm(:,ii)./(AA*dt)./(abs(ADP)*p_k(:,k));
-
-		[lambda Re viscosity] = friction(Tb,epsi,G_k(:,k),DD,Aplus'*x_k2);
-		Rf = 16.*lambda.*cc2b.*dxe./(DD.^5.*pi.^2)./(abs(ADP)*p_k(:,k));
-		rr_k = (2*Rf.*(abs(G_k(:,k)))+Ri);
-		R_k  = sparse(diag(rr_k));
-
+		% 2. RESISTANCES:  Ri = 0 due to steady state assumption)
+		pm = zeros(dimb,1); % pm = 0, dt =1.0  to induce Ri = 0
+		[Ri,Rf,R_k] = Resistance(dxe, 1.0, pm, p_k(:,k), G_k(:,k), AA, ADP, Aplus'*x_k2, Tb, epsi, DD, cc2b);
 		%---------------------------------------------------------------------------
 		% 3. RESIDUAL
 		RES_P(k) = norm(ADP(:,:)*p_k(:,k) - (Rf(:).*(abs(G_k(:,k)).*G_k(:,k))+Ri(:).*(G_k(:,k)-G_n(:))));
 		% norm(ADP(PIPE,:)*p_k(:,k) - (Rf(PIPE).*(abs(G_k(PIPE,k)).*G_k(PIPE,k))+Ri(PIPE).*(G_k(PIPE,k)-G_n(PIPE))));
-
-		% CONTINUITY EQUATION
+		%---------------------------------------------------------------------------
+		%---------------------------------------------------------------------------
+		% 					CONTINUITY EQUATION
+		%---------------------------------------------------------------------------
 		% update of all the NODE BASED properties with Equation of State
 		[Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_k2, dimn, gerg_1); %WK: why gerg_1 instead of gerg_k2?
-
-		ZZn = Zm;
-		cc2n = ZZn.*RR.*Tn;
+		cc2n = speedSound(Zm, RR,Tn);
 		Vol = pi/8*abs(A)*(DD.^2.*dxe);
 		% phi = Vol./(cc2n.*dt);
-		PHI = sparse(diag(phi));
-
+		PHI = sparse(diag(phi));	%WK:  here phi is not updated. So it is just zeros?
 		II = sparse(eye(size(PHI)));
 
+		%---------------------------------------------------------------------------
 		%RES_M(k) = norm(PHI*p_k(:,k) + A*G_k(:,k) - PHI*p_n + II./2*(L_0(:,ii-1)+L_k(:,k)));
 		RES_M(k) = norm(PHI*p_k(:,k) + A*G_k(:,k) - PHI*p_n + II*L_k(:,k)); %WK: inconsistent dimension PHI*p_n' chnaged to => PHI*p_n
 		%RES_M(k) = norm(PHI*p_k(:,k) + A(:,PIPE)*G_k(PIPE,k) - PHI*p_n + II*L_k(:,k));
-
 		RES_C(k)=0;
 
 		res = max([RES_P(k),RES_M(k),RES_C(k)])
-
+		%---------------------------------------------------------------------------
 		p_kf = p_k(:,k);
 		G_kf = G_k(:,k);
 		p_k(:,k) = alfa_P*p_k(:,k-1)+(1-alfa_P)*p_k(:,k);
 		G_k(:,k) = alfa_G*G_k(:,k-1)+(1-alfa_G)*G_k(:,k);
+		%---------------------------------------------------------------------------
 
 		Residui(ii).Fluid(k2).RES_P(k) = RES_P(k);
 		Residui(ii).Fluid(k2).RES_M(k) = RES_M(k);

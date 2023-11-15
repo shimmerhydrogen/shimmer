@@ -382,43 +382,30 @@ for ii = 2:dimt
 			pm(:,k) = (2.0/3.0) * averagePressure(p_in_k, p_out_k);
             [Zm, Den] = PropertiesGERG(iFlag, pm(:,k)/1e3, Tb, x_n, dimb, gerg_b); %WK: why x_n instead of x_b?
 			cc2b = speedSound(Zm,RRb, Tb);
-			%rho(:,ii) = pm(:,k)./cc2b;
 			rho(:,ii)  = Den.*(Aplus'*MM');       % [kg/m3] actual density of the gas (pipeline based)
 			vel(:,ii)  = G_k(:,k)./AA./rho(:,ii); % [m/s] velocity of the gas within pipes.
 
 			%-------------------------------------------------------------------
-			% A.2 FIND ADP
 			ADP = matrixADP(Aminus, Aplus, cc2b, delH, dimn);
-			%-------------------------------------------------------------------
-			% A.3 FIND RESISTANCES: Ri/ Rf
-			Ri = 2*dxe.*pm(:,k)./(AA*dt)./(abs(ADP)*p_k(:,k)); % Inertia Resistance
+			[Ri, Rf, R_k] = Resistance(dxe, dt, pm(:,k), p_k(:,k),G_k(:,k), AA, ADP, x_b, Tb, epsi, DD, cc2b);
 
-			MOLEFRAC = x_b;
-			[lambda Re viscosity] =  friction(Tb,epsi,G_k(:,k),DD, MOLEFRAC);
-			Rf = 16.*lambda.*cc2b.*dxe./(DD.^5.*pi.^2)./(abs(ADP)*p_k(:,k)); % Fluid-dynamikc Resistance
-
-			rr_k = (2*Rf.*(abs(G_k(:,k))) + Ri); % composite resistance linearized problem (R)
-			R_k = sparse(diag(rr_k));            % transformed into sparse diagonal matrix
 			%-------------------------------------------------------------------
 			%-------------------------------------------------------------------
 			%% 			B. CONTINUITY EQUATION: each node CV - dimn
 			%-------------------------------------------------------------------
 			% B.1 UPDATE: all NODE-BASED properties with Equation of State
             [Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_n, dimn, gerg_n);
+			cc2n = speedSound(Zm,RR, Tn);
 			%-------------------------------------------------------------------
 			% B.2 FIND PHI
-			ZZn  = Zm;
-			cc2n = ZZn.*RR.*Tn;
-			Vol  = pi/8*abs(A)*(DD.^2.*dx);
-			phi = Vol./(cc2n.*dt);
-			PHI = sparse(diag(phi));
+			[PHI, II] = matrixPHI(dx, dt, cc2n, A, DD);
+
 			%-------------------------------------------------------------------
 			%-------------------------------------------------------------------
 			%% 			C. MATRIX PROBLEM CONSTRUCTION:
 			%-------------------------------------------------------------------
 			% C.1 MATRIX
 			Ap = A;
-			II = sparse(eye(size(PHI)));
 
 			MATRIX_P_k = [ADP,-R_k,zeros(dimb,dimn)];  %momentum equation
 
@@ -482,17 +469,8 @@ for ii = 2:dimt
 			rho(:,ii) = Den.*(Aplus'*MM');
 			vel(:,ii) = G_k(:,k)./AA./rho(:,ii); %m/s
 			%-------------------------------------------------------------------
-			% B.2 Find ADP
 			ADP = matrixADP(Aminus, Aplus, cc2b, delH, dimn);
-			%-------------------------------------------------------------------
-			% B.3 Find Ri/Rf
-			Ri = zeros(dimb,1);
-			Ri = 2*dxe.*pm(:,ii)./(AA*dt)./(abs(ADP)*p_k(:,k));
-
-			[lambda Re viscosity] = friction(Tb,epsi,G_k(:,k),DD,x_b);
-			Rf = 16.*lambda.*cc2b.*dxe./(DD.^5.*pi.^2)./(abs(ADP)*p_k(:,k));
-			rr_k = (2*Rf.*(abs(G_k(:,k)))+Ri);
-			R_k  = sparse(diag(rr_k));
+			[Ri, Rf, R] = Resistance(dxe, dt, pm(:,ii), p_k(:,k), G_k(:,k), AA, ADP, x_b, Tb, epsi, DD, cc2b)
 			%-------------------------------------------------------------------
 			%B.4 Residual
 			RES_P(k) = norm(ADP(:,:)*p_k(:,k) - (Rf(:).*(abs(G_k(:,k)).*G_k(:,k))+Ri(:).*(G_k(:,k)-G_n(:))));
@@ -504,22 +482,13 @@ for ii = 2:dimt
 			% 1.Update
 			% All NODE BASED properties with Equation of State
             [Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_n, dimn, gerg_n);
+			cc2n = speedSound(Zm, RR, Tn);
 			%-------------------------------------------------------------------
-			% Find PHI
-			ZZn = Zm;
-			cc2n = ZZn.*RR.*Tn;
-			Vol = pi/8*abs(A)*(DD.^2.*dx);
-			phi = Vol./(cc2n.*dt);
-			PHI = sparse(diag(phi));
-			%
-
+			% 2. Find PHI
+			[PHI, II] = matrixPHI(dx, dt, cc2n, A, DD);
 			%-------------------------------------------------------------------
-			% Find Residuals
-			II = sparse(eye(size(PHI)));
-
-			%RES_M(k) = norm(PHI*p_k(:,k) + A*G_k(:,k) - PHI*p_n + II./2*(L_0(:,ii-1)+L_k(:,k)));
-			 RES_M(k) = norm(PHI*p_k(:,k) + A*G_k(:,k) - PHI*p_n + II*L_k(:,k));
-			%RES_M(k) = norm(PHI*p_k(:,k) + A(:,PIPE)*G_k(PIPE,k) - PHI*p_n + II*L_k(:,k));
+			% 3. Find Residuals
+			RES_M(k) = norm(PHI*p_k(:,k) + A*G_k(:,k) - PHI*p_n + II*L_k(:,k));
 
 			RES_C(k) = 0;
 

@@ -200,8 +200,9 @@ s = 0;  % assumption: we neglect the gravitational terms in this phase in which
 % fluid-dynamic equilibrium of the network
 Aplus  = (A==1).*1;
 Aminus = (A==-1).*1;
-Aminus_s0 = Aminus %Aminus.*repmat(exp(s/2),1,dimn)'; %WK: these dimensions are not consistent
-ADP_0 = (-Aminus_s0 + Aplus)';
+%Aminus_s0 = Aminus.*repmat(exp(s/2),1,dimn)'; %WK: these dimensions are not consistent. I commented this line and the next one
+%ADP_0 = (-Aminus_s0 + Aplus)';
+
 % %
 % function that uses another type gas network model (steady state) used to
 % calculate a good guessed value for the solution of nodal pressure and pipeline
@@ -376,7 +377,7 @@ for ii = 2:dimt
 			%-------------------------------------------------------------------
 			%% 			A. MOMENTUM EQUATION: each branch section CV - dimb
 			%-------------------------------------------------------------------
-			% A.1 UPDATE: pm and PIPELINE-BASED properties with Equation of State
+			% A.1 UPDATE:PIPELINE-BASED properties with Equation of State
 			p_in_k  = Aplus' * p_k(:,k);
 			p_out_k = Aminus'* p_k(:,k);
 			pm(:,k) = (2.0/3.0) * averagePressure(p_in_k, p_out_k);
@@ -387,62 +388,26 @@ for ii = 2:dimt
 
 			%-------------------------------------------------------------------
 			ADP = matrixADP(Aminus, Aplus, cc2b, delH, dimn);
-			[Ri, Rf, R_k] = Resistance(dxe, dt, pm(:,k), p_k(:,k),G_k(:,k), AA, ADP, x_b, Tb, epsi, DD, cc2b);
+			Omega = Resistance(dxe, dt, pm(:,k), p_k(:,k),G_k(:,k), AA, ADP, x_b, Tb, epsi, DD, cc2b);
 
 			%-------------------------------------------------------------------
 			%-------------------------------------------------------------------
 			%% 			B. CONTINUITY EQUATION: each node CV - dimn
 			%-------------------------------------------------------------------
-			% B.1 UPDATE: all NODE-BASED properties with Equation of State
+			% B.1 UPDATE: NODE-BASED properties with Equation of State
             [Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_n, dimn, gerg_n);
 			cc2n = speedSound(Zm,RR, Tn);
 			%-------------------------------------------------------------------
-			% B.2 FIND PHI
 			[PHI, II] = matrixPHI(dx, dt, cc2n, A, DD);
 
 			%-------------------------------------------------------------------
 			%-------------------------------------------------------------------
-			%% 			C. MATRIX PROBLEM CONSTRUCTION:
+			%% 			C. FLUID-DYNAMICS MATRIX PROBLEM:
 			%-------------------------------------------------------------------
-			% C.1 MATRIX
-			Ap = A;
-
-			MATRIX_P_k = [ADP,-R_k,zeros(dimb,dimn)];  %momentum equation
-
-			MATRIX_k = [PHI, Ap, II;                  %cont. eq
-						MATRIX_P_k;                   %mom. eq
-						zeros(dimn,dimn+dimb),II];    %boundary condition (pressure and gas flow)
-			%  %no backflow al gate
-			%  if p_in_t(ii)>p_k(2,k)
-			if vel(1,ii)>0
-				MATRIX_k(dimn+dimb+1,1)=1;
-				MATRIX_k(dimn+dimb+1,dimn+dimb+1)=0;
-			else
-				MATRIX_k(dimn+dimb+1,1)=0;
-				MATRIX_k(dimn+dimb+1,dimn+dimb+1)=1;
-			end
+			[p_k(:,k+1), G_k(:,k+1), L_k(:,k+1)] = matrix_system(dimn, dimb, ...
+										A, ADP, Omega, II, PHI, vel(1, ii),...
+										p_n, p_in_t(ii), G_k(:,k), G_n, G_ext_t(:,ii));
 			%-------------------------------------------------------------------
-			% C.2 Load vector
-			TN_P = PHI * p_n;
-			TN_M_k = (-Rf.*abs(G_k(:,k)).*G_k(:,k) - Ri.*G_n);
-			TN_L = G_ext_t(:,ii);
-
-			%  %no backflow al gate
-			%  if p_in_t(ii)>p_k(2,k)
-			if vel(1,ii)>0
-				TN_L(1)=p_in_t(ii);
-			else
-				TN_L(1)=0;
-			end
-			TN_k=[TN_P; TN_M_k; TN_L];        % full vector of KNOWN TERMs composition
-			%-------------------------------------------------------------------
-			%% C.3 SOLVE: LINEAR SOLUTION OF THE LINEARIZED FLUID-DYNAMIC PROBLEM
-			XXX_k = MATRIX_k\TN_k;
-			%-------------------------------------------------------------------
-
-			p_k(:,k+1) = XXX_k(1:dimn);           % extraction results for nodal pressures
-			G_k(:,k+1) = XXX_k(dimn+1:dimn+dimb); % extraction results for pipeline mass flows
-			L_k(:,k+1) = XXX_k(dimn+dimb+1:end);  % extraction results for nodal mass flows exchanged with outside.
 
 			%check! to avoid infinite resistances, if a pipe has 0 as mass flow it
 			%is apporximated to 10^8
@@ -459,10 +424,8 @@ for ii = 2:dimt
 			%-------------------------------------------------------------------
 		    % 						B. MOMENTUM EQUATION
 			%-------------------------------------------------------------------
-
-		    % B.1 Update
+		    % UPDATE: PIPELINE-BASED properties with Equation of State
 		    pm(:,ii) = (2.0/3.0)*averagePressure(Aplus'*p_k(:,k), Aminus'*p_k(:,k));
-		    % update of all the PIPELINE BASED properties with Equation of State
 			[Zm, Den] = PropertiesGERG(iFlag, pm(:,ii)/1e3, Tb, x_b, dimb, gerg_b);
 			cc2b = speedSound(Zm, RRb, Tb);
 			%rho(:,ii)= pm(:,ii)./cc2b;
@@ -470,24 +433,24 @@ for ii = 2:dimt
 			vel(:,ii) = G_k(:,k)./AA./rho(:,ii); %m/s
 			%-------------------------------------------------------------------
 			ADP = matrixADP(Aminus, Aplus, cc2b, delH, dimn);
-			[Ri, Rf, R] = Resistance(dxe, dt, pm(:,ii), p_k(:,k), G_k(:,k), AA, ADP, x_b, Tb, epsi, DD, cc2b)
+			Omega = Resistance(dxe, dt, pm(:,ii), p_k(:,k), G_k(:,k), AA, ADP, x_b, Tb, epsi, DD, cc2b)
 			%-------------------------------------------------------------------
-			%B.4 Residual
-			RES_P(k) = norm(ADP(:,:)*p_k(:,k) - (Rf(:).*(abs(G_k(:,k)).*G_k(:,k))+Ri(:).*(G_k(:,k)-G_n(:))));
+			%Residual
+			RES_P(k) = norm(ADP(:,:)*p_k(:,k)...
+					- (Omega.Rf(:).*(abs(G_k(:,k)).*G_k(:,k))...
+							+ Omega.Ri(:).*(G_k(:,k)-G_n(:))));
 			%  norm(ADP(PIPE,:)*p_k(:,k) - (Rf(PIPE).*(abs(G_k(PIPE,k)).*G_k(PIPE,k))+Ri(PIPE).*(G_k(PIPE,k)-G_n(PIPE))));
 
 			%-------------------------------------------------------------------
 			% 					CONTINUITY EQUATION
 			%-------------------------------------------------------------------
-			% 1.Update
-			% All NODE BASED properties with Equation of State
+			% UPDATE: NODE-BASED properties with Equation of State
             [Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_n, dimn, gerg_n);
 			cc2n = speedSound(Zm, RR, Tn);
 			%-------------------------------------------------------------------
-			% 2. Find PHI
 			[PHI, II] = matrixPHI(dx, dt, cc2n, A, DD);
 			%-------------------------------------------------------------------
-			% 3. Find Residuals
+			% Find Residuals
 			RES_M(k) = norm(PHI*p_k(:,k) + A*G_k(:,k) - PHI*p_n + II*L_k(:,k));
 
 			RES_C(k) = 0;

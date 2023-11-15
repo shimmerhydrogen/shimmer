@@ -200,17 +200,14 @@ s = 0;  % assumption: we neglect the gravitational terms in this phase in which
 % fluid-dynamic equilibrium of the network
 Aplus  = (A==1).*1;
 Aminus = (A==-1).*1;
-Aminus_s0 = Aminus*repmat(exp(s/2),1,dimn)';
+Aminus_s0 = Aminus %Aminus.*repmat(exp(s/2),1,dimn)'; %WK: these dimensions are not consistent
 ADP_0 = (-Aminus_s0 + Aplus)';
 % %
 % function that uses another type gas network model (steady state) used to
 % calculate a good guessed value for the solution of nodal pressure and pipeline
 % mass flow rates
 
-[p_0 G_0] = SteadyState(A,Aplus,Aminus,...
-						P_in, Tb, G_ext_t1(:,1),...
-						AA, DD, dx, HH, epsi, RR, MM, CC_gas, NP, PIPE,...
-						dimn, dimb, dimt);
+[p_0 G_0] = SteadyState(A,Aplus,Aminus,P_in, Tb, G_ext_t1(:,1),AA, DD, dx, HH, epsi, RR, MM, CC_gas, NP, PIPE,	dimn, dimb, dimt);
 
 % % % [p_0 G_0] = Q_linearization_fun_08(A,Aplus,Aminus,p_0(1,1),Tb,G_ext_t1(:,1),AA,DD,dxe,epsi,eta,RR,dt,p_0(:,1),G_0(:,1),dimn,Aplus'*reshape(CC_gas(:,:,1),dimn,21));
 save('Trial2023_3_P0','p_0');
@@ -229,8 +226,8 @@ save('Trial2023_3_G0','G_0');
 
 %%
 
-G_n(:) = G_0(:,1);            % matrix (bxt) of pipeline mass flow rates for each timestep
-p_n(:) = p_0(:,1);            % matrix (nxt) of nodal pressures for each timestep
+G_n = G_0(:,1);            % matrix (bxt) of pipeline mass flow rates for each timestep
+p_n = p_0(:,1);            % matrix (nxt) of nodal pressures for each timestep
 L_0(:,1) = G_ext_t1(:,1);     % matrix (nxt) of nodal inlet(-)/outlet(+) mass flow rates for each timestep
                               % quasi-fixed term: it is mass flow rated fixed
                               % by the THERMAL REQUEST thus depends on the
@@ -347,7 +344,6 @@ for ii = 2:dimt
 		G_k(:,k) = G_0(:,ii-1);
 		L_k(:,k) = L_0(:,ii-1);
 
-		x_e = reshape(CC_gas_k_ext(:,:,k2),dimn,21);
 		x_n = reshape(CC_gas_k(:,:,k2),dimn,21);
 		x_b = Aplus' * x_n;
 
@@ -359,7 +355,7 @@ for ii = 2:dimt
 		RR  = UGC./MM';
 		RRb = Aplus'*RR;
 
-		% MHV_ext(:,k2)=MASS_HV(x_e/100)';
+		% MHV_ext(:,k2)=MASS_HV(reshape(CC_gas_k_ext(:,:,k2),dimn,21)/100)';
 		MHV_ext(:,k2) = MASS_HV(x_n/100)';
 		MHV_ext(find(isnan(MHV_ext(:,k2))),k2) = 1;
 		G_ext_t(:,ii) = H_ext_t(:,ii)./(MHV_ext(:,k2)*1e3);

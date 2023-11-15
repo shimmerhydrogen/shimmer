@@ -2,8 +2,8 @@ function [p_0 G_0] = SteadyState(A, Aplus, Aminus, P_in, Tb, G_ext_t, AA, DD, dx
 	k  = 1;
 	k2 = 1;
 	p_k(:,k)= P_in(1)*ones(dimn,1);
-	p_n(:)  = P_in(1)*ones(dimn,1);
-	G_n(:)  = ones(dimn,1);
+	p_n = P_in(1)*ones(dimn,1);
+	G_n = ones(dimn,1);
 	G_k(:,k)= G_n(:);		%KCommit: mass flow \dot[m]
 	res = 1;
 	iter_max = 1;
@@ -49,7 +49,7 @@ function [p_0 G_0] = SteadyState(A, Aplus, Aminus, P_in, Tb, G_ext_t, AA, DD, dx
 		% update of all the PIPELINE BASED properties with Equation of State
 		iFlag = 0;
 		x_b = Aplus' * x_1;
-		gerg_b = UtilitiesGREG(x_b, dimb);
+		gerg_b = UtilitiesGERG(x_b, dimb);
 		[Zm, Den] = PropertiesGERG(iFlag, pm(:,k)/1e3, Tb, Aplus'*x_k2, dimb,gerg_b); %WK why not x_b? instead of  Aplus'*x_k2
 		%-----------------------------------------------------------------------
 		% A.2  ADP Computation
@@ -77,8 +77,9 @@ function [p_0 G_0] = SteadyState(A, Aplus, Aminus, P_in, Tb, G_ext_t, AA, DD, dx
 		%-----------------------------------------------------------------------
 		%% B. CONTINUITY EQUATION: each node CV - dimn
 		% B.1 update of all the NODE BASED properties with Equation of State
-		gerg = UtilitiesGREG(x, dimn);
-		[Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_k2, dimn, gerg);  %WK why not x? instead of  x_k2? ...check what x is
+
+		gerg_1 = UtilitiesGERG(x_1, dimn);
+		[Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_k2, dimn, gerg_1);  %WK why not x_1? instead of  x_k2?
 
 		ZZn = Zm;
 		cc2n = ZZn.*RR.*Tn;					%KCommit: Sound speed squared
@@ -120,8 +121,8 @@ function [p_0 G_0] = SteadyState(A, Aplus, Aminus, P_in, Tb, G_ext_t, AA, DD, dx
 
 		% KNOWN TERM
 		% TN_P = PHI*p_n-II./2*L_0(:,ii-1);
-		TN_P = PHI*p_n';
-		TN_M_k = (-Rf.*abs(G_k(:,k)).*G_k(:,k) -Ri.*G_n');
+		TN_P = PHI*p_n; %PHI*p_n'; WK: non-consistent dimensions
+		TN_M_k = (-Rf.*abs(G_k(:,k)).*G_k(:,k) -Ri.*G_n); %G_n'); % WK: transpose of Gn' gives a 3x3 matrix instead of a load vector
 		% TN_M_k(NP) = P_in(out_np);%(p_in_t(ii)-p_0(54,ii-1));%-G_0(54,ii-1);
 		% TN_M_k(NP) = D;
 		TN_L = G_ext_t;
@@ -138,7 +139,7 @@ function [p_0 G_0] = SteadyState(A, Aplus, Aminus, P_in, Tb, G_ext_t, AA, DD, dx
 			TN_L(1)=0;
 		end
 
-		TN_k = [TN_P; TN_M_k; TN_L];        % full vector of KNOWN TERMs composition
+		TN_k = [TN_P; TN_M_k; TN_L];%[TN_P; TN_M_k; TN_L];        % full vector of KNOWN TERMs composition ; %WK: non-consistent dimensions if TN_M_k is not corrected check line 125
 
 		%% LINEAR SOLUTION OF THE LINEARIZED FLUID-DYNAMIC PROBLEM
 
@@ -194,7 +195,7 @@ function [p_0 G_0] = SteadyState(A, Aplus, Aminus, P_in, Tb, G_ext_t, AA, DD, dx
 
 		% CONTINUITY EQUATION
 		% update of all the NODE BASED properties with Equation of State
-		[Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_k2, dimn,gerg);
+		[Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_k2, dimn, gerg_1); %WK: why gerg_1 instead of gerg_k2?
 
 		ZZn = Zm;
 		cc2n = ZZn.*RR.*Tn;
@@ -205,7 +206,7 @@ function [p_0 G_0] = SteadyState(A, Aplus, Aminus, P_in, Tb, G_ext_t, AA, DD, dx
 		II = sparse(eye(size(PHI)));
 
 		%RES_M(k) = norm(PHI*p_k(:,k) + A*G_k(:,k) - PHI*p_n + II./2*(L_0(:,ii-1)+L_k(:,k)));
-		RES_M(k) = norm(PHI*p_k(:,k) + A*G_k(:,k) - PHI*p_n' + II*L_k(:,k));
+		RES_M(k) = norm(PHI*p_k(:,k) + A*G_k(:,k) - PHI*p_n + II*L_k(:,k)); %WK: inconsistent dimension PHI*p_n' chnaged to => PHI*p_n
 		%RES_M(k) = norm(PHI*p_k(:,k) + A(:,PIPE)*G_k(PIPE,k) - PHI*p_n + II*L_k(:,k));
 
 		RES_C(k)=0;

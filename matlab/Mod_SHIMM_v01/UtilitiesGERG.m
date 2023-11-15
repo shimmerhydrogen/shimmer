@@ -1,4 +1,18 @@
-function gerg = UtilitiesGERG( x, dim )
-	[gerg.Tr,gerg.Dr] = ReducingParametersGERG(x);
-	[gerg.Tcx,gerg.Dcx,gerg.Vcx] = PseudoCriticalPointGERG(x,dim);
+classdef UtilitiesGERG
+
+	properties
+	Tr
+	Dr
+	Tcx
+	Dcx
+	Vcx
+	end
+
+	methods
+		function obj = UtilitiesGERG(x, dim)
+			[obj.Tr,obj.Dr] = ReducingParametersGERG(x);
+			[obj.Tcx,obj.Dcx,obj.Vcx] = PseudoCriticalPointGERG(x,dim);
+		end
+	end
+
 end

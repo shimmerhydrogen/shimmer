@@ -360,135 +360,99 @@ for ii = 2:dimt
 		MHV_ext(find(isnan(MHV_ext(:,k2))),k2) = 1;
 		G_ext_t(:,ii) = H_ext_t(:,ii)./(MHV_ext(:,k2)*1e3);
 
-		% xx_old_k=xx_old;
-		% % vel_b_k.ccb=vel_b.ccb;
-		% vel_b_k=vel_b;
-		% iter_max=1;
-
-		% xx_old_k=xx_old;
-		% for xxx=1:INPUT_b_inner(end,1)
-		% 	vel_b_k(xxx).ccb=vel_b(xxx).ccb;
-		% end
 		iter_max = 1;
 
 		%% LINEARIZED FLUID-DYNAMIC PROBLEM CYCLE
 		%for any timestep, a solution for the linearized problem should be found.
 		while res>toll && iter_max<500
 
-			%this are underrelaxation coefficients to help the convergence, if
-			%needed
+			%Underrelaxation coefficients to help the convergence
 			alfa_G = 0;
 			alfa_P = 0;
-
-			% if iter_max>10
-			%    alfa_G=1;
-			%    alfa_P=0.8;
-			%    iter_max
-			% else
-			%    alfa_G=0;
-			% end
-
 			iter_max = iter_max+1; %fluid-dynamic iteration counter
 
-			%% MOMENTUM EQUATION: each branch section CV - dimb
 
-			%average pressure update
+			%-------------------------------------------------------------------
+			%-------------------------------------------------------------------
+			%% 			A. MOMENTUM EQUATION: each branch section CV - dimb
+			%-------------------------------------------------------------------
+			% A.1 UPDATE: pm and PIPELINE-BASED properties with Equation of State
 			p_in_k  = Aplus' * p_k(:,k);
 			p_out_k = Aminus'* p_k(:,k);
 			pm(:,k) = (2.0/3.0) * averagePressure(p_in_k, p_out_k);
-
-			%update of all the PIPELINE BASED properties with Equation of State
             [Zm, Den] = PropertiesGERG(iFlag, pm(:,k)/1e3, Tb, x_n, dimb, gerg_b); %WK: why x_n instead of x_b?
-
-			ZZb  = Zm;
-			cc2b = ZZb.*RRb.*Tb;
+			cc2b = speedSound(Zm,RRb, Tb);
 			%rho(:,ii) = pm(:,k)./cc2b;
 			rho(:,ii)  = Den.*(Aplus'*MM');       % [kg/m3] actual density of the gas (pipeline based)
 			vel(:,ii)  = G_k(:,k)./AA./rho(:,ii); % [m/s] velocity of the gas within pipes.
 
-			s = 2 * 9.81 * delH./cc2b;
-			Aminus_s  = Aminus.*repmat(exp(s),1,dimn)';
-			Aminus_s1 = Aminus.*repmat(exp(s/2),1,dimn)';
-			ADP = (-Aminus_s1 + Aplus)';
-
-			Ri = zeros(dimb,1);                 % Inertia Resistance - initialization
+			%-------------------------------------------------------------------
+			% A.2 FIND ADP
+			ADP = matrixADP(Aminus, Aplus, cc2b, delH, dimn);
+			%-------------------------------------------------------------------
+			% A.3 FIND RESISTANCES: Ri/ Rf
 			Ri = 2*dxe.*pm(:,k)./(AA*dt)./(abs(ADP)*p_k(:,k)); % Inertia Resistance
 
 			MOLEFRAC = x_b;
-			[lambda Re viscosity] =  friction(Tb,epsi,G_k(:,k),DD,MOLEFRAC);
+			[lambda Re viscosity] =  friction(Tb,epsi,G_k(:,k),DD, MOLEFRAC);
 			Rf = 16.*lambda.*cc2b.*dxe./(DD.^5.*pi.^2)./(abs(ADP)*p_k(:,k)); % Fluid-dynamikc Resistance
-			rr_k = (2*Rf.*(abs(G_k(:,k)))+Ri); % composite resistance linearized problem (R)
-			R_k = sparse(diag(rr_k));          % transformed into sparse diagonal matrix
 
-			%% CONTINUITY EQUATION: each node CV - dimn
-			%update of all the NODE BASED properties with Equation of State
+			rr_k = (2*Rf.*(abs(G_k(:,k))) + Ri); % composite resistance linearized problem (R)
+			R_k = sparse(diag(rr_k));            % transformed into sparse diagonal matrix
+			%-------------------------------------------------------------------
+			%-------------------------------------------------------------------
+			%% 			B. CONTINUITY EQUATION: each node CV - dimn
+			%-------------------------------------------------------------------
+			% B.1 UPDATE: all NODE-BASED properties with Equation of State
             [Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_n, dimn, gerg_n);
-
+			%-------------------------------------------------------------------
+			% B.2 FIND PHI
 			ZZn  = Zm;
 			cc2n = ZZn.*RR.*Tn;
 			Vol  = pi/8*abs(A)*(DD.^2.*dx);
 			phi = Vol./(cc2n.*dt);
 			PHI = sparse(diag(phi));
-
+			%-------------------------------------------------------------------
+			%-------------------------------------------------------------------
+			%% 			C. MATRIX PROBLEM CONSTRUCTION:
+			%-------------------------------------------------------------------
+			% C.1 MATRIX
 			Ap = A;
-
 			II = sparse(eye(size(PHI)));
 
-			% %   % NON PIPELINES ELEMENTS CONTROL MODE - p_out fixed
-			% %   ADP(NP,in_np)=diag(zeros(size(NP))); %p_in
-			% %   ADP(NP,out_np)=diag(ones(size(NP))); %p_out
-			% %   R_k(NP,:)=zeros(size(R_k(NP,:)));
-			% % %     R_k(54,54)=+1e7;
-			% if p_0(in_np,ii-1)/p_0(out_np,ii-1)>=1.0%max(p_0(out_np:end,ii-1))<=min(p_0(1:in_np,ii-1))
-			%     % NON PIPELINES ELEMENTS CONTROL MODE - bypass
-			%     ADP(NP,in_np)=-diag(ones(size(NP))); %p_in
-			%     ADP(NP,out_np)=diag(ones(size(NP))); %p_out
-			%     R_k(NP,NP)=zeros(size(R_k(NP,NP)));
-			%     D=zeros(size(NP));
-			% else
-			%     % NON PIPELINES ELEMENTS CONTROL MODE - OFF
-			%
-			%     ADP(NP,in_np)=-zeros(ones(size(NP))); %p_in
-			%     ADP(NP,out_np)=zeros(ones(size(NP))); %p_out
-			%     R_k(NP,NP)=-ones(size(R_k(NP,NP)));
-			%     D=zeros(size(NP));
-			% end
+			MATRIX_P_k = [ADP,-R_k,zeros(dimb,dimn)];  %momentum equation
 
-			%% MATRIX PROBLEM CONSTRUCTION:
-
-			MATRIX_P_k=[ADP,-R_k,zeros(dimb,dimn)];  %momentum equation
-
-			MATRIX_k=[PHI,Ap,II;                      %cont. eq
+			MATRIX_k = [PHI, Ap, II;                  %cont. eq
 						MATRIX_P_k;                   %mom. eq
 						zeros(dimn,dimn+dimb),II];    %boundary condition (pressure and gas flow)
-
-			% KNOWN TERM
-			% TN_P=PHI*p_n-II./2*L_0(:,ii-1);
-			TN_P = PHI*p_n;
-			TN_M_k = (-Rf.*abs(G_k(:,k)).*G_k(:,k) - Ri.*G_n);
-			% TN_M_k(NP)=P_in(out_np);%(p_in_t(ii)-p_0(54,ii-1));%-G_0(54,ii-1);
-			% TN_M_k(NP)=D;
-			TN_L=G_ext_t(:,ii);
-
 			%  %no backflow al gate
 			%  if p_in_t(ii)>p_k(2,k)
 			if vel(1,ii)>0
 				MATRIX_k(dimn+dimb+1,1)=1;
 				MATRIX_k(dimn+dimb+1,dimn+dimb+1)=0;
-				TN_L(1)=p_in_t(ii);
 			else
 				MATRIX_k(dimn+dimb+1,1)=0;
 				MATRIX_k(dimn+dimb+1,dimn+dimb+1)=1;
+			end
+			%-------------------------------------------------------------------
+			% C.2 Load vector
+			TN_P = PHI * p_n;
+			TN_M_k = (-Rf.*abs(G_k(:,k)).*G_k(:,k) - Ri.*G_n);
+			TN_L = G_ext_t(:,ii);
+
+			%  %no backflow al gate
+			%  if p_in_t(ii)>p_k(2,k)
+			if vel(1,ii)>0
+				TN_L(1)=p_in_t(ii);
+			else
 				TN_L(1)=0;
 			end
-
 			TN_k=[TN_P; TN_M_k; TN_L];        % full vector of KNOWN TERMs composition
-
-			%% LINEAR SOLUTION OF THE LINEARIZED FLUID-DYNAMIC PROBLEM
-
+			%-------------------------------------------------------------------
+			%% C.3 SOLVE: LINEAR SOLUTION OF THE LINEARIZED FLUID-DYNAMIC PROBLEM
 			XXX_k = MATRIX_k\TN_k;
+			%-------------------------------------------------------------------
 
-			%%
 			p_k(:,k+1) = XXX_k(1:dimn);           % extraction results for nodal pressures
 			G_k(:,k+1) = XXX_k(dimn+1:dimn+dimb); % extraction results for pipeline mass flows
 			L_k(:,k+1) = XXX_k(dimn+dimb+1:end);  % extraction results for nodal mass flows exchanged with outside.
@@ -499,26 +463,29 @@ for ii = 2:dimt
 				G_k(find(G_k(PIPE,k+1)==0),k+1)=1e-8;
 			end
 
+			%--kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
 			k = k+1; %linearization index update
+			%--kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
 
 			%% update of all the quantities and residual calculation
-		    % MOMENTUM EQUATION
-		    % average pressure update
+			%-------------------------------------------------------------------
+			%-------------------------------------------------------------------
+		    % 						B. MOMENTUM EQUATION
+			%-------------------------------------------------------------------
+
+		    % B.1 Update
 		    pm(:,ii) = (2.0/3.0)*averagePressure(Aplus'*p_k(:,k), Aminus'*p_k(:,k));
 		    % update of all the PIPELINE BASED properties with Equation of State
 			[Zm, Den] = PropertiesGERG(iFlag, pm(:,ii)/1e3, Tb, x_b, dimb, gerg_b);
-
-			ZZb  = Zm;
-			cc2b = ZZb.*RRb.*Tb;
+			cc2b = speedSound(Zm, RRb, Tb);
 			%rho(:,ii)= pm(:,ii)./cc2b;
 			rho(:,ii) = Den.*(Aplus'*MM');
 			vel(:,ii) = G_k(:,k)./AA./rho(:,ii); %m/s
-
-			s = 2*9.81*delH./cc2b;
-			Aminus_s  = Aminus.*repmat(exp(s),1,dimn)';
-			Aminus_s1 = Aminus.*repmat(exp(s/2),1,dimn)';
-			ADP = (-Aminus_s1+Aplus)';
-
+			%-------------------------------------------------------------------
+			% B.2 Find ADP
+			ADP = matrixADP(Aminus, Aplus, cc2b, delH, dimn);
+			%-------------------------------------------------------------------
+			% B.3 Find Ri/Rf
 			Ri = zeros(dimb,1);
 			Ri = 2*dxe.*pm(:,ii)./(AA*dt)./(abs(ADP)*p_k(:,k));
 
@@ -526,21 +493,29 @@ for ii = 2:dimt
 			Rf = 16.*lambda.*cc2b.*dxe./(DD.^5.*pi.^2)./(abs(ADP)*p_k(:,k));
 			rr_k = (2*Rf.*(abs(G_k(:,k)))+Ri);
 			R_k  = sparse(diag(rr_k));
-
+			%-------------------------------------------------------------------
+			%B.4 Residual
 			RES_P(k) = norm(ADP(:,:)*p_k(:,k) - (Rf(:).*(abs(G_k(:,k)).*G_k(:,k))+Ri(:).*(G_k(:,k)-G_n(:))));
 			%  norm(ADP(PIPE,:)*p_k(:,k) - (Rf(PIPE).*(abs(G_k(PIPE,k)).*G_k(PIPE,k))+Ri(PIPE).*(G_k(PIPE,k)-G_n(PIPE))));
 
-			% CONTINUITY EQUATION
-			% update of all the NODE BASED properties with Equation of State
+			%-------------------------------------------------------------------
+			% 					CONTINUITY EQUATION
+			%-------------------------------------------------------------------
+			% 1.Update
+			% All NODE BASED properties with Equation of State
             [Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_n, dimn, gerg_n);
-
+			%-------------------------------------------------------------------
+			% Find PHI
 			ZZn = Zm;
 			cc2n = ZZn.*RR.*Tn;
 			Vol = pi/8*abs(A)*(DD.^2.*dx);
 			phi = Vol./(cc2n.*dt);
 			PHI = sparse(diag(phi));
+			%
 
-			II=sparse(eye(size(PHI)));
+			%-------------------------------------------------------------------
+			% Find Residuals
+			II = sparse(eye(size(PHI)));
 
 			%RES_M(k) = norm(PHI*p_k(:,k) + A*G_k(:,k) - PHI*p_n + II./2*(L_0(:,ii-1)+L_k(:,k)));
 			 RES_M(k) = norm(PHI*p_k(:,k) + A*G_k(:,k) - PHI*p_n + II*L_k(:,k));
@@ -550,17 +525,18 @@ for ii = 2:dimt
 
 			res = max([RES_P(k),RES_M(k),RES_C(k)])
 
-			p_kf = p_k(:,k);
-			G_kf = G_k(:,k);
-			p_k(:,k) = alfa_P*p_k(:,k-1)+(1-alfa_P)*p_k(:,k);
-			G_k(:,k) = alfa_G*G_k(:,k-1)+(1-alfa_G)*G_k(:,k);
-
 			Residui(ii).Fluid(k2).RES_P(k) = RES_P(k);
 			Residui(ii).Fluid(k2).RES_M(k) = RES_M(k);
 
-			Res_P1(:,k) = ((p_k(:,k)-p_k(:,k-1))./p_k(:,k-1))*100;
-			Res_G1(:,k) = ((G_k(:,k)-G_k(:,k-1))./G_k(:,k-1))*100;
-
+			%-------------------------------------------------------------------
+			% Update p* and G*
+			p_kf = p_k(:,k);
+			G_kf = G_k(:,k);
+			p_k(:,k) = alfa_P * p_k(:,k-1) + (1 - alfa_P) * p_k(:,k);
+			G_k(:,k) = alfa_G * G_k(:,k-1) + (1 - alfa_G) * G_k(:,k);
+			%-------------------------------------------------------------------
+			Res_P1(:,k) = ((p_k(:,k) - p_k(:,k-1))./p_k(:,k-1))*100;
+			Res_G1(:,k) = ((G_k(:,k) - G_k(:,k-1))./G_k(:,k-1))*100;
 		end
 
 		if iter_max>=500

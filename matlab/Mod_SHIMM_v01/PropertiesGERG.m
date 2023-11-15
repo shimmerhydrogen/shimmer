@@ -1,4 +1,4 @@
-function [P1, Z, D, gamma]=GERG(iFlag,P, T, x, dimn, gerg)%(T, D, x)
+function [Z, D, gamma]=GERG(iFlag,P, T, x, dimn, gerg, pressure_reference)%(T, D, x)
 %Sub PropertiesGERG(ByVal T As Double, ByVal D As Double, x() As Double, ByRef P As Double, ByRef Z As Double, ByRef dPdD As Double, ByRef d2PdD2 As Double, ByRef d2PdTD As Double, ByRef dPdT As Double, ByRef U As Double, ByRef H As Double, ByRef S As Double, ByRef Cv As Double, ByRef Cp As Double, ByRef W As Double, ByRef G As Double, ByRef JT As Double, ByRef Kappa As Double, Optional ByRef A As Double)
 %Sub PropertiesGERG(T, D, x, P, Z, dPdD, d2PdD2, d2PdTD, dPdT, U, H, S, Cv, Cp, W, G, JT, Kappa, Optional A)
 
@@ -83,5 +83,11 @@ gamma = Cp./Cv;
 %   end
 %   W = sqrt(W);
 %   Kappa = W .^ 2 .* Mm ./ (RT .* 1000 .* Z);
+
+if max(abs(1e3 * (P1-P))>1e-3)
+    %This is intended to check the convergence of the EoS properties
+	fprintf('WARNING EoS GREG: Pressure difference is > 1.e-3')
+end
+
 end
 

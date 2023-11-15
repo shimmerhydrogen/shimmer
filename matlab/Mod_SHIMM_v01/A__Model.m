@@ -263,14 +263,7 @@ gerg_ni = UtilitiesGERG(x_ni, dimn );
 % (compressibility factor) and the density related to the
 % pressure given (in this case the nodal pressure)
 % NB the pressure should be given in kPa
-[Pcheck, Zm, Den] = PropertiesGERG(iFlag, p_0(:,1)/1e3, Tn, x_ni, dimn, gerg_ni);
-dPcheck = (Pcheck*1e3 - p_0(:,1));
-if max(abs(dPcheck)>1e-3)
-    %Pcheck is a way to check that the covergence for the
-    %calculation of the properties from EoS has been reached.
-    %if not: a warning is given
-    fprintf('Warning:  Equation of State did not converge')
-end
+[Zm, Den] = PropertiesGERG(iFlag, p_0(:,1)/1e3, Tn, x_ni, dimn, gerg_ni);
 
 %NB: this section can be simplified by choosing another (and
 %simpler Equation of State or can be generalized implementing
@@ -292,11 +285,8 @@ rho_n(:,1) = Den.*MM'; % [kg/m3] actual density of the gas (node based)
 iFlag = 0;
 p_is = p_std*ones(size(p_0(:,ii)))/1e3;
 T_is = T_std*ones(size(Tn));
-[Pcheck, Zm0(:,1), Den1] = PropertiesGERG(iFlag, p_is, T_is, x_ni, dimn, gerg_ni);
-dPcheck = 1e3 * (Pcheck - p_is);
-if max(abs(dPcheck)>1e-3)
-    fprintf('warning')
-end
+[Zm0(:,1), Den1] = PropertiesGERG(iFlag, p_is, T_is, x_ni, dimn, gerg_ni);
+
 
 ZZN(:,1) = ZZn;
 RHO_S(:,1)= rho_n(:,1).*(p_std./p_0(:,1)).*(Tn./T_std).*(ZZN(:,1)./Zm0(:,1));
@@ -312,11 +302,7 @@ WI(:,1)  = HHV(:,1)./sqrt(RD(:,1));
 iFlag = 0;
 x_bi = Aplus'*reshape(CC_gas(:,:,1), dimn, 21);
 gerg_bi = UtilitiesGERG(x_bi, dimb);
-[Pcheck, Zm, Den]  = PropertiesGERG(iFlag, pm(:,1)/1e3, Tb, x_bi, dimb, gerg_bi);
-dPcheck = Pcheck*1e3-pm(:,1);
-if max(abs(dPcheck)>1e-3)
-    fprintf('warning')
-end
+[Zm, Den]  = PropertiesGERG(iFlag, pm(:,1)/1e3, Tb, x_bi, dimb, gerg_bi);
 
 ZZb = Zm;			 % [-] compressibility factor (node based)% [-] compressibility factor (pipe based)
 RRb = Aplus'*RR;     % [%J/kg/K]  gas constant (pipe based)-the nodal value of the outlet node has been trasferred to the previous pipe
@@ -416,11 +402,7 @@ for ii = 2:dimt
 			pm(:,k) = (2.0/3.0) * averagePressure(p_in_k, p_out_k);
 
 			%update of all the PIPELINE BASED properties with Equation of State
-            [Pcheck, Zm, Den] = PropertiesGERG(iFlag, pm(:,k)/1e3, Tb, x_n, dimb, gerg_b); %WK: why x_n instead of x_b?
-            dPcheck = (Pcheck*1e3 - pm(:,k));
-            if max(abs(dPcheck))>1e-3
-                fprintf('warning')
-            end
+            [Zm, Den] = PropertiesGERG(iFlag, pm(:,k)/1e3, Tb, x_n, dimb, gerg_b); %WK: why x_n instead of x_b?
 
 			ZZb  = Zm;
 			cc2b = ZZb.*RRb.*Tb;
@@ -444,11 +426,7 @@ for ii = 2:dimt
 
 			%% CONTINUITY EQUATION: each node CV - dimn
 			%update of all the NODE BASED properties with Equation of State
-            [Pcheck, Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_n, dimn, gerg_n);
-            dPcheck = (Pcheck*1e3-p_k(:,k));
-            if max(abs(dPcheck)>1e-3)
-                fprintf('warning')
-            end
+            [Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_n, dimn, gerg_n);
 
 			ZZn  = Zm;
 			cc2n = ZZn.*RR.*Tn;
@@ -491,7 +469,7 @@ for ii = 2:dimt
 			% KNOWN TERM
 			% TN_P=PHI*p_n-II./2*L_0(:,ii-1);
 			TN_P = PHI*p_n;
-			TN_M_k = (-Rf.*abs(G_k(:,k)).*G_k(:,k) -Ri.*G_n);
+			TN_M_k = (-Rf.*abs(G_k(:,k)).*G_k(:,k) - Ri.*G_n);
 			% TN_M_k(NP)=P_in(out_np);%(p_in_t(ii)-p_0(54,ii-1));%-G_0(54,ii-1);
 			% TN_M_k(NP)=D;
 			TN_L=G_ext_t(:,ii);
@@ -532,11 +510,7 @@ for ii = 2:dimt
 		    % average pressure update
 		    pm(:,ii) = (2.0/3.0)*averagePressure(Aplus'*p_k(:,k), Aminus'*p_k(:,k));
 		    % update of all the PIPELINE BASED properties with Equation of State
-			[Pcheck, Zm, Den] = PropertiesGERG(iFlag, pm(:,ii)/1e3, Tb, x_b, dimb, gerg_b);
-			dPcheck = (Pcheck*1e3-pm(:,ii));
-			if max(abs(dPcheck)>1e-3)
-				fprintf('warning')
-			end
+			[Zm, Den] = PropertiesGERG(iFlag, pm(:,ii)/1e3, Tb, x_b, dimb, gerg_b);
 
 			ZZb  = Zm;
 			cc2b = ZZb.*RRb.*Tb;
@@ -562,11 +536,7 @@ for ii = 2:dimt
 
 			% CONTINUITY EQUATION
 			% update of all the NODE BASED properties with Equation of State
-            [Pcheck, Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_n, dimn, gerg_n);
-            dPcheck = (Pcheck*1e3-p_k(:,k));
-            if max(abs(dPcheck)>1e-3)
-                fprintf('warning')
-            end
+            [Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_n, dimn, gerg_n);
 
 			ZZn = Zm;
 			cc2n = ZZn.*RR.*Tn;
@@ -656,40 +626,29 @@ for ii = 2:dimt
 	MolMass(:,ii) = MM;
 
 	CC_gas(:,:,ii)=CC_gas_k(:,:,k2);%MASS2MOL_CONV3(CC_gasM(:,:,ii),MM)./100;
-	MHV(:,ii)=MASS_HV(reshape(CC_gasM(:,:,ii),[dimn 21])/100)';
+	MHV(:,ii) = MASS_HV(reshape(CC_gasM(:,:,ii),[dimn 21])/100)';
 
-    iFlag=0;
+    iFlag = 0;
 	gerg_nn = UtilitiesGERG(x_n, dimn);
-	[Pcheck, Zm, Den, gamma]=PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_n,dimn,gerg_nn);
-	dPcheck=(Pcheck*1e3-p_k(:,k));
-	if max(abs(dPcheck)>1e-3)
-		fprintf('warning')
-		WARN=[WARN,ii];
-	end
-
+	[Zm, Den, gamma]=PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_n,dimn,gerg_nn);
 
 	ZZn  = Zm;
 	cc2n = ZZn.*RR.*Tn;
 	rho_n(:,ii) = Den.*MM';
+	[Zm0(:,ii), Den1] = PropertiesGERG(iFlag, p_std*ones(size(p_0(:,ii)))/1e3, T_std*ones(size(Tn)), x_n,dimn, gerg_nn);
 
-	[Pcheck, Zm0(:,ii), Den1] = PropertiesGERG(iFlag, p_std*ones(size(p_0(:,ii)))/1e3, T_std*ones(size(Tn)), x_n,dimn,gerg_nn);
-    dPcheck = (Pcheck*1e3-p_std*ones(size(p_0(:,ii))));
-    if max(abs(dPcheck)>1e-3)
-        fprintf('warning')
-    end
-
-	ZZN(:,ii)=ZZn;
+	ZZN(:,ii)  = ZZn;
 	RHO_S(:,ii)= rho_n(:,ii).*(p_std./p_0(:,ii)).*(Tn./T_std).*(ZZN(:,ii)./Zm0(:,ii));%[kg/Sm3]
-	RD(:,ii)=RHO_S(:,ii)./rho_air_std;
-	HHV(:,ii)=MHV(:,ii).*RHO_S(:,ii);%[MJ/Sm3]
-	WI(:,ii)=HHV(:,ii)./sqrt(RD(:,ii));
+	RD(:,ii)  = RHO_S(:,ii)./rho_air_std;
+	HHV(:,ii) = MHV(:,ii).*RHO_S(:,ii);%[MJ/Sm3]
+	WI(:,ii)  = HHV(:,ii)./sqrt(RD(:,ii));
 
-	CONC_H2(:,ii)=CC_gas(:,15,ii);
+	CONC_H2(:,ii) = CC_gas(:,15,ii);
 end
 
-N_Courandt_ADV=vel(:,end).*dt./dx
-N_Courandt_FLU=(sqrt(cc2b)).*dt./dx
-time=cputime-time0
+N_Courandt_ADV = vel(:,end).*dt./dx
+N_Courandt_FLU = (sqrt(cc2b)).*dt./dx
+time = cputime - time0
 
 save('Trial2023_3.mat')
 

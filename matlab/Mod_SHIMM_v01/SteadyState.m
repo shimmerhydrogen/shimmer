@@ -34,25 +34,25 @@ function [p_0 G_0] = SteadyState(A, Aplus, Aminus, P_in, Tb, G_ext_t, AA, DD, dx
 
 		iter_max = iter_max + 1; %fluid-dynamic iteration counter
 
-		%% MOMENTUM EQUATION: each branch section CV - dimb
+		x_1= reshape(CC_gas_k(:,:,1),dimn,21);
+		x_k2 = reshape(CC_gas_k(:,:,k2),dimn,21) ;
 
-		% average pressure update
+		%% A. MOMENTUM EQUATION: each branch section CV - dimb
+
+		% A.1. UPDATE VARIABLES
+
 		% KCommit: Eq pag 28 pm = (p_in^2 + p_in*p_out + p_out^2) /(p_in+p_out)
-		pm(:,k)= 2/3*(Aplus'*p_k(:,k).^2+Aminus'*p_k(:,k).^2 ...
-						+(Aplus'*p_k(:,k)).*(Aminus'*p_k(:,k)))./...
-						 ((Aplus'*p_k(:,k))+(Aminus'*p_k(:,k)));
+		p_k_in  =  Aplus' * p_k(:,k);
+		p_k_out =  Aminus'* p_k(:,k);
+		pm(:,k) = (2.0/3.0)*averagePressure(p_k_in, p_k_out);
 
 		% update of all the PIPELINE BASED properties with Equation of State
 		iFlag = 0;
-		x_bi = Aplus' * reshape(CC_gas_k(:,:,1),dimn,21);
+		x_b = Aplus' * x_1;
 		gerg_b = UtilitiesGREG(x_b, dimb);
-		[Pcheck, Zm, Den] = PropertiesGERG(iFlag, pm(:,k)/1e3, Tb, Aplus'*reshape(CC_gas_k(:,:,k2),dimn,21),dimb,gerg_b);
-		dPcheck = (Pcheck*1e3-pm(:,k));
-
-		if max(abs(dPcheck))>1e-3
-			fprintf('warning')
-		end
-
+		[Zm, Den] = PropertiesGERG(iFlag, pm(:,k)/1e3, Tb, Aplus'*x_k2, dimb,gerg_b); %WK why not x_b? instead of  Aplus'*x_k2
+		%-----------------------------------------------------------------------
+		% A.2  ADP Computation
 		RRb = Aplus'*RR;
 		ZZb = Zm;
 		cc2b = ZZb.*RRb.*Tb;
@@ -64,24 +64,21 @@ function [p_0 G_0] = SteadyState(A, Aplus, Aminus, P_in, Tb, G_ext_t, AA, DD, dx
 		Aminus_s  = Aminus.*repmat(exp(s),1,dimn)';
 		Aminus_s1 = Aminus.*repmat(exp(s/2),1,dimn)';
 		ADP = (-Aminus_s1+Aplus)';			% KCommit:  Ag't pag 27-28
-
+		%-----------------------------------------------------------------------
+		% A.3. COMPUTATION OF Rf/ Ri (Ri = 0 due to steady state assumption)
 		Ri = zeros(dimb,1);                 % Inertia Resistance - initialization
 		% Ri=2*dxe.*pm(:,k)./(AA*dt)./(abs(ADP)*p_k(:,k)); % Inertia Resistance
 
-		[lambda Re viscosity] = friction(Tb,epsi,G_k(:,k),DD,Aplus'*reshape(CC_gas_k(:,:,k2),dimn,21));
+		[lambda Re viscosity] = friction(Tb,epsi,G_k(:,k),DD,Aplus'*x_k2);
 		Rf = 16.*lambda.*cc2b.*dxe./(DD.^5.*pi.^2)./(abs(ADP)*p_k(:,k)); % Fluid-dynamic Resistance
 		rr_k = (2*Rf.*(abs(G_k(:,k)))+Ri); % composite resistance linearized problem (R)
 		R_k  = sparse(diag(rr_k));         % transformed into sparse diagonal matrix
-
-		%% CONTINUITY EQUATION: each node CV - dimn
-		% update of all the NODE BASED properties with Equation of State
-		x = reshape(CC_gas_k(:,:,1),dimn,21);
+		%-----------------------------------------------------------------------
+		%-----------------------------------------------------------------------
+		%% B. CONTINUITY EQUATION: each node CV - dimn
+		% B.1 update of all the NODE BASED properties with Equation of State
 		gerg = UtilitiesGREG(x, dimn);
-		[Pcheck, Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, reshape(CC_gas_k(:,:,k2),dimn,21),dimn, gerg);
-		dPcheck = Pcheck*1e3 - p_k(:,k);
-		if max(abs(dPcheck)>1e-3)
-			fprintf('warning')
-		end
+		[Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_k2, dimn, gerg);  %WK why not x? instead of  x_k2? ...check what x is
 
 		ZZn = Zm;
 		cc2n = ZZn.*RR.*Tn;					%KCommit: Sound speed squared
@@ -161,16 +158,14 @@ function [p_0 G_0] = SteadyState(A, Aplus, Aminus, P_in, Tb, G_ext_t, AA, DD, dx
 
 		%% update of all the quantities and residual calculation
 		% MOMENTUM EQUATION
+		%---------------------------------------------------------------------------
+		% 1. Find ADP
 		% average pressure update
-		pm(:,ii) = 2/3*(Aplus'*p_k(:,k).^2+Aminus'*p_k(:,k).^2 ...
-							+(Aplus'*p_k(:,k)).*(Aminus'*p_k(:,k)))./...
-								((Aplus'*p_k(:,k))+(Aminus'*p_k(:,k)));
+		p_in  =  Aplus' * p_k(:,k);
+		p_out =  Aminus'* p_k(:,k);
+		pm(:,ii) = (2.0/3.0)*averagePressure(p_in, p_out);
 		% update of all the PIPELINE BASED properties with Equation of State
-		[Pcheck, Zm, Den] = PropertiesGERG(iFlag, pm(:,ii)/1e3, Tb, Aplus'*reshape(CC_gas_k(:,:,k2),dimn,21),dimb, gerg_b);
-		dPcheck = (Pcheck*1e3-pm(:,ii));
-		if max(abs(dPcheck)>1e-3)
-			fprintf('warning')
-		end
+		[Zm, Den] = PropertiesGERG(iFlag, pm(:,ii)/1e3, Tb, Aplus'*x_k2,dimb, gerg_b);
 
 		ZZb = Zm;
 		cc2b = ZZb.*RRb.*Tb;
@@ -182,25 +177,24 @@ function [p_0 G_0] = SteadyState(A, Aplus, Aminus, P_in, Tb, G_ext_t, AA, DD, dx
 		Aminus_s  = Aminus.*repmat(exp(s),1,dimn)';
 		Aminus_s1 = Aminus.*repmat(exp(s/2),1,dimn)';
 		ADP = (-Aminus_s1+Aplus)';
-
+		%---------------------------------------------------------------------------
+		% 2. COMPUTATION OF Rf/ Ri (Ri = 0 due to steady state assumption)
 		Ri = zeros(dimb,1);
 		% Ri =2*dxe.*pm(:,ii)./(AA*dt)./(abs(ADP)*p_k(:,k));
 
-		[lambda Re viscosity] = friction(Tb,epsi,G_k(:,k),DD,Aplus'*reshape(CC_gas_k(:,:,k2),dimn,21));
+		[lambda Re viscosity] = friction(Tb,epsi,G_k(:,k),DD,Aplus'*x_k2);
 		Rf = 16.*lambda.*cc2b.*dxe./(DD.^5.*pi.^2)./(abs(ADP)*p_k(:,k));
 		rr_k = (2*Rf.*(abs(G_k(:,k)))+Ri);
 		R_k  = sparse(diag(rr_k));
 
+		%---------------------------------------------------------------------------
+		% 3. RESIDUAL
 		RES_P(k) = norm(ADP(:,:)*p_k(:,k) - (Rf(:).*(abs(G_k(:,k)).*G_k(:,k))+Ri(:).*(G_k(:,k)-G_n(:))));
 		% norm(ADP(PIPE,:)*p_k(:,k) - (Rf(PIPE).*(abs(G_k(PIPE,k)).*G_k(PIPE,k))+Ri(PIPE).*(G_k(PIPE,k)-G_n(PIPE))));
 
 		% CONTINUITY EQUATION
 		% update of all the NODE BASED properties with Equation of State
-		[Pcheck, Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, reshape(CC_gas_k(:,:,k2),dimn,21),dimn,gerg);
-		dPcheck = (Pcheck*1e3-p_k(:,k));
-		if max(abs(dPcheck)>1e-3)
-			fprintf('warning')
-		end
+		[Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_k2, dimn,gerg);
 
 		ZZn = Zm;
 		cc2n = ZZn.*RR.*Tn;

@@ -7,7 +7,7 @@ A__GRID_CREATOR
 toll = 1e-4;  %tolerance on Residue calculation of linearized fluid-dynamic problem
 % load('DATA_INPUT_Trial2023.mat')
 
-Gas_Prof0=xlsread('INPUT_Pambour1.xlsx','Profili_M2','C3:RO5')';
+Gas_Prof0 = xlsread('INPUT_Pambour1.xlsx','Profili_M2','C3:RO5')';
 
 TIME = length(Gas_Prof0(:,1))*180-1;
 dt = 180; %s
@@ -239,10 +239,9 @@ k = 1;        % linearization loop counter
 
 %initialization of the linearization loop (k-referred)
 p_k(:,k) = p_0(:,ii);
-Pin  = Aplus' *p_k(:,k);
-Pout = Aminus'*p_k(:,k);
-pm(:,1) = (2.0/3.0) * averagePressure(Pin, Pout);
-MM = MolarMassGERG1(reshape(CC_gas(:,:,1),dimn,21)*100);%kg/kmol
+pm(:,1) = (2.0/3.0) * averagePressure(Aplus' *p_k(:,k), Aminus'*p_k(:,k));
+x_ni = reshape(CC_gas(:,:,1),dimn,21);
+MM = MolarMassGERG1(x_ni*100);%kg/kmol
 RR = UGC./MM'; %J/kg/K
 MolMass(:,1) = MM;
 
@@ -253,7 +252,6 @@ MolMass(:,1) = MM;
 %NODAL BASED CALCULATION
 iFlag = 0;
 %[Den, ierr, herr] = DensityGERG(iFlag, Tn, p_0(:,1)/1e3,reshape(CC_gas(:,:,1),dimn,21)); not of use
-x_ni = reshape(CC_gas(:,:,1),dimn,21);
 gerg_ni = UtilitiesGERG(x_ni, dimn );
 
 % Equation of State: it gives us the value of Zm
@@ -351,7 +349,7 @@ for ii = 2:dimt
 		gerg_n = UtilitiesGERG(x_n, dimn);
 
 		mass_frac = reshape(CC_gasM_k(:,:,k2), dimn, nComponents);
-		MM  = MolarMassGERG2(mass_frac);%kg/kmol %% mappa concentrazioni di tutti i nodi all'istante iniziale
+		MM  = MolarMassGERG2(mass_frac); %kg/kmol %% mappa concentrazioni di tutti i nodi all'istante iniziale
 		RR  = UGC./MM';
 		RRb = Aplus'*RR;
 
@@ -407,12 +405,14 @@ for ii = 2:dimt
 	CC_gasM(:,:,ii)     = CC_gasM_k(:,:,k2);     %( tra 0-100)
 	CC_gasM_ext(:,:,ii) = CC_gasM_ext_k(:,:,k2); %( tra 0-100)
 
-	MM = MolarMassGERG2(reshape(CC_gasM(:,:,ii),dimn,nComponents));%kg/kmol %% mappa concentrazioni di tutti i nodi all'istante iniziale
+	x_iiComp = reshape(CC_gasM(:,:,ii),dimn,nComponents);
+	MM = MolarMassGERG2(x_iiComp);%kg/kmol %% mappa concentrazioni di tutti i nodi all'istante iniziale
 	RR = UGC./MM';
 	MolMass(:,ii) = MM;
 
-	CC_gas(:,:,ii)=CC_gas_k(:,:,k2);%MASS2MOL_CONV3(CC_gasM(:,:,ii),MM)./100;
-	MHV(:,ii) = MASS_HV(reshape(CC_gasM(:,:,ii),[dimn 21])/100)';
+	CC_gas(:,:,ii) = CC_gas_k(:,:,k2);%MASS2MOL_CONV3(CC_gasM(:,:,ii),MM)./100;
+	x_ii21 = reshape(CC_gasM(:,:,ii),[dimn 21]);
+	MHV(:,ii) = MASS_HV(x_ii21/100)';
 
     iFlag = 0;
 	gerg_nn = UtilitiesGERG(x_n, dimn);

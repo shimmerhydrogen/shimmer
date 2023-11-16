@@ -9,27 +9,26 @@ toll = 1e-4;  %tolerance on Residue calculation of linearized fluid-dynamic prob
 
 Gas_Prof0=xlsread('INPUT_Pambour1.xlsx','Profili_M2','C3:RO5')';
 
+TIME = length(Gas_Prof0(:,1))*180-1;
+dt = 180; %s
+tt = [0:dt:TIME];
+dimt = length(tt);
 
-TIME=length(Gas_Prof0(:,1))*180-1;
-dt=180; %s
-tt=[0:dt:TIME];
-dimt=length(tt);
-
-%this command for possible interpolation
+%This command for possible interpolation
 %Gas_Prof(:,1)=interp1([0:3600:TIME],Gas_Prof0(:,1),tt)';
-Gas_Prof=Gas_Prof0;
+Gas_Prof = Gas_Prof0;
 
-time0=cputime;
+time0 = cputime;
 
-A  = Asp;
-LL = INPUT_b(:,4);            %m  %length of the pipelines
-dx = LL;
-dxe = dx;                         % vectoor size: #pipelines
-HH =INPUT_n(:,2);             %m  % altitude of each node - size: #node
-delH = -A'*HH;                %m  % h_out-h_in / delta height %m - size: #pipeline
-DD = INPUT_b(:,5);            %m  % Diameters of the pipelines
-epsi = INPUT_b(:,6);          %m  % absolute roughness
-AA = pi.*DD.^2/4;             %m2 % pipeline cross section
+A   = Asp;
+LL  = INPUT_b(:,4);           %m  %length of the pipelines
+dx  = LL;
+dxe = dx;                     % vector size: #pipelines
+HH  = INPUT_n(:,2);           %m  % altitude of each node - size: #node
+delH= -A'*HH;                 %m  % h_out-h_in / delta height %m - size: #pipeline
+DD  = INPUT_b(:,5);           %m  % Diameters of the pipelines
+epsi= INPUT_b(:,6);           %m  % absolute roughness
+AA  = pi.*DD.^2/4;            %m2 % pipeline cross section
 
 eta = 1e-5;                   %kg/m/s % dynamic viscosity
 RD1 = 0.6;                    %[-]    % Relative Density
@@ -361,138 +360,27 @@ for ii = 2:dimt
 		MHV_ext(find(isnan(MHV_ext(:,k2))),k2) = 1;
 		G_ext_t(:,ii) = H_ext_t(:,ii)./(MHV_ext(:,k2)*1e3);
 
-		iter_max = 1;
-
 		%% LINEARIZED FLUID-DYNAMIC PROBLEM CYCLE
 		%for any timestep, a solution for the linearized problem should be found.
-		while res>toll && iter_max<500
+		[rho(:,ii), vel(:,ii), pm, p_k, p_kf, G_k, G_kf, L_k, ResiduiS, res] = ...
+									SIMPLE(toll, k, k2, ii, iFlag, ...
+									A, AA, Aplus, Aminus, ...
+									p_k, p_n, p_in_t(ii), G_k, G_n, G_ext_t(:,ii),...
+									x_n, x_b, gerg_b, gerg_n, RRb, Tb, Tn, MM, RR,...
+									dimb, dimn, dxe, dx, dt, delH, ...
+									epsi, DD, PIPE, res, false);
+		Residui(ii).Fluid = ResiduiS.Fluid;
 
-			%Underrelaxation coefficients to help the convergence
-			alfa_G = 0;
-			alfa_P = 0;
-			iter_max = iter_max+1; %fluid-dynamic iteration counter
-
-
-			%-------------------------------------------------------------------
-			%-------------------------------------------------------------------
-			%% 			A. MOMENTUM EQUATION: each branch section CV - dimb
-			%-------------------------------------------------------------------
-			% A.1 UPDATE:PIPELINE-BASED properties with Equation of State
-			p_in_k  = Aplus' * p_k(:,k);
-			p_out_k = Aminus'* p_k(:,k);
-			pm(:,k) = (2.0/3.0) * averagePressure(p_in_k, p_out_k);
-            [Zm, Den] = PropertiesGERG(iFlag, pm(:,k)/1e3, Tb, x_n, dimb, gerg_b); %WK: why x_n instead of x_b?
-			cc2b = speedSound(Zm,RRb, Tb);
-			rho(:,ii)  = Den.*(Aplus'*MM');       % [kg/m3] actual density of the gas (pipeline based)
-			vel(:,ii)  = G_k(:,k)./AA./rho(:,ii); % [m/s] velocity of the gas within pipes.
-
-			%-------------------------------------------------------------------
-			ADP = matrixADP(Aminus, Aplus, cc2b, delH, dimn);
-			Omega = Resistance(dxe, dt, pm(:,k), p_k(:,k),G_k(:,k), AA, ADP, x_b, Tb, epsi, DD, cc2b);
-
-			%-------------------------------------------------------------------
-			%-------------------------------------------------------------------
-			%% 			B. CONTINUITY EQUATION: each node CV - dimn
-			%-------------------------------------------------------------------
-			% B.1 UPDATE: NODE-BASED properties with Equation of State
-            [Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_n, dimn, gerg_n);
-			cc2n = speedSound(Zm,RR, Tn);
-			%-------------------------------------------------------------------
-			[PHI, II] = matrixPHI(dx, dt, cc2n, A, DD);
-
-			%-------------------------------------------------------------------
-			%-------------------------------------------------------------------
-			%% 			C. FLUID-DYNAMICS MATRIX PROBLEM:
-			%-------------------------------------------------------------------
-			[p_k(:,k+1), G_k(:,k+1), L_k(:,k+1)] = matrix_system(dimn, dimb, ...
-										A, ADP, Omega, II, PHI, vel(1, ii),...
-										p_n, p_in_t(ii), G_k(:,k), G_n, G_ext_t(:,ii));
-			%-------------------------------------------------------------------
-
-			%check! to avoid infinite resistances, if a pipe has 0 as mass flow it
-			%is apporximated to 10^8
-			if any(G_k(PIPE,k+1)==0)==1
-				G_k(find(G_k(PIPE,k+1)==0),k+1)=1e-8;
-			end
-
-			%--kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
-			k = k+1; %linearization index update
-			%--kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
-
-			%% update of all the quantities and residual calculation
-			%-------------------------------------------------------------------
-			%-------------------------------------------------------------------
-		    % 						B. MOMENTUM EQUATION
-			%-------------------------------------------------------------------
-		    % UPDATE: PIPELINE-BASED properties with Equation of State
-		    pm(:,ii) = (2.0/3.0)*averagePressure(Aplus'*p_k(:,k), Aminus'*p_k(:,k));
-			[Zm, Den] = PropertiesGERG(iFlag, pm(:,ii)/1e3, Tb, x_b, dimb, gerg_b);
-			cc2b = speedSound(Zm, RRb, Tb);
-			%rho(:,ii)= pm(:,ii)./cc2b;
-			rho(:,ii) = Den.*(Aplus'*MM');
-			vel(:,ii) = G_k(:,k)./AA./rho(:,ii); %m/s
-			%-------------------------------------------------------------------
-			ADP = matrixADP(Aminus, Aplus, cc2b, delH, dimn);
-			Omega = Resistance(dxe, dt, pm(:,ii), p_k(:,k), G_k(:,k), AA, ADP, x_b, Tb, epsi, DD, cc2b)
-			%-------------------------------------------------------------------
-			%Residual
-			RES_P(k) = norm(ADP(:,:)*p_k(:,k)...
-					- (Omega.Rf(:).*(abs(G_k(:,k)).*G_k(:,k))...
-							+ Omega.Ri(:).*(G_k(:,k)-G_n(:))));
-			%  norm(ADP(PIPE,:)*p_k(:,k) - (Rf(PIPE).*(abs(G_k(PIPE,k)).*G_k(PIPE,k))+Ri(PIPE).*(G_k(PIPE,k)-G_n(PIPE))));
-
-			%-------------------------------------------------------------------
-			% 					CONTINUITY EQUATION
-			%-------------------------------------------------------------------
-			% UPDATE: NODE-BASED properties with Equation of State
-            [Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_n, dimn, gerg_n);
-			cc2n = speedSound(Zm, RR, Tn);
-			%-------------------------------------------------------------------
-			[PHI, II] = matrixPHI(dx, dt, cc2n, A, DD);
-			%-------------------------------------------------------------------
-			% Find Residuals
-			RES_M(k) = norm(PHI*p_k(:,k) + A*G_k(:,k) - PHI*p_n + II*L_k(:,k));
-
-			RES_C(k) = 0;
-
-			res = max([RES_P(k),RES_M(k),RES_C(k)])
-
-			Residui(ii).Fluid(k2).RES_P(k) = RES_P(k);
-			Residui(ii).Fluid(k2).RES_M(k) = RES_M(k);
-
-			%-------------------------------------------------------------------
-			% Update p* and G*
-			p_kf = p_k(:,k);
-			G_kf = G_k(:,k);
-			p_k(:,k) = alfa_P * p_k(:,k-1) + (1 - alfa_P) * p_k(:,k);
-			G_k(:,k) = alfa_G * G_k(:,k-1) + (1 - alfa_G) * G_k(:,k);
-			%-------------------------------------------------------------------
-			Res_P1(:,k) = ((p_k(:,k) - p_k(:,k-1))./p_k(:,k-1))*100;
-			Res_G1(:,k) = ((G_k(:,k) - G_k(:,k-1))./G_k(:,k-1))*100;
-		end
-
-		if iter_max>=500
-			disp('Warning: No Convergence FLUID')
-			NO_FL_CONV=[NO_FL_CONV,ii];
-			%break
-		end
-
+		% WK:  why p_kf and G_kf. Why we do not use p_k(:,k)
         p_0(:,ii) = p_kf;
         G_0(:,ii) = G_kf;
         L_0(:,ii) = L_k(:,k);
         LP(:,ii)  = dx.*pm(:,ii).*AA./cc2b; %kg
 
-		% figure
-		% plot(G_0)
-		% figure
-		% plot(p_0)
-
 		CC_gasM_k(:,:,k2+1) = CC_gasM_k(:,:,k2);
 		CC_gasM_ext_k(:,:,k2+1) = CC_gasM_ext_k(:,:,k2);
-
+		%WK: this line is always zero, since CC_gasM_k(:,:,k2+1) was asigned CC_gasM_k(:,:,k2). So what is the sense here?
 		E_conc = (CC_gasM_k(:,:,k2+1)-CC_gasM_k(:,:,k2))./(CC_gasM_k(:,:,k2))*100;
-		% E_conc(find(isnan(E_conc)))=zeros(size(find(isnan(E_conc))));
-		% E_conc(find(isinf(E_conc)))=zeros(size(find(isinf(E_conc))));
 
 		ERR_C(k2) = max(max(abs(E_conc)));
 		res3 = ERR_C(k2)/100
@@ -515,12 +403,6 @@ for ii = 2:dimt
 		NO_FL_CONC = [NO_FL_CONC,ii];
 		%break
 	end
-	%
-	% xx_old = xx_old_k;
-	%
-	% for xxx = 1:INPUT_b_inner(end,1)
-	% 	vel_b(xxx).ccb = vel_b_k(xxx).ccb;
-	% end
 
 	CC_gasM(:,:,ii)     = CC_gasM_k(:,:,k2);     %( tra 0-100)
 	CC_gasM_ext(:,:,ii) = CC_gasM_ext_k(:,:,k2); %( tra 0-100)
@@ -534,10 +416,8 @@ for ii = 2:dimt
 
     iFlag = 0;
 	gerg_nn = UtilitiesGERG(x_n, dimn);
-	[Zm, Den, gamma]=PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_n,dimn,gerg_nn);
-
-	ZZn  = Zm;
-	cc2n = ZZn.*RR.*Tn;
+	[Zm, Den, gamma] = PropertiesGERG(iFlag, p_k(:,k)/1e3, Tn, x_n,dimn,gerg_nn);
+	cc2n = speedSound(Zm,RR,Tn);
 	rho_n(:,ii) = Den.*MM';
 	[Zm0(:,ii), Den1] = PropertiesGERG(iFlag, p_std*ones(size(p_0(:,ii)))/1e3, T_std*ones(size(Tn)), x_n,dimn, gerg_nn);
 
@@ -556,4 +436,6 @@ time = cputime - time0
 
 save('Trial2023_3.mat')
 
-
+% WK
+% Difference between dxe and dx
+% pm is a vector with dimt(ii index) or linked to k?

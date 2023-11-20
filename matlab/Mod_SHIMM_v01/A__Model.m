@@ -251,18 +251,16 @@ MolMass(:,1) = MM;
 
 %NODAL BASED CALCULATION
 iFlag = 0;
-%[Den, ierr, herr] = DensityGERG(iFlag, Tn, p_0(:,1)/1e3,reshape(CC_gas(:,:,1),dimn,21)); not of use
 gerg_ni = UtilitiesGERG(x_ni, dimn );
 
-% Equation of State: it gives us the value of Zm
-% (compressibility factor) and the density related to the
-% pressure given (in this case the nodal pressure)
+% Equation of State: it gives us the value of Zm (compressibility factor) and
+% the density related to the pressure given (in this case the nodal pressure)
 % NB the pressure should be given in kPa
+% NB: this section can be simplified by choosing another (and
+% simpler Equation of State or can be generalized implementing
+% the choice among different equation of state
 [Zm, Den] = PropertiesGERG(iFlag, p_0(:,1)/1e3, Tn, x_ni, dimn, gerg_ni);
 
-%NB: this section can be simplified by choosing another (and
-%simpler Equation of State or can be generalized implementing
-%the choice among different equation of state
 
 
 ZZn  = Zm;            % [-] compressibility factor (node based)
@@ -277,11 +275,11 @@ rho_n(:,1) = Den.*MM'; % [kg/m3] actual density of the gas (node based)
 					% node or pipe recall of the EoS to calculate the nodal based
 					% quantities at STANDARD CONDITION of T and p so to be able
 					% to calculate the quantities listed few lines below
+
 iFlag = 0;
 p_is = p_std*ones(size(p_0(:,ii)))/1e3;
 T_is = T_std*ones(size(Tn));
 [Zm0(:,1), Den1] = PropertiesGERG(iFlag, p_is, T_is, x_ni, dimn, gerg_ni);
-
 
 ZZN(:,1) = ZZn;
 RHO_S(:,1)= rho_n(:,1).*(p_std./p_0(:,1)).*(Tn./T_std).*(ZZN(:,1)./Zm0(:,1));
@@ -386,14 +384,14 @@ for ii = 2:dimt
 		% Residui(ii).RES_C(1,k2)=RES_C(k2);
 		Residui(ii).RES_C(2,k2) = res3;
 		%
-		k2 = k2 + 1;
-		mass_frac = reshape(CC_gasM_k(:,:,k2),dimn,nComponents);
+		mass_frac = reshape(CC_gasM_k(:,:,k2+1),dimn,nComponents);
 		MM = MolarMassGERG2(mass_frac);%kg/kmol %% mappa concentrazioni di tutti i nodi all'istante iniziale
-		CC_gas_k(:,:,k2) = MASS2MOL_CONV3(CC_gasM_k(:,:,k2),MM)./100;
-		CC_gasM(:,:,ii)  = CC_gasM_k(:,:,k2);
-		CC_gasM(:,:,ii)  = CC_gasM_k(:,:,k2);
+		CC_gas_k(:,:,k2+1) = MASS2MOL_CONV3(CC_gasM_k(:,:,k2+1),MM)./100;
+		CC_gasM(:,:,ii)  = CC_gasM_k(:,:,k2+1);
+		CC_gasM(:,:,ii)  = CC_gasM_k(:,:,k2+1);
 		RR = UGC./MM';
 
+		k2 = k2 + 1;
 	end
 
 	if iter_max2>=500

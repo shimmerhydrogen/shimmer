@@ -19,7 +19,7 @@ function  [rho, vel, pm,  p_k, p_kf, G_k, G_kf, L_k, Residui, res] = SIMPLE(tol,
 								p_k(:,k),  G_k(:,k), ...
 								x_n, x_b, gerg_b, gerg_n, RR, Tb, Tn, MM, ...
 								dimb, dimn, dxe, dx, dt, delH, ...
-								epsi, DD, steady)
+								epsi, DD, steady);
 
 		%-------------------------------------------------------------------
 		[p_k(:,k+1), G_k(:,k+1), L_k(:,k+1)] = matrix_system(dimn, dimb, ...
@@ -32,12 +32,11 @@ function  [rho, vel, pm,  p_k, p_kf, G_k, G_kf, L_k, Residui, res] = SIMPLE(tol,
 			G_k(find(G_k(PIPE,k+1)==0),k+1)=1e-8;
 		end
 		%-------------------------------------------------------------------
-		k = k+1; %linearization index update
 		%% update of all the quantities and residual calculation
 		%-------------------------------------------------------------------
 		[ADP, Omega, PHI, II, pm(:,ii), rho, vel] = conservation(iFlag,...
 								A, AA, Aplus, Aminus, ...
-								p_k(:,k),  G_k(:,k), ...
+								p_k(:,k+1),  G_k(:,k+1), ...
 								x_n, x_b, gerg_b, gerg_n, RR, Tb, Tn, MM, ...
 								dimb, dimn, dxe, dx, dt, delH, ...
 								epsi, DD, steady)
@@ -46,27 +45,30 @@ function  [rho, vel, pm,  p_k, p_kf, G_k, G_kf, L_k, Residui, res] = SIMPLE(tol,
 		%-------------------------------------------------------------------
 		% 						Find Residuals
 		%-------------------------------------------------------------------
-		RES_P = norm(ADP(:,:)*p_k(:,k)...
-				- (Omega.Rf(:).*(abs(G_k(:,k)) .* G_k(:,k))...
-						+ Omega.Ri(:).*(G_k(:,k) - G_n(:))));
-		RES_M = norm(PHI*p_k(:,k) + A*G_k(:,k) - PHI*p_n + II*L_k(:,k));
+		RES_P = norm(ADP(:,:)* p_k(:,k+1)...
+				- (Omega.Rf(:).*(abs(G_k(:,k+1)) .* G_k(:,k+1))...
+						+ Omega.Ri(:).*(G_k(:,k+1) - G_n(:))));
+		RES_M = norm(PHI*p_k(:,k+1) + A*G_k(:,k+1) - PHI*p_n + II*L_k(:,k+1));
 		RES_C = 0;
 
 		res = max([RES_P,RES_M,RES_C])
 
-		Residui.Fluid(k2).RES_P(k) = RES_P;
-		Residui.Fluid(k2).RES_M(k) = RES_M;
+		Residui.Fluid(k2).RES_P(k+1) = RES_P;
+		Residui.Fluid(k2).RES_M(k+1) = RES_M;
 
 		%-------------------------------------------------------------------
 		% Update p* and G*
-		p_kf = p_k(:,k);
-		G_kf = G_k(:,k);
-		p_k(:,k) = alfa_P * p_k(:,k-1) + (1.0 - alfa_P) * p_k(:,k);
-		G_k(:,k) = alfa_G * G_k(:,k-1) + (1.0 - alfa_G) * G_k(:,k);
+		p_kf = p_k(:,k+1);
+		G_kf = G_k(:,k+1);
+		p_k(:,k+1) = alfa_P * p_k(:,k) + (1.0 - alfa_P) * p_k(:,k+1);
+		G_k(:,k+1) = alfa_G * G_k(:,k) + (1.0 - alfa_G) * G_k(:,k+1);
 		%-------------------------------------------------------------------
 		% WK: Res_P1/Res_G1 are not call anywhere else. Then I commented them
-		%Res_P1(:,k) = ((p_k(:,k) - p_k(:,k-1))./p_k(:,k-1))*100;
-		%Res_G1(:,k) = ((G_k(:,k) - G_k(:,k-1))./G_k(:,k-1))*100;
+		%Res_P1(:,k+1) = ((p_k(:,k+1) - p_k(:,k))./p_k(:,k))*100;
+		%Res_G1(:,k+1) = ((G_k(:,k+1) - G_k(:,k))./G_k(:,k))*100;
+
+		k = k + 1;
+
 	end
 
 	if iter_max>=500

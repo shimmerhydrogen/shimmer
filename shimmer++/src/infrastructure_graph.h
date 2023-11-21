@@ -18,6 +18,7 @@ struct vertex_properties {
     std::string     name;
     int             node_num;
     double          pressure;
+    double          mass_flow;
     double          height;
     std::vector<gas_descriptor> gas_mixture;
 };
@@ -37,6 +38,7 @@ struct edge_properties {
     int         to;
     double      length;
     double      diameter;
+    double      friction_factor;
     int         grid_pts;
 };
 

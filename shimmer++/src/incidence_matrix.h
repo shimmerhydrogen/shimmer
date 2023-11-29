@@ -10,26 +10,27 @@
 #include <Eigen/Sparse>
 #include "infrastructure_graph.h"
 
-using triplet_t = Eigen::Triplet<double>;
-using sparse_matrix_t = Eigen::SparseMatrix<double>; 
+template<typename T> 
+using sparse_matrix_t = Eigen::SparseMatrix<T>; 
 
-sparse_matrix_t
-incidence_matrix(const infrastructure_graph& g){
 
+template<typename T>
+sparse_matrix_t<T>
+incidence_matrix(const infrastructure_graph& g)
+{
+    using triplet_t = Eigen::Triplet<T>;
 
     std::vector<triplet_t> triplets;
     auto edge_range = edges(g);
     for(auto itor = edge_range.first; itor != edge_range.second;itor++ ){
-        auto pipe = g[*itor]; 
-        std::cout << pipe << std::endl;
-        triplets.push_back(triplet_t(pipe.from, pipe.branch_num, 1.0));
-        triplets.push_back(triplet_t(pipe.to,   pipe.branch_num, -1.0));
+        auto pipe = g[*itor];   
+        auto u = source(*itor, g);
+        auto v = target(*itor, g);
+        triplets.push_back(triplet_t(g[u].node_num, pipe.branch_num, T(1)));
+        triplets.push_back(triplet_t(g[v].node_num,   pipe.branch_num, T(-1)));
     }
 
-    std::cout << num_vertices(g) << std::endl;
-    std::cout << num_edges(g)    << std::endl;
-
-    sparse_matrix_t mat(num_vertices(g), num_edges(g));
+    sparse_matrix_t<T> mat(num_vertices(g), num_edges(g));
     mat.setFromTriplets(triplets.begin(), triplets.end());
     
     return mat;

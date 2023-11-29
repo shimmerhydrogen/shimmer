@@ -47,5 +47,5 @@ set(LINK_LIBS ${LINK_LIBS} Eigen3::Eigen)
 add_executable(shimmer src/main.cpp src/xlsx_io.cpp src/infrastructure_graph.cpp)
 target_link_libraries(shimmer ${LINK_LIBS})
 
-add_executable(test_incidence src/test_incidence_matrix.cpp)
+add_executable(test_incidence unit_tests/test_incidence_matrix.cpp)
 target_link_libraries(test_incidence ${LINK_LIBS})

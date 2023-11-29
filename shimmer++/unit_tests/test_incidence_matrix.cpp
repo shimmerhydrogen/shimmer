@@ -2,7 +2,8 @@
  *
  * Politecnico di Torino, Dipartimento di Matematica (DISMA)
  * 
- * The authors (C) 2023 
+ * Karol Cascavita (C) 2023
+ * karol.cascavita@polito.it  
  */
 
 #include <iostream>
@@ -54,32 +55,32 @@ make_init_infrastructure(infrastructure_graph& igraph)
 
     using eprop_t = edge_properties;
 
-    edge_properties ep0  = {edge_type::pipe, 0, 0, 1,  80, 0.6, 0.012};
-    edge_properties ep1  = {edge_type::pipe, 1, 1, 4,  90, 0.6, 0.012};
-    edge_properties ep2  = {edge_type::pipe, 2, 2, 4, 100, 0.6, 0.012};
-    edge_properties ep3  = {edge_type::pipe, 3, 1, 2, 110, 0.6, 0.012};
-    edge_properties ep4  = {edge_type::pipe, 4, 4, 5,  80, 0.6, 0.012};
-    edge_properties ep5  = {edge_type::pipe, 5, 2, 3,  80, 0.6, 0.012};
-    edge_properties ep6  = {edge_type::pipe, 6, 3, 6,  80, 0.6, 0.012};
-    edge_properties ep7  = {edge_type::pipe, 7, 5, 6,  80, 0.6, 0.012};
-    edge_properties ep8  = {edge_type::pipe, 8, 4, 7,  80, 0.6, 0.012};
-    edge_properties ep9  = {edge_type::pipe, 9, 3, 5,  80, 0.6, 0.012};
-    edge_properties ep10 = {edge_type::pipe,10, 5, 7,  80, 0.6, 0.012};
-    edge_properties ep11 = {edge_type::pipe,11, 4, 3,  80, 0.6, 0.012};
+    edge_properties ep0  = {edge_type::pipe, 0,   80, 0.6, 0.012};
+    edge_properties ep1  = {edge_type::pipe, 1,   90, 0.6, 0.012};
+    edge_properties ep2  = {edge_type::pipe, 2,  100, 0.6, 0.012};
+    edge_properties ep3  = {edge_type::pipe, 3,  110, 0.6, 0.012};
+    edge_properties ep4  = {edge_type::pipe, 4,   80, 0.6, 0.012};
+    edge_properties ep5  = {edge_type::pipe, 5,   80, 0.6, 0.012};
+    edge_properties ep6  = {edge_type::pipe, 6,   80, 0.6, 0.012};
+    edge_properties ep7  = {edge_type::pipe, 7,   80, 0.6, 0.012};
+    edge_properties ep8  = {edge_type::pipe, 8,   80, 0.6, 0.012};
+    edge_properties ep9  = {edge_type::pipe, 9,   80, 0.6, 0.012};
+    edge_properties ep10 = {edge_type::pipe,10,   80, 0.6, 0.012};
+    edge_properties ep11 = {edge_type::pipe,11,   80, 0.6, 0.012};
 
 
-    boost::add_edge( vds[ep0.from], vds[ep0.to], ep0, igraph);
-    boost::add_edge( vds[ep1.from], vds[ep1.to], ep1, igraph);
-    boost::add_edge( vds[ep2.from], vds[ep2.to], ep2, igraph);
-    boost::add_edge( vds[ep3.from], vds[ep3.to], ep3, igraph);
-    boost::add_edge( vds[ep4.from], vds[ep4.to], ep4, igraph);
-    boost::add_edge( vds[ep5.from], vds[ep5.to], ep5, igraph);
-    boost::add_edge( vds[ep6.from], vds[ep6.to], ep6, igraph);
-    boost::add_edge( vds[ep7.from], vds[ep7.to], ep7, igraph);
-    boost::add_edge( vds[ep8.from], vds[ep8.to], ep8, igraph);
-    boost::add_edge( vds[ep9.from], vds[ep9.to], ep9, igraph);
-    boost::add_edge( vds[ep10.from], vds[ep10.to], ep10, igraph);
-    boost::add_edge( vds[ep11.from], vds[ep11.to], ep11, igraph);
+    boost::add_edge( 0, 1, ep0, igraph);
+    boost::add_edge( 1, 4, ep1, igraph);
+    boost::add_edge( 2, 4, ep2, igraph);
+    boost::add_edge( 1, 2, ep3, igraph);
+    boost::add_edge( 4, 5, ep4, igraph);
+    boost::add_edge( 2, 3, ep5, igraph);
+    boost::add_edge( 3, 6, ep6, igraph);
+    boost::add_edge( 5, 6, ep7, igraph);
+    boost::add_edge( 4, 7, ep8, igraph);
+    boost::add_edge( 3, 5, ep9, igraph);
+    boost::add_edge( 5, 7, ep10, igraph);
+    boost::add_edge( 4, 3, ep11, igraph);
 
 
 }

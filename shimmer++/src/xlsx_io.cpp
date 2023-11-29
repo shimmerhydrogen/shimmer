@@ -57,8 +57,8 @@ edges_from_xlsx(const XLWorksheet& wks, std::vector<edge_properties>& eps)
     
         edge_properties ep;
         ep.branch_num   = row_values[EDGE_BRANCH];
-        ep.from         = row_values[EDGE_FROM];
-        ep.to           = row_values[EDGE_TO];
+        //ep.from         = row_values[EDGE_FROM];
+        //ep.to           = row_values[EDGE_TO];
         //if a cell contains a round number it gets interpreted as an integer
         //and the type conversion fails crashing the program.
         //ep.length       = row_values[EDGE_LENGTH];

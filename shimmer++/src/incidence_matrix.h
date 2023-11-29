@@ -2,7 +2,8 @@
  *
  * Politecnico di Torino, Dipartimento di Matematica (DISMA)
  * 
- * The authors (C) 2023 
+ * Karol Cascavita (C) 2023
+ * karol.cascavita@polito.it  
  */
 
 #pragma once
@@ -27,7 +28,7 @@ incidence_matrix(const infrastructure_graph& g)
         auto u = source(*itor, g);
         auto v = target(*itor, g);
         triplets.push_back(triplet_t(g[u].node_num, pipe.branch_num, T(1)));
-        triplets.push_back(triplet_t(g[v].node_num,   pipe.branch_num, T(-1)));
+        triplets.push_back(triplet_t(g[v].node_num, pipe.branch_num, T(-1)));
     }
 
     sparse_matrix_t<T> mat(num_vertices(g), num_edges(g));

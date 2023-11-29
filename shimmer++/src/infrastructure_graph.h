@@ -34,8 +34,6 @@ enum class edge_type {
 struct edge_properties {
     edge_type   type;
     int         branch_num;
-    int         from;
-    int         to;
     double      length;
     double      diameter;
     double      friction_factor;
@@ -48,9 +46,10 @@ struct edge_properties {
 
     friend std::ostream& operator<<(std::ostream& ofs, const edge_properties& ep) {
         ofs << " branch_num : " << ep.branch_num << "\n";
-        ofs << " from   : " << ep.from << "\n";
-        ofs << " to     : " << ep.to << "\n";
-        ofs << " length : " << ep.length << "\n";
+        ofs << " length     : " << ep.length << "\n";
+        ofs << " diameter   : " << ep.diameter << "\n";
+        ofs << " friction factor : " << ep.friction_factor << "\n";
+
         return ofs;
     }
 };

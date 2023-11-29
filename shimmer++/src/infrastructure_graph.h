@@ -40,7 +40,21 @@ struct edge_properties {
     double      diameter;
     double      friction_factor;
     int         grid_pts;
+
+    double area(void)
+    {
+        return M_PI * diameter * diameter * 0.25;
+    }
+
+    friend std::ostream& operator<<(std::ostream& ofs, const edge_properties& ep) {
+        ofs << " branch_num : " << ep.branch_num << "\n";
+        ofs << " from   : " << ep.from << "\n";
+        ofs << " to     : " << ep.to << "\n";
+        ofs << " length : " << ep.length << "\n";
+        return ofs;
+    }
 };
+
 
 using infrastructure_graph = boost::adjacency_list<boost::listS,
     boost::vecS, boost::directedS, vertex_properties, edge_properties>;

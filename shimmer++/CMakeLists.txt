@@ -36,7 +36,16 @@ set(BUILD_TESTING OFF CACHE BOOL "")
 set(SOL2_BUILD_LUA OFF CACHE BOOL "")
 add_subdirectory(deps/sol2)
 set(LINK_LIBS ${LINK_LIBS} sol2::sol2)
+######################################################################
+## Eigen3
+#add_subdirectory(contrib/eigen)
+find_package(Eigen3 REQUIRED)
+set(LINK_LIBS ${LINK_LIBS} Eigen3::Eigen)
+
+######################################################################
 
 add_executable(shimmer src/main.cpp src/xlsx_io.cpp src/infrastructure_graph.cpp)
 target_link_libraries(shimmer ${LINK_LIBS})
 
+add_executable(test_incidence src/test_incidence_matrix.cpp)
+target_link_libraries(test_incidence ${LINK_LIBS})

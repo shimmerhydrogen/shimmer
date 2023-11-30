@@ -49,3 +49,6 @@ target_link_libraries(shimmer ${LINK_LIBS})
 
 add_executable(test_incidence unit_tests/test_incidence_matrix.cpp)
 target_link_libraries(test_incidence ${LINK_LIBS})
+
+add_executable(test_geometry unit_tests/test_geometry.cpp)
+target_link_libraries(test_geometry ${LINK_LIBS})

@@ -14,8 +14,12 @@
 #include "../src/infrastructure_graph.h"
 #include "../src/incidence_matrix.h"
 
+using triple_t = std::array<int, 3>;
+
+
+template<typename GRAPH>
 static void
-make_init_infrastructure(infrastructure_graph& igraph)
+make_init_graph(GRAPH& igraph)
 {
 
 
@@ -41,7 +45,7 @@ make_init_infrastructure(infrastructure_graph& igraph)
           6 
     */
 
-    std::vector<vertex_descriptor> vds;
+    std::vector<typename GRAPH::vertex_descriptor> vds;
 
     vds.push_back( boost::add_vertex( { "station 0", 0, 5000., -60, 0. }, igraph) );
     vds.push_back( boost::add_vertex( { "station 1", 1, 0., 20 ,0. }, igraph) );
@@ -81,30 +85,15 @@ make_init_infrastructure(infrastructure_graph& igraph)
     boost::add_edge( 3, 5, ep9, igraph);
     boost::add_edge( 5, 7, ep10, igraph);
     boost::add_edge( 4, 3, ep11, igraph);
-
-
 }
 
-int main(int argc, char **argv)
+template<typename GRAPH>
+bool test(const std::array<triple_t, 24>& ref)
 {
-    using triple_t = std::array<int, 3>;
-    std::array<triple_t, 24> ref = {{{0,0,1},{1,0,-1},{1,1,1},{4,1,-1},{2,2,1},{4,2,-1},
-                                 {1,3,1},{2,3,-1},{4,4,1},{5,4,-1},{2,5,1},{3,5,-1},
-                                 {3,6,1},{6,6,-1},{5,7,1},{6,7,-1},{4,8,1},{7,8,-1},
-                                 {3,9,1},{5,9,-1},{5,10,1},{7,10,-1},{3,11,-1},{4,11,1}}};
-
-
-    infrastructure_graph igraph;
-    make_init_infrastructure(igraph);
+ 
+    GRAPH igraph;
+    make_init_graph(igraph);
     Eigen::SparseMatrix<int> mat = incidence_matrix<int>(igraph);
-
-    /*
-    std::cout << "Incidence matrix: \n"; 
-    for (int k=0; k<mat.outerSize(); ++k)
-        for (Eigen::SparseMatrix<int>::InnerIterator it(mat,k); it; ++it)
-            std::cout << "{"<< it.row() << ","<< it.col() <<"," << it.value()<< "},";
-    std::cout << std::endl; 
-    */
 
     bool pass = true;
     size_t count = 0;
@@ -120,14 +109,39 @@ int main(int argc, char **argv)
             }
         }
     }
+    return pass;
+}
 
+int main(int argc, char **argv)
+{
+    using triple_t = std::array<int, 3>;
+    std::array<triple_t, 24> ref = {{{0,0,1},{1,0,-1},{1,1,1},{4,1,-1},{2,2,1},{4,2,-1},
+                                 {1,3,1},{2,3,-1},{4,4,1},{5,4,-1},{2,5,1},{3,5,-1},
+                                 {3,6,1},{6,6,-1},{5,7,1},{6,7,-1},{4,8,1},{7,8,-1},
+                                 {3,9,1},{5,9,-1},{5,10,1},{7,10,-1},{3,11,-1},{4,11,1}}};
+
+
+    bool dpass = test<infrastructure_graph>(ref);
+    bool upass = test<undirected_graph>(ref);
+
+
+    /*
+    std::cout << "Incidence matrix: \n"; 
+    for (int k=0; k<mat.outerSize(); ++k)
+        for (Eigen::SparseMatrix<int>::InnerIterator it(mat,k); it; ++it)
+            std::cout << "{"<< it.row() << ","<< it.col() <<"," << it.value()<< "},";
+    std::cout << std::endl; 
+    */
+
+    
     auto passfail = [](bool ipass) {
         return ipass ? "[PASS]" : "[FAIL]";
     };
 
     std::cout << __FILE__ << std::endl;
-    std::cout << "  Test incidence matrix ......" <<  passfail(pass) << std::endl;
+    std::cout << "  Test incidence matrix directed........" <<  passfail(dpass) << std::endl;
+    std::cout << "  Test incidence matrix undirected......" <<  passfail(upass) << std::endl;
     
-    return pass; 
+    return !(dpass || upass); 
 }
 

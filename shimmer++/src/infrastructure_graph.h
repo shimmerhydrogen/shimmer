@@ -21,6 +21,8 @@ struct vertex_properties {
     double          mass_flow;
     double          height;
     std::vector<gas_descriptor> gas_mixture;
+
+   
 };
 
 enum class edge_type {
@@ -39,10 +41,7 @@ struct edge_properties {
     double      friction_factor;
     int         grid_pts;
 
-    double area(void)
-    {
-        return M_PI * diameter * diameter * 0.25;
-    }
+
 
     friend std::ostream& operator<<(std::ostream& ofs, const edge_properties& ep) {
         ofs << " branch_num : " << ep.branch_num << "\n";
@@ -54,6 +53,8 @@ struct edge_properties {
     }
 };
 
+using undirected_graph = boost::adjacency_list<boost::listS,
+    boost::vecS, boost::undirectedS, vertex_properties, edge_properties>;
 
 using infrastructure_graph = boost::adjacency_list<boost::listS,
     boost::vecS, boost::directedS, vertex_properties, edge_properties>;
@@ -76,3 +77,4 @@ struct edge_property_writer {
 };
 
 void write_graphviz(const std::string&, const infrastructure_graph&);
+

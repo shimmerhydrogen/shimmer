@@ -49,44 +49,45 @@ make_init_infrastructure(GRAPH& igraph)
     boost::add_edge( 3, 2, ep3, igraph);
 }
 
+
+template<typename GRAPH>
+bool test(const std::array<double, 4>& ref)
+{
+    GRAPH graph;
+    make_init_infrastructure(graph);
+
+    int i = 0;
+    bool pass = true;
+    auto v_range = vertices(graph);
+
+    for(auto itor = v_range.first; itor != v_range.second; itor++, i++)
+    {   
+        //std::cout  << volume(*itor, igraph) << std::endl;
+
+        if( std::abs(ref.at(i) - volume(*itor, graph)) > 1.e-12)
+            pass = false;
+    }
+
+    return pass; 
+}
+
+
 int main(int argc, char **argv)
 {
 
     std::array<double, 4> ref = {0.962112750161874, 1.350884841043611,
                                  0.443749962319558, 0.337721210260903} ; 
 
-    std::cout << "Directed graph: " << std::endl;
-
-    infrastructure_graph igraph;
-    make_init_infrastructure(igraph);
-
-    auto v_range = vertices(igraph);
-    for(auto itor = v_range.first; itor != v_range.second; itor++)
-    {   
-        std::cout  << volume(*itor, igraph) << std::endl;
-    }
-
-    std::cout << "Undirected graph: " << std::endl;
-    undirected_graph ugraph;
-    make_init_infrastructure(ugraph);
-
-    auto v_range_und = vertices(ugraph);
-    int i = 0;
-    bool pass = true;
-    for(auto itor = v_range_und.first; itor != v_range_und.second; itor++, i++)
-    {   
-        std::cout<< std::setprecision(16)<< volume(*itor, ugraph) << std::endl;
-
-        if( std::abs(ref.at(i) - volume(*itor, ugraph)) > 1.e-12)
-            pass = false;
-    }
+    bool dpass = test<infrastructure_graph>(ref);
+    bool upass = test<undirected_graph>(ref);
 
     auto passfail = [](bool ipass) {
         return ipass ? "[PASS]" : "[FAIL]";
     };
 
     std::cout << __FILE__ << std::endl;
-    std::cout << "  Test geometry ......" <<  passfail(pass) << std::endl;
+    std::cout << "  Test geometry directed........" <<  passfail(dpass) << std::endl;
+    std::cout << "  Test geometry undirected......" <<  passfail(upass) << std::endl;
     
-    return pass; 
+    return !(dpass || upass); 
 }

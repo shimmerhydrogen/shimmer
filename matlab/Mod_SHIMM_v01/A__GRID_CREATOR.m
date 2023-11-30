@@ -2,8 +2,8 @@ clear all
 clc
 close all
 %
-INPUT_PIPES = xlsread('INPUT_Pambour1.xlsx','PIPE');
-INPUT_NODES = xlsread('INPUT_Pambour1.xlsx','PIPE_N','B3:Z5');
+INPUT_b_inner = xlsread('INPUT_Pambour1.xlsx','PIPE');
+INPUT_n_inner = xlsread('INPUT_Pambour1.xlsx','PIPE_N','B3:Z5');
 
 % TIME=0.25*3600;%s
 TIME = 2*3600;
@@ -12,24 +12,24 @@ tt   = [0:dt:TIME];
 dimt = length(tt);
 
 
-Ainput_inner = INPUT_PIPES(:,1:3);% |--n Branch--|--NodeIN--|--NodeOUT--|
-LL_inner  = INPUT_PIPES(:,4)*1e3; %m
-DD_inner  = INPUT_PIPES(:,5); 	%m
-epsi_inner= INPUT_PIPES(:,6)*1e-3;%m
-COMP_inner= INPUT_PIPES(:,7);
-REG_inner = INPUT_PIPES(:,8);
-VAL_inner = INPUT_PIPES(:,9);
-RES_inner = INPUT_PIPES(:,10);
-nGridPoints = INPUT_PIPES(:,11);
+Ainput_inner = INPUT_b_inner(:,1:3);% |--n Branch--|--NodeIN--|--NodeOUT--|
+LL_inner  = INPUT_b_inner(:,4)*1e3; %m
+DD_inner  = INPUT_b_inner(:,5); 	%m
+epsi_inner= INPUT_b_inner(:,6)*1e-3;%m
+COMP_inner= INPUT_b_inner(:,7);
+REG_inner = INPUT_b_inner(:,8);
+VAL_inner = INPUT_b_inner(:,9);
+RES_inner = INPUT_b_inner(:,10);
+nGridPoints = INPUT_b_inner(:,11);
 
-HH_inner = INPUT_NODES(:,2);%m
+HH_inner = INPUT_n_inner(:,2);%m
 
-%  dimb0=size(INPUT_PIPES,1);
-%  dimn0=max(max(INPUT_PIPES(:,2:3)));
+%  dimb0=size(INPUT_b_inner,1);
+%  dimn0=max(max(INPUT_b_inner(:,2:3)));
 %
-% BR0 = INPUT_PIPES(:,1);
-% IN0 =  INPUT_PIPES(:,2);
-% OUT0 = INPUT_PIPES(:,3);
+% BR0 = INPUT_b_inner(:,1);
+% IN0 =  INPUT_b_inner(:,2);
+% OUT0 = INPUT_b_inner(:,3);
 % Asp_p0=sparse(IN0,BR0,ones(1,dimb0),dimn0,dimb0);
 % Asp_m0=sparse(OUT0,BR0,-ones(1,dimb0),dimn0,dimb0);
 % Asp0=Asp_p0+Asp_m0;
@@ -51,31 +51,25 @@ NP  = [];
 PIPE= [];
 in = 0;
 
-%WK:  numGridPoints? is the number of grid points in a pipe? number of nodes should
-% be equal to numGridPoints ( but it seems it is numGridPoints +1).
-% A wider example could help tio understand which are the right dimensions here.
+for kk = 1:length(INPUT_b_inner(:,1))
 
-for kk = 1:length(INPUT_PIPES(:,1))
-	branch(kk).pos = zeros(1, nGridPoints(kk)+1);
-	branch(kk).nodes = zeros(1,nGridPoints(kk)+1);
-
-	branch(kk).pos  = [0:LL_inner(kk)./nGridPoints(kk):LL_inner(kk)];
+	branch(kk).xx(1,:) = [0:LL_inner(kk)./nGridPoints(kk):LL_inner(kk)];
 	%nodi notevoli
-	branch(kk).nodes(1) = INPUT_PIPES(kk,2); %in
-	branch(kk).nodes(end) = INPUT_PIPES(kk,3); %out
+	branch(kk).xx(2,1) = INPUT_b_inner(kk,2); %in
+	branch(kk).xx(2,end) = INPUT_b_inner(kk,3); %out
 	%nodi
-	branch(kk).unkown = [in+1 : in+length(branch(kk).xx)];
+	branch(kk).xx(3,:) = [in+1 : in+length(branch(kk).xx)];
 
 	if kk>=2
-		if any(branch(kk).nodes(1)==nodi_notevoli) %ingresso
-			pos = find(branch(kk).nodes(1)==nodi_notevoli);
+		if any(branch(kk).xx(2,1)==nodi_notevoli) %ingresso
+			pos = find(branch(kk).xx(2,1)==nodi_notevoli);
 			branch(kk).xx(3,1) = nodi_notevoli_corr(pos(1));
 			pos = [];
 			flagIN = 1;
 		end
 
-		if any(branch(kk).nodes(end)==nodi_notevoli) %uscita
-			pos = find(branch(kk).nodes(end)==nodi_notevoli);
+		if any(branch(kk).xx(2,end)==nodi_notevoli) %uscita
+			pos = find(branch(kk).xx(2,end)==nodi_notevoli);
 			branch(kk).xx(3,end)=nodi_notevoli_corr(pos(end));
 			pos = [];
 			flagOUT = 1;
@@ -101,7 +95,7 @@ for kk = 1:length(INPUT_PIPES(:,1))
 
 
 
-	nodi_notevoli = [nodi_notevoli; branch(kk).nodes(:)'];
+	nodi_notevoli = [nodi_notevoli; branch(kk).xx(2,:)'];
 	nodi_notevoli_corr = [nodi_notevoli_corr; branch(kk).xx(3,:)'];
 	NN = [nodi_notevoli, nodi_notevoli_corr];
 
@@ -114,12 +108,13 @@ for kk = 1:length(INPUT_PIPES(:,1))
 	OUT = [OUT; branch(kk).xx(3,2:end)'];
 
 
+	LL_pipe(kk)= LL_inner(kk)./nGridPoints(kk);
 	lung(kk)   = length(branch(kk).xx);
-	branch(kk).dx = LL_inner(kk)./nGridPoints(kk);
-	branch(kk).diam = DD_inner(kk);
-	branch(kk).epsi = epsi_inner(kk);
+	branch(kk).xx(4,:) = LL_pipe(kk);
+	branch(kk).xx(5,:) = DD_inner(kk);
+	branch(kk).xx(6,:) = epsi_inner(kk);
 
-	branch(kk).xx(7,:) = linspace(HH_inner(INPUT_PIPES(kk,2)),HH_inner(INPUT_PIPES(kk,3)),nGridPoints(kk)+1);
+	branch(kk).xx(7,:) = linspace(HH_inner(INPUT_b_inner(kk,2)),HH_inner(INPUT_b_inner(kk,3)),nGridPoints(kk)+1);
 
 	altitude(branch(kk).xx(3,:)) = branch(kk).xx(7,:);
 
@@ -141,7 +136,7 @@ for kk = 1:length(INPUT_PIPES(:,1))
 		PIPE = [PIPE; branch(kk).xx(3,1:end-1)'];
 	end
 
-	xx_old(kk).xx = branch(kk).pos(1,1:end-1);
+	xx_old(kk).xx = branch(kk).xx(1,1:end-1);
 
 end
 dimb = size(INPUT_b,1);
@@ -152,7 +147,7 @@ dimn = max(max(INPUT_b(:,2:3)));
 INPUT_n = zeros(dimn,25);
 corrispondenze = unique(NN(find(NN(:,1)~=0),:),'rows');
 INPUT_n(:,1) = [1:1:dimn];
-INPUT_n(corrispondenze(:,2),3:end) = INPUT_NODES(corrispondenze(:,1),3:end);
+INPUT_n(corrispondenze(:,2),3:end) = INPUT_n_inner(corrispondenze(:,1),3:end);
 INPUT_n(:,2) = altitude;
 
 Ainput=INPUT_b(:,1:3);

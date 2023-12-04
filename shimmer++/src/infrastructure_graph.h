@@ -54,7 +54,8 @@ struct edge_properties {
     double friction_resistance(const double & c2, const double& p)
     {
         double a = area();
-        return 2.0 * friction_factor * c2 * length / (a * a * diameter * p);    
+
+        return  friction_factor * c2 * length / (a * a * diameter * p);    
     }
 
     friend std::ostream& operator<<(std::ostream& ofs, const edge_properties& ep) {

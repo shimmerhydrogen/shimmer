@@ -16,6 +16,8 @@
 
 template<typename T> 
 using sparse_matrix_t = Eigen::SparseMatrix<T>; 
+template<typename T> 
+using vector_t = Eigen::Matrix<T, Eigen::Dynamic, 1>; 
 
 template<typename T> 
 void
@@ -55,7 +57,8 @@ void adp_matrix(const T & c2, const undirected_graph& g,
 
     auto factor = 2.0 *  gravity / c2;
 
-    for(auto itor = edge_range.first; itor != edge_range.second;itor++,i++ ){
+    for(auto itor = edge_range.first; itor != edge_range.second;itor++,i++ )
+    {
         auto pipe = g[*itor];   
         auto node_in  = source(*itor, g);
         auto node_out = target(*itor, g);
@@ -72,23 +75,28 @@ void adp_matrix(const T & c2, const undirected_graph& g,
     return;
 }
 
+template <typename T>
+using vector_t = Eigen::Matrix<T, Eigen::Dynamic, 1>;  
 
 template<typename T> 
 void
-resistance_matrix(const T & dt, const T& c2, const std::vector<T>& G,
-                  const std::vector<T>& p, const undirected_graph& g,
+resistance_matrix(const T & dt, const T& c2,
+                  const vector_t<T> & flux,
+                  const vector_t<T> & mean_pressure,
+                  const undirected_graph  & g,
                   sparse_matrix_t<T>& mat )
 {
     using triplet_t = Eigen::Triplet<T>;
     std::vector<triplet_t> triplets;
 
+    size_t count = 0;
     auto edge_range = edges(g);
-    for(auto itor = edge_range.first; itor != edge_range.second;itor++ ){
+    for(auto itor = edge_range.first; itor != edge_range.second;itor++,count++ ){
         auto pipe = g[*itor];   
-        auto id  = pipe.branch_num;
-        auto Omega = 2.0 * pipe.inertia_resistance(dt) * std::abs(G[id]) 
-                                + pipe.friction_resistance(c2, p); 
-        triplets.push_back(triplet_t(id, id, Omega));
+        auto pm = mean_pressure[count];
+        auto Omega = 2.0*pipe.inertia_resistance(dt,pm)*std::abs(flux(count)) 
+                                + pipe.friction_resistance(c2); 
+        triplets.push_back(triplet_t(count, count, Omega));
     }
 
     mat.setFromTriplets(triplets.begin(), triplets.end());
@@ -97,3 +105,4 @@ resistance_matrix(const T & dt, const T& c2, const std::vector<T>& G,
 }
 
 
+ // vector_t<T> fromP2p = adp.cwiseAbs().transpose() * pressure;  

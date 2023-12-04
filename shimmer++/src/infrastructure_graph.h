@@ -46,9 +46,9 @@ struct edge_properties {
     double area()   const { return M_PI * 0.25 * diameter * diameter;}
     double volume() const { return area() * length;}
 
-    double inertia_resistance(const double& dt)
+    double inertia_resistance(const double& dt, const double& mean_pressure)
     {
-        return  2.0 * length / (dt * area()); 
+        return  2.0 * length * mean_pressure / (dt * area()); 
     }
 
     double friction_resistance(const double & c2)

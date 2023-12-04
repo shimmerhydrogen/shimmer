@@ -107,8 +107,8 @@ int main(int argc, char **argv)
     for(auto itor = e_range.first; itor != e_range.second; itor++, i++)
     {   
         auto pipe = graph[*itor];   
-        ri[i] = pipe.inertia_resistance(dt);
-        rf[i] = pipe.friction_resistance(c2, p);
+        ri[i] = pipe.inertia_resistance(dt, p);
+        rf[i] = pipe.friction_resistance(c2);
     }
 
     std::cout << __FILE__ << std::endl; 

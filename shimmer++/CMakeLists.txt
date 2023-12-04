@@ -55,3 +55,6 @@ target_link_libraries(test_geometry ${LINK_LIBS})
 
 add_executable(test_conservation unit_tests/test_conservation_matrices.cpp)
 target_link_libraries(test_conservation ${LINK_LIBS})
+
+add_executable(test_resistances unit_tests/test_resistances.cpp)
+target_link_libraries(test_resistances ${LINK_LIBS})

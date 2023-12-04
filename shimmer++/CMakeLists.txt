@@ -52,3 +52,6 @@ target_link_libraries(test_incidence ${LINK_LIBS})
 
 add_executable(test_geometry unit_tests/test_geometry.cpp)
 target_link_libraries(test_geometry ${LINK_LIBS})
+
+add_executable(test_conservation unit_tests/test_conservation_matrices.cpp)
+target_link_libraries(test_conservation ${LINK_LIBS})

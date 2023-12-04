@@ -19,6 +19,24 @@ using sparse_matrix_t = Eigen::SparseMatrix<T>;
 template<typename T> 
 using vector_t = Eigen::Matrix<T, Eigen::Dynamic, 1>; 
 
+
+template<typename T> 
+void
+average(const  vector_t<T>& pressure, const sparse_matrix_t<T>& incidence_in,
+        const sparse_matrix_t<T>& incidence_out,  vector_t<T>& pm)
+{
+    vector_t<T> i_p = incidence_in.transpose()  * pressure;
+    vector_t<T> o_p = incidence_out.transpose()  * pressure;
+    vector_t<T> io_p  = i_p + o_p; 
+    
+    std::cout << "-------------------------------"<< std::endl;
+    pm  = (2.0/3.0) * (io_p - i_p.cwiseProduct(o_p).cwiseQuotient(io_p));
+    for(size_t i = 0; i < pm.size(); i++)
+        std::cout << pm[i] << std::endl;
+
+}
+
+
 template<typename T> 
 void
 phi_matrix(const double & dt, const double& c2, const undirected_graph& g, sparse_matrix_t<T>& mat)
@@ -39,6 +57,7 @@ phi_matrix(const double & dt, const double& c2, const undirected_graph& g, spars
     //diag.setFromTriplets(triplets.begin(), triplets.end());    
     return;
 }
+
 
 template<typename T> 
 void adp_matrix(const T & c2, const undirected_graph& g,
@@ -75,6 +94,7 @@ void adp_matrix(const T & c2, const undirected_graph& g,
     return;
 }
 
+
 template <typename T>
 using vector_t = Eigen::Matrix<T, Eigen::Dynamic, 1>;  
 
@@ -94,8 +114,8 @@ resistance_matrix(const T & dt, const T& c2,
     for(auto itor = edge_range.first; itor != edge_range.second;itor++,count++ ){
         auto pipe = g[*itor];   
         auto pm = mean_pressure[count];
-        auto Omega = 2.0*pipe.inertia_resistance(dt,pm)*std::abs(flux(count)) 
-                                + pipe.friction_resistance(c2); 
+        auto Omega = 2.0 * pipe.friction_resistance(c2) * std::abs(flux(count)) 
+                                + pipe.inertia_resistance(dt,pm); 
         triplets.push_back(triplet_t(count, count, Omega));
     }
 

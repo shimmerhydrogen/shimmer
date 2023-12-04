@@ -43,8 +43,7 @@ make_init_graph(GRAPH& igraph)
     //        /  |                             3|      1        
     //     *2/   |*1                               
     //      /    |                             
-    //     2     3                              
-            
+    //     2     3                                         
     */
 
     boost::add_edge( 0, 1, ep0, igraph);
@@ -54,7 +53,7 @@ make_init_graph(GRAPH& igraph)
 
 
 void verify_test(const std::string & name, 
-                 const Eigen::SparseMatrix<double>& mat,
+                 const sparse_matrix_t<double>& mat,
                  const std::array<triple_t, 6>& ref )
 {
     using itor_t = Eigen::SparseMatrix<double>::InnerIterator;
@@ -71,7 +70,7 @@ void verify_test(const std::string & name,
             if((it.row() != t[0])  || (it.col() != t[1]) || (e_val > 1.e-12))
             {
                 pass = false;
-                break;  
+                //break;  
             }
         }
     }
@@ -80,7 +79,7 @@ void verify_test(const std::string & name,
         return ipass ? "[PASS]" : "[FAIL]";
     };
 
-    std::cout << "  Test " << name << "  matrix .........." <<  passfail(pass) << std::endl;
+    std::cout << "  Test " << name << " .........." <<  passfail(pass) << std::endl;
 
     return;
 }
@@ -89,29 +88,40 @@ int main()
 {
     // Not realisic speed of sound. Intendeed only for test purposes.
     double c2 = 1000; 
+    double dt = 0.1; 
+
 
     std::array<triple_t, 6> ref_adp = {{{0,0,1}, {1,0, -0.503586391306371},
                                     {1, 1, -0.612626394184416},{3, 1, 1},
                                     {1, 2, 1}, {2, 2, -1.341783903666971}}};
-    //std::array<triple_t, 6> ref_resist= {{{0,0,10}, {1,0,10},
-    //                                {1, 1, 10}, {3, 1, 10},
-    //                                {1, 2, 10}, {2, 2, 10}}};
+    std::array<triple_t, 6> ref_resist= {{{0,0,10}, {1,0,10},
+                                    {1, 1, 10}, {3, 1, 10},
+                                    {1, 2, 10}, {2, 2, 10}}};
 
     undirected_graph graph;
     make_init_graph(graph);
 
-    Eigen::SparseMatrix<double> incidence_out = incidence_matrix_out<double>(graph);
-    Eigen::SparseMatrix<double> incidence_in  = incidence_matrix_in<double>(graph);
-    Eigen::SparseMatrix<double> sADP(num_vertices(graph), num_edges(graph));
-    Eigen::SparseMatrix<double> sR(num_vertices(graph), num_edges(graph));
+    sparse_matrix_t<double> incidence_out = incidence_matrix_out<double>(graph);
+    sparse_matrix_t<double> incidence_in  = incidence_matrix_in<double>(graph);
+    sparse_matrix_t<double> sADP(num_vertices(graph), num_edges(graph));
+    sparse_matrix_t<double> sR(num_vertices(graph), num_edges(graph));
+
+    vector_t<double> flux (num_edges(graph));
+    vector_t<double> pressure (num_vertices(graph)); 
+
+    flux <<  -11, 13, -17; 
+    pressure << 2000, 3000, 5000, 7000; 
+
+    vector_t<double> pm (num_edges(graph)); 
+    average(pressure, incidence_in, incidence_out, pm);
 
     adp_matrix(c2, graph, incidence_in, incidence_out, sADP);
-    //resistance_matrix(c2, graph, incidence_in, incidence_out, sR);
+    resistance_matrix(dt, c2, flux, pm, graph, sR);
 
     std::cout << __FILE__ << std::endl;
 
-    verify_test("ADP", sADP, ref_adp);
-    //verify_test("R", sR, ref_resist);
+    verify_test("ADP matrix", sADP, ref_adp);
+    verify_test("R   matrix", sR, ref_resist);
 
 
     return 0;

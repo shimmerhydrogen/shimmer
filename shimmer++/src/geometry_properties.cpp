@@ -14,12 +14,12 @@
 
 double area(const edge_properties& ep)
 {
-    return M_PI * ep.diameter * ep.diameter * 0.25;
+    return ep.area();
 }
 
 double volume(const edge_properties& ep)
 {
-    return area(ep) * ep.length;
+    return ep.volume();
 }
 
 double volume(const vertex_descriptor&  v, const infrastructure_graph& g)

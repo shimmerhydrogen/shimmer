@@ -41,7 +41,21 @@ struct edge_properties {
     double      friction_factor;
     int         grid_pts;
 
+    double area()   { return M_PI * 0.25 * diameter * diameter;}
+    double volume() { return area() * length; }
+    double area()   const { return M_PI * 0.25 * diameter * diameter;}
+    double volume() const { return area() * length;}
 
+    double inertia_resistance(const double& dt)
+    {
+        return  2.0 * length / (dt * area()); 
+    }
+
+    double friction_resistance(const double & c2, const double& p)
+    {
+        double a = area();
+        return 2.0 * friction_factor * c2 * length / (a * a * diameter * p);    
+    }
 
     friend std::ostream& operator<<(std::ostream& ofs, const edge_properties& ep) {
         ofs << " branch_num : " << ep.branch_num << "\n";

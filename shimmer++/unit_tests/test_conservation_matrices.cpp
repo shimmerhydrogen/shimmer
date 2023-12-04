@@ -31,9 +31,9 @@ make_init_graph(GRAPH& igraph)
     vds.push_back( boost::add_vertex( { "station 2", 2, 0., 0.,  60 }, igraph) );
     vds.push_back( boost::add_vertex( { "station 3", 3, 0., 0.,  80 }, igraph) );
 
-    edge_properties ep0  = {edge_type::pipe, 0,   5, 0.7, 0.012};
-    edge_properties ep1  = {edge_type::pipe, 1,   9, 0.2, 0.012};
-    edge_properties ep2  = {edge_type::pipe, 2,   7, 0.3, 0.012};
+    edge_properties ep0  = {edge_type::pipe, 0,   5, 0.7, 0.017};
+    edge_properties ep1  = {edge_type::pipe, 1,   9, 0.2, 0.013};
+    edge_properties ep2  = {edge_type::pipe, 2,   7, 0.3, 0.023};
 
     /*           0                                *0  *1  *2    
     //           |                              -------------   
@@ -54,7 +54,7 @@ make_init_graph(GRAPH& igraph)
 
 void verify_test(const std::string & name, 
                  const sparse_matrix_t<double>& mat,
-                 const std::array<triple_t, 6>& ref )
+                 const std::vector<triple_t>& ref )
 {
     using itor_t = Eigen::SparseMatrix<double>::InnerIterator;
     bool pass = true;
@@ -63,10 +63,10 @@ void verify_test(const std::string & name,
     {
         for (itor_t it(mat,k); it; ++it, count++)
         {
-            std::cout << "(" << it.row() << " , " << it.col() << " , " <<  it.value()  << " )" <<  std::endl ;
+            std::cout << std::setprecision(16) << "(" << it.row() << " , " << it.col() << " , " <<  it.value()  << " )" <<  std::endl ;
 
             auto t = ref.at(count);
-            auto e_val = std::abs(it.value() - t[2]);
+            auto e_val = std::abs(it.value() - t[2])/t[2];
             if((it.row() != t[0])  || (it.col() != t[1]) || (e_val > 1.e-12))
             {
                 pass = false;
@@ -91,12 +91,13 @@ int main()
     double dt = 0.1; 
 
 
-    std::array<triple_t, 6> ref_adp = {{{0,0,1}, {1,0, -0.503586391306371},
+    std::vector<triple_t> ref_adp = {{{0,0,1}, {1,0, -0.503586391306371},
                                     {1, 1, -0.612626394184416},{3, 1, 1},
                                     {1, 2, 1}, {2, 2, -1.341783903666971}}};
-    std::array<triple_t, 6> ref_resist= {{{0,0,10}, {1,0,10},
-                                    {1, 1, 10}, {3, 1, 10},
-                                    {1, 2, 10}, {2, 2, 10}}};
+    std::vector<triple_t> ref_resist = {{{0,0,6.763108109027953e+05}, 
+                                    {1, 1, 4.558672924222292e+07}, 
+                                    {2, 2, 1.173932795107726e+07}}};
+
 
     undirected_graph graph;
     make_init_graph(graph);

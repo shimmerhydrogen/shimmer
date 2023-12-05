@@ -58,3 +58,6 @@ target_link_libraries(test_conservation ${LINK_LIBS})
 
 add_executable(test_resistances unit_tests/test_resistances.cpp)
 target_link_libraries(test_resistances ${LINK_LIBS})
+
+add_executable(test_mean_pressure unit_tests/test_mean_pressure.cpp)
+target_link_libraries(test_mean_pressure ${LINK_LIBS})

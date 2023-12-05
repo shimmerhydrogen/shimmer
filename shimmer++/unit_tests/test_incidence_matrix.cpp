@@ -142,6 +142,6 @@ int main(int argc, char **argv)
     std::cout << "  Test incidence matrix directed........" <<  passfail(dpass) << std::endl;
     std::cout << "  Test incidence matrix undirected......" <<  passfail(upass) << std::endl;
     
-    return !(dpass || upass); 
+    return !(dpass && upass); 
 }
 

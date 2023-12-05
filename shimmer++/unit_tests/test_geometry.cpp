@@ -89,5 +89,5 @@ int main(int argc, char **argv)
     std::cout << "  Test geometry directed........" <<  passfail(dpass) << std::endl;
     std::cout << "  Test geometry undirected......" <<  passfail(upass) << std::endl;
     
-    return !(dpass || upass); 
+    return !(dpass && upass); 
 }

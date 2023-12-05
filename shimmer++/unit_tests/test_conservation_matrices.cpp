@@ -52,7 +52,7 @@ make_init_graph(GRAPH& igraph)
 }
 
 
-void verify_test(const std::string & name, 
+bool verify_test(const std::string & name, 
                  const sparse_matrix_t<double>& mat,
                  const std::vector<triple_t>& ref )
 {
@@ -63,14 +63,14 @@ void verify_test(const std::string & name,
     {
         for (itor_t it(mat,k); it; ++it, count++)
         {
-            std::cout << std::setprecision(16) << "(" << it.row() << " , " << it.col() << " , " <<  it.value()  << " )" <<  std::endl ;
+            //std::cout << std::setprecision(16) << "(" << it.row() << " , " << it.col() << " , " <<  it.value()  << " )" <<  std::endl ;
 
             auto t = ref.at(count);
             auto e_val = std::abs(it.value() - t[2])/t[2];
             if((it.row() != t[0])  || (it.col() != t[1]) || (e_val > 1.e-12))
             {
                 pass = false;
-                //break;  
+                break;  
             }
         }
     }
@@ -81,31 +81,29 @@ void verify_test(const std::string & name,
 
     std::cout << "  Test " << name << " .........." <<  passfail(pass) << std::endl;
 
-    return;
+    return pass;
 }
 
 int main()
 {
-    // Not realisic speed of sound. Intendeed only for test purposes.
-    double c2 = 1000; 
-    double dt = 0.1; 
-
-
     std::vector<triple_t> ref_adp = {{{0,0,1}, {1,0, -0.503586391306371},
                                     {1, 1, -0.612626394184416},{3, 1, 1},
                                     {1, 2, 1}, {2, 2, -1.341783903666971}}};
     std::vector<triple_t> ref_resist = {{{0,0,6.763108109027953e+05}, 
                                     {1, 1, 4.558672924222292e+07}, 
                                     {2, 2, 1.173932795107726e+07}}};
+    std::vector<triple_t> ref_phi = {{{0,0, 9.621127501618740e-03},
+                                     {1, 1, 1.350884841043611e-02},
+                                     {2 ,2, 2.474004214701962e-03},
+                                     {3, 3, 1.413716694115407e-03}}};
 
+
+    // Not realisic speed of sound. Intendeed only for test purposes.
+    double c2 = 1000; 
+    double dt = 0.1; 
 
     undirected_graph graph;
     make_init_graph(graph);
-
-    sparse_matrix_t<double> incidence_out = incidence_matrix_out<double>(graph);
-    sparse_matrix_t<double> incidence_in  = incidence_matrix_in<double>(graph);
-    sparse_matrix_t<double> sADP(num_vertices(graph), num_edges(graph));
-    sparse_matrix_t<double> sR(num_vertices(graph), num_edges(graph));
 
     vector_t<double> flux (num_edges(graph));
     vector_t<double> pressure (num_vertices(graph)); 
@@ -113,18 +111,26 @@ int main()
     flux <<  -11, 13, -17; 
     pressure << 2000, 3000, 5000, 7000; 
 
+    sparse_matrix_t<double> incidence_out = incidence_matrix_out<double>(graph);
+    sparse_matrix_t<double> incidence_in  = incidence_matrix_in<double>(graph);
+    sparse_matrix_t<double> sADP(num_vertices(graph), num_edges(graph));
+    sparse_matrix_t<double> sR(num_vertices(graph), num_edges(graph));
+    sparse_matrix_t<double> sPHI(num_vertices(graph), num_vertices(graph));
+
+
     vector_t<double> pm (num_edges(graph)); 
     average(pressure, incidence_in, incidence_out, pm);
 
     adp_matrix(c2, graph, incidence_in, incidence_out, sADP);
     resistance_matrix(dt, c2, flux, pm, graph, sR);
+    phi_matrix( dt,  c2, graph, sPHI);
 
     std::cout << __FILE__ << std::endl;
 
-    verify_test("ADP matrix", sADP, ref_adp);
-    verify_test("R   matrix", sR, ref_resist);
+    bool adp_pass = verify_test("ADP matrix", sADP, ref_adp);
+    bool res_pass = verify_test("R   matrix", sR  , ref_resist);
+    bool phi_pass = verify_test("PHI matrix", sPHI, ref_phi);
 
-
-    return 0;
+    return !(adp_pass && res_pass && phi_pass) ;
 }
 

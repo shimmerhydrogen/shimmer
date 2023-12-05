@@ -41,14 +41,12 @@ template<typename T>
 void
 phi_matrix(const double & dt, const double& c2, const undirected_graph& g, sparse_matrix_t<T>& mat)
 {
-    auto c2_over_dt = c2/dt;
-
-    std::vector<double> phi (num_edges(g));
+    vector_t<T> phi (num_vertices(g));
 
     int i = 0;
     auto v_range = vertices(g);
     for(auto itor = v_range.first; itor != v_range.second; itor++, i++)
-        phi.at(i) = volume(*itor, g) * c2_over_dt;
+        phi(i) = volume(*itor, g) / (c2 * dt);
 
     mat.setIdentity();
     mat.diagonal() = phi;

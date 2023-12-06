@@ -24,15 +24,32 @@ void
 average(const  vector_t& pressure, const sparse_matrix_t& incidence_in,
         const sparse_matrix_t& incidence_out,  vector_t& pm);
 
+
+auto
+phi_triplets(const double & dt, const double& c2, const infrastructure_graph& g);
+
+
 void
-phi_matrix(const double & dt, const double& c2, const infrastructure_graph& g, sparse_matrix_t& mat);
+phi_matrix(const double & dt, const double& c2, const infrastructure_graph& g,
+           sparse_matrix_t& mat);
 
 
-void 
+auto 
+adp_triplets(const double & c2, const infrastructure_graph& g,
+             const incidence& inc);
+
+
+void
 adp_matrix(const double & c2, const infrastructure_graph& g,
-                const sparse_matrix_t& incidence_in,
-                const sparse_matrix_t& incidence_out,
-                sparse_matrix_t& mat);
+            const incidence& inc,
+            sparse_matrix_t& mat);
+
+
+auto
+resistance_triplets(const double & dt, const double& c2,
+                  const vector_t & flux,
+                  const vector_t & mean_pressure,
+                  const infrastructure_graph  & g);
 
 
 void

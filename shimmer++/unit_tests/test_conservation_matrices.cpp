@@ -64,11 +64,13 @@ bool verify_test(const std::string & name,
     for (int k = 0; k < mat.outerSize(); ++k)
     {
         for (itor_t it(mat,k); it; ++it, count++)
-        {
-            //std::cout << std::setprecision(16) << "(" << it.row() << " , " << it.col() << " , " <<  it.value()  << " )" <<  std::endl ;
+        { 
+            std::cout << std::setprecision(16) << "(" << it.row() 
+                      << " , " << it.col() << " , " << it.value() 
+                      << " ) " << std::endl ;
 
             auto t = ref.at(count);
-            auto e_val = std::abs(it.value() - t[2])/t[2];
+            auto e_val = std::abs((it.value() - t[2])/t[2]);
             if((it.row() != t[0])  || (it.col() != t[1]) || (e_val > 1.e-12))
             {
                 pass = false;
@@ -88,9 +90,10 @@ bool verify_test(const std::string & name,
 
 int main()
 {
-    std::vector<triple_t> ref_adp = {{{0,0,1}, {1,0, -0.503586391306371},
-                                    {1, 1, -0.612626394184416},{3, 1, 1},
-                                    {1, 2, 1}, {2, 2, -1.341783903666971}}};
+    std::vector<triple_t> ref_adp = {{{0,0,1}, {0,1, -0.503586391306371},
+                                    {1, 1, -0.612626394184416},
+                                    {2, 1, 1}, {2, 2, -1.341783903666971},
+                                    {1, 3, 1}}};
     std::vector<triple_t> ref_resist = {{{0,0,6.763108109027953e+05}, 
                                     {1, 1, 4.558672924222292e+07}, 
                                     {2, 2, 1.173932795107726e+07}}};
@@ -113,19 +116,17 @@ int main()
     flux <<  -11, 13, -17; 
     pressure << 2000, 3000, 5000, 7000; 
 
-    sparse_matrix_t incidence_out = incidence_matrix_out(graph);
-    sparse_matrix_t incidence_in  = incidence_matrix_in(graph);
-    sparse_matrix_t sADP(num_vertices(graph), num_edges(graph));
-    sparse_matrix_t sR(num_vertices(graph), num_edges(graph));
-    sparse_matrix_t sPHI(num_vertices(graph), num_vertices(graph));
+    incidence inc(graph);
+
+    sparse_matrix_t sADP, sR, sPHI;
 
 
     vector_t pm (num_edges(graph)); 
-    average(pressure, incidence_in, incidence_out, pm);
+    average(pressure, inc.matrix_in(), inc.matrix_out(), pm);
 
-    adp_matrix(c2, graph, incidence_in, incidence_out, sADP);
+    phi_matrix(dt, c2, graph, sPHI);
+    adp_matrix(c2, graph, inc, sADP);
     resistance_matrix(dt, c2, flux, pm, graph, sR);
-    phi_matrix( dt,  c2, graph, sPHI);
 
     std::cout << __FILE__ << std::endl;
 

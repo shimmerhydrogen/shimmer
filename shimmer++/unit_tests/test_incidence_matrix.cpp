@@ -88,13 +88,14 @@ make_init_graph(infrastructure_graph& igraph)
     boost::add_edge( vds[4], vds[ 3], ep11, igraph);
 }
 
-
-bool test(const std::array<triple_t, 24>& ref)
+bool test(const std::string& name, const std::array<triple_t, 24>& ref)
 {
  
     infrastructure_graph igraph;
     make_init_graph(igraph);
-    Eigen::SparseMatrix<double> mat = incidence_matrix(igraph);
+
+    incidence inc(igraph);
+    const Eigen::SparseMatrix<double>& mat  = inc.matrix();
 
     bool pass = true;
     size_t count = 0;
@@ -110,36 +111,35 @@ bool test(const std::array<triple_t, 24>& ref)
             }
         }
     }
+
+    
+    std::cout << "Incidence matrix: \n"; 
+    for (int k=0; k<mat.outerSize(); ++k)
+        for (Eigen::SparseMatrix<double>::InnerIterator it(mat,k); it; ++it)
+            std::cout << "{"<< it.row() << ","<< it.col() <<"," << it.value()<< "},";
+    std::cout << std::endl; 
+    
+
+    auto passfail = [](bool ipass) {
+        return ipass ? "[PASS]" : "[FAIL]";
+    };
+
+    std::cout << "  Test " << name << "........" <<  passfail(pass) << std::endl;
+
     return pass;
 }
 
 int main(int argc, char **argv)
 {
     using triple_t = std::array<int, 3>;
+
     std::array<triple_t, 24> ref = {{{0,0,1},{1,0,-1},{1,1,1},{4,1,-1},{2,2,1},{4,2,-1},
                                  {1,3,1},{2,3,-1},{4,4,1},{5,4,-1},{2,5,1},{3,5,-1},
                                  {3,6,1},{6,6,-1},{5,7,1},{6,7,-1},{4,8,1},{7,8,-1},
                                  {3,9,1},{5,9,-1},{5,10,1},{7,10,-1},{3,11,-1},{4,11,1}}};
 
-
-    bool pass = test(ref);
-
-
-    /*
-    std::cout << "Incidence matrix: \n"; 
-    for (int k=0; k<mat.outerSize(); ++k)
-        for (Eigen::SparseMatrix<int>::InnerIterator it(mat,k); it; ++it)
-            std::cout << "{"<< it.row() << ","<< it.col() <<"," << it.value()<< "},";
-    std::cout << std::endl; 
-    */
-
-    
-    auto passfail = [](bool ipass) {
-        return ipass ? "[PASS]" : "[FAIL]";
-    };
-
     std::cout << __FILE__ << std::endl;
-    std::cout << "  Test incidence matrix ........" <<  passfail(pass) << std::endl;
+    bool pass = test("incidence matrix", ref);
     
     return !pass; 
 }

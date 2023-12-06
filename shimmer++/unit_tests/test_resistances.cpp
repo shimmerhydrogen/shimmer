@@ -67,7 +67,7 @@ bool verify_test(const std::string & name,
     {
         // std::cout << vals[k]  <<  std::endl ;
 
-        auto e_val = (std::abs(vals[k] - ref.at(k))) /  ref.at(k);
+        auto e_val = std::abs((vals[k] - ref.at(k)) /  ref.at(k));
         if(e_val > 1.e-12)
         {
             pass = false;

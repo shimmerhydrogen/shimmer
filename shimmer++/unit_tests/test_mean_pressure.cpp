@@ -62,7 +62,7 @@ bool verify_test(const std::string & name,
     {
         // std::cout << vals[k]  <<  std::endl ;
 
-        auto e_val = (std::abs(vals[k] - ref.at(k))) /  ref.at(k);
+        auto e_val = std::abs((vals[k] - ref.at(k)) /  ref.at(k));
         if(e_val > 1.e-12)
         {
             pass = false;
@@ -91,15 +91,14 @@ int main()
     infrastructure_graph graph;
     make_init_graph(graph);
 
-    Eigen::SparseMatrix<double> incidence_out = incidence_matrix_out(graph);
-    Eigen::SparseMatrix<double> incidence_in  = incidence_matrix_in(graph);
+    incidence inc(graph);
 
     vector_t pressure (num_vertices(graph)); 
     vector_t pm (num_edges(graph)); 
 
     pressure << 2000, 3000, 5000, 7000; 
 
-    average(pressure, incidence_in, incidence_out, pm);
+    average(pressure, inc.matrix_in(), inc.matrix_out(), pm);
 
     bool pass = verify_test(" mean pressure in pipes ", pm, ref_pm);
 

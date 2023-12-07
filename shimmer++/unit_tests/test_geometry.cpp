@@ -13,7 +13,7 @@
 
 #include "../src/infrastructure_graph.h"
 #include "../src/incidence_matrix.h"
-#include "../src/geometry_properties.cpp"
+#include "../src/geometry_properties.h"
 
 template<typename GRAPH>
 static void

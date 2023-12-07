@@ -6,10 +6,8 @@
  * karol.cascavita@polito.it  
  */
 
- #pragma once
-
 #include "infrastructure_graph.h"
-
+#include "geometry_properties.h"
 
 
 double area(const edge_properties& ep)

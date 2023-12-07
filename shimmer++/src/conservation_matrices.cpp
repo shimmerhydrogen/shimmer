@@ -10,7 +10,7 @@
 
 #include <Eigen/Sparse>
 #include "infrastructure_graph.h"
-#include "../src/geometry_properties.cpp"
+#include "../src/geometry_properties.h"
 #include "../src/incidence_matrix.h"
 
 

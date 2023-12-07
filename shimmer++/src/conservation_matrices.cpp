@@ -6,28 +6,19 @@
  * karol.cascavita@polito.it  
  */
 
-#pragma once
 
-#include <Eigen/Sparse>
-#include "infrastructure_graph.h"
-#include "../src/geometry_properties.cpp"
-#include "../src/incidence_matrix.h"
+#include "../src/conservation_matrices.h"
+
+namespace shimmer{
 
 
-template<typename T> 
-using sparse_matrix_t = Eigen::SparseMatrix<T>; 
-template<typename T> 
-using vector_t = Eigen::Matrix<T, Eigen::Dynamic, 1>; 
-
-
-template<typename T> 
 void
-average(const  vector_t<T>& pressure, const sparse_matrix_t<T>& incidence_in,
-        const sparse_matrix_t<T>& incidence_out,  vector_t<T>& pm)
+average(const  vector_t& pressure, const sparse_matrix_t& incidence_in,
+        const sparse_matrix_t& incidence_out,  vector_t& pm)
 {
-    vector_t<T> i_p = incidence_in.transpose()  * pressure;
-    vector_t<T> o_p = incidence_out.transpose()  * pressure;
-    vector_t<T> io_p  = i_p + o_p; 
+    vector_t i_p = incidence_in.transpose()  * pressure;
+    vector_t o_p = incidence_out.transpose()  * pressure;
+    vector_t io_p  = i_p + o_p; 
     
     std::cout << "-------------------------------"<< std::endl;
     pm  = (2.0/3.0) * (io_p - i_p.cwiseProduct(o_p).cwiseQuotient(io_p));
@@ -37,11 +28,10 @@ average(const  vector_t<T>& pressure, const sparse_matrix_t<T>& incidence_in,
 }
 
 
-template<typename T> 
 void
-phi_matrix(const double & dt, const double& c2, const undirected_graph& g, sparse_matrix_t<T>& mat)
+phi_matrix(const double & dt, const double& c2, const infrastructure_graph& g, sparse_matrix_t& mat)
 {
-    vector_t<T> phi (num_vertices(g));
+    vector_t phi (num_vertices(g));
 
     int i = 0;
     auto v_range = vertices(g);
@@ -51,23 +41,24 @@ phi_matrix(const double & dt, const double& c2, const undirected_graph& g, spars
     mat.setIdentity();
     mat.diagonal() = phi;
 
-    //sparse_matrix_t<T> diag (num_vertices(g), num_vertices(g));    
+    //sparse_matrix_t diag (num_vertices(g), num_vertices(g));    
     //diag.setFromTriplets(triplets.begin(), triplets.end());    
     return;
 }
 
 
-template<typename T> 
-void adp_matrix(const T & c2, const undirected_graph& g,
-                const sparse_matrix_t<T>& incidence_in,
-                const sparse_matrix_t<T>& incidence_out,
-                sparse_matrix_t<T>& mat)
+
+void 
+adp_matrix(const double & c2, const infrastructure_graph& g,
+                const sparse_matrix_t& incidence_in,
+                const sparse_matrix_t& incidence_out,
+                sparse_matrix_t& mat)
 {
     // Referred to pressure p (not squared)
 
     double gravity = 9.8;
 
-    Eigen::Matrix<T, Eigen::Dynamic, 1>  exp_s (num_edges(g)); 
+    vector_t  exp_s (num_edges(g)); 
 
     size_t i = 0;
     auto edge_range = edges(g);
@@ -83,7 +74,7 @@ void adp_matrix(const T & c2, const undirected_graph& g,
         exp_s[i] =  std::exp(factor * s * 0.5 ); 
     }
        
-    sparse_matrix_t<T> sE(num_edges(g), num_edges(g));
+    sparse_matrix_t sE(num_edges(g), num_edges(g));
     sE.setIdentity();
     sE.diagonal() = exp_s;    
     
@@ -93,18 +84,15 @@ void adp_matrix(const T & c2, const undirected_graph& g,
 }
 
 
-template <typename T>
-using vector_t = Eigen::Matrix<T, Eigen::Dynamic, 1>;  
 
-template<typename T> 
 void
-resistance_matrix(const T & dt, const T& c2,
-                  const vector_t<T> & flux,
-                  const vector_t<T> & mean_pressure,
-                  const undirected_graph  & g,
-                  sparse_matrix_t<T>& mat )
+resistance_matrix(const double & dt, const double& c2,
+                  const vector_t & flux,
+                  const vector_t & mean_pressure,
+                  const infrastructure_graph  & g,
+                  sparse_matrix_t& mat )
 {
-    using triplet_t = Eigen::Triplet<T>;
+    using triplet_t = Eigen::Triplet<double>;
     std::vector<triplet_t> triplets;
 
     size_t count = 0;
@@ -122,5 +110,7 @@ resistance_matrix(const T & dt, const T& c2,
     return;
 }
 
+} //end namespace shimmer
 
- // vector_t<T> fromP2p = adp.cwiseAbs().transpose() * pressure;  
+
+ // vector_t fromP2p = adp.cwiseAbs().transpose() * pressure;  

@@ -9,6 +9,8 @@
 
 #include <boost/graph/adjacency_list.hpp>
 
+namespace shimmer {
+
 struct gas_descriptor {
     std::string     name;
     double          percentage;
@@ -41,17 +43,15 @@ struct edge_properties {
     double      friction_factor;
     int         grid_pts;
 
-    double area()   { return M_PI * 0.25 * diameter * diameter;}
-    double volume() { return area() * length; }
     double area()   const { return M_PI * 0.25 * diameter * diameter;}
     double volume() const { return area() * length;}
 
-    double inertia_resistance(const double& dt, const double& mean_pressure)
+    double inertia_resistance(const double& dt, const double& mean_pressure) const
     {
         return  2.0 * length * mean_pressure / (dt * area()); 
     }
 
-    double friction_resistance(const double & c2)
+    double friction_resistance(const double & c2) const
     {
         double a = area();
 
@@ -68,11 +68,8 @@ struct edge_properties {
     }
 };
 
-using undirected_graph = boost::adjacency_list<boost::listS,
-    boost::vecS, boost::undirectedS, vertex_properties, edge_properties>;
-
 using infrastructure_graph = boost::adjacency_list<boost::listS,
-    boost::vecS, boost::directedS, vertex_properties, edge_properties>;
+    boost::vecS, boost::undirectedS, vertex_properties, edge_properties>;
 
 using vertex_descriptor = infrastructure_graph::vertex_descriptor;
 using edge_descriptor   = infrastructure_graph::edge_descriptor;
@@ -93,3 +90,4 @@ struct edge_property_writer {
 
 void write_graphviz(const std::string&, const infrastructure_graph&);
 
+} //end namespace shimmer

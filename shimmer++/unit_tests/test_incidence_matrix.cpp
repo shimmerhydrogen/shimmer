@@ -16,10 +16,11 @@
 
 using triple_t = std::array<int, 3>;
 
+using namespace shimmer;
 
-template<typename GRAPH>
+
 static void
-make_init_graph(GRAPH& igraph)
+make_init_graph(infrastructure_graph& igraph)
 {
 
 
@@ -45,7 +46,7 @@ make_init_graph(GRAPH& igraph)
           6 
     */
 
-    std::vector<typename GRAPH::vertex_descriptor> vds;
+    std::vector<vertex_descriptor> vds;
 
     vds.push_back( boost::add_vertex( { "station 0", 0, 5000., -60, 0. }, igraph) );
     vds.push_back( boost::add_vertex( { "station 1", 1, 0., 20 ,0. }, igraph) );
@@ -73,33 +74,33 @@ make_init_graph(GRAPH& igraph)
     edge_properties ep11 = {edge_type::pipe,11,   80, 0.6, 0.012};
 
 
-    boost::add_edge( 0, 1, ep0, igraph);
-    boost::add_edge( 1, 4, ep1, igraph);
-    boost::add_edge( 2, 4, ep2, igraph);
-    boost::add_edge( 1, 2, ep3, igraph);
-    boost::add_edge( 4, 5, ep4, igraph);
-    boost::add_edge( 2, 3, ep5, igraph);
-    boost::add_edge( 3, 6, ep6, igraph);
-    boost::add_edge( 5, 6, ep7, igraph);
-    boost::add_edge( 4, 7, ep8, igraph);
-    boost::add_edge( 3, 5, ep9, igraph);
-    boost::add_edge( 5, 7, ep10, igraph);
-    boost::add_edge( 4, 3, ep11, igraph);
+    boost::add_edge( vds[0], vds[ 1], ep0, igraph);
+    boost::add_edge( vds[1], vds[ 4], ep1, igraph);
+    boost::add_edge( vds[2], vds[ 4], ep2, igraph);
+    boost::add_edge( vds[1], vds[ 2], ep3, igraph);
+    boost::add_edge( vds[4], vds[ 5], ep4, igraph);
+    boost::add_edge( vds[2], vds[ 3], ep5, igraph);
+    boost::add_edge( vds[3], vds[ 6], ep6, igraph);
+    boost::add_edge( vds[5], vds[ 6], ep7, igraph);
+    boost::add_edge( vds[4], vds[ 7], ep8, igraph);
+    boost::add_edge( vds[3], vds[ 5], ep9, igraph);
+    boost::add_edge( vds[5], vds[ 7], ep10, igraph);
+    boost::add_edge( vds[4], vds[ 3], ep11, igraph);
 }
 
-template<typename GRAPH>
+
 bool test(const std::array<triple_t, 24>& ref)
 {
  
-    GRAPH igraph;
+    infrastructure_graph igraph;
     make_init_graph(igraph);
-    Eigen::SparseMatrix<int> mat = incidence_matrix<int>(igraph);
+    Eigen::SparseMatrix<double> mat = incidence_matrix(igraph);
 
     bool pass = true;
     size_t count = 0;
     for (int k = 0; k < mat.outerSize(); ++k)
     {
-        for (Eigen::SparseMatrix<int>::InnerIterator it(mat,k); it; ++it, count++)
+        for (Eigen::SparseMatrix<double>::InnerIterator it(mat,k); it; ++it, count++)
         {
             auto t = ref.at(count);
             if((it.row() != t[0])  || (it.col() != t[1]) || (it.value() != t[2]))
@@ -121,8 +122,7 @@ int main(int argc, char **argv)
                                  {3,9,1},{5,9,-1},{5,10,1},{7,10,-1},{3,11,-1},{4,11,1}}};
 
 
-    bool dpass = test<infrastructure_graph>(ref);
-    bool upass = test<undirected_graph>(ref);
+    bool pass = test(ref);
 
 
     /*
@@ -139,9 +139,8 @@ int main(int argc, char **argv)
     };
 
     std::cout << __FILE__ << std::endl;
-    std::cout << "  Test incidence matrix directed........" <<  passfail(dpass) << std::endl;
-    std::cout << "  Test incidence matrix undirected......" <<  passfail(upass) << std::endl;
+    std::cout << "  Test incidence matrix ........" <<  passfail(pass) << std::endl;
     
-    return !(dpass && upass); 
+    return !pass; 
 }
 

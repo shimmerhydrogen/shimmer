@@ -14,12 +14,13 @@
 #include "../src/infrastructure_graph.h"
 #include "../src/incidence_matrix.h"
 
-template<typename GRAPH>
+using namespace shimmer;
+
 static void
-make_init_graph(GRAPH& igraph)
+make_init_graph(infrastructure_graph& igraph)
 {
 
- std::vector<vertex_descriptor> vds;
+    std::vector<vertex_descriptor> vds;
 
     vds.push_back( boost::add_vertex( { "station 0", 0, 5000., -60, 0. }, igraph) );
     vds.push_back( boost::add_vertex( { "station 1", 1, 0., 20 ,0. }, igraph) );
@@ -45,11 +46,11 @@ make_init_graph(GRAPH& igraph)
     //       *3
     */
 
-    boost::add_edge( 0, 1, ep0, igraph);
-    boost::add_edge( 1, 3, ep1, igraph);
-    boost::add_edge( 2, 1, ep2, igraph);
-    boost::add_edge( 3, 2, ep3, igraph);
-    boost::add_edge( 2, 0, ep4, igraph);
+    boost::add_edge( vds[0], vds[1], ep0, igraph);
+    boost::add_edge( vds[1], vds[3], ep1, igraph);
+    boost::add_edge( vds[2], vds[1], ep2, igraph);
+    boost::add_edge( vds[3], vds[2], ep3, igraph);
+    boost::add_edge( vds[2], vds[0], ep4, igraph);
 
 
 }
@@ -96,7 +97,7 @@ int main(int argc, char **argv)
                                           2.334973779411900e+02,7.262702443482772e+00,
                                           2.107480619760625e+04} ; 
 
-    undirected_graph graph;
+    infrastructure_graph graph;
     make_init_graph(graph);  
 
     std::vector<double> ri (num_edges(graph));

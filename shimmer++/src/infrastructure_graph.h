@@ -41,17 +41,15 @@ struct edge_properties {
     double      friction_factor;
     int         grid_pts;
 
-    double area()   { return M_PI * 0.25 * diameter * diameter;}
-    double volume() { return area() * length; }
     double area()   const { return M_PI * 0.25 * diameter * diameter;}
     double volume() const { return area() * length;}
 
-    double inertia_resistance(const double& dt, const double& mean_pressure)
+    double inertia_resistance(const double& dt, const double& mean_pressure) const
     {
         return  2.0 * length * mean_pressure / (dt * area()); 
     }
 
-    double friction_resistance(const double & c2)
+    double friction_resistance(const double & c2) const
     {
         double a = area();
 

@@ -15,12 +15,12 @@
 #include "../src/incidence_matrix.h"
 #include "../src/geometry_properties.h"
 
-template<typename GRAPH>
+
 static void
-make_init_infrastructure(GRAPH& igraph)
+make_init_infrastructure(infrastructure_graph& igraph)
 {
 
- std::vector<typename GRAPH::vertex_descriptor> vds;
+ std::vector<vertex_descriptor> vds;
 
     vds.push_back( boost::add_vertex( { "station 0", 0, 5000., -60, 0. }, igraph) );
     vds.push_back( boost::add_vertex( { "station 1", 1, 0., 20 ,0. }, igraph) );
@@ -50,10 +50,10 @@ make_init_infrastructure(GRAPH& igraph)
 }
 
 
-template<typename GRAPH>
+
 bool test(const std::array<double, 4>& ref)
 {
-    GRAPH graph;
+    infrastructure_graph graph;
     make_init_infrastructure(graph);
 
     int i = 0;
@@ -78,7 +78,7 @@ int main(int argc, char **argv)
     std::array<double, 4> ref = {0.962112750161874, 1.350884841043611,
                                  0.443749962319558, 0.337721210260903} ; 
 
-    bool pass = test<infrastructure_graph>(ref);
+    bool pass = test(ref);
 
     auto passfail = [](bool ipass) {
         return ipass ? "[PASS]" : "[FAIL]";

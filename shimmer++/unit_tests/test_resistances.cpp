@@ -14,12 +14,12 @@
 #include "../src/infrastructure_graph.h"
 #include "../src/incidence_matrix.h"
 
-template<typename GRAPH>
+
 static void
-make_init_graph(GRAPH& igraph)
+make_init_graph(infrastructure_graph& igraph)
 {
 
-    std::vector<typename GRAPH::vertex_descriptor> vds;
+    std::vector<vertex_descriptor> vds;
 
     vds.push_back( boost::add_vertex( { "station 0", 0, 5000., -60, 0. }, igraph) );
     vds.push_back( boost::add_vertex( { "station 1", 1, 0., 20 ,0. }, igraph) );

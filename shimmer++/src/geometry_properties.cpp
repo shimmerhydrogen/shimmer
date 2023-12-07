@@ -6,7 +6,7 @@
  * karol.cascavita@polito.it  
  */
 
-#include "infrastructure_graph.h"
+
 #include "geometry_properties.h"
 
 

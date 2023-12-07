@@ -17,9 +17,8 @@
 using triple_t = std::array<int, 3>;
 
 
-template<typename GRAPH>
 static void
-make_init_graph(GRAPH& igraph)
+make_init_graph(infrastructure_graph& igraph)
 {
 
 
@@ -45,7 +44,7 @@ make_init_graph(GRAPH& igraph)
           6 
     */
 
-    std::vector<typename GRAPH::vertex_descriptor> vds;
+    std::vector<vertex_descriptor> vds;
 
     vds.push_back( boost::add_vertex( { "station 0", 0, 5000., -60, 0. }, igraph) );
     vds.push_back( boost::add_vertex( { "station 1", 1, 0., 20 ,0. }, igraph) );
@@ -87,19 +86,19 @@ make_init_graph(GRAPH& igraph)
     boost::add_edge( 4, 3, ep11, igraph);
 }
 
-template<typename GRAPH>
+
 bool test(const std::array<triple_t, 24>& ref)
 {
  
-    GRAPH igraph;
+    infrastructure_graph igraph;
     make_init_graph(igraph);
-    Eigen::SparseMatrix<int> mat = incidence_matrix<int>(igraph);
+    Eigen::SparseMatrix<double> mat = incidence_matrix(igraph);
 
     bool pass = true;
     size_t count = 0;
     for (int k = 0; k < mat.outerSize(); ++k)
     {
-        for (Eigen::SparseMatrix<int>::InnerIterator it(mat,k); it; ++it, count++)
+        for (Eigen::SparseMatrix<double>::InnerIterator it(mat,k); it; ++it, count++)
         {
             auto t = ref.at(count);
             if((it.row() != t[0])  || (it.col() != t[1]) || (it.value() != t[2]))
@@ -121,7 +120,7 @@ int main(int argc, char **argv)
                                  {3,9,1},{5,9,-1},{5,10,1},{7,10,-1},{3,11,-1},{4,11,1}}};
 
 
-    bool pass = test<infrastructure_graph>(ref);
+    bool pass = test(ref);
 
 
     /*

@@ -13,16 +13,15 @@
 
 #include "../src/infrastructure_graph.h"
 #include "../src/incidence_matrix.h"
-#include "../src/conservation_matrices.cpp"
+#include "../src/conservation_matrices.h"
 
 
 
-template<typename GRAPH>
 static void
-make_init_graph(GRAPH& igraph)
+make_init_graph(infrastructure_graph& igraph)
 {
 
- std::vector<typename GRAPH::vertex_descriptor> vds;
+ std::vector<vertex_descriptor> vds;
 
     vds.push_back( boost::add_vertex( { "station 0", 0, 0., 0., 100 }, igraph) );
     vds.push_back( boost::add_vertex( { "station 1", 1, 0., 0.,  30 }, igraph) );
@@ -52,7 +51,7 @@ make_init_graph(GRAPH& igraph)
 
 
 bool verify_test(const std::string & name, 
-                 const vector_t<double>& vals,
+                 const vector_t& vals,
                  const std::array<double, 3>& ref )
 {
     using itor_t = Eigen::SparseMatrix<double>::InnerIterator;
@@ -91,11 +90,11 @@ int main()
     infrastructure_graph graph;
     make_init_graph(graph);
 
-    Eigen::SparseMatrix<double> incidence_out = incidence_matrix_out<double>(graph);
-    Eigen::SparseMatrix<double> incidence_in  = incidence_matrix_in<double>(graph);
+    Eigen::SparseMatrix<double> incidence_out = incidence_matrix_out(graph);
+    Eigen::SparseMatrix<double> incidence_in  = incidence_matrix_in(graph);
 
-    vector_t<double> pressure (num_vertices(graph)); 
-    vector_t<double> pm (num_edges(graph)); 
+    vector_t pressure (num_vertices(graph)); 
+    vector_t pm (num_edges(graph)); 
 
     pressure << 2000, 3000, 5000, 7000; 
 

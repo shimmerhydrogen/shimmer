@@ -13,18 +13,17 @@
 
 #include "../src/infrastructure_graph.h"
 #include "../src/incidence_matrix.h"
-#include "../src/conservation_matrices.cpp"
+#include "../src/conservation_matrices.h"
 
 
 using triple_t = std::array<double, 3>;
 
 
-template<typename GRAPH>
 static void
-make_init_graph(GRAPH& igraph)
+make_init_graph(infrastructure_graph& igraph)
 {
 
- std::vector< typename GRAPH::vertex_descriptor> vds;
+ std::vector<vertex_descriptor> vds;
 
     vds.push_back( boost::add_vertex( { "station 0", 0, 0., 0., 100 }, igraph) );
     vds.push_back( boost::add_vertex( { "station 1", 1, 0., 0.,  30 }, igraph) );
@@ -53,7 +52,7 @@ make_init_graph(GRAPH& igraph)
 
 
 bool verify_test(const std::string & name, 
-                 const sparse_matrix_t<double>& mat,
+                 const sparse_matrix_t& mat,
                  const std::vector<triple_t>& ref )
 {
     using itor_t = Eigen::SparseMatrix<double>::InnerIterator;
@@ -105,20 +104,20 @@ int main()
     infrastructure_graph graph;
     make_init_graph(graph);
 
-    vector_t<double> flux (num_edges(graph));
-    vector_t<double> pressure (num_vertices(graph)); 
+    vector_t flux (num_edges(graph));
+    vector_t pressure (num_vertices(graph)); 
 
     flux <<  -11, 13, -17; 
     pressure << 2000, 3000, 5000, 7000; 
 
-    sparse_matrix_t<double> incidence_out = incidence_matrix_out<double>(graph);
-    sparse_matrix_t<double> incidence_in  = incidence_matrix_in<double>(graph);
-    sparse_matrix_t<double> sADP(num_vertices(graph), num_edges(graph));
-    sparse_matrix_t<double> sR(num_vertices(graph), num_edges(graph));
-    sparse_matrix_t<double> sPHI(num_vertices(graph), num_vertices(graph));
+    sparse_matrix_t incidence_out = incidence_matrix_out(graph);
+    sparse_matrix_t incidence_in  = incidence_matrix_in(graph);
+    sparse_matrix_t sADP(num_vertices(graph), num_edges(graph));
+    sparse_matrix_t sR(num_vertices(graph), num_edges(graph));
+    sparse_matrix_t sPHI(num_vertices(graph), num_vertices(graph));
 
 
-    vector_t<double> pm (num_edges(graph)); 
+    vector_t pm (num_edges(graph)); 
     average(pressure, incidence_in, incidence_out, pm);
 
     adp_matrix(c2, graph, incidence_in, incidence_out, sADP);

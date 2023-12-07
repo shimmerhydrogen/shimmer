@@ -39,7 +39,7 @@ average(const  vector_t<T>& pressure, const sparse_matrix_t<T>& incidence_in,
 
 template<typename T> 
 void
-phi_matrix(const double & dt, const double& c2, const undirected_graph& g, sparse_matrix_t<T>& mat)
+phi_matrix(const double & dt, const double& c2, const infrastructure_graph& g, sparse_matrix_t<T>& mat)
 {
     vector_t<T> phi (num_vertices(g));
 
@@ -58,7 +58,7 @@ phi_matrix(const double & dt, const double& c2, const undirected_graph& g, spars
 
 
 template<typename T> 
-void adp_matrix(const T & c2, const undirected_graph& g,
+void adp_matrix(const T & c2, const infrastructure_graph& g,
                 const sparse_matrix_t<T>& incidence_in,
                 const sparse_matrix_t<T>& incidence_out,
                 sparse_matrix_t<T>& mat)
@@ -101,7 +101,7 @@ void
 resistance_matrix(const T & dt, const T& c2,
                   const vector_t<T> & flux,
                   const vector_t<T> & mean_pressure,
-                  const undirected_graph  & g,
+                  const infrastructure_graph  & g,
                   sparse_matrix_t<T>& mat )
 {
     using triplet_t = Eigen::Triplet<T>;

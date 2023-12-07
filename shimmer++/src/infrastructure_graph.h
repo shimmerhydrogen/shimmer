@@ -68,11 +68,8 @@ struct edge_properties {
     }
 };
 
-using undirected_graph = boost::adjacency_list<boost::listS,
-    boost::vecS, boost::undirectedS, vertex_properties, edge_properties>;
-
 using infrastructure_graph = boost::adjacency_list<boost::listS,
-    boost::vecS, boost::directedS, vertex_properties, edge_properties>;
+    boost::vecS, boost::undirectedS, vertex_properties, edge_properties>;
 
 using vertex_descriptor = infrastructure_graph::vertex_descriptor;
 using edge_descriptor   = infrastructure_graph::edge_descriptor;

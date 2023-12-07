@@ -24,7 +24,7 @@ static void
 make_init_graph(GRAPH& igraph)
 {
 
- std::vector<vertex_descriptor> vds;
+ std::vector< typename GRAPH::vertex_descriptor> vds;
 
     vds.push_back( boost::add_vertex( { "station 0", 0, 0., 0., 100 }, igraph) );
     vds.push_back( boost::add_vertex( { "station 1", 1, 0., 0.,  30 }, igraph) );
@@ -102,7 +102,7 @@ int main()
     double c2 = 1000; 
     double dt = 0.1; 
 
-    undirected_graph graph;
+    infrastructure_graph graph;
     make_init_graph(graph);
 
     vector_t<double> flux (num_edges(graph));

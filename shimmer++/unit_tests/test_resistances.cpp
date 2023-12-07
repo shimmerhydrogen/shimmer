@@ -19,7 +19,7 @@ static void
 make_init_graph(GRAPH& igraph)
 {
 
- std::vector<vertex_descriptor> vds;
+    std::vector<typename GRAPH::vertex_descriptor> vds;
 
     vds.push_back( boost::add_vertex( { "station 0", 0, 5000., -60, 0. }, igraph) );
     vds.push_back( boost::add_vertex( { "station 1", 1, 0., 20 ,0. }, igraph) );
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
                                           2.334973779411900e+02,7.262702443482772e+00,
                                           2.107480619760625e+04} ; 
 
-    undirected_graph graph;
+    infrastructure_graph graph;
     make_init_graph(graph);  
 
     std::vector<double> ri (num_edges(graph));

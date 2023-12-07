@@ -22,7 +22,7 @@ static void
 make_init_graph(GRAPH& igraph)
 {
 
- std::vector<vertex_descriptor> vds;
+ std::vector<typename GRAPH::vertex_descriptor> vds;
 
     vds.push_back( boost::add_vertex( { "station 0", 0, 0., 0., 100 }, igraph) );
     vds.push_back( boost::add_vertex( { "station 1", 1, 0., 0.,  30 }, igraph) );
@@ -88,7 +88,7 @@ int main()
 
     std::array<double, 3> ref_pm = {2533.333333333333,5266.666666666666, 4083.333333333333};
 
-    undirected_graph graph;
+    infrastructure_graph graph;
     make_init_graph(graph);
 
     Eigen::SparseMatrix<double> incidence_out = incidence_matrix_out<double>(graph);

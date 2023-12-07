@@ -20,7 +20,7 @@ static void
 make_init_infrastructure(GRAPH& igraph)
 {
 
- std::vector<vertex_descriptor> vds;
+ std::vector<typename GRAPH::vertex_descriptor> vds;
 
     vds.push_back( boost::add_vertex( { "station 0", 0, 5000., -60, 0. }, igraph) );
     vds.push_back( boost::add_vertex( { "station 1", 1, 0., 20 ,0. }, igraph) );
@@ -78,16 +78,14 @@ int main(int argc, char **argv)
     std::array<double, 4> ref = {0.962112750161874, 1.350884841043611,
                                  0.443749962319558, 0.337721210260903} ; 
 
-    bool dpass = test<infrastructure_graph>(ref);
-    bool upass = test<undirected_graph>(ref);
+    bool pass = test<infrastructure_graph>(ref);
 
     auto passfail = [](bool ipass) {
         return ipass ? "[PASS]" : "[FAIL]";
     };
 
     std::cout << __FILE__ << std::endl;
-    std::cout << "  Test geometry directed........" <<  passfail(dpass) << std::endl;
-    std::cout << "  Test geometry undirected......" <<  passfail(upass) << std::endl;
+    std::cout << "  Test geometry ......" <<  passfail(pass) << std::endl;
     
-    return !(dpass && upass); 
+    return !pass; 
 }

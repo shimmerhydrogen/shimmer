@@ -121,8 +121,7 @@ int main(int argc, char **argv)
                                  {3,9,1},{5,9,-1},{5,10,1},{7,10,-1},{3,11,-1},{4,11,1}}};
 
 
-    bool dpass = test<infrastructure_graph>(ref);
-    bool upass = test<undirected_graph>(ref);
+    bool pass = test<infrastructure_graph>(ref);
 
 
     /*
@@ -139,9 +138,8 @@ int main(int argc, char **argv)
     };
 
     std::cout << __FILE__ << std::endl;
-    std::cout << "  Test incidence matrix directed........" <<  passfail(dpass) << std::endl;
-    std::cout << "  Test incidence matrix undirected......" <<  passfail(upass) << std::endl;
+    std::cout << "  Test incidence matrix ........" <<  passfail(pass) << std::endl;
     
-    return !(dpass && upass); 
+    return !pass; 
 }
 

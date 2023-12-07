@@ -12,17 +12,6 @@ set(CMAKE_AUTOUIC ON)
 find_package(Qt6 COMPONENTS Core Widgets REQUIRED)
 set(LINK_LIBS ${LINK_LIBS} Qt6::Core Qt6::Widgets)
 
-
-#######################################################################
-# OpenXLSX stuff
-set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "")
-set(OPENXLSX_BUILD_BENCHMARKS OFF CACHE BOOL "")
-set(OPENXLSX_BUILD_SAMPLES OFF CACHE BOOL "")
-set(OPENXLSX_BUILD_TESTS OFF CACHE BOOL "")
-set(OPENXLSX_CREATE_DOCS OFF CACHE BOOL "")
-add_subdirectory(deps/OpenXLSX)
-set(LINK_LIBS ${LINK_LIBS} OpenXLSX::OpenXLSX)
-
 #######################################################################
 # Boost stuff
 find_package(Boost REQUIRED COMPONENTS graph)
@@ -44,7 +33,7 @@ set(LINK_LIBS ${LINK_LIBS} Eigen3::Eigen)
 
 ######################################################################
 
-add_executable(shimmer src/main.cpp src/xlsx_io.cpp src/infrastructure_graph.cpp)
+add_executable(shimmer src/main.cpp src/infrastructure_graph.cpp)
 target_link_libraries(shimmer ${LINK_LIBS})
 
 add_executable(test_incidence unit_tests/test_incidence_matrix.cpp)

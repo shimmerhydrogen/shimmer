@@ -21,11 +21,12 @@ static void
 make_init_infrastructure(infrastructure_graph& igraph)
 {
 
- std::vector<vertex_descriptor> vds;
+    std::vector<vertex_descriptor> vds;
 
     vds.push_back( boost::add_vertex( { "station 0", 0, 5000., -60, 0. }, igraph) );
     vds.push_back( boost::add_vertex( { "station 1", 1, 0., 20 ,0. }, igraph) );
     vds.push_back( boost::add_vertex( { "station 2", 2, 0., 25 ,0. }, igraph) );
+    vds.push_back( boost::add_vertex( { "station 3", 2, 0., 25 ,0. }, igraph) );
 
     edge_properties ep0  = {edge_type::pipe, 0,   5, 0.7, 0.012};
     edge_properties ep1  = {edge_type::pipe, 1,   9, 0.2, 0.012};
@@ -44,10 +45,10 @@ make_init_infrastructure(infrastructure_graph& igraph)
              *3
     */
 
-    boost::add_edge( 0, 1, ep0, igraph);
-    boost::add_edge( 1, 3, ep1, igraph);
-    boost::add_edge( 2, 1, ep2, igraph);
-    boost::add_edge( 3, 2, ep3, igraph);
+    boost::add_edge( vds[0], vds[1], ep0, igraph);
+    boost::add_edge( vds[1], vds[3], ep1, igraph);
+    boost::add_edge( vds[2], vds[1], ep2, igraph);
+    boost::add_edge( vds[3], vds[2], ep3, igraph);
 }
 
 

@@ -46,11 +46,11 @@ make_init_graph(infrastructure_graph& igraph)
     //       *3
     */
 
-    boost::add_edge( 0, 1, ep0, igraph);
-    boost::add_edge( 1, 3, ep1, igraph);
-    boost::add_edge( 2, 1, ep2, igraph);
-    boost::add_edge( 3, 2, ep3, igraph);
-    boost::add_edge( 2, 0, ep4, igraph);
+    boost::add_edge( vds[0], vds[1], ep0, igraph);
+    boost::add_edge( vds[1], vds[3], ep1, igraph);
+    boost::add_edge( vds[2], vds[1], ep2, igraph);
+    boost::add_edge( vds[3], vds[2], ep3, igraph);
+    boost::add_edge( vds[2], vds[0], ep4, igraph);
 
 
 }

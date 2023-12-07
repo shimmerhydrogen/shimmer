@@ -74,18 +74,18 @@ make_init_graph(infrastructure_graph& igraph)
     edge_properties ep11 = {edge_type::pipe,11,   80, 0.6, 0.012};
 
 
-    boost::add_edge( 0, 1, ep0, igraph);
-    boost::add_edge( 1, 4, ep1, igraph);
-    boost::add_edge( 2, 4, ep2, igraph);
-    boost::add_edge( 1, 2, ep3, igraph);
-    boost::add_edge( 4, 5, ep4, igraph);
-    boost::add_edge( 2, 3, ep5, igraph);
-    boost::add_edge( 3, 6, ep6, igraph);
-    boost::add_edge( 5, 6, ep7, igraph);
-    boost::add_edge( 4, 7, ep8, igraph);
-    boost::add_edge( 3, 5, ep9, igraph);
-    boost::add_edge( 5, 7, ep10, igraph);
-    boost::add_edge( 4, 3, ep11, igraph);
+    boost::add_edge( vds[0], vds[ 1], ep0, igraph);
+    boost::add_edge( vds[1], vds[ 4], ep1, igraph);
+    boost::add_edge( vds[2], vds[ 4], ep2, igraph);
+    boost::add_edge( vds[1], vds[ 2], ep3, igraph);
+    boost::add_edge( vds[4], vds[ 5], ep4, igraph);
+    boost::add_edge( vds[2], vds[ 3], ep5, igraph);
+    boost::add_edge( vds[3], vds[ 6], ep6, igraph);
+    boost::add_edge( vds[5], vds[ 6], ep7, igraph);
+    boost::add_edge( vds[4], vds[ 7], ep8, igraph);
+    boost::add_edge( vds[3], vds[ 5], ep9, igraph);
+    boost::add_edge( vds[5], vds[ 7], ep10, igraph);
+    boost::add_edge( vds[4], vds[ 3], ep11, igraph);
 }
 
 

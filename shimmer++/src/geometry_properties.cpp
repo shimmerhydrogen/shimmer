@@ -9,6 +9,7 @@
 
 #include "geometry_properties.h"
 
+namespace shimmer{
 
 double area(const edge_properties& ep)
 {
@@ -31,4 +32,6 @@ double volume(const infrastructure_graph::vertex_descriptor&  v, const infrastru
 
     return vol * 0.5;   
 }
+
+} //end namespace shimmer
 

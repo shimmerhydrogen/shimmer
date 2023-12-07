@@ -16,6 +16,8 @@
 
 using triple_t = std::array<int, 3>;
 
+using namespace shimmer;
+
 
 static void
 make_init_graph(infrastructure_graph& igraph)

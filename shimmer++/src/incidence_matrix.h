@@ -11,6 +11,8 @@
 #include <Eigen/Sparse>
 #include "infrastructure_graph.h"
 
+namespace shimmer{
+
 using sparse_matrix_t = Eigen::SparseMatrix<double>; 
 
 
@@ -24,3 +26,5 @@ incidence_matrix_in(const infrastructure_graph& g);
 
 sparse_matrix_t
 incidence_matrix(const infrastructure_graph& g);
+
+}//end namespace shimmer

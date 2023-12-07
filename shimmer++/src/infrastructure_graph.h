@@ -9,6 +9,8 @@
 
 #include <boost/graph/adjacency_list.hpp>
 
+namespace shimmer {
+
 struct gas_descriptor {
     std::string     name;
     double          percentage;
@@ -88,3 +90,4 @@ struct edge_property_writer {
 
 void write_graphviz(const std::string&, const infrastructure_graph&);
 
+} //end namespace shimmer

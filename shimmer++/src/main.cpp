@@ -18,6 +18,8 @@
 #include "infrastructure_graph.h"
 #include "xlsx_io.h"
 
+using namespace shimmer;
+
 static bool
 init_lua(sol::state& lua)
 {

@@ -9,7 +9,8 @@
 
 #include "incidence_matrix.h"
 
-
+namespace shimmer{
+    
 sparse_matrix_t
 incidence_matrix_out(const infrastructure_graph& g)
 {
@@ -55,3 +56,5 @@ incidence_matrix(const infrastructure_graph& g)
 {
     return  incidence_matrix_in(g) - incidence_matrix_out(g);
 }
+
+} //end namespace shimmer

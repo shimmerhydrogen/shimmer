@@ -23,7 +23,7 @@ using namespace OpenXLSX;
 #define EDGE_GRID_PTS   10
 
 static int
-vertices_from_xlsx(const XLWorksheet& wks, std::vector<vertex_properties>& vps)
+vertices_from_xlsx(const XLWorksheet& wks, std::vector<shimmer::vertex_properties>& vps)
 {
     std::vector<XLCellValue> row_values;
     int parsed_rows = 0;
@@ -36,7 +36,7 @@ vertices_from_xlsx(const XLWorksheet& wks, std::vector<vertex_properties>& vps)
 }
 
 static int
-edges_from_xlsx(const XLWorksheet& wks, std::vector<edge_properties>& eps)
+edges_from_xlsx(const XLWorksheet& wks, std::vector<shimmer::edge_properties>& eps)
 {
     std::vector<XLCellValue> row_values;
     int parsed_rows = 0;

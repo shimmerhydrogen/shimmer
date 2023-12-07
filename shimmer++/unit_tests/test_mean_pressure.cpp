@@ -15,6 +15,7 @@
 #include "../src/incidence_matrix.h"
 #include "../src/conservation_matrices.h"
 
+using namespace shimmer;
 
 
 static void

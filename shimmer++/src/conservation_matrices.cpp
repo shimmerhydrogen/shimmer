@@ -9,6 +9,8 @@
 
 #include "../src/conservation_matrices.h"
 
+namespace shimmer{
+
 
 void
 average(const  vector_t& pressure, const sparse_matrix_t& incidence_in,
@@ -107,6 +109,8 @@ resistance_matrix(const double & dt, const double& c2,
     
     return;
 }
+
+} //end namespace shimmer
 
 
  // vector_t fromP2p = adp.cwiseAbs().transpose() * pressure;  

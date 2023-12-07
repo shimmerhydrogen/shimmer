@@ -17,6 +17,7 @@
 
 
 using triple_t = std::array<double, 3>;
+using namespace shimmer;
 
 
 static void

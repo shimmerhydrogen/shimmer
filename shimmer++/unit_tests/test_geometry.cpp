@@ -15,6 +15,7 @@
 #include "../src/incidence_matrix.h"
 #include "../src/geometry_properties.h"
 
+using namespace shimmer;
 
 static void
 make_init_infrastructure(infrastructure_graph& igraph)

@@ -27,7 +27,7 @@ average(const  vector_t& pressure, const sparse_matrix_t& incidence_in,
 }
 
 
-auto
+std::vector<triplet_t>
 phi_triplets(const double & dt, const double& c2, const infrastructure_graph& g)
 {
     std::vector<triplet_t> triplets; 
@@ -75,7 +75,7 @@ compute_expS(const double & c2, const infrastructure_graph& g)
 }
 
 
-auto 
+std::vector<triplet_t> 
 adp_triplets(const double & c2, const infrastructure_graph& g,
              const incidence& inc)
 {
@@ -153,7 +153,7 @@ adp_matrix( const double & c2, const infrastructure_graph& g,
 */
 
 
-auto
+std::vector<triplet_t>
 resistance_triplets(const double & dt, const double& c2,
                   const vector_t & flux,
                   const vector_t & mean_pressure,

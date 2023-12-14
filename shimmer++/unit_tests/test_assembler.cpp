@@ -15,7 +15,7 @@
 #include "../src/incidence_matrix.h"
 #include "../src/conservation_matrices.h"
 #include "../src/assemble.h"
-
+#include "verify_test.h"
 
 using triple_t = std::array<double, 3>;
 
@@ -53,40 +53,6 @@ make_init_graph(infrastructure_graph& igraph)
     boost::add_edge( vds[1], vds[2], ep2, igraph);
 }
 
-
-bool verify_test(const std::string & name, 
-                 const sparse_matrix_t& mat,
-                 const std::vector<triple_t>& ref )
-{
-    using itor_t = sparse_matrix_t::InnerIterator;
-    bool pass = true;
-    size_t count = 0;
-    for (int k = 0; k < mat.outerSize(); ++k)
-    {
-        for (itor_t it(mat,k); it; ++it, count++)
-        { 
-            std::cout << std::setprecision(16) << "(" << it.row() 
-                      << " , " << it.col() << " , " << it.value() 
-                      << " ) " << std::endl ;
-
-            auto t = ref.at(count);
-            auto e_val = std::abs((it.value() - t[2])/t[2]);
-            if((it.row() != t[0])  || (it.col() != t[1]) || (e_val > 1.e-12))
-            {
-                pass = false;
-                break;  
-            }
-        }
-    }
-    
-    auto passfail = [](bool ipass) {
-        return ipass ? "[PASS]" : "[FAIL]";
-    };
-
-    std::cout << "  Test " << name << " .........." <<  passfail(pass) << std::endl;
-
-    return pass;
-}
 
 
 int main()
@@ -135,5 +101,5 @@ int main()
 
     bool lhs_pass = verify_test("LHS matrix", asmr.LHS_matrix(), ref_lhs);
 
-    return 0; 
+    return !lhs_pass; 
 }

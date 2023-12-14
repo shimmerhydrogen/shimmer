@@ -1,4 +1,5 @@
-set(SHIMMER_SOURCES_T ../src/infrastructure_graph.cpp ../src/geometry_properties.cpp ../src/conservation_matrices.cpp ../src/incidence_matrix.cpp ../src/assemble.h)
+set(SHIMMER_SOURCES_T ../src/infrastructure_graph.cpp ../src/geometry_properties.cpp 
+        ../src/conservation_matrices.cpp ../src/incidence_matrix.cpp ../src/assemble.h verify_test.cpp)
 
 add_executable(test_incidence test_incidence_matrix.cpp ${SHIMMER_SOURCES_T})
 target_link_libraries(test_incidence ${LINK_LIBS})

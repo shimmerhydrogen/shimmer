@@ -14,7 +14,7 @@
 #include "../src/infrastructure_graph.h"
 #include "../src/incidence_matrix.h"
 #include "../src/conservation_matrices.h"
-
+#include "verify_test.h"
 
 using triple_t = std::array<double, 3>;
 using namespace shimmer;
@@ -54,40 +54,6 @@ make_init_graph(infrastructure_graph& igraph)
 }
 
 
-bool verify_test(const std::string & name, 
-                 const sparse_matrix_t& mat,
-                 const std::vector<triple_t>& ref )
-{
-    using itor_t = Eigen::SparseMatrix<double>::InnerIterator;
-    bool pass = true;
-    size_t count = 0;
-    for (int k = 0; k < mat.outerSize(); ++k)
-    {
-        for (itor_t it(mat,k); it; ++it, count++)
-        { 
-            std::cout << std::setprecision(16) << "(" << it.row() 
-                      << " , " << it.col() << " , " << it.value() 
-                      << " ) " << std::endl ;
-
-            auto t = ref.at(count);
-            auto e_val = std::abs((it.value() - t[2])/t[2]);
-            if((it.row() != t[0])  || (it.col() != t[1]) || (e_val > 1.e-12))
-            {
-                pass = false;
-                break;  
-            }
-        }
-    }
-    
-    auto passfail = [](bool ipass) {
-        return ipass ? "[PASS]" : "[FAIL]";
-    };
-
-    std::cout << "  Test " << name << " .........." <<  passfail(pass) << std::endl;
-
-    return pass;
-}
-
 int main()
 {
     std::vector<triple_t> ref_adp = {{{0,0,1}, {0,1, -0.503586391306371},
@@ -112,18 +78,15 @@ int main()
 
     vector_t flux (num_edges(graph));
     vector_t pressure (num_vertices(graph)); 
-
     flux <<  -11, 13, -17; 
     pressure << 2000, 3000, 5000, 7000; 
 
     incidence inc(graph);
 
-    sparse_matrix_t sADP, sR, sPHI;
-
-
     vector_t pm (num_edges(graph)); 
     average(pressure, inc.matrix_in(), inc.matrix_out(), pm);
 
+    sparse_matrix_t sADP, sR, sPHI;
     phi_matrix(dt, c2, graph, sPHI);
     adp_matrix(c2, graph, inc, sADP);
     resistance_matrix(dt, c2, flux, pm, graph, sR);

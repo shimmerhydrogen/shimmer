@@ -14,6 +14,8 @@
 #include "../src/infrastructure_graph.h"
 #include "../src/incidence_matrix.h"
 #include "../src/conservation_matrices.h"
+#include "verify_test.h"
+
 
 using namespace shimmer;
 
@@ -50,54 +52,24 @@ make_init_graph(infrastructure_graph& igraph)
 }
 
 
-
-bool verify_test(const std::string & name, 
-                 const vector_t& vals,
-                 const std::array<double, 3>& ref )
-{
-    using itor_t = Eigen::SparseMatrix<double>::InnerIterator;
-    bool pass = true;
-    size_t count = 0;
-    for (int k = 0; k < vals.size(); ++k)
-    {
-        // std::cout << vals[k]  <<  std::endl ;
-
-        auto e_val = std::abs((vals[k] - ref.at(k)) /  ref.at(k));
-        if(e_val > 1.e-12)
-        {
-            pass = false;
-            break;  
-        }
-    }
-    
-    auto passfail = [](bool ipass) {
-        return ipass ? "[PASS]" : "[FAIL]";
-    };
-
-    std::cout << "  Test " << name << ".........." <<  passfail(pass) << std::endl;
-
-    return pass;
-}
-
-
 int main()
 {
-    // Not realisic speed of sound. Intendeed only for test purposes.
+    // Not realisic speed of sound. Intended only for test purposes.
     double c2 = 1; 
     double dt = 0.1; 
 
-    std::array<double, 3> ref_pm = {2533.333333333333,5266.666666666666, 4083.333333333333};
+    std::vector<double> ref_pm = {2533.333333333333,
+                                    5266.666666666666,
+                                    4083.333333333333};
 
     infrastructure_graph graph;
     make_init_graph(graph);
 
-    incidence inc(graph);
-
     vector_t pressure (num_vertices(graph)); 
     vector_t pm (num_edges(graph)); 
-
     pressure << 2000, 3000, 5000, 7000; 
 
+    incidence inc(graph);
     average(pressure, inc.matrix_in(), inc.matrix_out(), pm);
 
     bool pass = verify_test(" mean pressure in pipes ", pm, ref_pm);

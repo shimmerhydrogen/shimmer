@@ -15,6 +15,7 @@
 #include "../src/incidence_matrix.h"
 #include "../src/conservation_matrices.h"
 #include "verify_test.h"
+#include "../src/matrix_manipulations.h"
 
 using triple_t = std::array<double, 3>;
 using namespace shimmer;
@@ -60,9 +61,9 @@ int main()
                                     {1, 1, -0.612626394184416},
                                     {2, 1, 1}, {2, 2, -1.341783903666971},
                                     {1, 3, 1}}};
-    std::vector<triple_t> ref_resist = {{{0,0,6.763108109027953e+05}, 
-                                    {1, 1, 4.558672924222292e+07}, 
-                                    {2, 2, 1.173932795107726e+07}}};
+    std::vector<triple_t> ref_resist = {{{0,0,-6.763108109027953e+05}, 
+                                    {1, 1, -4.558672924222292e+07}, 
+                                    {2, 2, -1.173932795107726e+07}}};
     std::vector<triple_t> ref_phi = {{{0,0, 9.621127501618740e-03},
                                      {1, 1, 1.350884841043611e-02},
                                      {2 ,2, 2.474004214701962e-03},
@@ -83,13 +84,15 @@ int main()
 
     incidence inc(graph);
 
-    vector_t pm (num_edges(graph)); 
-    average(pressure, inc.matrix_in(), inc.matrix_out(), pm);
+    vector_t Rf_vec, Ri_vec; 
 
-    sparse_matrix_t sADP, sR, sPHI;
-    phi_matrix(dt, c2, graph, sPHI);
-    adp_matrix(c2, graph, inc, sADP);
-    resistance_matrix(dt, c2, flux, pm, graph, sR);
+    vector_t res_friction = resistance_friction(c2, flux, graph);
+    vector_t res_inertia  = resistance_inertia(dt, c2, pressure, inc, graph);
+
+    
+    sparse_matrix_t sPHI = phi_matrix(dt, c2, graph);
+    sparse_matrix_t sADP = adp_matrix(c2, graph, inc);   
+    sparse_matrix_t sR = build_matrix(-res_inertia - res_friction);
 
     std::cout << __FILE__ << std::endl;
 

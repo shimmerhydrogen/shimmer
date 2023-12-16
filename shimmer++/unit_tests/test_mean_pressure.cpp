@@ -66,11 +66,11 @@ int main()
     make_init_graph(graph);
 
     vector_t pressure (num_vertices(graph)); 
-    vector_t pm (num_edges(graph)); 
+    
     pressure << 2000, 3000, 5000, 7000; 
 
     incidence inc(graph);
-    average(pressure, inc.matrix_in(), inc.matrix_out(), pm);
+    vector_t pm = average(pressure, inc.matrix_in(), inc.matrix_out());
 
     bool pass = verify_test(" mean pressure in pipes ", pm, ref_pm);
 

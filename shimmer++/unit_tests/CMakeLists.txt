@@ -1,5 +1,8 @@
 set(SHIMMER_SOURCES_T ../src/infrastructure_graph.cpp ../src/geometry_properties.cpp 
-        ../src/conservation_matrices.cpp ../src/incidence_matrix.cpp ../src/assemble.h verify_test.cpp)
+        ../src/conservation_matrices.cpp ../src/incidence_matrix.cpp ../src/assemble.h verify_test.cpp
+        ../src/matrix_manipulations.cpp)
+
+#set(SHIMMER_SOURCES_T ../${SHIMMER_SOURCES} verify_test.cpp)
 
 add_executable(test_incidence test_incidence_matrix.cpp ${SHIMMER_SOURCES_T})
 target_link_libraries(test_incidence ${LINK_LIBS})
@@ -12,7 +15,6 @@ add_test(NAME test_geometry COMMAND test_geometry)
 add_executable(test_conservation test_conservation_matrices.cpp ${SHIMMER_SOURCES_T})
 target_link_libraries(test_conservation ${LINK_LIBS})
 add_test(NAME test_conservation COMMAND test_conservation)
-
 
 add_executable(test_resistances test_resistances.cpp ${SHIMMER_SOURCES_T})
 target_link_libraries(test_resistances ${LINK_LIBS})

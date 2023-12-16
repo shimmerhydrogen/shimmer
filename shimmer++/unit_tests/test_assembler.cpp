@@ -28,78 +28,97 @@ make_init_graph(infrastructure_graph& igraph)
 
     std::vector<vertex_descriptor> vds;
 
-    vds.push_back( boost::add_vertex( { "station 0", 0, 0., 0., 100 }, igraph) );
-    vds.push_back( boost::add_vertex( { "station 1", 1, 0., 0.,  30 }, igraph) );
-    vds.push_back( boost::add_vertex( { "station 2", 2, 0., 0.,  60 }, igraph) );
-    vds.push_back( boost::add_vertex( { "station 3", 3, 0., 0.,  80 }, igraph) );
+    vds.push_back( boost::add_vertex( { "station 0", 0, 0., 0.,  0.}, igraph) );
+    vds.push_back( boost::add_vertex( { "station 1", 1, 0., 0.,  0.}, igraph) );
+    vds.push_back( boost::add_vertex( { "station 2", 2, 0., 0.,  0.}, igraph) );
 
-    edge_properties ep0  = {edge_type::pipe, 0,   5, 0.7, 0.017};
-    edge_properties ep1  = {edge_type::pipe, 1,   9, 0.2, 0.013};
-    edge_properties ep2  = {edge_type::pipe, 2,   7, 0.3, 0.023};
+    edge_properties ep0  = {edge_type::pipe, 0,    80000, 0.6, 9.0378e-03};//0.012};
+    edge_properties ep1  = {edge_type::pipe, 1,    90000, 0.6, 9.1676e-03};//0.012};
+    edge_properties ep2  = {edge_type::pipe, 2,   100000, 0.6, 1.1134e-02};//0.012};
 
-    /*           0                                *0  *1  *2    
-    //           |                              -------------   
-    //           |*0                           0|  1           
-    //           1                             1| -1  -1   1   
-    //         / |                             2|         -1  
-    //        /  |                             3|      1        
-    //     *2/   |*1                               
-    //      /    |                             
-    //     2     3                                         
+    /*                                            
+    //           0                        *0  *1  *2              
+    //         / |                     --------------         
+    //        /  |                     0|  1   1                        
+    //     *1/   |*0                   1| -1      -1          
+    //      /____|                     2|     -1   1        
+    //    1   *2   2                                         
     */
- 
+
     boost::add_edge( vds[0], vds[1], ep0, igraph);
-    boost::add_edge( vds[3], vds[1], ep1, igraph);
-    boost::add_edge( vds[1], vds[2], ep2, igraph);
+    boost::add_edge( vds[0], vds[2], ep1, igraph);
+    boost::add_edge( vds[2], vds[1], ep2, igraph);
 }
 
 
 
 int main()
 {
-    std::vector<triple_t> ref_lhs ={{{0, 0, 9.621127501618740e-03},                                    
-                                    {4, 0, 1}, 
-                                    {1, 1, 1.350884841043611e-02},
-                                    {4, 1,-0.503586391306371},
-                                    {5, 1,-0.612626394184416},
-                                    {6, 1, 1},
-                                    {2 ,2, 2.474004214701962e-03},
-                                    {6, 2,-1.341783903666971},
-                                    {3, 3, 1.413716694115407e-03},
-                                    {5, 3, 1},
-                                    {0, 4, 1},
-                                    {1, 4,-1},
-                                    {4, 4, 6.763108109027953e+05}, 
-                                    {1, 5,-1},
-                                    {3, 5, 1},
-                                    {5, 5, 4.558672924222292e+07},
-                                    {1, 6, 1},
-                                    {2, 6,-1}, 
-                                    {6, 6, 1.173932795107726e+07}                                    
-                                     }};
 
+    std::vector<triple_t> ref_lhs =
+                          {{{0 , 0 , 0.0009642772690198622 }, 
+                            {3 , 0 , 10078534.55024885 }, 
+                            {4 , 0 , 10091402.87660982 }, 
+                            {1 , 1 , 0.001020999461315148 }, 
+                            {3 , 1 , -10078534.55024885 }, 
+                            {5 , 1 , -9967287.426858675 }, 
+                            {2 , 2 , 0.001077721653610434 }, 
+                            {4 , 2 , -10091402.87660982 }, 
+                            {5 , 2 , 9967287.426858675 }, 
+                            {0 , 3 , 1 }, 
+                            {1 , 3 , -1 }, 
+                            {3 , 3 , 118050814840.9504 }, 
+                            {0 , 4 , 1 }, 
+                            {2 , 4 , -1 }, 
+                            {4 , 4 , 121286500213.832 }, 
+                            {1 , 5 , -1 }, 
+                            {2 , 5 , 1 }, 
+                            {5 , 5 , 60178132595.58356 }}};
 
-    double dt = 0.1;
-    double c2 = 1000;
+    size_t num_edges = 3;
+    size_t num_vertices = 3;
+
+    double c2 = 138464.0;
+    double dt = 180;
+
+    vector_t flux (num_edges);
+    vector_t pressure (num_vertices); 
+
+    flux << 2.448496272217528e+01,
+            2.171503727782473e+01,
+            6.315037277824726e+00; 
+    
+    pressure << 5101325.0, 4977209.550248852, 4990077.876609823;
+
 
     infrastructure_graph graph;
     make_init_graph(graph);
 
-    vector_t flux (num_edges(graph));
-    vector_t pressure (num_vertices(graph)); 
+    incidence inc(graph);
 
-    flux <<  -11, 13, -17; 
-    pressure << 2000, 3000, 5000, 7000; 
+    vector_t phi_vec = phi_vector(dt, c2, graph);
+    vector_t res_friction = resistance_friction(c2, flux, graph);
+    vector_t res_inertia  = resistance_inertia(dt, c2, pressure, inc, graph);
+    sparse_matrix_t sAPA  = apa_matrix(c2, pressure, graph, inc);
 
-    //incidence<double> inc(graph);
-    assembler asmr(graph); 
-    vector_t pm (num_edges(graph)); 
-    average(pressure, asmr.incidence_in(), asmr.incidence_out(), pm);
+    vector_t res_vec =  -res_friction - res_inertia;
+    sparse_matrix_t LHS;
 
-    asmr.conservation_matrices(dt, c2, flux, pm, graph);
-    asmr.assemble(graph);
+    assemble_lhs(phi_vec, res_vec, sAPA, inc.matrix(), graph, LHS);
+    
+    std::cout << "LHS: " <<  std::endl ;
+    size_t count = 0;
+    for (int k = 0; k < LHS.outerSize(); ++k)
+    {
+        for (itor_t it(LHS,k); it; ++it, count++)
+        { 
+            std::cout << std::setprecision(16) << "{" << it.row() 
+                      << " , " << it.col() << " , " << it.value() 
+                      << " }, " << std::endl ;
+        }
+    }
 
-    bool lhs_pass = verify_test("LHS matrix", asmr.LHS_matrix(), ref_lhs);
+    bool lhs_pass = verify_test("LHS matrix", LHS, ref_lhs);
 
     return !lhs_pass; 
 }

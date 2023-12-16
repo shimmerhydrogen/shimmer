@@ -6,52 +6,51 @@
  * karol.cascavita@polito.it  
  */
 
-
+#include <cassert>
 #include "../src/conservation_matrices.h"
+#include "../src/matrix_manipulations.h"
 
 namespace shimmer{
 
 
-void
+vector_t
 average(const  vector_t& pressure, const sparse_matrix_t& incidence_in,
-        const sparse_matrix_t& incidence_out,  vector_t& pm)
+        const sparse_matrix_t& incidence_out)
 {
+
     vector_t i_p = incidence_in.transpose()  * pressure;
     vector_t o_p = incidence_out.transpose()  * pressure;
     vector_t io_p  = i_p + o_p; 
     
-    pm  = (2.0/3.0) * (io_p - i_p.cwiseProduct(o_p).cwiseQuotient(io_p));
+    return (2.0/3.0) * (io_p - i_p.cwiseProduct(o_p).cwiseQuotient(io_p));
     
     //for(size_t i = 0; i < pm.size(); i++)
     //    std::cout << pm[i] << std::endl;
 }
 
 
-std::vector<triplet_t>
-phi_triplets(const double & dt, const double& c2, const infrastructure_graph& g)
+vector_t
+phi_vector(const double & dt, const double& c2, const infrastructure_graph& g)
 {
-    std::vector<triplet_t> triplets; 
+    vector_t phi = vector_t::Zero(num_vertices(g));
 
     int i = 0;
     auto v_range = vertices(g);
     for(auto itor = v_range.first; itor != v_range.second; itor++, i++)
-        triplets.push_back(triplet_t(i, i, volume(*itor, g) / (c2 * dt)));
-
-    return triplets;
+        phi(i) = volume(*itor, g) / (c2 * dt);
+    
+    return phi;
 }
 
 
-void
-phi_matrix(const double & dt, const double& c2, const infrastructure_graph& g, sparse_matrix_t& mat)
+sparse_matrix_t
+phi_matrix(const double & dt, const double& c2, const infrastructure_graph& g)
 {
-    vector_t phi (num_vertices(g));
+    vector_t phi_vec = phi_vector(dt, c2, g);   
 
-    int i = 0;
-    auto triplets = phi_triplets(dt, c2, g);   
-    mat.resize(num_vertices(g), num_vertices(g));   
-    mat.setFromTriplets(triplets.begin(), triplets.end());    
-    return;
+    return build_matrix(phi_vec);
 }
+
 
 vector_t
 compute_expS(const double & c2, const infrastructure_graph& g)
@@ -75,120 +74,72 @@ compute_expS(const double & c2, const infrastructure_graph& g)
 }
 
 
-std::vector<triplet_t> 
-adp_triplets(const double & c2, const infrastructure_graph& g,
-             const incidence& inc)
-{
-    vector_t exp_s  = compute_expS(c2, g);
-
-    // Referred to pressure p (not squared)
-
-    std::cout << "inc triplets size " << inc.triplets_size() << std::endl;
-    std::cout << " exp_s size" << exp_s.size() << std::endl;
-     
-    auto triplets_out = inc.triplets_out(); 
-    auto begin_out = triplets_out.cbegin();
-    auto end_out   = triplets_out.cend();
-
-    std::vector<triplet_t> triplets (triplets_out.size());
-
-    std::transform(begin_out, end_out, triplets.begin(),
-        [&](triplet_t t){ 
-            return triplet_t(t.row(), t.col(), -t.value() * exp_s(t.col())); 
-        } 
-    );
-
-    auto begin_in = inc.triplets_in().begin();
-    auto end_in   = inc.triplets_in().end();
-    triplets.insert(triplets.end(), begin_in, end_in);
-
-
-    // transpose 
-    std::transform(triplets.cbegin(), triplets.cend(), triplets.begin(),
-        [&](triplet_t t){ 
-            return triplet_t(t.col(), t.row(), t.value()); 
-        } 
-    );
-
-
-    return triplets;
-}
-
-
-void
-adp_matrix(const double & c2, const infrastructure_graph& g,
-            const incidence& inc,
-            sparse_matrix_t& mat)
-{
-    // Referred to pressure p (not squared)
-
-    // computation based on triplets
-    mat.resize(num_edges(g), num_vertices(g));
-    auto triplets = adp_triplets(c2, g, inc);
-    mat.setFromTriplets(triplets.begin(), triplets.end());
-    return;
-}
-
-/*
-Deprecated since it allows adp_triplets and adp_matrix to be different.
-void
+sparse_matrix_t
 adp_matrix( const double & c2, const infrastructure_graph& g,
-            const incidence& inc,
-            sparse_matrix_t& mat)
+            const incidence& inc)
 { 
     // Referred to pressure p (not squared)
-    auto exp_s  = compute_expS(c2, g);
-    
-    mat.resize(num_vertices(g), num_edges(g));
-    // ==============================================
-    // computation based on matrices      
-    sparse_matrix_t sE(num_edges(g), num_edges(g));
-    sE.setIdentity();
-    sE.diagonal() = exp_s;    
-    
-    mat = (incidence_in - incidence_out * sE).transpose();
+    vector_t exp_s  = compute_expS(c2, g);
+    sparse_matrix_t sE = build_matrix(exp_s);  
 
-    return;
+    sparse_matrix_t ADP(num_edges(g), num_vertices(g));
+    ADP = (inc.matrix_in() - inc.matrix_out() * sE).transpose();
+
+    return ADP;
 }
-*/
 
 
-std::vector<triplet_t>
-resistance_triplets(const double & dt, const double& c2,
-                  const vector_t & flux,
-                  const vector_t & mean_pressure,
-                  const infrastructure_graph  & g)
+sparse_matrix_t
+apa_matrix( const double & c2, const  vector_t& pressure, 
+            const infrastructure_graph& g, const incidence& inc)
 {
-    using triplet_t = Eigen::Triplet<double>;
-    std::vector<triplet_t> triplets;
+    sparse_matrix_t ADP = adp_matrix(c2, g, inc);
+    sparse_matrix_t diag_ADP_p= build_matrix( ADP.cwiseAbs() * pressure);
+    
+    sparse_matrix_t sAPA(num_edges(g), num_vertices(g));
+    sAPA = diag_ADP_p * ADP; 
+
+    return sAPA;
+}
+
+
+vector_t
+resistance_inertia(const double & dt,
+        const double& c2, const vector_t & pressure, const incidence& inc,
+        const infrastructure_graph  & g)
+{
+    vector_t Omega = vector_t::Zero(num_edges(g));
+
+    vector_t mean_pressure = average(pressure, inc.matrix_in(), inc.matrix_out());
+
+    assert(mean_pressure.size() == num_edges(g));
 
     size_t count = 0;
     auto edge_range = edges(g);
     for(auto itor = edge_range.first; itor != edge_range.second;itor++,count++ ){
         auto pipe = g[*itor];   
         auto pm = mean_pressure[count];
-        auto Omega = 2.0 * pipe.friction_resistance(c2) * std::abs(flux(count)) 
-                                + pipe.inertia_resistance(dt,pm); 
-        triplets.push_back(triplet_t(count, count, Omega));
+        Omega(count) = pipe.inertia_resistance(dt, pm); 
     }
+    return Omega;
+} 
 
-    return triplets;
-}
 
-
-void
-resistance_matrix(const double & dt, const double& c2,
-                  const vector_t & flux,
-                  const vector_t & mean_pressure,
-                  const infrastructure_graph  & g,
-                  sparse_matrix_t& mat )
+vector_t
+resistance_friction(const double& c2, const vector_t & flux,
+                        const infrastructure_graph  & g)
 {
-    auto triplets =  resistance_triplets(dt, c2, flux, mean_pressure, g);
-    mat.resize(num_edges(g), num_edges(g));
-    mat.setFromTriplets(triplets.begin(), triplets.end());
-    
-    return;
-}
+    vector_t Omega = vector_t::Zero(num_edges(g));
+
+    size_t count = 0;
+    auto edge_range = edges(g);
+    for(auto itor = edge_range.first; itor != edge_range.second;itor++,count++ ){
+        auto pipe = g[*itor];                         
+        Omega(count) = 2.0 * pipe.friction_resistance(c2) * std::abs(flux(count)); 
+    }
+    return Omega;
+} 
+
 
 } //end namespace shimmer
 

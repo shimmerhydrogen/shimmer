@@ -75,20 +75,34 @@ int main()
                             {2 , 5 , 1}, 
                             {5 , 5 ,-60205728337.66899}}};
 
-    size_t num_edges = 3;
+    std::vector<double> ref_rhs = { 4926.0899215508240,
+                                    5077.5204934969630,
+                                    5374.7170960654110,
+                                    -1638823383993.169,
+                                    -1510171334409.830,
+                                    -251939111528.3534};
+
+
+    size_t num_pipes = 3;
     size_t num_vertices = 3;
+    size_t num_edges_ext = num_pipes;
 
     double dt = 180;
 
-    vector_t flux (num_edges), c2_edges(num_edges);
-    vector_t pressure (num_vertices), c2_vertices (num_vertices); 
+    vector_t flux (num_pipes), flux_old(num_pipes);
+    vector_t pressure (num_vertices), pressure_old(num_vertices);
+    vector_t c2_vertices (num_vertices), c2_edges(num_pipes); 
 
     flux << 2.448496272217528e+01,
             2.171503727782473e+01,
             6.315037277824726e+00; 
-    
-    pressure << 5101325.0, 4977209.550248852, 4990077.876609823;
 
+    flux_old = flux;
+    //flux_ext = flux;
+
+    pressure << 5101325.0, 4977209.550248852, 4990077.876609823;
+    
+    pressure_old = pressure;
 
     c2_vertices << 138267.2930151191,
                 138578.7460692530,
@@ -104,16 +118,23 @@ int main()
 
     incidence inc(graph);
 
+    sparse_matrix_t sAPA  = apa_matrix(c2_edges, pressure, graph, inc);
+    sparse_matrix_t sIc (num_vertices, num_edges_ext);
+    sIc.setIdentity();
+
     vector_t phi_vec = phi_vector(dt, c2_vertices, graph);
     vector_t res_friction = resistance_friction(c2_edges, flux, graph);
     vector_t res_inertia  = resistance_inertia(dt, pressure, inc, graph);
-    sparse_matrix_t sAPA  = apa_matrix(c2_edges, pressure, graph, inc);
-
     vector_t res_vec =  res_friction + res_inertia; 
-    sparse_matrix_t LHS;
 
-    assemble_lhs(phi_vec, res_vec, sAPA, inc.matrix(), graph, LHS);
-    
+    sparse_matrix_t LHS = assemble_lhs(phi_vec, res_vec, sAPA, inc.matrix(), sIc, graph);
+
+    vector_t rhs_continuity = phi_vec.array() * pressure_old.array();
+    vector_t rhs_momentum =  -0.5 * res_friction.array() * flux.array()
+                                   - res_inertia.array() * flux_old.array();
+    vector_t rhs = assemble_rhs(rhs_continuity, rhs_momentum, graph);
+
+    /*
     std::cout << "LHS: " <<  std::endl ;
     size_t count = 0;
     for (int k = 0; k < LHS.outerSize(); ++k)
@@ -126,7 +147,14 @@ int main()
         }
     }
 
-    bool lhs_pass = verify_test("LHS matrix", LHS, ref_lhs);
+    std::cout << "rhs: " <<  std::endl ;
+    for (int k = 0; k < rhs.size(); ++k)
+        std::cout <<  rhs(k)<< std::endl ;
+    std::cout <<  std::endl ;
+    */    
 
-    return !lhs_pass; 
+    bool lhs_pass = verify_test("LHS matrix", LHS, ref_lhs);
+    bool rhs_pass = verify_test("rhs vector", rhs, ref_rhs);
+
+    return !(lhs_pass && rhs_pass); 
 }

@@ -14,18 +14,15 @@ namespace shimmer{
 
 
 vector_t
-average(const  vector_t& pressure, const sparse_matrix_t& incidence_in,
-        const sparse_matrix_t& incidence_out)
+average(const vector_t& pressure, const incidence& inc)
 {
 
-    vector_t i_p = incidence_in.transpose()  * pressure;
-    vector_t o_p = incidence_out.transpose()  * pressure;
+    vector_t i_p = inc.matrix_in().transpose()  * pressure;
+    vector_t o_p = inc.matrix_out().transpose() * pressure;
     vector_t io_p  = i_p + o_p; 
     
     return (2.0/3.0) * (io_p - i_p.cwiseProduct(o_p).cwiseQuotient(io_p));
-    
-    //for(size_t i = 0; i < pm.size(); i++)
-    //    std::cout << pm[i] << std::endl;
+
 }
 
 
@@ -67,7 +64,7 @@ compute_expS(const double & c2, const infrastructure_graph& g)
         auto node_in  = source(*itor, g);
         auto node_out = target(*itor, g);
         auto s = g[node_out].height - g[node_in].height;
-        exp_s[i] =  std::exp(factor * s * 0.5 ); 
+        exp_s(i) =  std::exp(factor * s * 0.5 ); 
     }
 
     return exp_s;       
@@ -110,7 +107,7 @@ resistance_inertia(const double & dt,
 {
     vector_t Omega = vector_t::Zero(num_edges(g));
 
-    vector_t mean_pressure = average(pressure, inc.matrix_in(), inc.matrix_out());
+    vector_t mean_pressure = average(pressure, inc);
 
     assert(mean_pressure.size() == num_edges(g));
 

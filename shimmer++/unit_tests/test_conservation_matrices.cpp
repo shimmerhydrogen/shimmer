@@ -84,12 +84,9 @@ int main()
 
     incidence inc(graph);
 
-    vector_t Rf_vec, Ri_vec; 
-
     vector_t res_friction = resistance_friction(c2, flux, graph);
     vector_t res_inertia  = resistance_inertia(dt, c2, pressure, inc, graph);
 
-    
     sparse_matrix_t sPHI = phi_matrix(dt, c2, graph);
     sparse_matrix_t sADP = adp_matrix(c2, graph, inc);   
     sparse_matrix_t sR = build_matrix(-res_inertia - res_friction);

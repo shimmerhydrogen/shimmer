@@ -21,8 +21,7 @@ using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1>;
 
 
 vector_t
-average(const  vector_t& pressure, const sparse_matrix_t& incidence_in,
-        const sparse_matrix_t& incidence_out);
+average(const  vector_t& pressure, const incidence& inc);
 
 
 vector_t

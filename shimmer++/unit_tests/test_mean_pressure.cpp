@@ -70,7 +70,7 @@ int main()
     pressure << 2000, 3000, 5000, 7000; 
 
     incidence inc(graph);
-    vector_t pm = average(pressure, inc.matrix_in(), inc.matrix_out());
+    vector_t pm = average(pressure, inc);
 
     bool pass = verify_test(" mean pressure in pipes ", pm, ref_pm);
 

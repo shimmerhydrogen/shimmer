@@ -54,10 +54,6 @@ make_init_graph(infrastructure_graph& igraph)
 
 int main()
 {
-    // Not realisic speed of sound. Intended only for test purposes.
-    double c2 = 1; 
-    double dt = 0.1; 
-
     std::vector<double> ref_pm = {2533.333333333333,
                                     5266.666666666666,
                                     4083.333333333333};

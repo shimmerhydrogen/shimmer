@@ -77,6 +77,8 @@ int main()
     infrastructure_graph graph;
     make_init_graph(graph);
 
+    vector_t c2_edges  = vector_t::Constant(num_edges(graph), c2);
+    vector_t c2_vertex = vector_t::Constant(num_vertices(graph), c2); 
     vector_t flux (num_edges(graph));
     vector_t pressure (num_vertices(graph)); 
     flux <<  -11, 13, -17; 
@@ -84,11 +86,11 @@ int main()
 
     incidence inc(graph);
 
-    vector_t res_friction = resistance_friction(c2, flux, graph);
-    vector_t res_inertia  = resistance_inertia(dt, c2, pressure, inc, graph);
+    vector_t res_friction = resistance_friction(c2_edges, flux, graph);
+    vector_t res_inertia  = resistance_inertia(dt, pressure, inc, graph);
 
-    sparse_matrix_t sPHI = phi_matrix(dt, c2, graph);
-    sparse_matrix_t sADP = adp_matrix(c2, graph, inc);   
+    sparse_matrix_t sPHI = phi_matrix(dt, c2_vertex, graph);
+    sparse_matrix_t sADP = adp_matrix(c2_edges, graph, inc);   
     sparse_matrix_t sR = build_matrix(-res_inertia - res_friction);
 
     std::cout << __FILE__ << std::endl;

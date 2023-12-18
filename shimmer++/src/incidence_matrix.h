@@ -29,38 +29,19 @@ class incidence
 
 
     void
-    incidence_in_triplets(const infrastructure_graph& g);
+    compute_triplets(const infrastructure_graph& g);
 
     void
-    incidence_out_triplets(const infrastructure_graph& g);
-
-    void
-    incidence_triplets(const infrastructure_graph& g);
-
-    void 
-    incidence_matrix_in(const infrastructure_graph& g);
-
-    void
-    incidence_matrix_out(const infrastructure_graph& g);
-
-    void
-    incidence_matrix(const infrastructure_graph& g);
+    compute_matrix(const infrastructure_graph& g);
 
 public:
     incidence(const infrastructure_graph& g)
     {
-        incidence_triplets(g);
-        incidence_matrix(g);
+        compute_triplets(g);
+        compute_matrix(g);
     }
 
     incidence(){}
-
-    size_t triplets_size();    
-    size_t triplets_in_size(); 
-    size_t triplets_out_size();
-    size_t triplets_size()  const; 
-    size_t triplets_in_size() const; 
-    size_t triplets_out_size()const; 
 
     const sparse_matrix_t& matrix();     
     const sparse_matrix_t& matrix_in();   
@@ -69,14 +50,6 @@ public:
     const sparse_matrix_t& matrix_in()  const;   
     const sparse_matrix_t& matrix_out() const;  
 
-    const std::vector<triplet_t>&  triplets() const;     
-    const std::vector<triplet_t>&  triplets_in() const; 
-    const std::vector<triplet_t>&  triplets_out() const; 
-
-    const std::vector<triplet_t>& triplets();
-    const std::vector<triplet_t>& triplets_in();
-    const std::vector<triplet_t>& triplets_out();  
-    
 };
 
 

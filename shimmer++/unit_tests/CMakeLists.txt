@@ -1,5 +1,5 @@
 set(SHIMMER_SOURCES_T ../src/infrastructure_graph.cpp ../src/geometry_properties.cpp 
-        ../src/conservation_matrices.cpp ../src/incidence_matrix.cpp ../src/assemble.h verify_test.cpp
+        ../src/conservation_matrices.cpp ../src/incidence_matrix.cpp ../src/assemble.cpp verify_test.cpp
         ../src/matrix_manipulations.cpp)
 
 #set(SHIMMER_SOURCES_T ../${SHIMMER_SOURCES} verify_test.cpp)
@@ -27,4 +27,3 @@ add_test(NAME test_mean_pressure COMMAND test_mean_pressure)
 add_executable(test_assembler test_assembler.cpp ${SHIMMER_SOURCES_T})
 target_link_libraries(test_assembler ${LINK_LIBS})
 add_test(NAME test_assembler COMMAND test_assembler)
-

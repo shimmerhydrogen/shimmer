@@ -20,26 +20,38 @@ using sparse_matrix_t = Eigen::SparseMatrix<double>;
 using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1>; 
 
 
-void
-average(const  vector_t& pressure, const sparse_matrix_t& incidence_in,
-        const sparse_matrix_t& incidence_out,  vector_t& pm);
-
-void
-phi_matrix(const double & dt, const double& c2, const infrastructure_graph& g, sparse_matrix_t& mat);
+vector_t
+average(const  vector_t& pressure, const incidence& inc);
 
 
-void 
-adp_matrix(const double & c2, const infrastructure_graph& g,
-                const sparse_matrix_t& incidence_in,
-                const sparse_matrix_t& incidence_out,
-                sparse_matrix_t& mat);
+vector_t
+phi_vector( const double & dt, const vector_t& c2,
+            const infrastructure_graph& g);
 
 
-void
-resistance_matrix(const double & dt, const double& c2,
-                  const vector_t & flux,
-                  const vector_t & mean_pressure,
-                  const infrastructure_graph  & g,
-                  sparse_matrix_t& mat );
+sparse_matrix_t
+phi_matrix( const double & dt, const vector_t& c2,
+            const infrastructure_graph& g);
+
+
+sparse_matrix_t
+adp_matrix(const vector_t& c2, const infrastructure_graph& g,
+            const incidence& inc);
+
+
+sparse_matrix_t
+apa_matrix(const vector_t& c2, const  vector_t& pressure, 
+           const infrastructure_graph& g, const incidence& inc);
+
+             
+vector_t
+resistance_inertia( const double & dt, const vector_t & pressure,
+                    const incidence& inc, const infrastructure_graph & g);
+
+
+vector_t
+resistance_friction(const vector_t& c2, const vector_t & flux,
+                    const infrastructure_graph & g);
+
 
 } //end namespace shimmer

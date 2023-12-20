@@ -14,17 +14,44 @@
 namespace shimmer{
 
 using sparse_matrix_t = Eigen::SparseMatrix<double>; 
+using triplet_t = Eigen::Triplet<double>;
 
 
-sparse_matrix_t
-incidence_matrix_out(const infrastructure_graph& g);
+class incidence
+{
+    sparse_matrix_t mat_; 
+    sparse_matrix_t mat_in_;
+    sparse_matrix_t mat_out_; 
+
+    std::vector<triplet_t> triplets_;
+    std::vector<triplet_t> triplets_in_;
+    std::vector<triplet_t> triplets_out_;
 
 
-sparse_matrix_t
-incidence_matrix_in(const infrastructure_graph& g);
+    void
+    compute_triplets(const infrastructure_graph& g);
+
+    void
+    compute_matrix(const infrastructure_graph& g);
+
+public:
+    incidence(const infrastructure_graph& g)
+    {
+        compute_triplets(g);
+        compute_matrix(g);
+    }
+
+    incidence(){}
+
+    const sparse_matrix_t& matrix();     
+    const sparse_matrix_t& matrix_in();   
+    const sparse_matrix_t& matrix_out();   
+    const sparse_matrix_t& matrix() const;      
+    const sparse_matrix_t& matrix_in()  const;   
+    const sparse_matrix_t& matrix_out() const;  
+
+};
 
 
-sparse_matrix_t
-incidence_matrix(const infrastructure_graph& g);
 
-}//end namespace shimmer
+} //end namespace shimmer

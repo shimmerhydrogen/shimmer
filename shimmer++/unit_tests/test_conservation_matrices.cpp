@@ -14,7 +14,8 @@
 #include "../src/infrastructure_graph.h"
 #include "../src/incidence_matrix.h"
 #include "../src/conservation_matrices.h"
-
+#include "verify_test.h"
+#include "../src/matrix_manipulations.h"
 
 using triple_t = std::array<double, 3>;
 using namespace shimmer;
@@ -54,46 +55,15 @@ make_init_graph(infrastructure_graph& igraph)
 }
 
 
-bool verify_test(const std::string & name, 
-                 const sparse_matrix_t& mat,
-                 const std::vector<triple_t>& ref )
-{
-    using itor_t = Eigen::SparseMatrix<double>::InnerIterator;
-    bool pass = true;
-    size_t count = 0;
-    for (int k = 0; k < mat.outerSize(); ++k)
-    {
-        for (itor_t it(mat,k); it; ++it, count++)
-        {
-            //std::cout << std::setprecision(16) << "(" << it.row() << " , " << it.col() << " , " <<  it.value()  << " )" <<  std::endl ;
-
-            auto t = ref.at(count);
-            auto e_val = std::abs(it.value() - t[2])/t[2];
-            if((it.row() != t[0])  || (it.col() != t[1]) || (e_val > 1.e-12))
-            {
-                pass = false;
-                break;  
-            }
-        }
-    }
-    
-    auto passfail = [](bool ipass) {
-        return ipass ? "[PASS]" : "[FAIL]";
-    };
-
-    std::cout << "  Test " << name << " .........." <<  passfail(pass) << std::endl;
-
-    return pass;
-}
-
 int main()
 {
-    std::vector<triple_t> ref_adp = {{{0,0,1}, {1,0, -0.503586391306371},
-                                    {1, 1, -0.612626394184416},{3, 1, 1},
-                                    {1, 2, 1}, {2, 2, -1.341783903666971}}};
-    std::vector<triple_t> ref_resist = {{{0,0,6.763108109027953e+05}, 
-                                    {1, 1, 4.558672924222292e+07}, 
-                                    {2, 2, 1.173932795107726e+07}}};
+    std::vector<triple_t> ref_adp = {{{0,0,1}, {0,1, -0.503586391306371},
+                                    {1, 1, -0.612626394184416},
+                                    {2, 1, 1}, {2, 2, -1.341783903666971},
+                                    {1, 3, 1}}};
+    std::vector<triple_t> ref_resist = {{{0,0,-6.763108109027953e+05}, 
+                                    {1, 1, -4.558672924222292e+07}, 
+                                    {2, 2, -1.173932795107726e+07}}};
     std::vector<triple_t> ref_phi = {{{0,0, 9.621127501618740e-03},
                                      {1, 1, 1.350884841043611e-02},
                                      {2 ,2, 2.474004214701962e-03},
@@ -107,25 +77,21 @@ int main()
     infrastructure_graph graph;
     make_init_graph(graph);
 
+    vector_t c2_edges  = vector_t::Constant(num_edges(graph), c2);
+    vector_t c2_vertex = vector_t::Constant(num_vertices(graph), c2); 
     vector_t flux (num_edges(graph));
     vector_t pressure (num_vertices(graph)); 
-
     flux <<  -11, 13, -17; 
     pressure << 2000, 3000, 5000, 7000; 
 
-    sparse_matrix_t incidence_out = incidence_matrix_out(graph);
-    sparse_matrix_t incidence_in  = incidence_matrix_in(graph);
-    sparse_matrix_t sADP(num_vertices(graph), num_edges(graph));
-    sparse_matrix_t sR(num_vertices(graph), num_edges(graph));
-    sparse_matrix_t sPHI(num_vertices(graph), num_vertices(graph));
+    incidence inc(graph);
 
+    vector_t res_friction = resistance_friction(c2_edges, flux, graph);
+    vector_t res_inertia  = resistance_inertia(dt, pressure, inc, graph);
 
-    vector_t pm (num_edges(graph)); 
-    average(pressure, incidence_in, incidence_out, pm);
-
-    adp_matrix(c2, graph, incidence_in, incidence_out, sADP);
-    resistance_matrix(dt, c2, flux, pm, graph, sR);
-    phi_matrix( dt,  c2, graph, sPHI);
+    sparse_matrix_t sPHI = phi_matrix(dt, c2_vertex, graph);
+    sparse_matrix_t sADP = adp_matrix(c2_edges, graph, inc);   
+    sparse_matrix_t sR = build_matrix(-res_inertia - res_friction);
 
     std::cout << __FILE__ << std::endl;
 

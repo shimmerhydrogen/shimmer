@@ -11,50 +11,52 @@
 
 namespace shimmer{
     
-sparse_matrix_t
-incidence_matrix_out(const infrastructure_graph& g)
-{
-    using triplet_t = Eigen::Triplet<double>;
+    void
+    incidence::compute_triplets(const infrastructure_graph& g)
+    {
+        auto edge_range = edges(g);
+        for(auto itor = edge_range.first; itor != edge_range.second;itor++ ){
+            auto pipe = g[*itor];   
+            auto u = source(*itor, g);
+            triplets_in_.push_back(triplet_t(g[u].node_num, pipe.branch_num, 1.0));
+ 
+            auto v = target(*itor, g);
+            triplets_out_.push_back(triplet_t(g[v].node_num, pipe.branch_num, 1.0));            
+        }
 
-    std::vector<triplet_t> triplets;
-    auto edge_range = edges(g);
-    for(auto itor = edge_range.first; itor != edge_range.second;itor++ ){
-        auto pipe = g[*itor];   
-        auto v = target(*itor, g);
-        triplets.push_back(triplet_t(g[v].node_num, pipe.branch_num, double(1)));
+        triplets_ = triplets_out_;
+        std::transform(triplets_.cbegin(), triplets_.cend(),
+                    triplets_.begin(), [](triplet_t t){    
+                        return triplet_t(t.row(), t.col(), -t.value()  );
+                    });
+       
+        auto end = triplets_.end();
+        triplets_.insert(end, triplets_in_.begin(),triplets_in_.end());
     }
 
-    sparse_matrix_t mat(num_vertices(g), num_edges(g));
-    mat.setFromTriplets(triplets.begin(), triplets.end());
-    
-    return mat;
-}
 
+    void
+    incidence::compute_matrix(const infrastructure_graph& g)
+    {       
+        mat_in_.resize(num_vertices(g), num_edges(g));
+        mat_in_.setFromTriplets(triplets_in_.begin(), triplets_in_.end());
 
-sparse_matrix_t
-incidence_matrix_in(const infrastructure_graph& g)
-{
-    using triplet_t = Eigen::Triplet<double>;
+        mat_out_.resize(num_vertices(g), num_edges(g));
+        mat_out_.setFromTriplets(triplets_out_.begin(), triplets_out_.end()); 
 
-    std::vector<triplet_t> triplets;
-    auto edge_range = edges(g);
-    for(auto itor = edge_range.first; itor != edge_range.second;itor++ ){
-        auto pipe = g[*itor];   
-        auto u = source(*itor, g);
-        triplets.push_back(triplet_t(g[u].node_num, pipe.branch_num, double(1)));
+        mat_ = mat_in_ - mat_out_; 
     }
 
-    sparse_matrix_t mat(num_vertices(g), num_edges(g));
-    mat.setFromTriplets(triplets.begin(), triplets.end());
+
+    const sparse_matrix_t& incidence::matrix()      { return mat_;}
+    const sparse_matrix_t& incidence::matrix_in()   { return mat_in_;}
+    const sparse_matrix_t& incidence::matrix_out()  { return mat_out_;}   
+    const sparse_matrix_t& incidence::matrix()      const { return mat_;}
+    const sparse_matrix_t& incidence::matrix_in()   const { return mat_in_;}
+    const sparse_matrix_t& incidence::matrix_out()  const { return mat_out_;}   
+
+
     
-    return mat;
-}
 
-
-sparse_matrix_t
-incidence_matrix(const infrastructure_graph& g)
-{
-    return  incidence_matrix_in(g) - incidence_matrix_out(g);
-}
 
 } //end namespace shimmer

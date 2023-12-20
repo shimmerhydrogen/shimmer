@@ -14,8 +14,12 @@
 #include "../src/infrastructure_graph.h"
 #include "../src/incidence_matrix.h"
 #include "../src/geometry_properties.h"
+#include "verify_test.h"
+
 
 using namespace shimmer;
+using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1>; 
+
 
 static void
 make_init_infrastructure(infrastructure_graph& igraph)
@@ -52,42 +56,23 @@ make_init_infrastructure(infrastructure_graph& igraph)
 }
 
 
-
-bool test(const std::array<double, 4>& ref)
-{
-    infrastructure_graph graph;
-    make_init_infrastructure(graph);
-
-    int i = 0;
-    bool pass = true;
-    auto v_range = vertices(graph);
-
-    for(auto itor = v_range.first; itor != v_range.second; itor++, i++)
-    {   
-        //std::cout  << volume(*itor, igraph) << std::endl;
-
-        if( std::abs(ref.at(i) - volume(*itor, graph)) > 1.e-12)
-            pass = false;
-    }
-
-    return pass; 
-}
-
-
 int main(int argc, char **argv)
 {
 
-    std::array<double, 4> ref = {0.962112750161874, 1.350884841043611,
+    std::vector<double> ref = {0.962112750161874, 1.350884841043611,
                                  0.443749962319558, 0.337721210260903} ; 
 
-    bool pass = test(ref);
+    infrastructure_graph graph;
+    make_init_infrastructure(graph);
 
-    auto passfail = [](bool ipass) {
-        return ipass ? "[PASS]" : "[FAIL]";
-    };
+    vector_t vols (num_vertices(graph));
+
+    size_t i = 0;
+    auto v_range = vertices(graph);
+    for(auto itor = v_range.first; itor != v_range.second; itor++, i++)
+        vols(i) = volume(*itor, graph);
 
     std::cout << __FILE__ << std::endl;
-    std::cout << "  Test geometry ......" <<  passfail(pass) << std::endl;
-    
+    bool pass = verify_test("geometry", vols, ref);    
     return !pass; 
 }

@@ -4,7 +4,7 @@ set(SHIMMER_SOURCES_T ../src/infrastructure_graph.cpp
         ../src/incidence_matrix.cpp 
         ../src/assemble.cpp verify_test.cpp
         ../src/matrix_manipulations.cpp 
-        ../src/friction_factor.cpp)
+        ../src/pipe_calculator.cpp)
 
 #set(SHIMMER_SOURCES_T ../${SHIMMER_SOURCES} verify_test.cpp)
 

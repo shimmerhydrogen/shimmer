@@ -12,7 +12,7 @@
 #include <iomanip>
 
 #include "../src/infrastructure_graph.h"
-#include "../src/friction_factor.h"
+#include "../src/pipe_calculator.h"
 #include "verify_test.h"
 
 using triple_t = std::array<double, 3>;

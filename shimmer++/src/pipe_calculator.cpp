@@ -1,5 +1,5 @@
 #include <cassert>
-#include "../src/friction_factor.h" 
+#include "../src/pipe_calculator.h" 
 #include <iostream>
 
 namespace shimmer{

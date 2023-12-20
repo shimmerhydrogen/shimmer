@@ -2,7 +2,8 @@ set(SHIMMER_SOURCES_T ../src/infrastructure_graph.cpp
         ../src/geometry_properties.cpp 
         ../src/conservation_matrices.cpp 
         ../src/incidence_matrix.cpp 
-        ../src/assemble.cpp verify_test.cpp
+        ../src/assemble.cpp
+        verify_test.cpp
         ../src/matrix_manipulations.cpp 
         ../src/pipe_calculator.cpp)
 

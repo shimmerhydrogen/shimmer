@@ -96,18 +96,18 @@ int main()
     infrastructure_graph graph;
     make_init_graph(graph);
 
-    /// Dynamic viscosity [Pa*s]
-    vector_t mu(num_edges(graph));
+    vector_t mu(num_edges(graph)), lambda(num_edges(graph));
+
     size_t i = 0;
     auto edge_range = edges(graph);
     for(auto itor = edge_range.first; itor != edge_range.second; itor++,i++ )
     {
+        auto pipe = graph[*itor];
         auto node_in = source(*itor, graph);
         mu(i) = viscosity(Tm,  graph[node_in].gas_mixture);
+        lambda(i) = friction_factor_average(pipe, Tm, flux(i), mu(i)); 
     }
     
-    vector_t lambda = friction_factor_average(Tm, flux, graph);//, molefrac);
-
     bool mu_pass = verify_test("Test viscosity", mu, ref_mu);
     bool f_pass = verify_test("Test friction factor", lambda, ref_f);
 

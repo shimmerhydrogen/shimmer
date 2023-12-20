@@ -13,6 +13,7 @@
 
 #include "../src/infrastructure_graph.h"
 #include "../src/incidence_matrix.h"
+#include "../src/pipe_calculator.h"
 #include "verify_test.h"
 
 
@@ -25,17 +26,38 @@ make_init_graph(infrastructure_graph& igraph)
 {
 
     std::vector<vertex_descriptor> vds;
+    std::unordered_map<std::string, double> x ={{"CH4",1.0 },
+                                                {"N2",1.0 },
+                                                {"CO2",1.0 }, 
+                                                {"C2H6",1.0 }, 
+                                                {"C3H8",1.0 },
+                                                {"i_C4H10",1.0 },
+                                                {"n_C4H10",1.0 },
+                                                {"i_C5H12",1.0 },
+                                                {"n_C5H12",1.0 },
+                                                {"C6H14",1.0 },
+                                                {"C7H16",1.0 },
+                                                {"C8H18",1.0 },
+                                                {"C9H20",1.0 },
+                                                {"C10H22",1.0 },
+                                                {"H2",1.0 },
+                                                {"O2",1.0 },
+                                                {"CO",1.0 },
+                                                {"H2O",1.0 },
+                                                {"H2S",1.0 },
+                                                {"He",1.0 },
+                                                {"Ar",1.0 }};
 
-    vds.push_back( boost::add_vertex( { "station 0", 0, 5000.,-60,0.},igraph));
-    vds.push_back( boost::add_vertex( { "station 1", 1, 0., 20 ,0.},igraph));
-    vds.push_back( boost::add_vertex( { "station 2", 2, 0., 25 ,0.},igraph));
-    vds.push_back( boost::add_vertex( { "station 3", 3, 0., 25 ,0.},igraph));
+    vds.push_back( boost::add_vertex( { "station 0", 0, 5000.,-60,0., x},igraph));
+    vds.push_back( boost::add_vertex( { "station 1", 1, 0., 20 ,0., x},igraph));
+    vds.push_back( boost::add_vertex( { "station 2", 2, 0., 25 ,0., x},igraph));
+    vds.push_back( boost::add_vertex( { "station 3", 3, 0., 25 ,0., x},igraph));
 
-    edge_properties ep0  = {edge_type::pipe, 0,   5, 0.7, 0.01};
-    edge_properties ep1  = {edge_type::pipe, 1,   9, 0.2, 0.03};
-    edge_properties ep2  = {edge_type::pipe, 2,   7, 0.3, 0.05};
-    edge_properties ep3  = {edge_type::pipe, 3,   2, 0.5, 0.07};
-    edge_properties ep4  = {edge_type::pipe, 4,   1, 0.1, 0.13};
+    edge_properties ep0  = {edge_type::pipe, 0,   5, 0.7, 0.00001};
+    edge_properties ep1  = {edge_type::pipe, 1,   9, 0.2, 0.00003};
+    edge_properties ep2  = {edge_type::pipe, 2,   7, 0.3, 0.00005};
+    edge_properties ep3  = {edge_type::pipe, 3,   2, 0.5, 0.00007};
+    edge_properties ep4  = {edge_type::pipe, 4,   1, 0.1, 0.00013};
 
 
     /*          _ 0                                *0  *1  *2  *3  *4  
@@ -63,17 +85,19 @@ int main(int argc, char **argv)
     double dt = 0.1;
     double c2 = 1.0;
     double p = 1.0;
+    double temperature = 293.15;
+
 
     std::vector<double> ref_inertia  = {2.598448050479924e+02,
                                         5.729577951308232e+03,
                                         1.980594847365808e+03,
                                         2.037183271576260e+02,
                                         2.546479089470325e+03}; 
-    std::vector<double> ref_friction = {4.822808765030657e-01,
-                                        1.367835979171560e+03,
-                                        2.334973779411900e+02,
-                                        7.262702443482772e+00,
-                                        2.107480619760625e+04}; 
+    std::vector<double> ref_friction = {7.586693363446199e-01,
+                                        5.640811629945327e+02,
+                                        5.823770872835033e+01,
+                                        1.291280275074440e+00,
+                                        3.372739194658072e+03}; 
 
     infrastructure_graph graph;
     make_init_graph(graph);  
@@ -81,13 +105,17 @@ int main(int argc, char **argv)
     vector_t ri (num_edges(graph));
     vector_t rf (num_edges(graph));
 
+    vector_t flux (num_edges(graph));
+    flux << 19.0, 23.0, 37.0, 51.0, 17.0;
+
     int i = 0;
     auto e_range = edges(graph);
     for(auto itor = e_range.first; itor != e_range.second; itor++, i++)
     {   
-        auto pipe = graph[*itor];   
-        ri(i) = pipe.inertia_resistance(dt, p);
-        rf(i) = pipe.friction_resistance(c2);
+        auto pipe = graph[*itor];
+        auto node_in = graph[source(*itor, graph)];   
+        ri(i) = inertia_resistance(pipe, dt, p);
+        rf(i) = friction_resistance(pipe, node_in, c2, temperature, flux(i));
     }
 
     std::cout << __FILE__ << std::endl; 

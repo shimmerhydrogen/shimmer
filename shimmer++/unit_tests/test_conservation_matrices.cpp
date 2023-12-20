@@ -25,12 +25,33 @@ static void
 make_init_graph(infrastructure_graph& igraph)
 {
 
- std::vector<vertex_descriptor> vds;
+    std::vector<vertex_descriptor> vds;
+    std::unordered_map<std::string, double> x ={{"CH4",1.0 },
+                                                {"N2",0.0 },
+                                                {"CO2",0.0 }, 
+                                                {"C2H6",0.0 }, 
+                                                {"C3H8",0.0 },
+                                                {"i_C4H10",0.0 },
+                                                {"n_C4H10",0.0 },
+                                                {"i_C5H12",0.0 },
+                                                {"n_C5H12",0.0 },
+                                                {"C6H14",0.0 },
+                                                {"C7H16",0.0 },
+                                                {"C8H18",0.0 },
+                                                {"C9H20",0.0 },
+                                                {"C10H22",0.0 },
+                                                {"H2",0.0 },
+                                                {"O2",0.0 },
+                                                {"CO",0.0 },
+                                                {"H2O",0.0 },
+                                                {"H2S",0.0 },
+                                                {"He",0.0 },
+                                                {"Ar",0.0 }};
 
-    vds.push_back( boost::add_vertex( { "station 0", 0, 0., 0., 100 }, igraph) );
-    vds.push_back( boost::add_vertex( { "station 1", 1, 0., 0.,  30 }, igraph) );
-    vds.push_back( boost::add_vertex( { "station 2", 2, 0., 0.,  60 }, igraph) );
-    vds.push_back( boost::add_vertex( { "station 3", 3, 0., 0.,  80 }, igraph) );
+    vds.push_back( boost::add_vertex( { "station 0", 0, 0., 0., 100, x }, igraph) );
+    vds.push_back( boost::add_vertex( { "station 1", 1, 0., 0.,  30, x }, igraph) );
+    vds.push_back( boost::add_vertex( { "station 2", 2, 0., 0.,  60, x }, igraph) );
+    vds.push_back( boost::add_vertex( { "station 3", 3, 0., 0.,  80, x }, igraph) );
 
     edge_properties ep0  = {edge_type::pipe, 0,   5, 0.7, 0.017};
     edge_properties ep1  = {edge_type::pipe, 1,   9, 0.2, 0.013};
@@ -73,6 +94,7 @@ int main()
     // Not realisic speed of sound. Intendeed only for test purposes.
     double c2 = 1000; 
     double dt = 0.1; 
+    double temperature = 293.15;
 
     infrastructure_graph graph;
     make_init_graph(graph);
@@ -86,12 +108,12 @@ int main()
 
     incidence inc(graph);
 
-    vector_t res_friction = resistance_friction(c2_edges, flux, graph);
-    vector_t res_inertia  = resistance_inertia(dt, pressure, inc, graph);
+    vector_t rf = resistance_friction(temperature, c2_edges, flux, graph);
+    vector_t ri = resistance_inertia(dt, pressure, inc, graph);
 
     sparse_matrix_t sPHI = phi_matrix(dt, c2_vertex, graph);
     sparse_matrix_t sADP = adp_matrix(c2_edges, graph, inc);   
-    sparse_matrix_t sR = build_matrix(-res_inertia - res_friction);
+    sparse_matrix_t sR = build_matrix(-ri - rf);
 
     std::cout << __FILE__ << std::endl;
 

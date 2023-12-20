@@ -115,14 +115,15 @@ resistance_inertia( const double & dt, const vector_t & pressure,
     for(auto itor = begin; itor != end; itor++,i++ ){
         auto pipe = g[*itor];   
         auto pm = mean_pressure(i);
-        Omega(i) = pipe.inertia_resistance(dt, pm); 
+        Omega(i) = inertia_resistance(pipe, dt, pm); 
     }
     return Omega;
 } 
 
 
 vector_t
-resistance_friction(const vector_t& c2, const vector_t & flux,
+resistance_friction(const double& temperature, const vector_t& c2,
+                    const vector_t & flux,
                     const infrastructure_graph  & g)
 {
     vector_t Omega = vector_t::Zero(num_edges(g));
@@ -132,8 +133,11 @@ resistance_friction(const vector_t& c2, const vector_t & flux,
     auto begin = edge_range.first;
     auto end = edge_range.second;
     for(auto itor = begin; itor != end; itor++,i++ ){
-        auto pipe = g[*itor];                         
-        Omega(i) = 2.0 *pipe.friction_resistance(c2(i))*std::abs(flux(i)); 
+        auto pipe = g[*itor]; 
+        auto node_in = g[source(*itor, g)];                        
+        auto rf = friction_resistance(pipe, node_in, c2(i), temperature, flux(i));
+        Omega(i) = 2.0 * rf * std::abs(flux(i)); 
+
     }
     return Omega;
 } 

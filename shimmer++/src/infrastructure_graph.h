@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <unordered_map>
 #include <boost/graph/adjacency_list.hpp>
 
 namespace shimmer {
@@ -22,9 +23,7 @@ struct vertex_properties {
     double          pressure;
     double          mass_flow;
     double          height;
-    std::vector<gas_descriptor> gas_mixture;
-
-   
+    std::unordered_map<std::string, double> gas_mixture;   
 };
 
 enum class edge_type {
@@ -45,18 +44,6 @@ struct edge_properties {
 
     double area()   const { return M_PI * 0.25 * diameter * diameter;}
     double volume() const { return area() * length;}
-
-    double inertia_resistance(const double& dt, const double& mean_pressure) const
-    {
-        return  2.0 * length * mean_pressure / (dt * area()); 
-    }
-
-    double friction_resistance(const double & c2) const
-    {
-        double a = area();
-
-        return  friction_factor * c2 * length / (a * a * diameter );    
-    }
 
     friend std::ostream& operator<<(std::ostream& ofs, const edge_properties& ep) {
         ofs << " branch_num : " << ep.branch_num << "\n";

@@ -13,6 +13,7 @@
 #include "infrastructure_graph.h"
 #include "../src/geometry_properties.h"
 #include "../src/incidence_matrix.h"
+#include "../src/pipe_calculator.h"
 
 namespace shimmer{
 
@@ -50,7 +51,8 @@ resistance_inertia( const double & dt, const vector_t & pressure,
 
 
 vector_t
-resistance_friction(const vector_t& c2, const vector_t & flux,
+resistance_friction(const double& temperature, const vector_t& c2,
+                    const vector_t & flux,
                     const infrastructure_graph & g);
 
 

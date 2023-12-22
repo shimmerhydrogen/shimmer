@@ -28,13 +28,35 @@ make_init_graph(infrastructure_graph& igraph)
 
     std::vector<vertex_descriptor> vds;
 
-    vds.push_back( boost::add_vertex( { "station 0", 0, 0., 0.,  0.}, igraph) );
-    vds.push_back( boost::add_vertex( { "station 1", 1, 0., 0.,  0.}, igraph) );
-    vds.push_back( boost::add_vertex( { "station 2", 2, 0., 0.,  0.}, igraph) );
+    std::unordered_map<std::string, double> x ={{"CH4",1.0 },
+                                                {"N2",0.0 },
+                                                {"CO2",0.0 }, 
+                                                {"C2H6",0.0 }, 
+                                                {"C3H8",0.0 },
+                                                {"i_C4H10",0.0 },
+                                                {"n_C4H10",0.0 },
+                                                {"i_C5H12",0.0 },
+                                                {"n_C5H12",0.0 },
+                                                {"C6H14",0.0 },
+                                                {"C7H16",0.0 },
+                                                {"C8H18",0.0 },
+                                                {"C9H20",0.0 },
+                                                {"C10H22",0.0 },
+                                                {"H2",0.0 },
+                                                {"O2",0.0 },
+                                                {"CO",0.0 },
+                                                {"H2O",0.0 },
+                                                {"H2S",0.0 },
+                                                {"He",0.0 },
+                                                {"Ar",0.0 }};
 
-    edge_properties ep0  = {edge_type::pipe, 0,    80000, 0.6, 9.037840034191122e-03};//0.012};
-    edge_properties ep1  = {edge_type::pipe, 1,    90000, 0.6, 9.167633023370068e-03};//0.012};
-    edge_properties ep2  = {edge_type::pipe, 2,   100000, 0.6, 1.113364421774635e-02};//0.012};
+    vds.push_back( boost::add_vertex( { "station 0", 0, 0., 0.,  0., x}, igraph) );
+    vds.push_back( boost::add_vertex( { "station 1", 1, 0., 0.,  0., x}, igraph) );
+    vds.push_back( boost::add_vertex( { "station 2", 2, 0., 0.,  0., x}, igraph) );
+
+    edge_properties ep0  = {edge_type::pipe, 0,    80000, 0.6, 0.000012};//9.037840034191122e-03};//0.012};
+    edge_properties ep1  = {edge_type::pipe, 1,    90000, 0.6, 0.000012};//9.167633023370068e-03};//0.012};
+    edge_properties ep2  = {edge_type::pipe, 2,   100000, 0.6, 0.000012};//1.113364421774635e-02};//0.012};
 
     /*                                            
     //           0                        *0  *1  *2              
@@ -88,6 +110,7 @@ int main()
     size_t num_edges_ext = num_pipes;
 
     double dt = 180;
+    double temperature = 293.15;
 
     vector_t flux (num_pipes), flux_old(num_pipes);
     vector_t pressure (num_vertices), pressure_old(num_vertices);
@@ -123,15 +146,15 @@ int main()
     sIc.setIdentity();
 
     vector_t phi_vec = phi_vector(dt, c2_vertices, graph);
-    vector_t res_friction = resistance_friction(c2_edges, flux, graph);
-    vector_t res_inertia  = resistance_inertia(dt, pressure, inc, graph);
-    vector_t res_vec =  res_friction + res_inertia; 
+    vector_t rf = resistance_friction(temperature, c2_edges, flux, graph);
+    vector_t ri  = resistance_inertia(dt, pressure, inc, graph);
+    vector_t res_vec =  rf + ri; 
 
     sparse_matrix_t LHS = assemble_lhs(phi_vec, res_vec, sAPA, inc.matrix(), sIc, graph);
 
     vector_t rhs_continuity = phi_vec.array() * pressure_old.array();
-    vector_t rhs_momentum =  -0.5 * res_friction.array() * flux.array()
-                                   - res_inertia.array() * flux_old.array();
+    vector_t rhs_momentum =  -0.5 * rf.array() * flux.array()
+                                   - ri.array() * flux_old.array();
     vector_t rhs = assemble_rhs(rhs_continuity, rhs_momentum, graph);
 
     /*

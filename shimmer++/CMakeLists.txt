@@ -36,7 +36,7 @@ set(LINK_LIBS ${LINK_LIBS} Eigen3::Eigen)
 #set(SHIMMER_SOURCES src/infrastructure_graph.cpp)
 set(SHIMMER_SOURCES src/infrastructure_graph.cpp src/geometry_properties.cpp
     src/conservation_matrices.cpp src/incidence_matrix.cpp src/assemble.cpp
-    src/matrix_manipulations.cpp)
+    src/matrix_manipulations.cpp src/pipe_calculator.cpp)
 
 add_executable(shimmer src/main.cpp ${SHIMMER_SOURCES})
 target_link_libraries(shimmer ${LINK_LIBS})

@@ -108,8 +108,9 @@ int main()
 
     incidence inc(graph);
 
+    vector_t pipes_pressure = average(pressure, inc);
     vector_t rf = resistance_friction(temperature, c2_edges, flux, graph);
-    vector_t ri = resistance_inertia(dt, pressure, inc, graph);
+    vector_t ri = resistance_inertia(dt, pipes_pressure, inc, graph);
 
     sparse_matrix_t sPHI = phi_matrix(dt, c2_vertex, graph);
     sparse_matrix_t sADP = adp_matrix(c2_edges, graph, inc);   

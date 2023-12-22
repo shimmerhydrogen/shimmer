@@ -16,7 +16,6 @@ namespace shimmer{
 vector_t
 average(const vector_t& pressure, const incidence& inc)
 {
-
     vector_t i_p = inc.matrix_in().transpose()  * pressure;
     vector_t o_p = inc.matrix_out().transpose() * pressure;
     vector_t io_p  = i_p + o_p; 
@@ -100,13 +99,11 @@ apa_matrix( const vector_t & c2, const  vector_t& pressure,
 
 
 vector_t
-resistance_inertia( const double & dt, const vector_t & pressure,
+resistance_inertia( const double & dt, const vector_t & pipes_pressure,
                     const incidence& inc, const infrastructure_graph  & g)
 {
     vector_t Omega = vector_t::Zero(num_edges(g));
-    vector_t mean_pressure = average(pressure, inc);
-
-    assert(mean_pressure.size() == num_edges(g));
+    assert(pipes_pressure.size() == num_edges(g));
 
     size_t i = 0;
     auto edge_range = edges(g);
@@ -114,7 +111,7 @@ resistance_inertia( const double & dt, const vector_t & pressure,
     auto end = edge_range.second;
     for(auto itor = begin; itor != end; itor++,i++ ){
         auto pipe = g[*itor];   
-        auto pm = mean_pressure(i);
+        auto pm = pipes_pressure(i);
         Omega(i) = inertia_resistance(pipe, dt, pm); 
     }
     return Omega;
@@ -142,6 +139,64 @@ resistance_friction(const double& temperature, const vector_t& c2,
     return Omega;
 } 
 
+/* 
+auto
+momemtum(const double& dt, const double& temperature,
+         const vector_t& flux, const vector_t& flux_old,
+         const vector_t& pressure, const incidence& inc,
+         const infrastructure_graph & graph)
+{
+    
+    size_t num_nodes = num_vertices(graph); 
+    size_t num_pipes = num_edges(graph);
+    //size_t num_pipes_ext = num_pipes;
+
+    vector_t pipes_pressure = average(pressure);
+    vector_t c2 = speed_of_sound(temperature,  pm);        
+
+    sparse_matrix_t sAPA  = apa_matrix(c2, pressure, graph, inc);
+
+    vector_t rf = resistance_friction(temperature, c2, flux, graph);
+    vector_t ri = resistance_inertia(dt, pipes_pressure, inc, graph);
+
+    auto t_sR   = build_triplets(-rf-ri, num_nodes, num_nodes);
+    auto t_sAPA = build_triplets( sAPA,  num_nodes, 0);
+
+    std::vector<triplet_t> triplets =  t_sAPA; 
+    triplets.insert(triplets.begin(), t_sR.begin(), t_sR.end());
+    triplets.insert(triplets.begin(), t_sA.begin(), t_sA.end());
+    //triplets.insert(triplets.begin(), t_sIc.begin(), t_sIc.end());
+
+    vector_t rhs_momentum =  -0.5 * rf.array() * flux.array()
+                                   - ri.array() * flux_old.array();
+
+    return std::make_pair(triplets, rhs);
+}
+
+
+auto
+continuity(const double& dt, const double& temperature,
+        const  vector_t& pressure, const vector_t& pressure_old,
+        const incidence& inc,
+        const infrastructure_graph & graph)
+{
+    size_t num_nodes = num_vertices(graph); 
+    size_t num_pipes = num_edges(graph);
+
+    vector_t c2 = speed_of_sound(temperature,  pressure);   
+
+    vector_t phi_vec = phi_vector(dt, c2, graph);
+    auto t_sPHI = build_triplets( phi_vec);
+    auto t_sA   = build_triplets( inc.matrix(), 0, num_nodes );
+
+    std::vector<triplet_t> triplets =  t_sPHI; 
+    triplets.insert(triplets.begin(), t_sA.begin(), t_sA.end());
+
+    vector_t rhs = phi_vec.array() * pressure_old.array();
+
+    return std::make_pair(triplets, rhs);
+}
+*/
 
 } //end namespace shimmer
 

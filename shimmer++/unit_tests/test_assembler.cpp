@@ -145,9 +145,11 @@ int main()
     sparse_matrix_t sIc (num_vertices, num_edges_ext);
     sIc.setIdentity();
 
+    vector_t pipes_pressure = average(pressure, inc);
+
     vector_t phi_vec = phi_vector(dt, c2_vertices, graph);
     vector_t rf = resistance_friction(temperature, c2_edges, flux, graph);
-    vector_t ri  = resistance_inertia(dt, pressure, inc, graph);
+    vector_t ri  = resistance_inertia(dt, pipes_pressure, inc, graph);
     vector_t res_vec =  rf + ri; 
 
     sparse_matrix_t LHS = assemble_lhs(phi_vec, res_vec, sAPA, inc.matrix(), sIc, graph);

@@ -7,6 +7,12 @@ project(GERGUnitTest LANGUAGES CXX C)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+## MATLAB
+find_package(Matlab REQUIRED)
+
+## Threads
+find_package(Threads REQUIRED)
+
 ## GERG
 if (NOT TARGET GERG::GERG)
 	find_package(GERG CONFIG REQUIRED)

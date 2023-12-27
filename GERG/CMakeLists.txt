@@ -39,6 +39,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 ## MATLAB
 find_package(Matlab REQUIRED)
+list(APPEND GERG_LIBRARY_LINKED_LIBRARIES Matlab::MatlabEngine)
+list(APPEND GERG_LIBRARY_LINKED_LIBRARIES Matlab::MatlabDataArray)
 
 ## Threads
 find_package(Threads REQUIRED)

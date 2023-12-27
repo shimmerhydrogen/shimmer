@@ -4,6 +4,8 @@
 
 int main(int argc, char ** argv)
 {
+  test_GERG(argc, argv);
+
   if (argc > 1)
   {
     const std::string testName = argv[1];

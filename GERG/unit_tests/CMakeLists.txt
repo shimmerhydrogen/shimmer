@@ -42,10 +42,12 @@ add_executable(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME} ${GERG_LIBRARY_TEST_LINKED_LIBRARIES})
 target_include_directories(${PROJECT_NAME} PRIVATE ${GERG_LIBRARY_TEST_INCLUDE})
 
+enable_testing()
+
 set(TestsToRun ${GERG_LIBRARY_TEST_TESTS})
 remove(TestsToRun ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 
 foreach (test ${TestsToRun})
-  get_filename_component (TName ${test} NAME_WE)
-  add_test (NAME ${TName} COMMAND ${PROJECT_NAME} ${TName})
+  get_filename_component(TName ${test} NAME_WE)
+  add_test(NAME ${TName} COMMAND ${PROJECT_NAME} ${TName})
 endforeach ()

@@ -3,11 +3,11 @@
 
 #include <iostream>
 
-bool test_GERG_2()
+int test_GERG_2(int , char **)
 {
-  std::cout<< "test_GERG_2"<< std::endl;
+  std::cout<< "CALL test_GERG_2 SUCCESS"<< std::endl;
 
-  return false;
+  return EXIT_SUCCESS;
 }
 
 #endif

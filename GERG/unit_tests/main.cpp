@@ -1,11 +1,19 @@
 #include <iostream>
-#include <array>
-
 #include "test_GERG.hpp"
 #include "test_GERG_2.hpp"
 
-int main(int , char **)
+int main(int argc, char ** argv)
 {
+  if (argc > 1)
+  {
+    const std::string testName = argv[1];
 
-  return 1;
+    if (testName.compare("test_GERG") == 0)
+      return test_GERG(argc, argv);
+
+    if (testName.compare("test_GERG_2") == 0)
+      return test_GERG_2(argc, argv);
+  }
+
+  return EXIT_SUCCESS;
 }

@@ -53,8 +53,8 @@
   ASSERT_VECTOR_DOUBLE_EQ_TOL(expected, actual, MIN_DOUBLE_TOL)
 
 #define ASSERT_MATRIX_DOUBLE_EQ_TOL(expected, actual, tolerance) \
-  ASSERT_EQ_MSG(expected.rows(), actual.rows(), "Matrix cols differ") \
-  ASSERT_EQ_MSG(expected.cols(), actual.cols(), "Matrix rows differ") \
+  ASSERT_EQ_MSG(expected.rows(), actual.rows(), "Matrix rows differ. Expect " + std::to_string(expected.rows()) + " actual " + std::to_string(actual.rows())) \
+  ASSERT_EQ_MSG(expected.cols(), actual.cols(), "Matrix cols differ. Expect " + std::to_string(expected.rows()) + " actual " + std::to_string(actual.rows())) \
   for (unsigned int r = 0; r < expected.rows(); r++) { \
   for (unsigned int c = 0; c < expected.rows(); c++) { \
   std::stringstream msg; \

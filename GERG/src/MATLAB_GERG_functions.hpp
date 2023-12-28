@@ -1,7 +1,7 @@
 #ifndef __MATLAB_GERG_functions_H
 #define __MATLAB_GERG_functions_H
 
-#include "MATLAB_GERG_interface.hpp"
+#include "Matlab_interface.hpp"
 
 namespace GERG
 {
@@ -20,7 +20,26 @@ namespace GERG
   template <class matrix_type>
   inline Reducing_parameters<matrix_type> reducing_parameters(const matrix_type& x)
   {
-    return Matlab_interface::GetInstance().reducing_parameters(x);
+    const Matlab_interface& matlab = Matlab_interface::get_instance();
+
+    matlab::data::ArrayFactory factory;
+
+    const matlab::data::TypedArray<double> x_to_matlab = matlab.matrix_to_matlab(factory,
+                                                                                 x);
+
+    std::cout<< "Test\n";
+    for (unsigned int r = 0; r < x.rows(); r++)
+    {
+      for (unsigned int c = 0; c < x.cols(); c++)
+        std::cout<< x_to_matlab[r][c]<< ", ";
+      std::cout<< std::endl;
+    }
+
+    Matlab_interface::get_instance().reducing_parameters(x_to_matlab);
+
+    Reducing_parameters<matrix_type> result;
+
+    return result;
   }
 }
 

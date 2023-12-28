@@ -27,6 +27,9 @@ namespace GERG
   {
     Reducing_parameters<matrix_type> result;
 
+    result.Tr.resize(3, 1);
+    result.Dr.resize(3, 1);
+
     return result;
   }
 }

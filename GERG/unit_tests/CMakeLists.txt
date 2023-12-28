@@ -13,6 +13,9 @@ find_package(Matlab REQUIRED)
 ## Threads
 find_package(Threads REQUIRED)
 
+find_package(Eigen3 CONFIG REQUIRED)
+list(APPEND GERG_LIBRARY_TEST_LINKED_LIBRARIES PRIVATE Eigen3::Eigen)
+
 ## GERG
 if (NOT TARGET GERG::GERG)
 	find_package(GERG CONFIG REQUIRED)
@@ -32,10 +35,12 @@ endif()
 
 # Insert Sources
 ###############################################################################################
+list(APPEND GERG_LIBRARY_TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
+list(APPEND GERG_LIBRARY_TEST_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/x_mock.hpp)
+
 create_test_sourcelist(GERG_LIBRARY_TEST_TESTS
-    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_GERG.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_GERG_2.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_reducing_parameters.hpp
   )
 
 # Create library test executable
@@ -50,10 +55,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${GERG_LIBRARY_TEST_INCLUDE})
 
 enable_testing()
 
-set(TestsToRun ${GERG_LIBRARY_TEST_TESTS})
-remove(TestsToRun ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
-
-foreach (test ${TestsToRun})
+foreach (test ${GERG_LIBRARY_TEST_TESTS})
   get_filename_component(TName ${test} NAME_WE)
   add_test(NAME ${TName} COMMAND ${PROJECT_NAME} ${TName})
 endforeach ()

@@ -21,6 +21,14 @@ namespace GERG
 
       Types Type;
   };
+
+  template <class matrix_type>
+  Reducing_parameters<matrix_type> reducing_parameters(const matrix_type& x)
+  {
+    Reducing_parameters<matrix_type> result;
+
+    return result;
+  }
 }
 
 #endif // __MATLAB_GERG_functions_H

@@ -5,6 +5,8 @@
 #include "MatlabDataArray.hpp"
 #include "MatlabEngine.hpp"
 
+#include "Eigen/Eigen"
+
 void callFevalsqrt()
 {
   // Call MATLAB sqrt function on array

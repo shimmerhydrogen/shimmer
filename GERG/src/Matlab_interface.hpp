@@ -29,7 +29,7 @@ namespace GERG
         return matlab_shimmer_dir;
       }
 
-      static const Matlab_interface& get_instance(const std::list<std::string>& add_directory_paths = {});
+      static const Matlab_interface& get_instance(const std::list<std::string>& add_directory_paths = { matlab_shimmer_directory_path() });
 
       inline matlab::engine::MATLABEngine& engine() const
       { return *matlabPtr; }

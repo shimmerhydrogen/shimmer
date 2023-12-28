@@ -39,15 +39,10 @@ namespace GERG_test
     const auto result = GERG::reducing_parameters(x);
     const auto expected_result = reducing_parameters_result_mock();
 
-    ASSERT_EQ(1.0, 2.0);
-
     ASSERT_MATRIX_DOUBLE_EQ(expected_result.Tr,
                             result.Tr);
     ASSERT_MATRIX_DOUBLE_EQ(expected_result.Dr,
                             result.Dr);
-
-    std::cout<< "CALL test_reducing_parameters"<< std::endl;
-
 
     return EXIT_SUCCESS;
   }

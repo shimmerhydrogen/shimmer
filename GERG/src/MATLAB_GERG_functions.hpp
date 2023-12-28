@@ -1,15 +1,10 @@
 #ifndef __MATLAB_GERG_functions_H
 #define __MATLAB_GERG_functions_H
 
-#include "GERG_functions.hpp"
+#include "MATLAB_GERG_interface.hpp"
 
 namespace GERG
 {
-  // iFlag=0;
-  // [Tr_b,Dr_b] = ReducingParametersGERG(Aplus'*reshape(CC_gas(:,:,1),dimn,21));
-  // [Tcx_b,Dcx_b,Vcx_b]=PseudoCriticalPointGERG(Aplus'*reshape(CC_gas(:,:,1),dimn,21),dimb);
-  // [Pcheck, Zm, Den]=PropertiesGERG(iFlag, pm(:,1)/1e3, Tb, Aplus'*reshape(CC_gas(:,:,1),dimn,21),dimb,Tr_b,Dr_b,Tcx_b,Dcx_b,Vcx_b);
-
   struct Thermodynamic_properties_parameters final
   {
       enum struct Types
@@ -23,14 +18,9 @@ namespace GERG
   };
 
   template <class matrix_type>
-  Reducing_parameters<matrix_type> reducing_parameters(const matrix_type& x)
+  inline Reducing_parameters<matrix_type> reducing_parameters(const matrix_type& x)
   {
-    Reducing_parameters<matrix_type> result;
-
-    result.Tr.resize(3, 1);
-    result.Dr.resize(3, 1);
-
-    return result;
+    return Matlab_interface::GetInstance().reducing_parameters(x);
   }
 }
 

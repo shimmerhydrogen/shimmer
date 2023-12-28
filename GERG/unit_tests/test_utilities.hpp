@@ -56,7 +56,7 @@
   ASSERT_EQ_MSG(expected.rows(), actual.rows(), "Matrix rows differ. Expect " + std::to_string(expected.rows()) + " actual " + std::to_string(actual.rows())) \
   ASSERT_EQ_MSG(expected.cols(), actual.cols(), "Matrix cols differ. Expect " + std::to_string(expected.rows()) + " actual " + std::to_string(actual.rows())) \
   for (unsigned int r = 0; r < expected.rows(); r++) { \
-  for (unsigned int c = 0; c < expected.rows(); c++) { \
+  for (unsigned int c = 0; c < expected.cols(); c++) { \
   std::stringstream msg; \
   msg.precision(16); \
   msg<< std::scientific<< "Expected "<< expected(r, c)<< " equal to "<< actual(r, c)<< " respect tol "<< tolerance<< " at position: (" << r<< ","<< c<< ")"<< std::endl; \

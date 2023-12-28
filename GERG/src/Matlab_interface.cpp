@@ -13,34 +13,47 @@ namespace GERG
   {
   }
   // *********************************************************
-  const Matlab_interface& GERG::Matlab_interface::get_instance()
+  const Matlab_interface& GERG::Matlab_interface::get_instance(const std::list<std::string>& add_directory_paths)
   {
     if (singleton == nullptr)
     {
       singleton = new Matlab_interface();
 
-      std::string matlab_shimmer_dir(__FILE__);
-      matlab_shimmer_dir = matlab_shimmer_dir.substr(0, matlab_shimmer_dir.find_last_of("\\/"));
-      matlab_shimmer_dir = matlab_shimmer_dir + "/../../matlab/Mod_SHIMM_v01";
-
       matlab::data::ArrayFactory factory;
 
-      std::vector<matlab::data::Array> args({
-                                              factory.createCharArray(matlab_shimmer_dir)
-                                            });
+      for (const std::string& add_directory_path : add_directory_paths)
+      {
+        std::vector<matlab::data::Array> args({
+                                                factory.createCharArray(add_directory_path)
+                                              });
 
-      const auto result = singleton->matlab().feval(u"addpath",
-                                                    args);
+        singleton->engine().feval(u"addpath",
+                                  args);
+      }
     }
 
     return *singleton;
   }
   // *********************************************************
+  bool Matlab_interface::is_directory_on_matlab_path(const std::string& directory_path) const
+  {
+    matlab::engine::MATLABEngine& matlab = Matlab_interface::get_instance().engine();
+
+    matlab.eval(string_to_matlab("path"));
+
+    std::string matlab_command =
+        "hasFolder = ~isempty(strfind(path, ['" + directory_path + "', pathsep]));";
+
+    matlab.eval(string_to_matlab(matlab_command));
+    matlab::data::TypedArray<bool> hasFolder = matlab.getVariable(u"hasFolder");
+
+    return hasFolder[0];
+  }
+  // *********************************************************
   std::vector<matlab::data::Array> Matlab_interface::reducing_parameters(const matlab::data::TypedArray<double>& x) const
   {
-    matlab::engine::MATLABEngine& matlab = Matlab_interface::get_instance().matlab();
+    matlab::engine::MATLABEngine& matlab = Matlab_interface::get_instance().engine();
 
-    // Call MATLAB function
     std::vector<matlab::data::Array> args({
                                             x
                                           });

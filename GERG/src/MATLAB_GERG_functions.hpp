@@ -25,15 +25,15 @@ namespace GERG
 
     matlab::data::ArrayFactory factory;
 
-    const matlab::data::TypedArray<double> x_to_matlab = matlab.matrix_to_matlab(factory,
+    const matlab::data::TypedArray<double> x_to_matlab = Matlab_interface::matrix_to_matlab(factory,
                                                                                  x);
 
-    const std::vector<matlab::data::Array> reducing_parameters = Matlab_interface::get_instance().reducing_parameters(x_to_matlab);
+    const std::vector<matlab::data::Array> reducing_parameters = matlab.reducing_parameters(x_to_matlab);
 
 
     Reducing_parameters<matrix_type> result;
-    result.Tr = matlab.matlab_to_matrix<matrix_type>(reducing_parameters.at(0));
-    result.Dr = matlab.matlab_to_matrix<matrix_type>(reducing_parameters.at(1));
+    result.Tr = Matlab_interface::matlab_to_matrix<matrix_type>(reducing_parameters.at(0));
+    result.Dr = Matlab_interface::matlab_to_matrix<matrix_type>(reducing_parameters.at(1));
 
     return result;
   }

@@ -40,7 +40,7 @@ list(APPEND GERG_LIBRARY_TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 list(APPEND GERG_LIBRARY_TEST_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/test_utilities.hpp)
 
 create_test_sourcelist(GERG_LIBRARY_TEST_TESTS
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_GERG.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_matlab_interface.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_reducing_parameters.hpp
   )
 

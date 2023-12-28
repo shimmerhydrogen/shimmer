@@ -1,6 +1,7 @@
 #ifndef __MATLAB_GERG_functions_H
 #define __MATLAB_GERG_functions_H
 
+#include "GERG_functions.hpp"
 #include "Matlab_interface.hpp"
 
 namespace GERG
@@ -27,17 +28,12 @@ namespace GERG
     const matlab::data::TypedArray<double> x_to_matlab = matlab.matrix_to_matlab(factory,
                                                                                  x);
 
-    std::cout<< "Test\n";
-    for (unsigned int r = 0; r < x.rows(); r++)
-    {
-      for (unsigned int c = 0; c < x.cols(); c++)
-        std::cout<< x_to_matlab[r][c]<< ", ";
-      std::cout<< std::endl;
-    }
+    const std::vector<matlab::data::Array> reducing_parameters = Matlab_interface::get_instance().reducing_parameters(x_to_matlab);
 
-    Matlab_interface::get_instance().reducing_parameters(x_to_matlab);
 
     Reducing_parameters<matrix_type> result;
+    result.Tr = matlab.matlab_to_matrix<matrix_type>(reducing_parameters.at(0));
+    result.Dr = matlab.matlab_to_matrix<matrix_type>(reducing_parameters.at(1));
 
     return result;
   }

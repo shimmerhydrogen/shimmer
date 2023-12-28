@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "Eigen/Eigen"
+#include "GERG_functions.hpp"
 #include "MATLAB_GERG_functions.hpp"
 #include "test_utilities.hpp"
 

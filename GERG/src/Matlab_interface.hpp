@@ -4,8 +4,6 @@
 #include "MatlabDataArray.hpp"
 #include "MatlabEngine.hpp"
 
-#include "GERG_functions.hpp"
-
 namespace GERG
 {
   class Matlab_interface final
@@ -40,7 +38,18 @@ namespace GERG
               matrix.data() + matrix.size());
       }
 
-      void reducing_parameters(const matlab::data::TypedArray<double>& x) const;
+      template <class matrix_type>
+      inline matrix_type matlab_to_matrix(const matlab::data::TypedArray<double>& matrix) const
+      {
+        matrix_type result;
+        const std::vector<unsigned long int> size = matrix.getDimensions();
+        result.resize(size.at(0),
+                      size.at(1));
+        std::copy(matrix.begin(), matrix.end(), result.data());
+        return result;
+      }
+
+      std::vector<matlab::data::Array> reducing_parameters(const matlab::data::TypedArray<double>& x) const;
   };
 }
 

@@ -24,8 +24,8 @@ namespace GERG
       static std::string matlab_shimmer_directory_path()
       {
         std::string matlab_shimmer_dir(__FILE__);
-        matlab_shimmer_dir = matlab_shimmer_dir.substr(0, matlab_shimmer_dir.find_last_of("\\/"));
-        matlab_shimmer_dir = matlab_shimmer_dir + "/../../matlab/Mod_SHIMM_v01";
+        matlab_shimmer_dir = matlab_shimmer_dir.substr(0, matlab_shimmer_dir.find("GERG"));
+        matlab_shimmer_dir = matlab_shimmer_dir + "matlab/Mod_SHIMM_v01";
         return matlab_shimmer_dir;
       }
 
@@ -70,7 +70,7 @@ namespace GERG
         return conv.to_bytes(s);
       }
 
-      bool is_directory_on_matlab_path(const std::string& directory_path) const;
+      bool is_directory_in_matlab_path(const std::string& directory_path) const;
 
       std::vector<matlab::data::Array> reducing_parameters(const matlab::data::TypedArray<double>& x) const;
   };

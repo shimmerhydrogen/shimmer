@@ -15,7 +15,7 @@ namespace GERG_test
                              matlab_shimmer_folder
                            });
 
-    ASSERT_TRUE(matlab.is_directory_on_matlab_path(matlab_shimmer_folder));
+    ASSERT_TRUE(matlab.is_directory_in_matlab_path(matlab_shimmer_folder));
 
     return EXIT_SUCCESS;
   }

@@ -35,11 +35,9 @@ namespace GERG
     return *singleton;
   }
   // *********************************************************
-  bool Matlab_interface::is_directory_on_matlab_path(const std::string& directory_path) const
+  bool Matlab_interface::is_directory_in_matlab_path(const std::string& directory_path) const
   {
     matlab::engine::MATLABEngine& matlab = Matlab_interface::get_instance().engine();
-
-    matlab.eval(string_to_matlab("path"));
 
     std::string matlab_command =
         "hasFolder = ~isempty(strfind(path, ['" + directory_path + "', pathsep]));";

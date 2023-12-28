@@ -4,8 +4,6 @@
 
 int main(int argc, char ** argv)
 {
-  GERG_test::test_matlab_interface(argc, argv);
-
   if (argc > 1)
   {
     const std::string testName = argv[1];

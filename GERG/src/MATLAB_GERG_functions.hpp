@@ -6,6 +6,7 @@
 
 namespace GERG
 {
+  // *********************************************************
   struct Thermodynamic_properties_parameters final
   {
       enum struct Types
@@ -17,7 +18,7 @@ namespace GERG
 
       Types Type;
   };
-
+  // *********************************************************
   template <class matrix_type>
   inline Reducing_parameters<matrix_type> reducing_parameters(const matrix_type& x)
   {
@@ -26,7 +27,7 @@ namespace GERG
     matlab::data::ArrayFactory factory;
 
     const matlab::data::TypedArray<double> x_to_matlab = Matlab_interface::matrix_to_matlab(factory,
-                                                                                 x);
+                                                                                            x);
 
     const std::vector<matlab::data::Array> reducing_parameters = matlab.reducing_parameters(x_to_matlab);
 
@@ -37,6 +38,30 @@ namespace GERG
 
     return result;
   }
+  // *********************************************************
+  template <class matrix_type>
+  Pseudo_critical_point<matrix_type> pseudo_critical_point(const matrix_type& x,
+                                                           const unsigned int dimn)
+  {
+    const Matlab_interface& matlab = Matlab_interface::get_instance();
+
+    matlab::data::ArrayFactory factory;
+
+    const matlab::data::TypedArray<double> x_to_matlab = Matlab_interface::matrix_to_matlab(factory,
+                                                                                            x);
+    const matlab::data::TypedArray<double> dimn_to_matlab = factory.createScalar(static_cast<double>(dimn));
+
+    const std::vector<matlab::data::Array> pseudo_critical_point = matlab.pseudo_critical_point(x_to_matlab,
+                                                                                                dimn_to_matlab);
+
+    Pseudo_critical_point<matrix_type> result;
+    result.Tcx = Matlab_interface::matlab_to_matrix<matrix_type>(pseudo_critical_point.at(0));
+    result.Dcx = Matlab_interface::matlab_to_matrix<matrix_type>(pseudo_critical_point.at(1));
+    result.Vcx = Matlab_interface::matlab_to_matrix<matrix_type>(pseudo_critical_point.at(2));
+
+    return result;
+  }
+  // *********************************************************
 }
 
 #endif // __MATLAB_GERG_functions_H

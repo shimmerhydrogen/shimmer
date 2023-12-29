@@ -42,6 +42,7 @@ list(APPEND GERG_LIBRARY_TEST_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/test_utilities
 create_test_sourcelist(GERG_LIBRARY_TEST_TESTS
     ${CMAKE_CURRENT_SOURCE_DIR}/test_matlab_interface.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_reducing_parameters.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_pseudo_critical_point.hpp
   )
 
 # Create library test executable

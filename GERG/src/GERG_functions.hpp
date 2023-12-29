@@ -20,7 +20,7 @@ namespace GERG
   {
       matrix_type Tcx; ///< pseudo critical point temperature (K)
       matrix_type Dcx; ///< pseudo critical point density (mol/l)
-      matrix_type Vcx; ///< pseudo critical point velocity (?)
+      matrix_type Vcx; ///< pseudo critical point volume (l)
   };
 
   template <class matrix_type>
@@ -46,14 +46,14 @@ namespace GERG
   /// \return the pseudo critical point struct
   template <class matrix_type>
   Pseudo_critical_point<matrix_type> pseudo_critical_point(const matrix_type& x,
-                                                           const typename matrix_type::size_type& dimn);
+                                                           const unsigned int dimn);
   /// \brief Calculate thermodynamic properties as a function of temperature and density.
   /// \param P, pressure (kPa), size dimn x 1
   /// \param T, temperature (K), size dimn x 1
   /// \param x, composition (mole fraction)
   /// \param dimn, the composition size
   /// \param Tr, Dr, the reducing temperature (K) and the reducing density (mol/l), size dimn x 1
-  /// \param Tcx, Dcx, Vcx, the pseudo critical point temperature, density and velocity, size dimn x 1
+  /// \param Tcx, Dcx, Vcx, the pseudo critical point temperature, density and volume, size dimn x 1
   /// \param parameters, other input parameters
   /// \return the thermodynamic properties struct
   template <class matrix_type,
@@ -61,7 +61,7 @@ namespace GERG
   Thermodynamic_properties<matrix_type> thermodynamic_properties(const matrix_type& P,
                                                                  const matrix_type& T,
                                                                  const matrix_type& x,
-                                                                 const typename matrix_type::size_type& dimn,
+                                                                 const unsigned int dimn,
                                                                  const matrix_type& Tr,
                                                                  const matrix_type& Dr,
                                                                  const matrix_type& Tcx,

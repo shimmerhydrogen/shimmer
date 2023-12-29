@@ -73,6 +73,9 @@ namespace GERG
       bool is_directory_in_matlab_path(const std::string& directory_path) const;
 
       std::vector<matlab::data::Array> reducing_parameters(const matlab::data::TypedArray<double>& x) const;
+
+      std::vector<matlab::data::Array> pseudo_critical_point(const matlab::data::TypedArray<double>& x,
+                                                             const matlab::data::TypedArray<double>& dimn) const;
   };
 }
 

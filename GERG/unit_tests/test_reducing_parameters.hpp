@@ -10,6 +10,7 @@
 
 namespace GERG_test
 {
+  // *********************************************************
   Eigen::MatrixXd reducing_parameters_x_mock()
   {
     Eigen::MatrixXd x(3, 21);
@@ -20,7 +21,7 @@ namespace GERG_test
 
     return x;
   }
-
+  // *********************************************************
   GERG::Reducing_parameters<Eigen::MatrixXd> reducing_parameters_result_mock()
   {
     GERG::Reducing_parameters<Eigen::MatrixXd> result;
@@ -33,7 +34,7 @@ namespace GERG_test
 
     return result;
   }
-
+  // *********************************************************
   int test_reducing_parameters(int , char **)
   {
     const auto x = reducing_parameters_x_mock();
@@ -47,6 +48,7 @@ namespace GERG_test
 
     return EXIT_SUCCESS;
   }
+  // *********************************************************
 }
 
 #endif // __test_reducing_parameters_H

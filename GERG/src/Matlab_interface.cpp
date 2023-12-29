@@ -64,4 +64,22 @@ namespace GERG
     return results;
   }
   // *********************************************************
+  std::vector<matlab::data::Array> Matlab_interface::pseudo_critical_point(const matlab::data::TypedArray<double>& x,
+                                                                           const matlab::data::TypedArray<double>& dimn) const
+  {
+    matlab::engine::MATLABEngine& matlab = Matlab_interface::get_instance().engine();
+
+    std::vector<matlab::data::Array> args({
+                                            x,
+                                            dimn
+                                          });
+
+    const unsigned int numReturned = 3;
+    const std::vector<matlab::data::Array> results = matlab.feval(u"PseudoCriticalPointGERG",
+                                                                  numReturned,
+                                                                  args);
+
+    return results;
+  }
+  // *********************************************************
 }

@@ -7,6 +7,7 @@
 
 namespace GERG_test
 {
+  // *********************************************************
   int test_matlab_interface(int , char **)
   {
     const std::string matlab_shimmer_folder = GERG::Matlab_interface::matlab_shimmer_directory_path();
@@ -19,6 +20,7 @@ namespace GERG_test
 
     return EXIT_SUCCESS;
   }
+  // *********************************************************
 }
 
 #endif // __test_matlab_interface_H

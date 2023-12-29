@@ -76,6 +76,17 @@ namespace GERG
 
       std::vector<matlab::data::Array> pseudo_critical_point(const matlab::data::TypedArray<double>& x,
                                                              const matlab::data::TypedArray<double>& dimn) const;
+
+      std::vector<matlab::data::Array> thermodynamic_properties(const matlab::data::TypedArray<double>& P,
+                                                                const matlab::data::TypedArray<double>& T,
+                                                                const matlab::data::TypedArray<double>& x,
+                                                                const matlab::data::TypedArray<double>& dimn,
+                                                                const matlab::data::TypedArray<double>& Tr,
+                                                                const matlab::data::TypedArray<double>& Dr,
+                                                                const matlab::data::TypedArray<double>& Tcx,
+                                                                const matlab::data::TypedArray<double>& Dcx,
+                                                                const matlab::data::TypedArray<double>& Vcx,
+                                                                const matlab::data::TypedArray<double>& iFlag) const;
   };
 }
 

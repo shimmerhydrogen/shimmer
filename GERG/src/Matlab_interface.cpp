@@ -82,4 +82,38 @@ namespace GERG
     return results;
   }
   // *********************************************************
+  std::vector<matlab::data::Array> Matlab_interface::thermodynamic_properties(const matlab::data::TypedArray<double>& P,
+                                                                              const matlab::data::TypedArray<double>& T,
+                                                                              const matlab::data::TypedArray<double>& x,
+                                                                              const matlab::data::TypedArray<double>& dimn,
+                                                                              const matlab::data::TypedArray<double>& Tr,
+                                                                              const matlab::data::TypedArray<double>& Dr,
+                                                                              const matlab::data::TypedArray<double>& Tcx,
+                                                                              const matlab::data::TypedArray<double>& Dcx,
+                                                                              const matlab::data::TypedArray<double>& Vcx,
+                                                                              const matlab::data::TypedArray<double>& iFlag) const
+  {
+    matlab::engine::MATLABEngine& matlab = Matlab_interface::get_instance().engine();
+
+    std::vector<matlab::data::Array> args({
+                                            iFlag,
+                                            P,
+                                            T,
+                                            x,
+                                            dimn,
+                                            Tr,
+                                            Dr,
+                                            Tcx,
+                                            Dcx,
+                                            Vcx
+                                          });
+
+    const unsigned int numReturned = 4;
+    const std::vector<matlab::data::Array> results = matlab.feval(u"PropertiesGERG",
+                                                                  numReturned,
+                                                                  args);
+
+    return results;
+  }
+  // *********************************************************
 }

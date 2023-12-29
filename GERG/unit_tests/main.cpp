@@ -2,6 +2,7 @@
 #include "test_matlab_interface.hpp"
 #include "test_pseudo_critical_point.hpp"
 #include "test_reducing_parameters.hpp"
+#include "test_thermodynamic_properties.hpp"
 
 int main(int argc, char ** argv)
 {
@@ -17,6 +18,9 @@ int main(int argc, char ** argv)
 
     if (testName.compare("test_pseudo_critical_point") == 0)
       return GERG_test::test_pseudo_critical_point(argc, argv);
+
+    if (testName.compare("test_thermodynamic_properties") == 0)
+      return GERG_test::test_thermodynamic_properties(argc, argv);
   }
 
   return EXIT_SUCCESS;

@@ -43,6 +43,7 @@ create_test_sourcelist(GERG_LIBRARY_TEST_TESTS
     ${CMAKE_CURRENT_SOURCE_DIR}/test_matlab_interface.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_reducing_parameters.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_pseudo_critical_point.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_thermodynamic_properties.hpp
   )
 
 # Create library test executable

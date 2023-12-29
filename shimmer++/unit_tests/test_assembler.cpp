@@ -141,23 +141,10 @@ int main()
 
     incidence inc(graph);
 
-    sparse_matrix_t sAPA  = apa_matrix(c2_edges, pressure, graph, inc);
-    sparse_matrix_t sIc (num_vertices, num_edges_ext);
-    sIc.setIdentity();
+    auto system_mass = continuity(dt, temperature, pressure, pressure_old, inc, graph, c2_vertices);
+    auto system_mom  = momentum(dt, temperature, flux, flux_old, pressure, inc, graph, c2_edges);
 
-    vector_t pipes_pressure = average(pressure, inc);
-
-    vector_t phi_vec = phi_vector(dt, c2_vertices, graph);
-    vector_t rf = resistance_friction(temperature, c2_edges, flux, graph);
-    vector_t ri  = resistance_inertia(dt, pipes_pressure, inc, graph);
-    vector_t res_vec =  rf + ri; 
-
-    sparse_matrix_t LHS = assemble_lhs(phi_vec, res_vec, sAPA, inc.matrix(), sIc, graph);
-
-    vector_t rhs_continuity = phi_vec.array() * pressure_old.array();
-    vector_t rhs_momentum =  -0.5 * rf.array() * flux.array()
-                                   - ri.array() * flux_old.array();
-    vector_t rhs = assemble_rhs(rhs_continuity, rhs_momentum, graph);
+    auto [LHS, rhs] = assemble(system_mass, system_mom, graph);
 
     /*
     std::cout << "LHS: " <<  std::endl ;

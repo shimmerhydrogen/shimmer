@@ -18,6 +18,31 @@ namespace shimmer{
 */ 
 
 
+std::pair<sparse_matrix_t, vector_t>
+assemble(const std::pair<std::vector<triplet_t>, vector_t>& lhs_rhs_mass, 
+         const std::pair<std::vector<triplet_t>, vector_t>& lhs_rhs_mom, 
+         const infrastructure_graph & graph)
+{
+    std::vector<triplet_t> triplets = lhs_rhs_mass.first;
+    auto lhs_mom_begin = lhs_rhs_mom.first.cbegin();
+    auto lhs_mom_end   = lhs_rhs_mom.first.cend();
+    triplets.insert(triplets.begin(),lhs_mom_begin, lhs_mom_end);
+
+    size_t num_nodes = num_vertices(graph); 
+    size_t num_pipes = num_edges(graph);
+    size_t system_size = num_nodes + num_pipes;// + num_pipes_ext; // num_bnd 
+
+    sparse_matrix_t LHS(system_size, system_size);    
+    LHS.setFromTriplets(triplets.begin(), triplets.end()); 
+    
+    vector_t rhs = vector_t::Zero(system_size);
+    rhs.head(num_nodes) =  lhs_rhs_mass.second;   
+    rhs.segment(num_nodes, num_pipes) = lhs_rhs_mom.second;   
+
+    return std::make_pair(LHS, rhs);
+}
+
+
     
 sparse_matrix_t
 assemble_lhs(   const vector_t & phi_vec, 
@@ -55,12 +80,11 @@ assemble_rhs(   const vector_t & rhs_continuity,
                 const vector_t & rhs_momentum,
                 const infrastructure_graph & graph)
 {
-
     size_t num_nodes = num_vertices(graph); 
     size_t num_pipes = num_edges(graph);
+    size_t system_size = num_nodes + num_pipes;// + num_pipes_ext; // num_bnd 
 
-
-    vector_t rhs = vector_t::Zero(num_nodes + num_pipes); // + num_edges_ext);
+    vector_t rhs = vector_t::Zero(system_size);
     rhs.head(num_nodes) =  rhs_continuity;   
     rhs.segment(num_nodes, num_pipes) = rhs_momentum;   
     return rhs;

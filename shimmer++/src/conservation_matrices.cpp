@@ -139,51 +139,19 @@ resistance_friction(const double& temperature, const vector_t& c2,
     return Omega;
 } 
 
-/* 
-auto
-momemtum(const double& dt, const double& temperature,
-         const vector_t& flux, const vector_t& flux_old,
-         const vector_t& pressure, const incidence& inc,
-         const infrastructure_graph & graph)
-{
-    
-    size_t num_nodes = num_vertices(graph); 
-    size_t num_pipes = num_edges(graph);
-    //size_t num_pipes_ext = num_pipes;
-
-    vector_t pipes_pressure = average(pressure);
-    vector_t c2 = speed_of_sound(temperature,  pm);        
-
-    sparse_matrix_t sAPA  = apa_matrix(c2, pressure, graph, inc);
-
-    vector_t rf = resistance_friction(temperature, c2, flux, graph);
-    vector_t ri = resistance_inertia(dt, pipes_pressure, inc, graph);
-
-    auto t_sR   = build_triplets(-rf-ri, num_nodes, num_nodes);
-    auto t_sAPA = build_triplets( sAPA,  num_nodes, 0);
-
-    std::vector<triplet_t> triplets =  t_sAPA; 
-    triplets.insert(triplets.begin(), t_sR.begin(), t_sR.end());
-    triplets.insert(triplets.begin(), t_sA.begin(), t_sA.end());
-    //triplets.insert(triplets.begin(), t_sIc.begin(), t_sIc.end());
-
-    vector_t rhs_momentum =  -0.5 * rf.array() * flux.array()
-                                   - ri.array() * flux_old.array();
-
-    return std::make_pair(triplets, rhs);
-}
 
 
-auto
+std::pair<std::vector<triplet_t>, vector_t>
 continuity(const double& dt, const double& temperature,
         const  vector_t& pressure, const vector_t& pressure_old,
         const incidence& inc,
-        const infrastructure_graph & graph)
+        const infrastructure_graph & graph,
+        const vector_t& temp_c2_nodes)
 {
     size_t num_nodes = num_vertices(graph); 
     size_t num_pipes = num_edges(graph);
 
-    vector_t c2 = speed_of_sound(temperature,  pressure);   
+    vector_t c2 = temp_c2_nodes;//speed_of_sound(temperature,  pressure);   
 
     vector_t phi_vec = phi_vector(dt, c2, graph);
     auto t_sPHI = build_triplets( phi_vec);
@@ -196,7 +164,40 @@ continuity(const double& dt, const double& temperature,
 
     return std::make_pair(triplets, rhs);
 }
-*/
+
+
+std::pair<std::vector<triplet_t>, vector_t>
+momentum(const double& dt, const double& temperature,
+         const vector_t& flux, const vector_t& flux_old,
+         const vector_t& pressure, const incidence& inc,
+         const infrastructure_graph & graph, 
+         const vector_t& temp_c2_pipes)
+{
+    
+    size_t num_nodes = num_vertices(graph); 
+    size_t num_pipes = num_edges(graph);
+    //size_t num_pipes_ext = num_pipes;
+
+    vector_t pipes_pressure = average(pressure, inc);
+    vector_t c2 = temp_c2_pipes; //speed_of_sound(temperature,  pipes_pressure);        
+
+    sparse_matrix_t sAPA  = apa_matrix(c2, pressure, graph, inc);
+
+    vector_t rf = resistance_friction(temperature, c2, flux, graph);
+    vector_t ri = resistance_inertia(dt, pipes_pressure, inc, graph);
+
+    auto t_sR   = build_triplets(-rf-ri, num_nodes, num_nodes);
+    auto t_sAPA = build_triplets( sAPA,  num_nodes, 0);
+
+    std::vector<triplet_t> triplets =  t_sAPA; 
+    triplets.insert(triplets.begin(), t_sR.begin(), t_sR.end());
+
+    vector_t rhs =  -0.5 * rf.array() * flux.array()
+                                   - ri.array() * flux_old.array();
+
+    return std::make_pair(triplets, rhs);
+}
+
 
 } //end namespace shimmer
 

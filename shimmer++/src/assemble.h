@@ -46,8 +46,15 @@ assemble_rhs(   const vector_t & rhs_continuity,
                 const vector_t & rhs_momentum,
                 const infrastructure_graph & graph);
 
+
 void 
 assemble_boundary();
+
+
+std::pair<sparse_matrix_t, vector_t>
+assemble(const std::pair<std::vector<triplet_t>, vector_t>& lhs_rhs_mass, 
+         const std::pair<std::vector<triplet_t>, vector_t>& lhs_rhs_mom, 
+         const infrastructure_graph & graph);
 
 
 

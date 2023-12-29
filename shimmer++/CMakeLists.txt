@@ -4,7 +4,7 @@ project(shimmer++)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(ENABLE_GERG "Enable GERG matlab interface" ON)
+option(ENABLE_GERG "Enable GERG matlab interface" OFF)
 option(BUILD_SHIMMER_UNIT_TESTS "Build SHIMMER++ unitary tests" ON)
 
 #######################################################################

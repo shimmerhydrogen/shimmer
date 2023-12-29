@@ -1,0 +1,12 @@
+# This file exports the GERG::GERG CMake target which should be passed to the
+# target_link_libraries command.
+
+@PACKAGE_INIT@
+
+if(NOT TARGET GERG)
+ 	include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake")
+endif()
+
+check_required_components("@PROJECT_NAME@")
+
+message(STATUS "Found GERG version: ${GERG_VERSION}")

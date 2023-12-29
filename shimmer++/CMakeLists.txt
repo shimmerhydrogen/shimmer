@@ -4,6 +4,16 @@ project(shimmer++)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+option(ENABLE_GERG "Enable GERG matlab interface" ON)
+option(BUILD_SHIMMER_UNIT_TESTS "Build SHIMMER++ unitary tests" ON)
+
+#######################################################################
+# GERG
+if (BUILD_SHIMMER_UNIT_TESTS)
+    find_package(GERG REQUIRED)
+    set(LINK_LIBS ${LINK_LIBS} GERG::GERG)
+endif()
+
 #######################################################################
 # Qt stuff
 set(CMAKE_AUTOMOC ON)
@@ -41,7 +51,6 @@ set(SHIMMER_SOURCES src/infrastructure_graph.cpp src/geometry_properties.cpp
 add_executable(shimmer src/main.cpp ${SHIMMER_SOURCES})
 target_link_libraries(shimmer ${LINK_LIBS})
 
-option(BUILD_SHIMMER_UNIT_TESTS "Build SHIMMER++ unitary tests" ON)
 if (BUILD_SHIMMER_UNIT_TESTS)
     include(CTest)
     add_subdirectory(unit_tests)

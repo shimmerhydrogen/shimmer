@@ -31,7 +31,7 @@ endif (WIN32)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/${GERG_INSTALL_DIR} CACHE PATH "Install path prefix, prepended onto install directories." FORCE)
 Message(STATUS "GERG Library will be installed in: " ${CMAKE_INSTALL_PREFIX})
 
-option(BUILD_GERG_UNIT_TESTS "Build GERG unitary tests" ON)
+option(BUILD_GERG_UNIT_TESTS "Build GERG unitary tests" OFF)
 
 # Add dependencies
 ###########################################################################################

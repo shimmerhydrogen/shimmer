@@ -63,16 +63,14 @@ namespace GERG
   }
   // *********************************************************
   template <class matrix_type, class vector_type>
-  Thermodynamic_properties<vector_type> thermodynamic_properties(const vector_type& P,
-                                                                 const vector_type& T,
-                                                                 const matrix_type& x,
-                                                                 const unsigned int dimn,
-                                                                 const vector_type& Tr,
-                                                                 const vector_type& Dr,
-                                                                 const vector_type& Tcx,
-                                                                 const vector_type& Dcx,
-                                                                 const vector_type& Vcx,
-                                                                 const Thermodynamic_properties_parameters& parameters)
+  Thermodynamic_properties<vector_type> 
+  thermodynamic_properties( const vector_type& P,
+                            const vector_type& T,
+                            const matrix_type& x,
+                            const unsigned int dimn,
+                            const Reducing_parameters<vector_type>& reducing_parameters,
+                            const Pseudo_critical_point<vector_type>& pseudo_critical_point, 
+                            const Thermodynamic_properties_parameters& parameters)
   {
     const Matlab_interface& matlab = Matlab_interface::get_instance();
 
@@ -83,11 +81,11 @@ namespace GERG
     const matlab_darray T_to_matlab = Matlab_interface::matrix_to_matlab(factory, T);
     const matlab_darray x_to_matlab = Matlab_interface::matrix_to_matlab(factory, x);
     const matlab_darray dimn_to_matlab = factory.createScalar(static_cast<double>(dimn));
-    const matlab_darray Tr_to_matlab  = Matlab_interface::matrix_to_matlab(factory, Tr);
-    const matlab_darray Dr_to_matlab  = Matlab_interface::matrix_to_matlab(factory, Dr);
-    const matlab_darray Tcx_to_matlab = Matlab_interface::matrix_to_matlab(factory, Tcx);
-    const matlab_darray Dcx_to_matlab = Matlab_interface::matrix_to_matlab(factory, Dcx);
-    const matlab_darray Vcx_to_matlab = Matlab_interface::matrix_to_matlab(factory, Vcx);
+    const matlab_darray Tr_to_matlab  = Matlab_interface::matrix_to_matlab(factory, reducing_parameters.Tr);
+    const matlab_darray Dr_to_matlab  = Matlab_interface::matrix_to_matlab(factory, reducing_parameters.Dr);
+    const matlab_darray Tcx_to_matlab = Matlab_interface::matrix_to_matlab(factory, pseudo_critical_point.Tcx);
+    const matlab_darray Dcx_to_matlab = Matlab_interface::matrix_to_matlab(factory, pseudo_critical_point.Dcx);
+    const matlab_darray Vcx_to_matlab = Matlab_interface::matrix_to_matlab(factory, pseudo_critical_point.Vcx);
     const matlab_darray iFlag_to_matlab = factory.createScalar(static_cast<double>(parameters.Type));
 
     const std::vector<matlab::data::Array> thermodynamic_properties = matlab.thermodynamic_properties(P_to_matlab,

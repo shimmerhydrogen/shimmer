@@ -58,16 +58,14 @@ namespace GERG
   /// \return the thermodynamic properties struct
   template <class matrix_type, class vector_type,
             class parameters_type>
-  Thermodynamic_properties<vector_type> thermodynamic_properties(const vector_type& P,
-                                                                 const vector_type& T,
-                                                                 const matrix_type& x,
-                                                                 const unsigned int dimn,
-                                                                 const vector_type& Tr,
-                                                                 const vector_type& Dr,
-                                                                 const vector_type& Tcx,
-                                                                 const vector_type& Dcx,
-                                                                 const vector_type& Vcx,
-                                                                 const parameters_type& parameters);
+  Thermodynamic_properties<vector_type> 
+    thermodynamic_properties(const vector_type& P,
+                            const vector_type& T,
+                            const matrix_type& x,
+                            const unsigned int dimn,
+                            const Reducing_parameters<vector_type>& reducing_parameters,
+                            const Pseudo_critical_point<vector_type>& pseudo_critical_point, 
+                            const parameters_type& parameters);
 }
 
 #endif // __GERG_functions_H

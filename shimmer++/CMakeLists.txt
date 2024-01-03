@@ -10,6 +10,7 @@ option(BUILD_SHIMMER_UNIT_TESTS "Build SHIMMER++ unitary tests" ON)
 #######################################################################
 # GERG
 if (ENABLE_GERG)
+    find_package(Matlab REQUIRED)
     find_package(GERG REQUIRED)
     set(LINK_LIBS ${LINK_LIBS} GERG::GERG)
 endif()

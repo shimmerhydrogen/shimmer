@@ -18,12 +18,9 @@ namespace GERG_test
     return P;
   }
   // *********************************************************
-  Eigen::MatrixXd thermodynamic_properties_T_mock()
+   double thermodynamic_properties_T_mock()
   {
-    Eigen::MatrixXd T(3, 1);
-    T.col(0)<< 2.931500000000000e+02, 2.931500000000000e+02, 2.931500000000000e+02;
-
-    return T;
+    return 2.931500000000000e+02;
   }
   // *********************************************************
   Eigen::MatrixXd thermodynamic_properties_x_mock()

@@ -65,7 +65,7 @@ namespace GERG
   template <class matrix_type, class vector_type>
   Thermodynamic_properties<vector_type> 
   thermodynamic_properties( const vector_type& P,
-                            const vector_type& T,
+                            const double& Tm,
                             const matrix_type& x,
                             const unsigned int dimn,
                             const Reducing_parameters<vector_type>& reducing_parameters,
@@ -75,7 +75,9 @@ namespace GERG
     const Matlab_interface& matlab = Matlab_interface::get_instance();
 
     matlab::data::ArrayFactory factory;
-   
+
+    vector_type T(dimn,1);
+    T.setConstant(Tm);
     
     const matlab_darray P_to_matlab = Matlab_interface::matrix_to_matlab(factory, P);
     const matlab_darray T_to_matlab = Matlab_interface::matrix_to_matlab(factory, T);

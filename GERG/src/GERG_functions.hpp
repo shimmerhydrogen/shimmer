@@ -60,7 +60,7 @@ namespace GERG
             class parameters_type>
   Thermodynamic_properties<vector_type> 
     thermodynamic_properties(const vector_type& P,
-                            const vector_type& T,
+                            const double& T,
                             const matrix_type& x,
                             const unsigned int dimn,
                             const Reducing_parameters<vector_type>& reducing_parameters,

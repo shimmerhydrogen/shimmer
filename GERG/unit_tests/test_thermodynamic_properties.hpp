@@ -13,7 +13,7 @@ namespace GERG_test
   Eigen::MatrixXd thermodynamic_properties_P_mock()
   {
     Eigen::MatrixXd P(3, 1);
-    P.col(0)<< 5.101325000000000e+03, 5.101325000000000e+03, 5.101325000000000e+03;
+    P.col(0)<< 5.101325000000000e+06, 5.101325000000000e+06, 5.101325000000000e+06;
 
     return P;
   }

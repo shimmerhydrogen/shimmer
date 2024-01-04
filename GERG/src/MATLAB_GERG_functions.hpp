@@ -64,7 +64,7 @@ namespace GERG
   // *********************************************************
   template <class matrix_type, class vector_type>
   Thermodynamic_properties<vector_type> 
-  thermodynamic_properties( const vector_type& P,
+  thermodynamic_properties( const vector_type& Psim,
                             const double& Tm,
                             const matrix_type& x,
                             const unsigned int dimn,
@@ -75,6 +75,9 @@ namespace GERG
     const Matlab_interface& matlab = Matlab_interface::get_instance();
 
     matlab::data::ArrayFactory factory;
+
+    // Pressure enters in SI metrics, but for the matlab function is has to be adjusted
+    vector_type P = Psim/1e3;
 
     vector_type T(dimn,1);
     T.setConstant(Tm);

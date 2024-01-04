@@ -62,7 +62,6 @@ namespace GERG
     thermodynamic_properties(const vector_type& P,
                             const double& T,
                             const matrix_type& x,
-                            const unsigned int dimn,
                             const Reducing_parameters<vector_type>& reducing_parameters,
                             const Pseudo_critical_point<vector_type>& pseudo_critical_point, 
                             const parameters_type& parameters);

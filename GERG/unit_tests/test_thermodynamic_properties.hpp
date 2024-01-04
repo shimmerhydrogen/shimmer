@@ -100,8 +100,7 @@ namespace GERG_test
     const auto pseudo_critical_point = thermodynamic_properties_pseudo_critical_point_mock();
     const auto parameters = thermodynamic_properties_parameters_mock();
 
-    const auto result = GERG::thermodynamic_properties(P, T,
-                                                       x, 3,
+    const auto result = GERG::thermodynamic_properties(P, T, x, 
                                                        reducing_parameters,
                                                        pseudo_critical_point,
                                                        parameters);

@@ -67,7 +67,6 @@ namespace GERG
   thermodynamic_properties( const vector_type& Psim,
                             const double& Tm,
                             const matrix_type& x,
-                            const unsigned int dimn,
                             const Reducing_parameters<vector_type>& reducing_parameters,
                             const Pseudo_critical_point<vector_type>& pseudo_critical_point, 
                             const Thermodynamic_properties_parameters& parameters)
@@ -76,16 +75,18 @@ namespace GERG
 
     matlab::data::ArrayFactory factory;
 
+    auto dim = Psim.size();
+
     // Pressure enters in SI metrics, but for the matlab function is has to be adjusted
     vector_type P = Psim/1e3;
 
-    vector_type T(dimn,1);
+    vector_type T(dim,1);
     T.setConstant(Tm);
     
     const matlab_darray P_to_matlab = Matlab_interface::matrix_to_matlab(factory, P);
     const matlab_darray T_to_matlab = Matlab_interface::matrix_to_matlab(factory, T);
     const matlab_darray x_to_matlab = Matlab_interface::matrix_to_matlab(factory, x);
-    const matlab_darray dimn_to_matlab = factory.createScalar(static_cast<double>(dimn));
+    const matlab_darray dim_to_matlab = factory.createScalar(static_cast<double>(dim));
     const matlab_darray Tr_to_matlab  = Matlab_interface::matrix_to_matlab(factory, reducing_parameters.Tr);
     const matlab_darray Dr_to_matlab  = Matlab_interface::matrix_to_matlab(factory, reducing_parameters.Dr);
     const matlab_darray Tcx_to_matlab = Matlab_interface::matrix_to_matlab(factory, pseudo_critical_point.Tcx);
@@ -96,7 +97,7 @@ namespace GERG
     const std::vector<matlab::data::Array> thermodynamic_properties = matlab.thermodynamic_properties(P_to_matlab,
                                                                                                       T_to_matlab,
                                                                                                       x_to_matlab,
-                                                                                                      dimn_to_matlab,
+                                                                                                      dim_to_matlab,
                                                                                                       Tr_to_matlab,
                                                                                                       Dr_to_matlab,
                                                                                                       Tcx_to_matlab,

@@ -26,27 +26,8 @@ make_init_graph(infrastructure_graph& igraph)
 {
 
     std::vector<vertex_descriptor> vds;
-    std::unordered_map<std::string, double> x ={{"CH4",1.0 },
-                                                {"N2",1.0 },
-                                                {"CO2",1.0 }, 
-                                                {"C2H6",1.0 }, 
-                                                {"C3H8",1.0 },
-                                                {"i_C4H10",1.0 },
-                                                {"n_C4H10",1.0 },
-                                                {"i_C5H12",1.0 },
-                                                {"n_C5H12",1.0 },
-                                                {"C6H14",1.0 },
-                                                {"C7H16",1.0 },
-                                                {"C8H18",1.0 },
-                                                {"C9H20",1.0 },
-                                                {"C10H22",1.0 },
-                                                {"H2",1.0 },
-                                                {"O2",1.0 },
-                                                {"CO",1.0 },
-                                                {"H2O",1.0 },
-                                                {"H2S",1.0 },
-                                                {"He",1.0 },
-                                                {"Ar",1.0 }};
+    vector_t x(21);
+    x.setConstant(1.);
 
     vds.push_back( boost::add_vertex( { "station 0", 0, 5000.,-60,0., x},igraph));
     vds.push_back( boost::add_vertex( { "station 1", 1, 0., 20 ,0., x},igraph));

@@ -3,19 +3,23 @@
 
 namespace shimmer{
 
+
+
+
 void
 linearized_fluid_solver(const double & tolerance, const double& dt,
                         const double & Tm, const incidence& inc,
                         const infrastructure_graph& graph,
-                        const vector_t& temp_c2_pipes,
-                        const vector_t& temp_c2_nodes, vector_t& sol_time) 
+                        const vector_t& RR,
+                        const gerg_params& gerg,
+                        vector_t& sol_time) 
 {
     size_t num_pipes = num_edges(graph);
     size_t num_nodes = num_vertices(graph);
 
     // Solution in time n; 
-    vector_t press_old  = sol_time.head(num_nodes);
-    vector_t flux_old = sol_time.segment(num_nodes, num_pipes);
+    vector_t press_old = sol_time.head(num_nodes);
+    vector_t flux_old  = sol_time.segment(num_nodes, num_pipes);
 
     size_t MAX_ITERS = 500;
 
@@ -26,14 +30,18 @@ linearized_fluid_solver(const double & tolerance, const double& dt,
     vector_t press = press_old; 
     vector_t flux = flux_old; 
 
+    Eigen::MatrixXd  x_nodes = build_x_nodes(graph);
+    Eigen::MatrixXd  x_pipes = inc.matrix_in().transpose() * x_nodes;
+
+
     for(size_t iter = 0; iter <= MAX_ITERS; iter++){
         
         vector_t press_previous = press;
         vector_t flux_previous = flux;
 
-        auto system_mass = continuity(dt, Tm, press, press_old, inc, graph, temp_c2_nodes);
-        auto system_mom  = momentum(dt, Tm, flux, flux_old, press, inc, graph, temp_c2_pipes);
-        auto [LHS, rhs] = assemble(system_mass, system_mom, graph);
+        auto syst_mass = continuity(dt, Tm, press, press_old, inc, graph, x_nodes, RR, gerg);
+        auto syst_mom  = momentum(dt, Tm, flux, flux_old, press, inc, graph, x_pipes, RR, gerg );
+        auto [LHS, rhs]= assemble(syst_mass, syst_mom, graph);
 
         Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
         solver.compute(LHS);

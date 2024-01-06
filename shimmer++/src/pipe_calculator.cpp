@@ -99,16 +99,18 @@ double viscosity(const double& temperature,
 
     vector_t X_factor = mu1.array() * T1_ratio.array() / T_ratio.array();
 
-    double mu = X_factor(0) * x(GAS_TYPE::N2)  +   X_factor(1)  * x(GAS_TYPE::O2)      + 
-                X_factor(2) * x(GAS_TYPE::CO2) +   X_factor(3)  * x(GAS_TYPE::H2O)     + 
-                X_factor(4) * 0.0                 +   X_factor(5)  * x(GAS_TYPE::CO)      + 
-                X_factor(6) * x(GAS_TYPE::H2)  +   X_factor(7)  * x(GAS_TYPE::CH4)     + 
-                X_factor(8) * 0.0                 +   X_factor(9)  * x(GAS_TYPE::C2H6)    + 
-                X_factor(10) * x(GAS_TYPE::C3H8) + X_factor(11) * x(GAS_TYPE::n_C4H10) + 
-                X_factor(12) * x(GAS_TYPE::H2S)  + X_factor(13) * x(GAS_TYPE::i_C4H10) + 
-                X_factor(14) * x(GAS_TYPE::n_C5H12)+ X_factor(15) * x(GAS_TYPE::i_C5H12)  + 
-                X_factor(16) *(x(GAS_TYPE::C6H14)  + x(GAS_TYPE::C7H16)  + x(GAS_TYPE::C8H18)  +
-                                                 x(GAS_TYPE::C9H20)  + x(GAS_TYPE::C10H22));
+    double mu = X_factor(0) * x(GAS_TYPE::N2)  + X_factor(1) * x(GAS_TYPE::O2)  + 
+                X_factor(2) * x(GAS_TYPE::CO2) + X_factor(3) * x(GAS_TYPE::H2O) + 
+                X_factor(4) * 0.0              + X_factor(5) * x(GAS_TYPE::CO)  + 
+                X_factor(6) * x(GAS_TYPE::H2)  + X_factor(7) * x(GAS_TYPE::CH4) + 
+                X_factor(8) * 0.0              + X_factor(9) * x(GAS_TYPE::C2H6)+ 
+                X_factor(10)* x(GAS_TYPE::C3H8)+ X_factor(11)* x(GAS_TYPE::n_C4H10)+ 
+                X_factor(12)* x(GAS_TYPE::H2S) + X_factor(13)* x(GAS_TYPE::i_C4H10)+ 
+                X_factor(14)* x(GAS_TYPE::n_C5H12)+ 
+                X_factor(15)* x(GAS_TYPE::i_C5H12)+ 
+                X_factor(16)*(x(GAS_TYPE::C6H14)  + x(GAS_TYPE::C7H16)  
+                                + x(GAS_TYPE::C8H18) + x(GAS_TYPE::C9H20)
+                                 + x(GAS_TYPE::C10H22));
     return mu;
 }
 

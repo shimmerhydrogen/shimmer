@@ -142,17 +142,20 @@ resistance_friction(const double& temperature, const vector_t& c2,
 
 
 std::pair<std::vector<triplet_t>, vector_t>
-continuity(const double& dt, const double& temperature,
-        const  vector_t& pressure, const vector_t& pressure_old,
-        const incidence& inc,
-        const infrastructure_graph & graph,
-        const vector_t& temp_c2_nodes)
+continuity( const double& dt, const double& temperature,
+            const vector_t& pressure, const vector_t& pressure_old,
+            const incidence& inc,
+            const infrastructure_graph & graph,
+            const matrix_t& x,
+            const vector_t& RR,
+            const gerg_params& gerg)
 {
     size_t num_nodes = num_vertices(graph); 
     size_t num_pipes = num_edges(graph);
 
-    vector_t c2 = temp_c2_nodes;//speed_of_sound(temperature,  pressure);   
-
+    auto eos = equation_of_state(temperature, pressure, x, gerg);
+    vector_t c2 = eos.Z.cwiseProduct(RR) * temperature; 
+ 
     vector_t phi_vec = phi_vector(dt, c2, graph);
     auto t_sPHI = build_triplets( phi_vec);
     auto t_sA   = build_triplets( inc.matrix(), 0, num_nodes );
@@ -169,19 +172,22 @@ continuity(const double& dt, const double& temperature,
 std::pair<std::vector<triplet_t>, vector_t>
 momentum(const double& dt, const double& temperature,
          const vector_t& flux, const vector_t& flux_old,
-         const vector_t& pressure, const incidence& inc,
-         const infrastructure_graph & graph, 
-         const vector_t& temp_c2_pipes)
+         const vector_t& nodes_pressure, const incidence& inc,
+         const infrastructure_graph & graph,
+            const matrix_t& x,
+            const vector_t& RR,
+            const gerg_params& gerg)
 {
     
     size_t num_nodes = num_vertices(graph); 
     size_t num_pipes = num_edges(graph);
     //size_t num_pipes_ext = num_pipes;
 
-    vector_t pipes_pressure = average(pressure, inc);
-    vector_t c2 = temp_c2_pipes; //speed_of_sound(temperature,  pipes_pressure);        
+    vector_t pipes_pressure = average(nodes_pressure, inc);       
+    auto eos = equation_of_state(temperature, pipes_pressure, x, gerg);
+    vector_t c2 = eos.Z.cwiseProduct(RR) * temperature; 
 
-    sparse_matrix_t sAPA  = apa_matrix(c2, pressure, graph, inc);
+    sparse_matrix_t sAPA  = apa_matrix(c2, nodes_pressure, graph, inc);
 
     vector_t rf = resistance_friction(temperature, c2, flux, graph);
     vector_t ri = resistance_inertia(dt, pipes_pressure, inc, graph);

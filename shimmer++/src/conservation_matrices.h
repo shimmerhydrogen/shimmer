@@ -14,11 +14,15 @@
 #include "../src/geometry_properties.h"
 #include "../src/incidence_matrix.h"
 #include "../src/pipe_calculator.h"
+#include "../src/matlab_manip.h"
+#include "../src/gas_law.h"
+#include "MATLAB_GERG_functions.hpp"
 
 namespace shimmer{
 
 using sparse_matrix_t = Eigen::SparseMatrix<double>; 
 using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1>; 
+using matrix_t = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>; 
 
 
 vector_t
@@ -61,14 +65,20 @@ momentum(const double& dt, const double& temperature,
          const vector_t& flux, const vector_t& flux_old,
          const vector_t& pressure, const incidence& inc,
          const infrastructure_graph & graph,
-         const vector_t& temp_c2_pipes);
+         const matrix_t& x,
+         const vector_t& RR,
+         const gerg_params& gerg);
 
 
 std::pair<std::vector<triplet_t>, vector_t>
 continuity(const double& dt, const double& temperature,
-        const  vector_t& pressure, const vector_t& pressure_old,
+        const vector_t& pressure, 
+        const vector_t& pressure_old,
         const incidence& inc,
         const infrastructure_graph & graph, 
-        const vector_t& temp_c2_nodes);
+        const matrix_t& x,
+        const vector_t& RR,
+        const gerg_params& gerg);
+
 
 } //end namespace shimmer

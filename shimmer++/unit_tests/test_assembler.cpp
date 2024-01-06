@@ -16,14 +16,52 @@
 #include "../src/conservation_matrices.h"
 #include "../src/assemble.h"
 #include "verify_test.h"
+#include "MATLAB_GERG_functions.hpp"
 
 using triple_t = std::array<double, 3>;
 
 using namespace shimmer;
 
 
+
+vector_t
+make_RR(size_t size)
+{
+    vector_t rrb(size);
+    rrb.setConstant(518.2783563119373);
+    return rrb; 
+}
+
+
+gerg_params
+make_gerg(size_t size)
+{
+    gerg_reducing_params_t reducing_parameters;
+    reducing_parameters.Tr.resize(size);
+    reducing_parameters.Dr.resize(size);
+    reducing_parameters.Tr.setConstant(1.905640000000000e+02);
+    reducing_parameters.Dr.setConstant(1.013934271900000e+01);
+
+    gerg_pseudo_critical_pt_t psc_point;
+    psc_point.Tcx.resize(size, 1);
+    psc_point.Dcx.resize(size, 1);
+    psc_point.Vcx.resize(size, 1);
+    psc_point.Tcx.setConstant(1.905640000000000e+02);
+    psc_point.Dcx.setConstant(1.013934271900000e+01);
+    psc_point.Vcx.setConstant(9.862572236818776e-02);
+    
+    gerg_thermo_params_t parameters;
+    parameters.Type = gerg_thermo_params_t::Types::Gas_phase;
+    
+    gerg_params gerg(reducing_parameters, psc_point, parameters); 
+
+    return gerg;
+}
+
+
+
 void
-make_init_graph(infrastructure_graph& igraph)
+make_init_graph(infrastructure_graph& g)
 {
 
     std::vector<vertex_descriptor> vds;
@@ -31,13 +69,13 @@ make_init_graph(infrastructure_graph& igraph)
     vector_t  x = vector_t::Zero(21);
     x(GAS_TYPE::CH4) = 1.0;
 
-    vds.push_back( boost::add_vertex( { "station 0", 0, 0., 0.,  0., x}, igraph) );
-    vds.push_back( boost::add_vertex( { "station 1", 1, 0., 0.,  0., x}, igraph) );
-    vds.push_back( boost::add_vertex( { "station 2", 2, 0., 0.,  0., x}, igraph) );
+    vds.push_back( boost::add_vertex( { "station 0", 0, 0., 0.,  0., x}, g) );
+    vds.push_back( boost::add_vertex( { "station 1", 1, 0., 0.,  0., x}, g) );
+    vds.push_back( boost::add_vertex( { "station 2", 2, 0., 0.,  0., x}, g) );
 
-    edge_properties ep0  = {edge_type::pipe, 0,    80000, 0.6, 0.000012};//9.037840034191122e-03};//0.012};
-    edge_properties ep1  = {edge_type::pipe, 1,    90000, 0.6, 0.000012};//9.167633023370068e-03};//0.012};
-    edge_properties ep2  = {edge_type::pipe, 2,   100000, 0.6, 0.000012};//1.113364421774635e-02};//0.012};
+    edge_properties ep0  = {edge_type::pipe, 0,    80000, 0.6, 0.000012};
+    edge_properties ep1  = {edge_type::pipe, 1,    90000, 0.6, 0.000012};
+    edge_properties ep2  = {edge_type::pipe, 2,   100000, 0.6, 0.000012};
 
     /*                                            
     //           0                        *0  *1  *2              
@@ -48,9 +86,9 @@ make_init_graph(infrastructure_graph& igraph)
     //    1   *2   2                                         
     */
 
-    boost::add_edge( vds[0], vds[1], ep0, igraph);
-    boost::add_edge( vds[0], vds[2], ep1, igraph);
-    boost::add_edge( vds[2], vds[1], ep2, igraph);
+    boost::add_edge( vds[0], vds[1], ep0, g);
+    boost::add_edge( vds[0], vds[2], ep1, g);
+    boost::add_edge( vds[2], vds[1], ep2, g);
 }
 
 
@@ -115,15 +153,24 @@ int main()
     c2_edges << 138422.1905008311,
                 138406.1731482413,
                 138562.5561693802;
-
+    
+    gerg_params gerg_nodes = make_gerg(num_vertices); 
+    gerg_params gerg_pipes = make_gerg(num_pipes); 
 
     infrastructure_graph graph;
     make_init_graph(graph);
 
     incidence inc(graph);
 
-    auto system_mass = continuity(dt, temperature, pressure, pressure_old, inc, graph, c2_vertices);
-    auto system_mom  = momentum(dt, temperature, flux, flux_old, pressure, inc, graph, c2_edges);
+    auto x_nodes = build_x_nodes(graph);
+    auto x_pipes = inc.matrix_in().transpose() * x_nodes;
+    auto RR_nodes = make_RR(num_vertices);
+    auto RR_pipes = make_RR(num_pipes);
+
+    auto system_mass = continuity(dt, temperature, pressure, pressure_old,
+                                  inc, graph, x_nodes, RR_nodes, gerg_nodes);
+    auto system_mom  = momentum(dt, temperature, flux, flux_old, pressure, 
+                                  inc, graph, x_pipes, RR_pipes, gerg_pipes);
 
     auto [LHS, rhs] = assemble(system_mass, system_mom, graph);
 
@@ -144,7 +191,7 @@ int main()
     for (int k = 0; k < rhs.size(); ++k)
         std::cout <<  rhs(k)<< std::endl ;
     std::cout <<  std::endl ;
-    */    
+    */  
 
     bool lhs_pass = verify_test("LHS matrix", LHS, ref_lhs);
     bool rhs_pass = verify_test("rhs vector", rhs, ref_rhs);

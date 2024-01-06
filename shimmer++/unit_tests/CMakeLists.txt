@@ -4,8 +4,10 @@ set(SHIMMER_SOURCES_T ../src/infrastructure_graph.cpp
         ../src/incidence_matrix.cpp 
         ../src/assemble.cpp
         verify_test.cpp
-        ../src/matrix_manipulations.cpp 
-        ../src/pipe_calculator.cpp)
+        ../src/matrix_manipulations.cpp
+        ../src/matlab_manip.cpp 
+        ../src/pipe_calculator.cpp
+        ../src/gas_law.cpp)
 
 #set(SHIMMER_SOURCES_T ../${SHIMMER_SOURCES} verify_test.cpp)
 
@@ -36,3 +38,7 @@ add_test(NAME test_assembler COMMAND test_assembler)
 add_executable(test_friction_factor test_friction_factor.cpp ${SHIMMER_SOURCES_T})
 target_link_libraries(test_friction_factor ${LINK_LIBS})
 add_test(NAME test_friction_factor COMMAND test_friction_factor)
+
+add_executable(test_speed_of_sound test_speed_of_sound.cpp ${SHIMMER_SOURCES_T})
+target_link_libraries(test_speed_of_sound ${LINK_LIBS})
+add_test(NAME test_speed_of_sound COMMAND test_speed_of_sound)

@@ -31,9 +31,9 @@ add_executable(test_mean_pressure test_mean_pressure.cpp ${SHIMMER_SOURCES_T})
 target_link_libraries(test_mean_pressure ${LINK_LIBS})
 add_test(NAME test_mean_pressure COMMAND test_mean_pressure)
 
-add_executable(test_assembler test_assembler.cpp ${SHIMMER_SOURCES_T})
-target_link_libraries(test_assembler ${LINK_LIBS})
-add_test(NAME test_assembler COMMAND test_assembler)
+add_executable(test_conservation_system test_conservation_system.cpp ${SHIMMER_SOURCES_T})
+target_link_libraries(test_conservation_system ${LINK_LIBS})
+add_test(NAME test_conservation_system COMMAND test_conservation_system)
 
 add_executable(test_friction_factor test_friction_factor.cpp ${SHIMMER_SOURCES_T})
 target_link_libraries(test_friction_factor ${LINK_LIBS})

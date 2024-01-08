@@ -96,45 +96,46 @@ make_init_graph(infrastructure_graph& g)
 int main()
 {
 
-    std::vector<triple_t> ref_lhs =
+    std::vector<triple_t> ref_lhs_mass =
                           {{{0 , 0 , 0.0009656491051934202}, 
-                            {3 , 0 , 10078534.55024885},
-                            {4 , 0 , 10091402.87660982}, 
                             {1 , 1 , 0.001020154052634392}, 
-                            {3 , 1 ,-10078534.55024885}, 
-                            {5 , 1 ,-9967287.426858675}, 
                             {2 , 2 , 0.001077080804942649}, 
-                            {4 , 2 ,-10091402.87660982},                             
-                            {5 , 2 , 9967287.426858675}, 
                             {0 , 3 , 1}, 
                             {1 , 3 ,-1}, 
-                            {3 , 3 ,-118020405657.1786}, 
                             {0 , 4 , 1},
                             {2 , 4 ,-1},
-                            {4 , 4 ,-121243672815.3844}, 
                             {1 , 5 ,-1}, 
-                            {2 , 5 , 1}, 
+                            {2 , 5 , 1}}}; 
+    std::vector<triple_t> ref_lhs_mom =
+                          {{{3 , 0 , 10078534.55024885},
+                            {4 , 0 , 10091402.87660982}, 
+                            {3 , 1 ,-10078534.55024885}, 
+                            {5 , 1 ,-9967287.426858675}, 
+                            {4 , 2 ,-10091402.87660982},                             
+                            {5 , 2 , 9967287.426858675}, 
+                            {3 , 3 ,-118020405657.1786}, 
+                            {4 , 4 ,-121243672815.3844}, 
                             {5 , 5 ,-60205728337.66899}}};
 
-    std::vector<double> ref_rhs = { 4926.0899215508240,
-                                    5077.5204934969630,
-                                    5374.7170960654110,
-                                    -1638823383993.169,
-                                    -1510171334409.830,
-                                    -251939111528.3534};
+    std::vector<double> ref_rhs_mass = {4926.0899215508240,
+                                        5077.5204934969630,
+                                        5374.7170960654110};
+    std::vector<double> ref_rhs_mom =  {-1638823383993.169,
+                                        -1510171334409.830,
+                                        -251939111528.3534};
 
 
     size_t num_pipes = 3;
-    size_t num_vertices = 3;
+    size_t num_nodes = 3;
     size_t num_edges_ext = num_pipes;
+    size_t system_size = num_nodes + num_pipes;
 
     double dt = 180;
     double temperature = 293.15;
 
     vector_t flux (num_pipes), flux_old(num_pipes);
-    vector_t pressure (num_vertices), pressure_old(num_vertices);
-    vector_t c2_vertices (num_vertices), c2_edges(num_pipes); 
-
+    vector_t pressure (num_nodes), pressure_old(num_nodes);
+ 
     flux << 2.448496272217528e+01,
             2.171503727782473e+01,
             6.315037277824726e+00; 
@@ -146,15 +147,7 @@ int main()
     
     pressure_old = pressure;
 
-    c2_vertices << 138267.2930151191,
-                138578.7460692530,
-                138546.3842273756;
-
-    c2_edges << 138422.1905008311,
-                138406.1731482413,
-                138562.5561693802;
-    
-    gerg_params gerg_nodes = make_gerg(num_vertices); 
+    gerg_params gerg_nodes = make_gerg(num_nodes); 
     gerg_params gerg_pipes = make_gerg(num_pipes); 
 
     infrastructure_graph graph;
@@ -164,37 +157,25 @@ int main()
 
     auto x_nodes = build_x_nodes(graph);
     auto x_pipes = inc.matrix_in().transpose() * x_nodes;
-    auto RR_nodes = make_RR(num_vertices);
+    auto RR_nodes = make_RR(num_nodes);
     auto RR_pipes = make_RR(num_pipes);
 
-    auto system_mass = continuity(dt, temperature, pressure, pressure_old,
-                                  inc, graph, x_nodes, RR_nodes, gerg_nodes);
-    auto system_mom  = momentum(dt, temperature, flux, flux_old, pressure, 
-                                  inc, graph, x_pipes, RR_pipes, gerg_pipes);
+    auto mass = continuity(dt, temperature, pressure, pressure_old, inc, graph,
+                            x_nodes, RR_nodes, gerg_nodes);
+    auto mom  = momentum(dt, temperature, flux, flux_old, pressure, inc, graph,
+                            x_pipes, RR_pipes, gerg_pipes);
 
-    auto [LHS, rhs] = assemble(system_mass, system_mom, graph);
+    sparse_matrix_t LHS_mass(num_nodes, system_size);
+    sparse_matrix_t LHS_mom(system_size, system_size);
 
-    /*
-    std::cout << "LHS: " <<  std::endl ;
-    size_t count = 0;
-    for (int k = 0; k < LHS.outerSize(); ++k)
-    {
-        for (itor_t it(LHS,k); it; ++it, count++)
-        { 
-            std::cout << std::setprecision(16) << "{" << it.row() 
-                      << " , " << it.col() << " , " << it.value() 
-                      << "} " << std::endl ;
-        }
-    }
+    LHS_mass.setFromTriplets(mass.first.begin(), mass.first.end());
+    LHS_mom.setFromTriplets(mom.first.begin(), mom.first.end());
 
-    std::cout << "rhs: " <<  std::endl ;
-    for (int k = 0; k < rhs.size(); ++k)
-        std::cout <<  rhs(k)<< std::endl ;
-    std::cout <<  std::endl ;
-    */  
+    bool lhs_mass_pass = verify_test("LHS continuity", LHS_mass , ref_lhs_mass);
+    bool lhs_mom_pass  = verify_test("LHS momentum", LHS_mom, ref_lhs_mom);
 
-    bool lhs_pass = verify_test("LHS matrix", LHS, ref_lhs);
-    bool rhs_pass = verify_test("rhs vector", rhs, ref_rhs);
+    bool rhs_mass_pass = verify_test("rhs continuity", mass.second, ref_rhs_mass);
+    bool rhs_mom_pass  = verify_test("rhs momentum", mom.second, ref_rhs_mom);
 
-    return !(lhs_pass && rhs_pass); 
+    return !(lhs_mass_pass && lhs_mom_pass && rhs_mass_pass && rhs_mom_pass); 
 }

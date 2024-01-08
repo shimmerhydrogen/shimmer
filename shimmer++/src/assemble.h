@@ -31,22 +31,6 @@ using triplet_t = Eigen::Triplet<double>;
 */ 
 
 
-    
-sparse_matrix_t
-assemble_lhs(   const vector_t & phi_vec, 
-                const vector_t & res_vec,
-                const sparse_matrix_t & sAPA,
-                const sparse_matrix_t & sA,
-                const sparse_matrix_t & sIc,
-                const infrastructure_graph & graph);
-
-
-vector_t
-assemble_rhs(   const vector_t & rhs_continuity,
-                const vector_t & rhs_momentum,
-                const infrastructure_graph & graph);
-
-
 void 
 assemble_boundary();
 

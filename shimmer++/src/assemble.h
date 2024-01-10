@@ -38,6 +38,7 @@ assemble_boundary();
 std::pair<sparse_matrix_t, vector_t>
 assemble(const std::pair<std::vector<triplet_t>, vector_t>& lhs_rhs_mass, 
          const std::pair<std::vector<triplet_t>, vector_t>& lhs_rhs_mom, 
+         const std::pair<std::vector<triplet_t>, vector_t>& lhs_rhs_bound, 
          const infrastructure_graph & graph);
 
 

@@ -20,17 +20,22 @@ namespace shimmer{
 
 std::pair<sparse_matrix_t, vector_t>
 assemble(const std::pair<std::vector<triplet_t>, vector_t>& lhs_rhs_mass, 
-         const std::pair<std::vector<triplet_t>, vector_t>& lhs_rhs_mom, 
+         const std::pair<std::vector<triplet_t>, vector_t>& lhs_rhs_mom,
+         const std::pair<std::vector<triplet_t>, vector_t>& lhs_rhs_bnd,  
          const infrastructure_graph & graph)
 {
     std::vector<triplet_t> triplets = lhs_rhs_mass.first;
     auto lhs_mom_begin = lhs_rhs_mom.first.cbegin();
     auto lhs_mom_end   = lhs_rhs_mom.first.cend();
-    triplets.insert(triplets.begin(),lhs_mom_begin, lhs_mom_end);
+    auto lhs_bnd_begin = lhs_rhs_bnd.first.cbegin();
+    auto lhs_bnd_end   = lhs_rhs_bnd.first.cend();
 
+    triplets.insert(triplets.begin(),lhs_mom_begin, lhs_mom_end);
+    triplets.insert(triplets.begin(),lhs_bnd_begin, lhs_bnd_end);
+    
     size_t num_nodes = num_vertices(graph); 
     size_t num_pipes = num_edges(graph);
-    size_t system_size = num_nodes + num_pipes;// + num_pipes_ext; // num_bnd 
+    size_t system_size = num_nodes + num_pipes + num_nodes; 
 
     sparse_matrix_t LHS(system_size, system_size);    
     LHS.setFromTriplets(triplets.begin(), triplets.end()); 
@@ -38,7 +43,7 @@ assemble(const std::pair<std::vector<triplet_t>, vector_t>& lhs_rhs_mass,
     vector_t rhs = vector_t::Zero(system_size);
     rhs.head(num_nodes) =  lhs_rhs_mass.second;   
     rhs.segment(num_nodes, num_pipes) = lhs_rhs_mom.second;   
-
+    rhs.tail(num_nodes) =  lhs_rhs_bnd.second;  
     return std::make_pair(LHS, rhs);
 }
 

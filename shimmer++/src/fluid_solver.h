@@ -22,8 +22,13 @@ linearized_fluid_solver(const double & tolerance,
                         const double & Tm,
                         const incidence& inc,
                         const infrastructure_graph& graph,
-                        const vector_t& RR,
-                        const gerg_params& gerg,
+                        const double& p_in,
+                        const vector_t& flux_ext,   
+                        const vector_t& RR_nodes,
+                        const vector_t& RR_pipes,
+                        const vector_t& molar_mass,
+                        const gerg_params& gerg_nodes,
+                        const gerg_params& gerg_pipes,
                         vector_t& sol_time);
 
  

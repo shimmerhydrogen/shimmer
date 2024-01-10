@@ -43,11 +43,6 @@ sparse_matrix_t
 adp_matrix(const vector_t& c2, const infrastructure_graph& g,
             const incidence& inc);
 
-
-sparse_matrix_t
-apa_matrix(const vector_t& c2, const  vector_t& pressure, 
-           const infrastructure_graph& g, const incidence& inc);
-
              
 vector_t
 resistance_inertia( const double & dt, const vector_t & pressure,
@@ -59,18 +54,20 @@ resistance_friction(const double& temperature, const vector_t& c2,
                     const vector_t & flux,
                     const infrastructure_graph & g);
 
+using pair_trip_vec_t = std::pair<std::vector<triplet_t>, vector_t>;
 
-std::pair<std::vector<triplet_t>, vector_t>
+std::pair<pair_trip_vec_t, vector_t>
 momentum(const double& dt, const double& temperature,
          const vector_t& flux, const vector_t& flux_old,
          const vector_t& pressure, const incidence& inc,
          const infrastructure_graph & graph,
          const matrix_t& x,
          const vector_t& RR,
+         const vector_t& molar_mass,
          const gerg_params& gerg);
 
 
-std::pair<std::vector<triplet_t>, vector_t>
+pair_trip_vec_t
 continuity(const double& dt, const double& temperature,
         const vector_t& pressure, 
         const vector_t& pressure_old,
@@ -80,5 +77,12 @@ continuity(const double& dt, const double& temperature,
         const vector_t& RR,
         const gerg_params& gerg);
 
+
+std::pair<std::vector<triplet_t>, vector_t>
+boundary(const double& p_in,
+        const vector_t& vel,
+        const vector_t& flux_ext,
+        const incidence& inc,
+        const infrastructure_graph& graph);
 
 } //end namespace shimmer

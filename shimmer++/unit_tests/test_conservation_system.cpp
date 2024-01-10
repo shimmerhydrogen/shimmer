@@ -23,13 +23,16 @@ using triple_t = std::array<double, 3>;
 using namespace shimmer;
 
 
-
-vector_t
-make_RR(size_t size)
+std::pair<vector_t, vector_t>
+make_rr_mm(size_t size)
 {
     vector_t rrb(size);
     rrb.setConstant(518.2783563119373);
-    return rrb; 
+
+    vector_t molar_mass(size);
+    molar_mass.setConstant(16.04246);
+
+    return std::make_pair(rrb, molar_mass); 
 }
 
 
@@ -107,22 +110,22 @@ int main()
                             {1 , 5 ,-1}, 
                             {2 , 5 , 1}}}; 
     std::vector<triple_t> ref_lhs_mom =
-                          {{{3 , 0 , 10078534.55024885},
-                            {4 , 0 , 10091402.87660982}, 
-                            {3 , 1 ,-10078534.55024885}, 
-                            {5 , 1 ,-9967287.426858675}, 
-                            {4 , 2 ,-10091402.87660982},                             
-                            {5 , 2 , 9967287.426858675}, 
-                            {3 , 3 ,-118020405657.1786}, 
-                            {4 , 4 ,-121243672815.3844}, 
-                            {5 , 5 ,-60205728337.66899}}};
+                          {{{3 , 0 , 1.0},
+                            {4 , 0 , 1.0}, 
+                            {3 , 1 ,-1.0}, 
+                            {5 , 1 ,-1.0}, 
+                            {4 , 2 ,-1.0},                             
+                            {5 , 2 , 1.0}, 
+                            {3 , 3 ,-11710.07601043195}, 
+                            {4 , 4 ,-12014.55083082719}, 
+                            {5 , 5 ,-6040.332315032241}}};
 
     std::vector<double> ref_rhs_mass = {4926.0899215508240,
                                         5077.5204934969630,
                                         5374.7170960654110};
-    std::vector<double> ref_rhs_mom =  {-1638823383993.169,
-                                        -1510171334409.830,
-                                        -251939111528.3534};
+    std::vector<double> ref_rhs_mom = {-1.626053247942385e+05,
+                                       -1.496492958288440e+05,
+                                       -2.527659740697931e+04};
 
 
     size_t num_pipes = 3;
@@ -157,13 +160,14 @@ int main()
 
     auto x_nodes = build_x_nodes(graph);
     auto x_pipes = inc.matrix_in().transpose() * x_nodes;
-    auto RR_nodes = make_RR(num_nodes);
-    auto RR_pipes = make_RR(num_pipes);
+    auto [rr_nodes, mm_nodes] = make_rr_mm(num_nodes);
+    auto [rr_pipes, mm_pipes] = make_rr_mm(num_pipes);
 
-    auto mass = continuity(dt, temperature, pressure, pressure_old, inc, graph,
-                            x_nodes, RR_nodes, gerg_nodes);
-    auto mom  = momentum(dt, temperature, flux, flux_old, pressure, inc, graph,
-                            x_pipes, RR_pipes, gerg_pipes);
+    auto mass = continuity(dt, temperature, pressure, pressure_old,
+                            inc, graph, x_nodes, rr_nodes, gerg_nodes);
+    auto [mom, vel] = momentum( dt, temperature, flux, flux_old, 
+                                pressure, inc, graph, x_pipes, rr_pipes,
+                                mm_pipes, gerg_pipes);
 
     sparse_matrix_t LHS_mass(num_nodes, system_size);
     sparse_matrix_t LHS_mom(system_size, system_size);

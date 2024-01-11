@@ -13,17 +13,14 @@ namespace GERG_test
   Eigen::MatrixXd thermodynamic_properties_P_mock()
   {
     Eigen::MatrixXd P(3, 1);
-    P.col(0)<< 5.101325000000000e+03, 5.101325000000000e+03, 5.101325000000000e+03;
+    P.col(0)<< 5.101325000000000e+06, 5.101325000000000e+06, 5.101325000000000e+06;
 
     return P;
   }
   // *********************************************************
-  Eigen::MatrixXd thermodynamic_properties_T_mock()
+   double thermodynamic_properties_T_mock()
   {
-    Eigen::MatrixXd T(3, 1);
-    T.col(0)<< 2.931500000000000e+02, 2.931500000000000e+02, 2.931500000000000e+02;
-
-    return T;
+    return 2.931500000000000e+02;
   }
   // *********************************************************
   Eigen::MatrixXd thermodynamic_properties_x_mock()
@@ -103,13 +100,9 @@ namespace GERG_test
     const auto pseudo_critical_point = thermodynamic_properties_pseudo_critical_point_mock();
     const auto parameters = thermodynamic_properties_parameters_mock();
 
-    const auto result = GERG::thermodynamic_properties(P, T,
-                                                       x, 3,
-                                                       reducing_parameters.Tr,
-                                                       reducing_parameters.Dr,
-                                                       pseudo_critical_point.Tcx,
-                                                       pseudo_critical_point.Dcx,
-                                                       pseudo_critical_point.Vcx,
+    const auto result = GERG::thermodynamic_properties(P, T, x, 
+                                                       reducing_parameters,
+                                                       pseudo_critical_point,
                                                        parameters);
 
     const auto expected_result = thermodynamic_properties_result_mock();

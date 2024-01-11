@@ -11,7 +11,7 @@ using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1>;
 
 double
 viscosity(const double& Temperature,
-          const std::unordered_map<std::string, double> & X);
+          const vector_t & X);
 
 
 double

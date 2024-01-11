@@ -56,18 +56,15 @@ namespace GERG
   /// \param Tcx, Dcx, Vcx, the pseudo critical point temperature, density and volume, size dimn x 1
   /// \param parameters, other input parameters
   /// \return the thermodynamic properties struct
-  template <class matrix_type,
+  template <class matrix_type, class vector_type,
             class parameters_type>
-  Thermodynamic_properties<matrix_type> thermodynamic_properties(const matrix_type& P,
-                                                                 const matrix_type& T,
-                                                                 const matrix_type& x,
-                                                                 const unsigned int dimn,
-                                                                 const matrix_type& Tr,
-                                                                 const matrix_type& Dr,
-                                                                 const matrix_type& Tcx,
-                                                                 const matrix_type& Dcx,
-                                                                 const matrix_type& Vcx,
-                                                                 const parameters_type& parameters);
+  Thermodynamic_properties<vector_type> 
+    thermodynamic_properties(const vector_type& P,
+                            const double& T,
+                            const matrix_type& x,
+                            const Reducing_parameters<vector_type>& reducing_parameters,
+                            const Pseudo_critical_point<vector_type>& pseudo_critical_point, 
+                            const parameters_type& parameters);
 }
 
 #endif // __GERG_functions_H

@@ -9,8 +9,35 @@
 
 #include <unordered_map>
 #include <boost/graph/adjacency_list.hpp>
+#include <Eigen/Dense>
 
 namespace shimmer {
+
+using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1>; 
+
+enum GAS_TYPE
+{   CH4,
+    N2,
+    CO2, 
+    C2H6, 
+    C3H8,
+    i_C4H10,
+    n_C4H10,
+    i_C5H12,
+    n_C5H12,
+    C6H14,
+    C7H16,
+    C8H18,
+    C9H20,
+    C10H22,
+    H2,
+    O2,
+    CO,
+    H2O,
+    H2S,
+    He,
+    Ar,
+}; 
 
 struct gas_descriptor {
     std::string     name;
@@ -23,7 +50,7 @@ struct vertex_properties {
     double          pressure;
     double          mass_flow;
     double          height;
-    std::unordered_map<std::string, double> gas_mixture;   
+    vector_t        gas_mixture;   
 };
 
 enum class edge_type {

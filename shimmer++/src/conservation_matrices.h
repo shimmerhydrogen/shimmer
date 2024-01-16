@@ -83,6 +83,7 @@ boundary(const double& p_in,
         const vector_t& vel,
         const vector_t& flux_ext,
         const incidence& inc,
-        const infrastructure_graph& graph);
+        const infrastructure_graph& graph,
+        const vector_t& inlet_nodes);
 
 } //end namespace shimmer

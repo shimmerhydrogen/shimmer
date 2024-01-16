@@ -219,7 +219,8 @@ boundary(const double& p_in,
         const vector_t& vel,
         const vector_t& flux_ext,
         const incidence& inc,
-        const infrastructure_graph& graph)
+        const infrastructure_graph& graph,
+        const vector_t& inlet_nodes)
 {
     size_t num_pipes = num_edges(graph);
     size_t num_nodes = num_vertices(graph);
@@ -230,20 +231,23 @@ boundary(const double& p_in,
 
     vector_t rhs = flux_ext;
 
-    if (vel(0) > 0)
+    for(size_t i = 0; i < inlet_nodes.size(); i++)
     {
-        triplets.push_back(triplet_t(num_pipes + num_nodes, 0, 1.));
-        sId.coeffRef(0, 0) = 0.0;
-        rhs(0) = p_in;
-    }
-    else
-    {
-        sId.coeffRef(0, 0) = 0.0; // Warning: This is not the same MATRIX_k(dimn+dimb+1,1)=0; 
-        sId.coeffRef(0, 0) = 1.0;
-        rhs(0) = 0.0;
+        size_t idx = inlet_nodes(i);
+
+        if (vel(idx) > 0.0)
+        {
+            // Change equation to impose pressure instead of flux
+            triplets.push_back(triplet_t(num_pipes + num_nodes + idx, 0, 1.));
+            sId.coeffRef(idx, idx) = 0.0;
+            rhs(idx) = p_in;
+        }
+        else
+            rhs(idx) = 0.0;
+
     }
 
-    auto t_sId_bcnd = build_triplets(sId, num_nodes + num_pipes, num_nodes + num_pipes);
+    auto t_sId_bcnd = build_triplets(sId, num_nodes+num_pipes, num_nodes+num_pipes);
     triplets.insert(triplets.begin(), t_sId_bcnd.begin(), t_sId_bcnd.end());
 
     return  std::make_pair(triplets, rhs); 

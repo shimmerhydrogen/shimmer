@@ -9,6 +9,7 @@ linearized_fluid_solver(const double& tolerance,
                         const double& Tm,
                         const incidence & inc,
                         const infrastructure_graph& graph,
+                        const vector_t& inlet_nodes,
                         const double& p_in,
                         const vector_t& flux_ext,
                         const vector_t& RR_nodes,
@@ -47,7 +48,7 @@ linearized_fluid_solver(const double& tolerance,
                                 RR_nodes, gerg_nodes);
         auto [mom, vel] = momentum(dt, Tm, flux, flux_time, press, inc, graph,
                                    x_pipes, RR_pipes, molar_mass, gerg_pipes);
-        auto bcnd = boundary(p_in, vel, flux_ext, inc, graph);
+        auto bcnd = boundary(p_in, vel, flux_ext, inc, graph, inlet_nodes);
         auto [LHS, rhs]= assemble(mass, mom, bcnd, graph);
 
 

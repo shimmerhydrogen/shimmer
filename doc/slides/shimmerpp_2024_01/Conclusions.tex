@@ -1,0 +1,83 @@
+%----------------------------------------------------------------
+\begin{frame}[fragile]{Unitary tests cases}
+
+\begin{itemize}
+    \item Check \cred{regression}  of the code to previous state
+    \item Some of them acts as \cred{validation} tests cases
+    \item Intended also for \cred{future handbook/tutorials}
+
+\begin{center}
+\begin{minipage}{0.45\textwidth}
+        \begin{itemize}
+            \item Test incidence matrix
+            \item Test basic geometry computations
+            \item Test on ADP, R, $\Phi$ matrices
+            \item Test assembled system
+            \item Test Linearized fluid-dynamic solver
+        \end{itemize}
+\end{minipage}%
+\hfill
+\begin{minipage}{0.45\textwidth}
+\begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm,fontsize=\tiny, bgcolor=background]{cpp}
+int main(int argc, char **argv)
+{
+    using triple_t = std::array<double, 3>;
+    using sparse_matrix_t = Eigen::SparseMatrix<double>; 
+    
+    infrastructure_graph igraph;
+    make_init_graph(igraph);
+
+    incidence inc(igraph);
+    const sparse_matrix_t& mat  = inc.matrix();
+
+    std::cout << __FILE__ << std::endl;
+    bool pass = verify_test("incidence matrix", mat, ref);
+    
+    return !pass; 
+}
+\end{minted}    
+\end{minipage}%    
+\end{center}
+\end{itemize}
+\end{frame}
+%----------------------------------------------------------------
+\begin{frame}{What shimmer++ does not}
+
+\begin{itemize}
+
+    \item Does \cred{not transform units}. So input data must be given in \dgreen{SI units}
+    \item Non-pipe elements (yet)
+    \begin{figure}
+        \centering
+    \includegraphics[scale = 0.5]{img_other/non_pipe_elements.png}
+    \end{figure}
+    \item No refinement per pipe (grid creator)
+    \begin{center}    \input{img_other/no_refinement}        
+    \end{center}
+
+\end{itemize}   
+\end{frame}
+%----------------------------------------------------------------
+
+\begin{frame}{List of tasks}
+    \begin{enumerate}
+        \item On-disk representation layer
+            \begin{itemize}
+                \item \DENERG{DENERG}: Iterate on the \cred{data model} and finalize its design 
+                \item \DENERG{DENERG}: Provide \cred{formatted \& cleaned-up data in Excel/CSV} files
+                \item \DISMA{DISMA}: Communication between On-disk representation and in-memory representation stages             \end{itemize}       
+        \item Numerical methods layer
+            \begin{itemize}                
+                \item \DENERG{DENERG}: \cred{Quality tracking/time cycle} needs review
+                 \item \DENERG{DENERG}: Simplified equation of state
+                \item \DENERG{DENERG}: Validate the implementation
+                \begin{itemize}
+                    \item \normalsize \cred{Simple test case} with simple eq. of state, simple gas mixture, few nodes/pipes. 
+                    \item  \cred{Complex test case} with GERG, complex gas mixture, large network.
+                \end{itemize}
+                \item \DISMA{DISMA}: Steady state implementation
+                \item \DISMA{DISMA}: GERG translation from Matlab to C++ 
+            \end{itemize}
+    \end{enumerate}
+\end{frame}
+%----------------------------------------------------------------

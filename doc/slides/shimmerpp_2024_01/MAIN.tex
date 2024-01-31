@@ -1,0 +1,186 @@
+\documentclass[10pt,aspectratio=169]{beamer}
+\usetheme{Singapore}%{Frankfurt} %{Madrid}
+%\usecolortheme{seahorse}
+%!TeX TXS-program:compile = txs:///pdflatex/[--shell-escape]
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+%\usefonttheme{professionalfonts} % using non standard fonts for beamer
+\usepackage{minted}
+\usemintedstyle{emacs}
+\usepackage{array}
+\usefonttheme{serif}     % Font theme: serif
+\usepackage{venturis2}
+\usepackage[T1]{fontenc}
+\usepackage{amssymb}
+\usepackage{times}
+\usepackage{color}
+\usepackage{xcolor} % helps to change color to fbox
+\usepackage{hyperref}
+
+
+\usepackage{float}
+\usepackage{graphicx} % Allows including images
+\usepackage{svg}
+\usepackage{cite}
+\usepackage{lipsum}
+\usepackage{multirow}
+\usepackage{verbatimbox} % As verbatim but takes arguments, for ex fontsize
+
+%---------------------------------------------------------------------------------------------------------------
+\renewcommand\fbox{\fcolorbox{red}{white}}
+%---------------------------------------------------------------------------------------------------------------
+\usepackage{pst-all}	
+\usepackage{auto-pst-pdf}
+\ifpdf
+  \usepackage{tikz}
+\else
+    \usepackage{pst-all}	
+\fi
+\usepackage{pstricks} % For current config of Dia psfigures
+\setbeamertemplate{caption}[numbered] % For numbering figures
+%---------------------------------------------------------------------------------------------------------------
+\usepackage{multimedia} % to add videos
+\usepackage{media9}
+%--------------------------------------------------------------
+
+\mode<presentation> {
+\usecolortheme{whale} % Best one
+%\setbeamertemplate{footline} % To remove the footer line in all slides uncomment this line
+%\setbeamertemplate{footline}[page number] % To replace the footer line in all slides with a simple slide count uncomment this line
+%\setbeamertemplate{navigation symbols}{} % To remove the navigation symbols from the bottom of all slides uncomment this line
+}
+
+\setbeamercovered{transparent}
+\setbeamertemplate{bibliography item}[text]
+\setbeamertemplate{theorems}[numbered]
+\setbeamerfont{title}{size=\Large}%\miniscule,command,tiny, scriptsize,footnotesize,small,normalsize,large,Large,LARGE,huge,Huge,HUGE
+\setbeamerfont{date}{size=\tiny}%{\fontsize{40}{48} \selectfont Text}
+
+\setbeamertemplate{itemize items}[triangle] % if you want a ball
+\setbeamertemplate{itemize subitem}[circle] % if you wnat a circle
+\setbeamertemplate{itemize subsubitem}[triangle] % if you want a triangle
+
+\newcommand{\bi}{\begin{itemize}\setlength\itemsep{1em}}
+\newcommand{\ei}{\end{itemize}}
+\newcommand{\bis}{\begin{itemize}}
+\newcommand{\eis}{\end{itemize}}
+
+%===============================================
+%  COLORS
+%===============================================
+\definecolor{teal}{RGB}{0,128,128}
+\definecolor{magenta}{RGB}{255, 0, 255}
+\definecolor{ligthblue}{RGB}{80, 161, 225}
+\definecolor{red}{rgb}{0.8, 0, 0}
+\definecolor{green}{rgb}{0.0, 0.4, 0.0}
+\definecolor{vert}{RGB}{95,190,0}
+%\definecolor{vert}{rgb}{0.13,0.545,0.13}
+\definecolor{vert2}{rgb}{0.08,0.4,0.}
+\definecolor{cement}{RGB}{140,141,135}
+\definecolor{lgreyblue}{RGB}{220,230,240}
+\definecolor{dgreyblue}{RGB}{110,115,200}
+\definecolor{background}{gray}{0.9}
+\definecolor{dpipe}{RGB}{0,128,128}
+\definecolor{dnode}{RGB}{255, 0, 255}
+\definecolor{lbound}{rgb}{0.882353, 0.825071, 0.686107}
+\definecolor{dbound}{rgb}{0.582353, 0.525071, 0.386107}
+\definecolor{pollito}{RGB}{255, 170, 0.}
+\definecolor{vinotinto}{rgb}{0.403922, 0.047059, 0.274510}
+\definecolor{tealgreen}{rgb}{0.000000, 0.317647, 0.317647}
+\definecolor{lpipe}{rgb}{0.847059, 0.898039, 0.898039}
+\definecolor{lnode}{rgb}{0.882353, 0.803922, 0.882353}
+
+\newcommand{\lblue}[1]{\textcolor{ligthblue}{#1}}
+\newcommand{\cmag}[1]{\textcolor{magenta}{#1}}
+\newcommand{\cgreen}[1]{\textcolor{vert}{#1}}
+\newcommand{\cblue}[1]{\textcolor{blue}{#1}}
+\newcommand{\bluebf}[1]{\textcolor{blue}{\bf #1}}
+\newcommand{\bluebm}[1]{\textcolor{blue}{\bm #1}}
+\newcommand{\dgreen}[1]{\textcolor{vert}{#1}}
+%\newcommand{\red}[1]{\textcolor{red}{#1}}
+\newcommand{\cred}[1]{\textcolor{red}{{#1}}}
+\newcommand{\DISMA}[1]{\textcolor{ligthblue}{\textbf{#1}}}
+\newcommand{\DENERG}[1]{\textcolor{vert2}{#1}}
+\newcommand{\cpipes}[1]{\textcolor{dpipe}{#1}}
+\newcommand{\cnodes}[1]{\textcolor{dnode}{#1}}
+\newcommand{\cbound}[1]{\textcolor{pollito}{#1}}
+
+%===============================================
+% Fontsize def:  between tiny and scriptsize
+%===============================================
+\makeatletter
+\newcommand\notsotiny{\@setfontsize\notsotiny\@vipt\@viipt}
+\makeatother
+
+%===============================================
+%	TITLE PAGE
+%===============================================
+\title[Shimmer update]{SHIMMER - Update} 
+
+%\author[AKS]{Ajit Kumar Sahoo \texorpdfstring{\scriptsize Regd No: 16MCPC03}{}}
+\author[KC]{
+	 \underline{Karol Cascavita}
+}
+\institute[DISMA]{DISMA - PoliTO} 
+\titlegraphic{
+%\includesvg[height=1.25 cm]{img_title/unal.svg} \quad
+\includegraphics[scale=0.2]{img_other/polito_logo.png}
+%\includegraphics[height=1.25 cm]{img_title/saintvenant.png}  \quad
+} 
+
+
+%===============================================
+%  INPUT
+%===============================================
+\input{Macros}
+
+\includeonly{
+Intro,
+Code_in_memory,
+Code_numerical,
+Conclusions,
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%        DOCUMENT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ 
+\begin{document}
+
+%----------------------------------------------------------------
+\begin{frame}
+\titlepage 
+\end{frame}
+%----------------------------------------------------------------
+%\begin{frame}{TODO}
+%\begin{itemize}
+%\item explain how the graph it is used 
+%	\begin{itemize}
+%	\item Computation of volumes
+%	\end{itemize}
+%\item Fabio's contribution
+%\item Gas law template => flexibility with equation of state
+%\end{itemize}
+
+%Check Issues for help
+%Ideas: Maybe use a sparse matrix for gas mixture, so it is only save the ones in an efficient way. 
+%\end{frame}
+
+%----------------------------------------------------------------
+\include{Intro}
+%----------------------------------------------------------------
+\include{Code_in_memory}
+%----------------------------------------------------------------
+\include{Code_numerical}
+%----------------------------------------------------------------
+\include{Conclusions}
+%----------------------------------------------------------------
+\begin{frame}{}
+	\begin{center}
+	\Huge \cmag{Thank you}	
+	\end{center}
+\end{frame}
+%----------------------------------------------------------------
+
+
+\end{document}

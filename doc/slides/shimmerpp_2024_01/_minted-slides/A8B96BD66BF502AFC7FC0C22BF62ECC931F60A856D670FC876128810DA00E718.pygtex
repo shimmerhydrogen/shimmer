@@ -1,0 +1,19 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k+kt}{void}\PYG{+w}{ }\PYG{n+nf}{linearized\PYGZus{}fluid\PYGZus{}solver}\PYG{p}{()}
+\PYG{p}{\PYGZob{}}
+\PYG{+w}{    }\PYG{k}{for}\PYG{p}{(}\PYG{k+kt}{size\PYGZus{}t}\PYG{+w}{ }\PYG{n}{iter}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mi}{0}\PYG{p}{;}\PYG{+w}{ }\PYG{n}{iter}\PYG{+w}{ }\PYG{o}{\PYGZlt{}=}\PYG{+w}{ }\PYG{n}{MAX\PYGZus{}ITERS}\PYG{p}{;}\PYG{+w}{ }\PYG{n}{iter}\PYG{o}{++}\PYG{p}{)}
+\PYG{+w}{    }\PYG{p}{\PYGZob{}}
+\PYG{+w}{        }\PYG{k}{auto}\PYG{+w}{ }\PYG{n}{mass\PYGZus{}system}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{continuity}\PYG{p}{(}\PYG{+w}{ }\PYG{n}{dt}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{Tm}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{pressure}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{pressure\PYGZus{}old}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{incidence}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{graph}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{x\PYGZus{}nodes}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{glaw\PYGZus{}nodes}\PYG{p}{);}
+\PYG{+w}{        }\PYG{k}{auto}\PYG{+w}{ }\PYG{n}{mom\PYGZus{}system}\PYG{+w}{  }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{momentum}\PYG{p}{(}\PYG{+w}{ }\PYG{n}{dt}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{Tm}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{flux}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{flux\PYGZus{}old}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{pressure}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{incidence}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{graph}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{x\PYGZus{}pipes}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{glaw\PYGZus{}pipes}\PYG{p}{);}
+\PYG{+w}{        }\PYG{k}{auto}\PYG{+w}{ }\PYG{n}{bcnd\PYGZus{}system}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{boundary}\PYG{p}{(}\PYG{n}{p\PYGZus{}in}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{vel}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{flux\PYGZus{}ext}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{incidence}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{graph}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{inlet\PYGZus{}nodes}\PYG{p}{);}
+
+\PYG{+w}{        }\PYG{k}{auto}\PYG{+w}{ }\PYG{p}{[}\PYG{n}{LHS}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{rhs}\PYG{p}{]}\PYG{o}{=}\PYG{+w}{ }\PYG{n}{assemble}\PYG{p}{(}\PYG{n}{mass\PYGZus{}system}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{mom\PYGZus{}system}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{bcnd\PYGZus{}system}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{graph}\PYG{p}{);}
+
+\PYG{+w}{        }\PYG{n}{solver}\PYG{p}{.}\PYG{n}{compute}\PYG{p}{(}\PYG{n}{LHS}\PYG{p}{);}
+\PYG{+w}{        }\PYG{n}{vector\PYGZus{}t}\PYG{+w}{ }\PYG{n}{sol}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{solver}\PYG{p}{.}\PYG{n}{solve}\PYG{p}{(}\PYG{n}{rhs}\PYG{p}{);}
+
+\PYG{+w}{        }\PYG{k}{if}\PYG{p}{(}\PYG{n}{residual}\PYG{+w}{ }\PYG{o}{\PYGZlt{}}\PYG{+w}{ }\PYG{n}{tolerance}\PYG{p}{)}
+\PYG{+w}{            }\PYG{k}{return}\PYG{p}{;}
+\PYG{+w}{    }\PYG{p}{\PYGZcb{}}
+\PYG{p}{\PYGZcb{}}
+\end{Verbatim}

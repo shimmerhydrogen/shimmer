@@ -1,0 +1,307 @@
+\begin{frame}[fragile]{In-memory representation stage}
+\begin{itemize}
+\setlength{\itemindent}{-1.0em}
+    \item We use a \cred{Boost Graph} Library:  \cblue{generic programming},  \cblue{open-source} and \cblue{header-only} library {
+\begin{minted}[linenos=false, frame=single, framesep=2mm,fontsize=\scriptsize]{cpp}
+adjacency_list<OutEdgeList, VertexList, Directed, 
+               VertexProperties, EdgeProperties, GraphProperties, EdgeList>
+\end{minted}      
+    }
+\item We use an \cred{undirected graph} with values in \cpipes{pipes}/\cnodes{nodes} assigned via the graph properties
+
+% FORKAROL: read for the generic explanation and to open the talk about the given caractheristics of the pipes and nodes by suing boost::graph
+% https://www.boost.org/doc/libs/1_82_0/libs/graph/doc/index.html
+
+\begin{center}
+
+\begin{minipage}{0.51\textwidth}
+\vspace{-0.25cm}
+\begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=0.5mm,fontsize=\notsotiny, bgcolor=background]{cpp}
+ using namespace boost;
+ using graph_type = adjacency_list< listS, vecS,  
+                                    undirectedS,
+            vertex_properties, edge_properties>;
+           
+ graph_type graph;
+\end{minted}  
+\vspace{-0.75cm}
+\begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=0.5mm,fontsize=\notsotiny]{cpp}
+ enum class edge_type {
+     pipe,
+     resistor,
+     compressor,
+     regulator,
+     valve,
+};
+ \end{minted}
+\vfill
+\end{minipage}%
+\hfill
+\begin{minipage}{0.38\textwidth}
+    \begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=1.1 mm,fontsize=\notsotiny, bgcolor=background]{cpp}
+ struct vertex_properties {
+     std::string     name;
+     int             number;
+     double          height;
+     vector_t        gas_mixture;   
+ };
+
+ struct edge_properties {
+     edge_type   type;
+     int         number;
+     double      length;
+     double      diameter;
+     double      friction_factor;
+ };  
+\end{minted}    
+\end{minipage}%    
+\end{center}
+
+\item Matrices directly built from graph: Incidence matrix, Resistance matrix, Inertia term
+\end{itemize}
+\end{frame}
+
+%----------------------------------------------------------------
+\begin{frame}[fragile]{Graph initialization}
+\begin{itemize}
+    \item Graph representation and \cnodes{nodes} specification
+
+    \begin{center}       
+    \begin{minipage}{0.25\textwidth}
+            \begin{center}
+            \input{img_code/pipe_network_pgf.tex}    
+            \end{center}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.65\textwidth}
+        \begin{table}
+        \footnotesize
+        \begin{tabular}{ccrrrcccc}
+        &&&&&&&&\\
+        \hline 
+        &  & \multicolumn{3}{c}{Node properties}  & & \multicolumn{3}{c}{Mixture composition} \\ \cline{3-5} \cline{7-9}     
+        \multirow{5}{*}{\rotatebox[origin=c]{90}{\cnodes{Nodes}}} 
+        &           & G[kg/s] &p[Pa] &H[m]  && CH4 & N2& \dots \\ \hline
+        &\cnodes{0} &	5000  & -60  &10.0  && -& -& -\\
+        &\cnodes{1} &	0	  &  20  &20.0  && -& - & -\\
+        &\cnodes{2} &	0	  &  25  &30.0  && -& - & -\\ 
+        &\cnodes{3} &	0	  &  35  &40.0  && -& - & -\\ 
+        &\cnodes{4} &	0	  &  50  &50.0  && -& - & -\\
+        \hline
+        &&&&&&&&\\
+        \end{tabular}
+        \end{table}
+    \end{minipage}
+   \end{center}
+\item Insertion of vertices using the $boost::add\_vertex$ function
+    \begin{center}
+    \begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm,fontsize=\scriptsize, bgcolor=background]{cpp}
+    // Insert station config (name, no., pressure, flux, height)
+    auto v0 = add_vertex( { "Station 0", 0, 5e3,-60, 10}, graph) );
+    auto v1 = add_vertex( { "Station 1", 1,  0,  20, 20}, graph) );
+    auto v2 = add_vertex( { "Station 2", 2,  0,  25, 30}, graph) );
+    auto v3 = add_vertex( { "Station 3", 3,  0,  35, 40}, graph) );
+    auto v4 = add_vertex( { "Station 4", 4,  0,  50, 50}, graph) );
+
+    std::vector<vertex_descriptor> vds = {v0,v1,v2,v3,v4};  
+    \end{minted}
+        
+    \end{center}
+
+\end{itemize}
+
+\end{frame}
+%----------------------------------------------------------------
+\begin{frame}[fragile]{Graph initialization}
+\begin{itemize}
+    \item Graph representation and \cpipes{pipes} specification   
+        \begin{center}
+        \begin{minipage}{0.25\textwidth}
+            \begin{center}
+            \input{img_code/pipe_network_pgf.tex}    
+            \end{center}
+        \end{minipage}
+        \hfill
+        \begin{minipage}{0.65\textwidth}
+            \begin{table}
+            \footnotesize
+            \begin{tabular}{cccccrrr}
+            &&&&&&& \\
+            \hline
+            &  & \multicolumn{2}{c}{Nodes}&&\multicolumn{3}{c}{Pipe properties} \\ \cline{3-4} \cline{6-8}    
+            &  & In	&Out	&&L[m]	&D[m]	&epsi[m] \\ \hline
+            \multirow{5}{*}{\rotatebox[origin=c]{90}{\cpipes{Pipes}}}
+            &\cpipes{0} &	\cnodes{0} &	\cnodes{1} &&	80.0  &0.6	&1.2e-5 \\
+            &\cpipes{1} &	\cnodes{1} &	\cnodes{3} &&	90.0  &0.6	&1.2e-5 \\
+            &\cpipes{2} &	\cnodes{3} &	\cnodes{2} &&	100.0 &0.6	&1.2e-5 \\ 
+            &\cpipes{3} &	\cnodes{1} &	\cnodes{2} &&	110.0 &0.6	&1.2e-5 \\ 
+            &\cpipes{4} &	\cnodes{3} &	\cnodes{4} &&	120.0 &0.6	&1.2e-5 \\ \hline 
+            &&&&&&& \\
+            \end{tabular}
+            \end{table}
+        \end{minipage}
+        \end{center}
+    \item Insertion of pipes using the $boost::add\_edges$ function 
+        \begin{center}
+        \begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm,fontsize=\scriptsize, bgcolor=background]{cpp}
+    using pipe_t = edge_type::pipe;
+
+    add_edge( vds[0], vds[1], edge_properties({pipe_t, 0,   80, 0.6, 1.2e-5), graph});
+    add_edge( vds[1], vds[3], edge_properties({pipe_t, 1,   90, 0.6, 1.2e-5), graph});
+    add_edge( vds[3], vds[2], edge_properties({pipe_t, 2,  100, 0.6, 1.2e-5), graph});
+    add_edge( vds[1], vds[2], edge_properties({pipe_t, 3,  110, 0.6, 1.2e-5), graph});
+    add_edge( vds[3], vds[4], edge_properties({pipe_t, 4,  120, 0.6, 1.2e-5), graph});
+        \end{minted}
+        \end{center}
+\end{itemize}
+\end{frame}
+%----------------------------------------------------------------
+\begin{frame}[fragile]{Incidence matrix}
+
+\begin{itemize}
+    \setlength{\itemindent}{-1.5em}
+    \item The incidence matrix establish the connection between nodes and pipes
+\end{itemize}
+
+%\hspace{-0.1 cm}
+\begin{minipage}{0.35\textwidth}
+\begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm,fontsize=\notsotiny, bgcolor=background]{cpp}
+
+ class incidence
+ {
+     sparse_matrix_t mat_;
+     sparse_matrix_t mat_in_;
+     sparse_matrix_t mat_out_; 
+    
+     void 
+     compute(const graph_type& g);
+    
+ public:
+
+     incidence(){};
+     incidence(const graph_type& g)    
+     { 
+        compute(g);
+     };
+    
+     const sparse_matrix_t& mat();     
+     const sparse_matrix_t& mat_in();   
+     const sparse_matrix_t& mat_out();   
+ };
+ 
+\end{minted}
+\end{minipage}%
+\hfill
+\hspace{0.2 cm}
+\begin{minipage}{0.55\textwidth}
+
+    \begin{minipage}{0.3\textwidth}
+         \resizebox{\textwidth}{!}{\input{img_code/pipe_network_pgf.tex} } 
+    \end{minipage}%
+    \hfill
+    \begin{minipage}{0.65\textwidth} 
+      \begin{table}
+        \scriptsize
+        \begin{tabular}{rrrrrrr}
+        \hline
+        &   & \multicolumn{5}{c}{\cpipes{PIPES}} \\ 
+         &  &  \cpipes{0}&  \cpipes{1}&  \cpipes{2}&  \cpipes{3}&  \cpipes{4} \\ \hline
+        \multirow{5}{*}{\rotatebox[origin=c]{90}{\cnodes{NODES}}}
+         & \cnodes{0}&  1&   &   &   &   \\
+         & \cnodes{1}& -1&  1&   &  1&   \\
+         & \cnodes{2}&   &   & -1& -1&   \\
+         & \cnodes{3}&   & -1&  1&   & 1 \\
+         & \cnodes{4}&   &   &   &   &-1 \\ \hline
+        \end{tabular}        
+        \end{table}
+    \end{minipage}    
+\begin{minted}[autogobble,escapeinside=||, linenos=true,numbersep=1pt,frame=lines,framesep=2mm,fontsize=\notsotiny, bgcolor=background]{cpp}
+   incidence::compute(const graph_type& g)
+   { 
+      auto range = edges(g);
+      for(auto it = range.first;it! = range.second; it++){
+          auto pipe = g[*it];   
+          auto node_in  = g[source(*it, g)];
+          auto node_out = g[target(*it, g)];
+
+          mat_in_( node_in.number,  pipe.number) = 1;
+          mat_out_(node_out.number, pipe.number) = 1;       
+      }
+     mat_ = mat_in_ - mat_out_; 
+   }
+\end{minted}
+\end{minipage}%
+ \begin{tikzpicture}[remember picture,overlay]
+\only<2>\draw[red] (-3.7,-2.48) -- (-3.7,-2.2) -- (-7.5,-2.2) -- (-7.5,-2.48) -- cycle;
+ \end{tikzpicture}
+\end{frame}
+
+
+%----------------------------------------------------------------
+\begin{frame}{Numerical methods stage}
+\begin{itemize}
+    \item Efforts in the in-memory representation and in the numerical methods stages.
+\end{itemize}
+
+
+\begin{figure}[H]
+    \centering
+    %\includegraphics[scale = 0.4]{img_intro/system_arch.pdf}
+    \begin{tikzpicture}
+    \node[anchor=south west,inner sep=0] (X) at (2, -3) 
+    {\includegraphics[scale = 0.5]{img_intro/system_arch.pdf}};
+    \node [blue, ultra thick] at ($(X.south west)!0.5!(X.north east)$) {};
+    % Square for scale 0.4
+    %\draw[red] (9.75,-3) -- (9.75,1.25) -- (4.0,1.25) -- (4.0,-3) -- cycle;
+    % Square for scale 0.5
+    \draw[red] (11.75,-3) -- (11.75,2.25) -- (4.5,2.25) -- (4.5,-3) -- cycle;
+    \pgfsetfillcolor{vinotinto}
+    \pgfsetfillopacity{0.25}
+    \only<2>\fill(8.5,-3) -- (8.5,2.25) -- (4.5,2.25) -- (4.5,-3) -- cycle;
+    \only<3>\fill(8.5,-3) -- (8.5,2.25) -- (11.75,2.25) -- (11.75,-3) -- cycle;
+    
+    \end{tikzpicture}
+    \caption{Taken from architecture proposal (Matteo's presentation).}
+\end{figure}
+   
+\end{frame}
+
+%----------------------------------------------------------------
+%----------------------------------------------------------------
+
+\begin{frame}{Numerical methods stage}
+\noindent
+%\psframe[fillstyle=solid,fillcolor=blue!20,linewidth=3pt,linecolor=black](0,0)(21,16)
+
+
+\begin{minipage}{0.25\textwidth}
+\input{img_code/numerical_methods_algorithm_pgf}
+\end{minipage}%
+\hfill
+\begin{minipage}{0.65\textwidth}
+\begin{itemize}
+    \item<1->{\textcolor{tealgreen}{Linearized Fluid Solver}
+        \begin{itemize}
+            \item Computation of the equation of state (GERG)
+            \item Friction factor average computation
+                \begin{itemize}
+                    \item Viscosity calculator
+                    \item Infrastructure for complex gas composition
+                \end{itemize}
+            \item Matrix system of the iterative solver
+                \begin{itemize}
+                    \item Incidence matrix and its modified version referred to pressures
+                    \item Resistance matrix
+                    \item $\Phi$ matrix
+                    \item Boundary condition treatment
+                \end{itemize}
+        \end{itemize}
+    }
+    \item<2-> \textcolor{vinotinto}{Quality Tracking Cycle}
+    \item<3-> \textcolor{dgreyblue}{Time Cycle}
+    \item<4-> Initialization
+\end{itemize}
+
+\end{minipage}%
+
+\end{frame}

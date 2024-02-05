@@ -132,18 +132,13 @@ continuity( const double& dt,
             const double& temperature,
             const vector_t& pressure,
             const vector_t& pressure_old,
+            const vector_t& c2,
             const incidence& inc,
-            const infrastructure_graph & graph,
-            const matrix_t& x,
-            const vector_t& RR,
-            const gerg_params& gerg)
+            const infrastructure_graph & graph)
 {
     size_t num_nodes = num_vertices(graph); 
     size_t num_pipes = num_edges(graph);
 
-    auto eos = equation_of_state(temperature, pressure, x, gerg);
-    vector_t c2 = eos.Z.cwiseProduct(RR) * temperature; 
- 
     vector_t phi_vec = phi_vector(dt, c2, graph);
     auto t_sPHI = build_triplets( phi_vec);
     auto t_sA   = build_triplets( inc.matrix(), 0, num_nodes );
@@ -157,27 +152,21 @@ continuity( const double& dt,
 }
 
 
-std::pair<pair_trip_vec_t, vector_t>
+pair_trip_vec_t
 momentum(const double& dt,
          const double& temperature,
          const vector_t& flux, 
          const vector_t& flux_old,
          const vector_t& nodes_pressure,
+         const vector_t& pipes_pressure,
+         const vector_t& c2,
          const incidence& inc,
-         const infrastructure_graph & graph,
-         const matrix_t& x,
-         const vector_t& RR,
-         const vector_t& molar_mass,
-         const gerg_params& gerg)
+         const infrastructure_graph & graph)
 {  
     double factor = 1.;//1.e-9;
     size_t num_nodes = num_vertices(graph);
     size_t num_pipes = num_edges(graph);
     //size_t num_pipes_ext = num_pipes;
-
-    vector_t pipes_pressure = average(nodes_pressure, inc);
-    auto eos = equation_of_state(temperature, pipes_pressure, x, gerg);
-    vector_t c2 = eos.Z.cwiseProduct(RR) * temperature;
 
     sparse_matrix_t sADP = factor * adp_matrix(c2, graph, inc);
     vector_t ADP_p = sADP.cwiseAbs() * nodes_pressure;
@@ -195,6 +184,26 @@ momentum(const double& dt,
     vector_t rhs = factor * ((-0.5) * rf.array() * flux.array()
                                    - ri.array() * flux_old.array())/ADP_p.array();
 
+
+    return std::make_pair(triplets, rhs);
+}
+
+
+//template<EQ_OF_STATE>
+pair_trip_vec_t
+boundary(const double& p_in,
+        const vector_t& flux,
+        const vector_t& flux_ext,
+        const vector_t& molar_mass,
+        const incidence& inc,
+        const infrastructure_graph& graph,
+        const vector_t& inlet_nodes,
+        const gerg_thermo_props_t & eos)
+{
+    size_t num_pipes = num_edges(graph);
+    size_t num_nodes = num_vertices(graph);
+
+    
     vector_t area(num_pipes);
     auto edge_range = boost::edges(graph);
     auto begin = edge_range.first;
@@ -210,20 +219,6 @@ momentum(const double& dt,
     vector_t rho = eos.D.cwiseProduct(inc.matrix_in().transpose() * molar_mass); 
     vector_t vel = flux.cwiseQuotient(area.cwiseProduct(rho));
 
-    return std::make_pair(std::make_pair(triplets, rhs), vel);
-}
-
-
-pair_trip_vec_t
-boundary(const double& p_in,
-        const vector_t& vel,
-        const vector_t& flux_ext,
-        const incidence& inc,
-        const infrastructure_graph& graph,
-        const vector_t& inlet_nodes)
-{
-    size_t num_pipes = num_edges(graph);
-    size_t num_nodes = num_vertices(graph);
 
     sparse_matrix_t sId (num_nodes, num_nodes);
     sId.setIdentity();

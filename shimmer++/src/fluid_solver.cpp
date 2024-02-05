@@ -44,11 +44,19 @@ linearized_fluid_solver(const double& tolerance,
 
     for(size_t iter = 0; iter <= MAX_ITERS; iter++)
     {    
-        auto mass = continuity( dt,Tm, press, press_time, inc, graph, x_nodes,
-                                RR_nodes, gerg_nodes);
-        auto [mom, vel] = momentum(dt, Tm, flux, flux_time, press, inc, graph,
-                                   x_pipes, RR_pipes, molar_mass, gerg_pipes);
-        auto bcnd = boundary(p_in, vel, flux_ext, inc, graph, inlet_nodes);
+        auto eos_nodes = equation_of_state(Tm, press, x_nodes, gerg_nodes);
+        vector_t c2_nodes = eos_nodes.Z.cwiseProduct(RR_nodes) * Tm; 
+
+        vector_t press_pipes = average(press, inc);
+        auto eos_pipes = equation_of_state(Tm, press_pipes, x_pipes, gerg_pipes);
+        vector_t c2_pipes = eos_pipes.Z.cwiseProduct(RR_pipes) * Tm;
+
+        auto mass = continuity( dt,Tm, press, press_time, c2_nodes, inc, graph);
+        auto mom  = momentum(dt, Tm, flux, flux_time, press, press_pipes,
+                                                     c2_pipes, inc, graph);
+        auto bcnd = boundary(p_in, flux, flux_ext, molar_mass, 
+                                    inc, graph, inlet_nodes, eos_pipes);
+
         auto [LHS, rhs]= assemble(mass, mom, bcnd, graph);
 
 

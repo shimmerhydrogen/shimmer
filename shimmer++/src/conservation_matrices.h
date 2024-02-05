@@ -56,34 +56,32 @@ resistance_friction(const double& temperature, const vector_t& c2,
 
 using pair_trip_vec_t = std::pair<std::vector<triplet_t>, vector_t>;
 
-std::pair<pair_trip_vec_t, vector_t>
+pair_trip_vec_t
 momentum(const double& dt, const double& temperature,
          const vector_t& flux, const vector_t& flux_old,
-         const vector_t& pressure, const incidence& inc,
-         const infrastructure_graph & graph,
-         const matrix_t& x,
-         const vector_t& RR,
-         const vector_t& molar_mass,
-         const gerg_params& gerg);
+         const vector_t& pressure_nodes, const vector_t& pressure_pipes,
+         const vector_t& c2, const incidence& inc,
+         const infrastructure_graph & graph);
 
 
 pair_trip_vec_t
 continuity(const double& dt, const double& temperature,
         const vector_t& pressure, 
         const vector_t& pressure_old,
+        const vector_t& c2,
         const incidence& inc,
-        const infrastructure_graph & graph, 
-        const matrix_t& x,
-        const vector_t& RR,
-        const gerg_params& gerg);
+        const infrastructure_graph & graph);
 
-
-std::pair<std::vector<triplet_t>, vector_t>
+//template<EQ_OF_STATE>
+pair_trip_vec_t
 boundary(const double& p_in,
-        const vector_t& vel,
+        const vector_t& flux,
         const vector_t& flux_ext,
+        const vector_t& molar_mass,
         const incidence& inc,
         const infrastructure_graph& graph,
-        const vector_t& inlet_nodes);
+        const vector_t& inlet_nodes,
+        const gerg_thermo_props_t & eos);
+
 
 } //end namespace shimmer

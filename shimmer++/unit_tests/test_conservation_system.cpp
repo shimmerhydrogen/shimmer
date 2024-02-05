@@ -163,11 +163,19 @@ int main()
     auto [rr_nodes, mm_nodes] = make_rr_mm(num_nodes);
     auto [rr_pipes, mm_pipes] = make_rr_mm(num_pipes);
 
-    auto mass = continuity(dt, temperature, pressure, pressure_old,
-                            inc, graph, x_nodes, rr_nodes, gerg_nodes);
-    auto [mom, vel] = momentum( dt, temperature, flux, flux_old, 
-                                pressure, inc, graph, x_pipes, rr_pipes,
-                                mm_pipes, gerg_pipes);
+    auto eos_nodes = equation_of_state(temperature, pressure, x_nodes, gerg_nodes);
+    vector_t c2_nodes = eos_nodes.Z.cwiseProduct(rr_nodes) * temperature; 
+
+    vector_t pressure_pipes = average(pressure, inc);
+    auto eos_pipes = equation_of_state(temperature, pressure_pipes, x_pipes, gerg_pipes);
+    vector_t c2_pipes = eos_pipes.Z.cwiseProduct(rr_pipes) * temperature;
+
+
+    auto mass = continuity(dt, temperature, pressure, pressure_old, c2_nodes,
+                            inc, graph);
+    auto mom = momentum( dt, temperature, flux, flux_old, 
+                                pressure, pressure_pipes, c2_pipes, 
+                                inc, graph);
 
     sparse_matrix_t LHS_mass(num_nodes, system_size);
     sparse_matrix_t LHS_mom(system_size, system_size);

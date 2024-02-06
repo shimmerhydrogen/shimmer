@@ -144,12 +144,14 @@ int main()
 
     vector_t inlet_nodes(1); inlet_nodes << 0; 
 
-    linearized_fluid_solver( tolerance, dt,temperature,
-                        inc, graph, inlet_nodes, 
-                        pressure_in, flux_ext, 
-                        rr_nodes, rr_pipes, mm_pipes,
-                        gerg_nodes, gerg_pipes,
-                        sol);
+    linearized_fluid_solver lfs(tolerance, dt,temperature,
+                        inc, graph);
+                        
+    lfs.compute(inc, graph, inlet_nodes, pressure_in, flux_ext, 
+                rr_nodes, rr_pipes, mm_pipes,
+                gerg_nodes, gerg_pipes,
+                sol);
+
 
     bool pass = verify_test("Test fluid-dynamic solver", sol, ref_sol); 
 

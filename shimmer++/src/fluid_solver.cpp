@@ -94,7 +94,7 @@ linearized_fluid_solver::boundary_velocity(equation_of_state *eos)
 
 void
 linearized_fluid_solver::run(const vector_t& inlet_nodes,
-                            const double& p_in,
+                            const vector_t& p_in,
                             const vector_t& flux_ext,
                             equation_of_state *eos,
                             vector_t& sol_time)

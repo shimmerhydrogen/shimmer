@@ -192,7 +192,7 @@ momentum(const double& dt,
 
 pair_trip_vec_t
 boundary(size_t num_nodes, size_t num_pipes,
-        const double& p_in,
+        const vector_t& p_in,
         const vector_t& flux,
         const vector_t& flux_ext,
         const vector_t& vel,
@@ -214,7 +214,7 @@ boundary(size_t num_nodes, size_t num_pipes,
             // Change equation to impose pressure instead of flux
             triplets.push_back(triplet_t(num_pipes + num_nodes + idx, 0, 1.));
             sId.coeffRef(idx, idx) = 0.0;
-            rhs(idx) = p_in;
+            rhs(idx) = p_in(i);
         }
         else
             rhs(idx) = 0.0;

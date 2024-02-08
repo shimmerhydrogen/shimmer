@@ -103,6 +103,7 @@ int main()
                                     30.8,
                                     15.4};
 
+    size_t num_inlet = 1;    
     size_t num_pipes = 3;
     size_t num_nodes = 3;
     size_t num_bcnd = num_nodes;
@@ -123,7 +124,10 @@ int main()
             6.315037277824726e+00,
             0.0, 0.0, 0.0;
 
-    double pressure_in = 5101325.0;   
+    vector_t pressure_in(num_inlet), inlet_nodes(num_inlet);
+    pressure_in.setConstant(5101325.0);   
+    inlet_nodes << 0; 
+
 
     infrastructure_graph graph;
     make_init_graph(graph);
@@ -133,8 +137,6 @@ int main()
     matrix_t y_nodes = make_mass_fraction(num_nodes);
     matrix_t y_pipes = inc.matrix_in().transpose() * y_nodes;    
 
-    vector_t inlet_nodes(1); 
-    inlet_nodes << 0; 
 
     gerg gerg_eos; 
     gerg_eos.compute_molar_mass(y_nodes, y_pipes);

@@ -28,7 +28,7 @@ using matrix_t = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>;
 vector_t
 average(const  vector_t& pressure, const incidence& inc);
 
-
+        
 vector_t
 phi_vector( const double & dt, const vector_t& c2,
             const infrastructure_graph& g);
@@ -56,6 +56,7 @@ resistance_friction(const double& temperature, const vector_t& c2,
 
 using pair_trip_vec_t = std::pair<std::vector<triplet_t>, vector_t>;
 
+
 pair_trip_vec_t
 momentum(const double& dt, const double& temperature,
          const vector_t& flux, const vector_t& flux_old,
@@ -72,16 +73,13 @@ continuity(const double& dt, const double& temperature,
         const incidence& inc,
         const infrastructure_graph & graph);
 
-//template<EQ_OF_STATE>
+
 pair_trip_vec_t
-boundary(const double& p_in,
+boundary(size_t num_nodes_, size_t num_pipes,
+        const double& p_in,
         const vector_t& flux,
         const vector_t& flux_ext,
-        const vector_t& molar_mass,
-        const incidence& inc,
-        const infrastructure_graph& graph,
-        const vector_t& inlet_nodes,
-        const gerg_thermo_props_t & eos);
-
+        const vector_t& vel,
+        const vector_t& inlet_nodes);
 
 } //end namespace shimmer

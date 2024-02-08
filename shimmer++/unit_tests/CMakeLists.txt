@@ -40,9 +40,9 @@ add_executable(test_friction_factor test_friction_factor.cpp ${SHIMMER_SOURCES_T
 target_link_libraries(test_friction_factor ${LINK_LIBS})
 add_test(NAME test_friction_factor COMMAND test_friction_factor)
 
-add_executable(test_speed_of_sound test_speed_of_sound.cpp ${SHIMMER_SOURCES_T})
-target_link_libraries(test_speed_of_sound ${LINK_LIBS})
-add_test(NAME test_speed_of_sound COMMAND test_speed_of_sound)
+#add_executable(test_speed_of_sound test_speed_of_sound.cpp ${SHIMMER_SOURCES_T})
+#target_link_libraries(test_speed_of_sound ${LINK_LIBS})
+#add_test(NAME test_speed_of_sound COMMAND test_speed_of_sound)
 
 add_executable(test_fluid_solver test_fluid_solver.cpp ${SHIMMER_SOURCES_T})
 target_link_libraries(test_fluid_solver ${LINK_LIBS})

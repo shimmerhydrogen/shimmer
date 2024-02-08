@@ -189,37 +189,16 @@ momentum(const double& dt,
 }
 
 
-//template<EQ_OF_STATE>
+
 pair_trip_vec_t
-boundary(const double& p_in,
+boundary(size_t num_nodes, size_t num_pipes,
+        const double& p_in,
         const vector_t& flux,
         const vector_t& flux_ext,
-        const vector_t& molar_mass,
-        const incidence& inc,
-        const infrastructure_graph& graph,
-        const vector_t& inlet_nodes,
-        const gerg_thermo_props_t & eos)
+        const vector_t& vel,
+        const vector_t& inlet_nodes)
 {
-    size_t num_pipes = num_edges(graph);
-    size_t num_nodes = num_vertices(graph);
-
     
-    vector_t area(num_pipes);
-    auto edge_range = boost::edges(graph);
-    auto begin = edge_range.first;
-    auto end = edge_range.second;
-    size_t i = 0;
-    for(auto itor = begin; itor != end; itor++,i++ ){
-        auto pipe = graph[*itor];
-        area(i) = pipe.area();   
-    }
-
-    /// rho [kg/m3] actual density of the gas (pipeline based)
-    /// vel [m/s] velocity of the gas within pipes.
-    vector_t rho = eos.D.cwiseProduct(inc.matrix_in().transpose() * molar_mass); 
-    vector_t vel = flux.cwiseQuotient(area.cwiseProduct(rho));
-
-
     sparse_matrix_t sId (num_nodes, num_nodes);
     sId.setIdentity();
     auto triplets = build_triplets(sId, 0, num_nodes + num_pipes);
@@ -247,6 +226,7 @@ boundary(const double& p_in,
 
     return  std::make_pair(triplets, rhs); 
 }
+
 
 
 } //end namespace shimmer

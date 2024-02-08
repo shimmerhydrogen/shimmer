@@ -16,6 +16,8 @@
 
 namespace shimmer{
 
+class equation_of_state;
+class linearized_fluid_solver;
 
 class linearized_fluid_solver
 {
@@ -31,34 +33,47 @@ class linearized_fluid_solver
 
     matrix_t x_nodes_;
     matrix_t x_pipes_;
+    vector_t press_;
+    vector_t press_pipes_;
+    vector_t flux_;
+
+    const incidence& inc_; 
+    const infrastructure_graph& graph_;
 
 public:
 
     linearized_fluid_solver(const double& tolerance, 
                         const double& dt,
-                        const double& Tm_,
+                        const double& Tm,
                         const incidence & inc,
-                        const infrastructure_graph& graph); 
+                        const infrastructure_graph& graph);
+
+    vector_t
+    boundary_velocity(equation_of_state *eos);
 
 
-    bool convergence(const vector_t& diff, 
-                     const vector_t& sol,
-                     vector_t& flux,
-                     vector_t& press); 
+    bool 
+    convergence(const vector_t& diff, 
+                const vector_t& sol);
 
 
     void
-    compute(const incidence & inc,
-            const infrastructure_graph& graph,
-            const vector_t& inlet_nodes,
-            const double& p_in,
-            const vector_t& flux_ext,
-            const vector_t& RR_nodes,
-            const vector_t& RR_pipes,
-            const vector_t& molar_mass,
-            const gerg_params& gerg_nodes,
-            const gerg_params& gerg_pipes,
-            vector_t& sol_time);
+    run(const vector_t& inlet_nodes,
+        const double& p_in,
+        const vector_t& flux_ext,
+        equation_of_state *eos,
+        vector_t& sol_time);
+
+    double temperature();         
+    vector_t pressure_nodes();
+    vector_t pressure_pipes();
+    matrix_t x_nodes();
+    matrix_t x_pipes();
+    const incidence& get_incidence(); 
 };
+
+
+
+
 
 } //end namespace shimmer

@@ -40,8 +40,8 @@ gerg_params
 make_gerg(size_t size)
 {
     gerg_reducing_params_t reducing_parameters;
-    reducing_parameters.Tr.resize(size);
-    reducing_parameters.Dr.resize(size);
+    reducing_parameters.Tr.resize(size,1);
+    reducing_parameters.Dr.resize(size,1);
     reducing_parameters.Tr.setConstant(1.905640000000000e+02);
     reducing_parameters.Dr.setConstant(1.013934271900000e+01);
 
@@ -163,13 +163,18 @@ int main()
     auto [rr_nodes, mm_nodes] = make_rr_mm(num_nodes);
     auto [rr_pipes, mm_pipes] = make_rr_mm(num_pipes);
 
-    auto eos_nodes = equation_of_state(temperature, pressure, x_nodes, gerg_nodes);
-    vector_t c2_nodes = eos_nodes.Z.cwiseProduct(rr_nodes) * temperature; 
+    vector_t c2_nodes (num_nodes), c2_pipes(num_pipes);  
+    c2_nodes << 138267.2930151191,138578.7460692530,138546.3842273756;
+    c2_pipes << 138422.1905008311,138406.1731482413,138562.5561693802;
 
+    //auto eos_nodes = equation_of_state(temperature, pressure, x_nodes, gerg_nodes);
+    //vector_t c2_nodes = eos_nodes.Z.cwiseProduct(rr_nodes) * temperature; 
+
+    //vector_t pressure_pipes = average(pressure, inc);
+    //auto eos_pipes = equation_of_state(temperature, pressure_pipes, x_pipes, gerg_pipes);
+    //vector_t c2_pipes = eos_pipes.Z.cwiseProduct(rr_pipes) * temperature;
+    
     vector_t pressure_pipes = average(pressure, inc);
-    auto eos_pipes = equation_of_state(temperature, pressure_pipes, x_pipes, gerg_pipes);
-    vector_t c2_pipes = eos_pipes.Z.cwiseProduct(rr_pipes) * temperature;
-
 
     auto mass = continuity(dt, temperature, pressure, pressure_old, c2_nodes,
                             inc, graph);

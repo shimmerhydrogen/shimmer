@@ -11,6 +11,7 @@
 
 namespace shimmer{
 
+
 double area(const edge_properties& ep)
 {
     return ep.area();
@@ -19,6 +20,20 @@ double area(const edge_properties& ep)
 double volume(const edge_properties& ep)
 {
     return ep.volume();
+}
+
+vector_t area( const infrastructure_graph& g)
+{
+    vector_t a(num_edges(g));
+    auto edge_range = boost::edges(g);
+    auto begin = edge_range.first;
+    auto end = edge_range.second;
+    size_t i = 0;
+    for(auto itor = begin; itor != end; itor++,i++ ){
+        auto pipe = g[*itor];
+        a(i) = pipe.area();   
+    }
+    return a;
 }
 
 double volume(const infrastructure_graph::vertex_descriptor&  v, const infrastructure_graph& g)

@@ -46,7 +46,7 @@ public:
     virtual std::pair<vector_t, vector_t>
     speed_of_sound(linearized_fluid_solver *) = 0;
 
-    vector_t density_correction(); 
+    const vector_t& density_correction(); 
 };
 
 

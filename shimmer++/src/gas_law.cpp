@@ -10,7 +10,7 @@
 
 namespace shimmer{
 
-vector_t
+const vector_t& 
 equation_of_state::density_correction()
 {
     return density_; 

@@ -48,9 +48,6 @@ public:
                         const incidence & inc,
                         const infrastructure_graph& graph);
 
-    vector_t
-    boundary_velocity(equation_of_state *eos);
-
 
     bool 
     convergence(const vector_t& diff, 
@@ -58,11 +55,13 @@ public:
 
 
     void
-    run(const vector_t& inlet_nodes,
+    run(const vector_t& area_pipes,
+        const vector_t& inlet_nodes,
         const vector_t& p_in,
         const vector_t& flux_ext,
         equation_of_state *eos,
         vector_t& sol_time);
+                          
 
     double temperature();         
     vector_t pressure_nodes();

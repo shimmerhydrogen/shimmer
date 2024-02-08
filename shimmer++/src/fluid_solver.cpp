@@ -39,7 +39,6 @@ linearized_fluid_solver::linearized_fluid_solver(const double& tolerance,
 
 bool linearized_fluid_solver::convergence(const vector_t& diff, 
                 const vector_t& sol)
-
 {
     /*  Warning: Marco computes diff = LHS * sol - rhs, with rhs evaluated
         using the current flux (G_k). Here, the rhs is evaluated in the 
@@ -71,29 +70,9 @@ bool linearized_fluid_solver::convergence(const vector_t& diff,
 }
 
 
-vector_t
-linearized_fluid_solver::boundary_velocity(equation_of_state *eos)
-{
-    vector_t area(num_pipes_);
-    auto edge_range = boost::edges(graph_);
-    auto begin = edge_range.first;
-    auto end = edge_range.second;
-    size_t i = 0;
-    for(auto itor = begin; itor != end; itor++,i++ ){
-        auto pipe = graph_[*itor];
-        area(i) = pipe.area();   
-    }
-
-    /// rho [kg/m3] actual density of the gas (pipeline based)
-    /// vel [m/s] velocity of the gas within pipes.
-    vector_t rho = eos->density_correction(); 
-    return flux_.cwiseQuotient(area.cwiseProduct(rho));
-}
-
-
-
 void
-linearized_fluid_solver::run(const vector_t& inlet_nodes,
+linearized_fluid_solver::run(const vector_t& area_pipes,
+                            const vector_t& inlet_nodes,
                             const vector_t& p_in,
                             const vector_t& flux_ext,
                             equation_of_state *eos,
@@ -125,13 +104,13 @@ linearized_fluid_solver::run(const vector_t& inlet_nodes,
 
         auto [c2_nodes, c2_pipes] = eos->speed_of_sound(this); 
 
-        auto mass = continuity(dt_,Tm_, press_, press_time, c2_nodes, inc_, graph_);
-        auto mom  = momentum(dt_, Tm_, flux_, flux_time, press_, press_pipes_,
-                                                    c2_pipes, inc_, graph_);
-
-        vector_t vel = boundary_velocity(eos);
-
-        auto bcnd = boundary(num_nodes_, num_pipes_,p_in, flux_, flux_ext, vel, inlet_nodes);
+        auto mass = continuity(dt_,Tm_, press_,press_time,c2_nodes, inc_, graph_);
+        auto mom  = momentum(  dt_,Tm_, flux_, flux_time, press_, press_pipes_,
+                                                          c2_pipes, inc_, graph_);
+        
+        auto rho = eos->density_correction();
+        auto bcnd = boundary(num_nodes_,num_pipes_,area_pipes, p_in, flux_,flux_ext,
+                                                                rho, inlet_nodes);
 
         auto [LHS, rhs]= assemble(mass, mom, bcnd, graph_);
 
@@ -153,6 +132,7 @@ linearized_fluid_solver::run(const vector_t& inlet_nodes,
             }
             exit(1);
         }
+
         vector_t sol = solver.solve(rhs);
         if(solver.info() != Eigen::Success) {
             std::cout << "Error solving system" <<std::endl;

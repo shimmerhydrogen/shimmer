@@ -76,10 +76,11 @@ continuity(const double& dt, const double& temperature,
 
 pair_trip_vec_t
 boundary(size_t num_nodes_, size_t num_pipes,
+        const vector_t& area,
         const vector_t& p_in,
         const vector_t& flux,
         const vector_t& flux_ext,
-        const vector_t& vel,
+        const vector_t& rho,
         const vector_t& inlet_nodes);
 
 } //end namespace shimmer

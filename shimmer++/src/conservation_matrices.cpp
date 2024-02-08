@@ -163,12 +163,11 @@ momentum(const double& dt,
          const incidence& inc,
          const infrastructure_graph & graph)
 {  
-    double factor = 1.;//1.e-9;
     size_t num_nodes = num_vertices(graph);
     size_t num_pipes = num_edges(graph);
     //size_t num_pipes_ext = num_pipes;
 
-    sparse_matrix_t sADP = factor * adp_matrix(c2, graph, inc);
+    sparse_matrix_t sADP = adp_matrix(c2, graph, inc);
     vector_t ADP_p = sADP.cwiseAbs() * nodes_pressure;
 
     vector_t rf = resistance_friction(temperature, c2, flux, graph);
@@ -181,8 +180,8 @@ momentum(const double& dt,
     std::vector<triplet_t> triplets =  t_sADP;
     triplets.insert(triplets.begin(), t_sR.begin(), t_sR.end());
 
-    vector_t rhs = factor * ((-0.5) * rf.array() * flux.array()
-                                   - ri.array() * flux_old.array())/ADP_p.array();
+    vector_t rhs = ((-0.5) * rf.array() * flux.array()
+                      - ri.array() * flux_old.array())/ADP_p.array();
 
 
     return std::make_pair(triplets, rhs);
@@ -192,13 +191,16 @@ momentum(const double& dt,
 
 pair_trip_vec_t
 boundary(size_t num_nodes, size_t num_pipes,
-        const vector_t& p_in,
-        const vector_t& flux,
-        const vector_t& flux_ext,
-        const vector_t& vel,
-        const vector_t& inlet_nodes)
+         const vector_t& area,
+         const vector_t& p_in,
+         const vector_t& flux,
+         const vector_t& flux_ext,
+         const vector_t& rho,
+         const vector_t& inlet_nodes)
 {
-    
+    /// vel [m/s] velocity of the gas within pipes.
+    vector_t vel = flux.cwiseQuotient(area.cwiseProduct(rho));
+
     sparse_matrix_t sId (num_nodes, num_nodes);
     sId.setIdentity();
     auto triplets = build_triplets(sId, 0, num_nodes + num_pipes);

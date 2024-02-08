@@ -137,12 +137,13 @@ int main()
     matrix_t y_nodes = make_mass_fraction(num_nodes);
     matrix_t y_pipes = inc.matrix_in().transpose() * y_nodes;    
 
+    vector_t area_pipes = area(graph);
 
     gerg gerg_eos; 
     gerg_eos.compute_molar_mass(y_nodes, y_pipes);
 
     linearized_fluid_solver lfs(tolerance, dt,temperature,inc, graph);
-    lfs.run(inlet_nodes, pressure_in, flux_ext,  &gerg_eos, sol);
+    lfs.run(area_pipes, inlet_nodes, pressure_in, flux_ext,  &gerg_eos, sol);
 
     bool pass = verify_test("Test fluid-dynamic solver", sol, ref_sol); 
 

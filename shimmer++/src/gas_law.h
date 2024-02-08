@@ -50,12 +50,29 @@ public:
 };
 
 
+class papay: public equation_of_state
+{
+    double T_cr_;
+    double p_cr_;
+
+public:
+    papay();
+    
+    void initialization(linearized_fluid_solver *lfs); 
+
+    vector_t
+    compute(double temperature, const vector_t& pressure);
+
+    std::pair<vector_t, vector_t>
+    speed_of_sound(linearized_fluid_solver *lfs);
+};
+
+
         
 typedef GERG::Reducing_parameters<matrix_t>   gerg_reducing_params_t;
 typedef GERG::Pseudo_critical_point<matrix_t> gerg_pseudo_critical_pt_t;
 typedef GERG::Thermodynamic_properties_parameters gerg_thermo_params_t;
 typedef GERG::Thermodynamic_properties<vector_t> gerg_thermo_props_t;
-
 
 
 struct gerg_params
@@ -99,6 +116,7 @@ public:
     std::pair<vector_t, vector_t>
     speed_of_sound(linearized_fluid_solver *lfs);
 };
+
 
 
 

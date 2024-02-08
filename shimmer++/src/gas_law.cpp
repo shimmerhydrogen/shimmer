@@ -16,6 +16,47 @@ equation_of_state::density_correction()
     return density_; 
 }
 
+// ----------------------------------------------------------------------------
+//                    Papay equation of state
+// ----------------------------------------------------------------------------
+
+papay::papay(): T_cr_(190.6), p_cr_(4.595e+6)
+{}
+
+
+void 
+papay::initialization(linearized_fluid_solver *lfs){}
+
+
+vector_t 
+papay::compute(double temperature, const vector_t& pressure)
+{
+    auto coef0 = std::exp(-2.260 * (temperature/T_cr_)) * (3.52 / p_cr_);
+    auto coef1 = std::exp(-1.878 * (temperature/T_cr_)) * 0.274/(p_cr_*p_cr_); 
+    vector_t Z = 1.0 - coef0 *  pressure.array() 
+                        + coef1 * pressure.array().square() ;
+    return Z;
+}
+
+
+std::pair<vector_t, vector_t>
+papay::speed_of_sound(linearized_fluid_solver *lfs)
+{
+    auto Z_nodes = compute( lfs->temperature(), lfs->pressure_nodes());
+    auto Z_pipes = compute( lfs->temperature(), lfs->pressure_pipes());
+
+    vector_t c2_nodes = Z_nodes.cwiseProduct(R_nodes_) * lfs->temperature(); 
+    vector_t c2_pipes = Z_pipes.cwiseProduct(R_pipes_) * lfs->temperature();
+
+    density_ = lfs->pressure_pipes().array() / c2_pipes.array();
+
+    return std::make_pair(c2_nodes, c2_pipes);
+}
+
+
+// ----------------------------------------------------------------------------
+//                    GERG equation of state
+// ----------------------------------------------------------------------------
 
 gerg_params::gerg_params(const gerg_reducing_params_t&  rp, 
                 const gerg_pseudo_critical_pt_t& psc,
@@ -26,8 +67,6 @@ gerg_params::gerg_params(const gerg_reducing_params_t&  rp,
 
 
 gerg_params:: gerg_params(){};
-
-
 
 
 gerg::gerg()

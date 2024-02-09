@@ -54,33 +54,7 @@ resistance_friction(const double& temperature, const vector_t& c2,
                     const vector_t & flux,
                     const infrastructure_graph & g);
 
-using pair_trip_vec_t = std::pair<std::vector<triplet_t>, vector_t>;
 
 
-pair_trip_vec_t
-momentum(const double& dt, const double& temperature,
-         const vector_t& flux, const vector_t& flux_old,
-         const vector_t& pressure_nodes, const vector_t& pressure_pipes,
-         const vector_t& c2, const incidence& inc,
-         const infrastructure_graph & graph);
-
-
-pair_trip_vec_t
-continuity(const double& dt, const double& temperature,
-        const vector_t& pressure, 
-        const vector_t& pressure_old,
-        const vector_t& c2,
-        const incidence& inc,
-        const infrastructure_graph & graph);
-
-
-pair_trip_vec_t
-boundary(size_t num_nodes_, size_t num_pipes,
-        const vector_t& area,
-        const vector_t& p_in,
-        const vector_t& flux,
-        const vector_t& flux_ext,
-        const vector_t& rho,
-        const vector_t& inlet_nodes);
 
 } //end namespace shimmer

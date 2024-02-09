@@ -12,9 +12,10 @@ matrix_t linearized_fluid_solver::x_nodes(){return x_nodes_;}
 matrix_t linearized_fluid_solver::x_pipes(){return x_pipes_;}
 const incidence& linearized_fluid_solver::get_incidence(){return inc_;}
 
-linearized_fluid_solver::linearized_fluid_solver(const double& tolerance, 
-                        const double& dt,
-                        const double& Tm,
+linearized_fluid_solver::linearized_fluid_solver(
+                        double tolerance, 
+                        double dt,
+                        double Tm,
                         const incidence & inc,
                         const infrastructure_graph& graph):
                         tolerance_(tolerance), dt_(dt), Tm_(Tm),
@@ -34,6 +35,140 @@ linearized_fluid_solver::linearized_fluid_solver(const double& tolerance,
 
     press_.resize(num_nodes_);
     flux_.resize(num_pipes_);
+    press_pipes_.resize(num_pipes_);
+}
+
+
+
+pair_trip_vec_t
+linearized_fluid_solver::continuity(
+            const vector_t& pressure,
+            const vector_t& pressure_old,
+            const vector_t& c2)
+{
+    size_t num_nodes_ = num_vertices(graph_); 
+    size_t num_pipes_ = num_edges(graph_);
+
+    vector_t phi_vec = phi_vector(dt_, c2, graph_);
+    auto t_sPHI = build_triplets( phi_vec);
+    auto t_sA   = build_triplets( inc_.matrix(), 0, num_nodes_ );
+
+    std::vector<triplet_t> triplets =  t_sPHI; 
+    triplets.insert(triplets.begin(), t_sA.begin(), t_sA.end());
+
+    vector_t rhs = phi_vec.array() * pressure_old.array();
+
+    return std::make_pair(triplets, rhs);
+}
+
+
+pair_trip_vec_t
+linearized_fluid_solver::momentum(
+         const vector_t& nodes_pressure,
+         const vector_t& pipes_pressure,
+         const vector_t& flux, 
+         const vector_t& flux_old,
+         const vector_t& c2)
+{  
+    size_t num_nodes_ = num_vertices(graph_);
+    size_t num_pipes_ = num_edges(graph_);
+    //size_t num_pipes_ext = num_pipes_;
+
+    sparse_matrix_t sADP = adp_matrix(c2, graph_, inc_);
+    vector_t ADP_p = sADP.cwiseAbs() * nodes_pressure;
+
+    vector_t rf = resistance_friction(Tm_, c2, flux, graph_);
+    vector_t ri = resistance_inertia(dt_, pipes_pressure, inc_, graph_);
+    vector_t r = (-rf-ri).array() / ADP_p.array();
+    auto t_sR   = build_triplets( r, num_nodes_, num_nodes_);
+    auto t_sADP = build_triplets( sADP,  num_nodes_, 0);
+
+    //std::vector<triplet_t> triplets =  t_sAPA;
+    std::vector<triplet_t> triplets =  t_sADP;
+    triplets.insert(triplets.begin(), t_sR.begin(), t_sR.end());
+
+    vector_t rhs = ((-0.5) * rf.array() * flux.array()
+                      - ri.array() * flux_old.array())/ADP_p.array();
+
+
+    return std::make_pair(triplets, rhs);
+}
+
+
+pair_trip_vec_t
+linearized_fluid_solver::boundary(const vector_t& area_pipes,
+         const vector_t& p_in,
+         const vector_t& flux,
+         const vector_t& flux_ext,
+         const vector_t& inlet_nodes,
+         equation_of_state *eos)
+{
+    auto rho  = eos->density_correction();
+
+    /// vel [m/s] velocity of the gas within pipes.
+    vector_t vel = flux.cwiseQuotient(area_pipes.cwiseProduct(rho));
+
+    sparse_matrix_t sId (num_nodes_, num_nodes_);
+    sId.setIdentity();
+    auto triplets = build_triplets(sId, 0, num_nodes_ + num_pipes_);
+
+    vector_t rhs = flux_ext;
+
+    for(size_t i = 0; i < inlet_nodes.size(); i++)
+    {
+        size_t idx = inlet_nodes(i);
+
+        if (vel(idx) > 0.0)
+        {
+            // Change equation to impose pressure instead of flux
+            triplets.push_back(triplet_t(num_pipes_ + num_nodes_ + idx, 0, 1.));
+            sId.coeffRef(idx, idx) = 0.0;
+            rhs(idx) = p_in(i);
+        }
+        else
+            rhs(idx) = 0.0;
+
+    }
+
+    auto t_sId_bcnd = build_triplets(sId, num_nodes_+num_pipes_, num_nodes_+num_pipes_);
+    triplets.insert(triplets.begin(), t_sId_bcnd.begin(), t_sId_bcnd.end());
+
+    return  std::make_pair(triplets, rhs); 
+}
+
+
+/*  
+    num_nodes        | PHI    A   Ic| | p | 
+    num_pipes        | APA   -R   0 | | G |  
+    num_nodes_bnd    |  Ib    0   Ib| | Gb| 
+*/ 
+
+
+std::pair<sparse_matrix_t, vector_t>
+linearized_fluid_solver::assemble(
+        const pair_trip_vec_t& lhs_rhs_mass, 
+        const pair_trip_vec_t& lhs_rhs_mom,
+        const pair_trip_vec_t& lhs_rhs_bnd)
+{
+    std::vector<triplet_t> triplets = lhs_rhs_mass.first;
+    auto lhs_mom_begin = lhs_rhs_mom.first.cbegin();
+    auto lhs_mom_end   = lhs_rhs_mom.first.cend();
+    auto lhs_bnd_begin = lhs_rhs_bnd.first.cbegin();
+    auto lhs_bnd_end   = lhs_rhs_bnd.first.cend();
+
+    triplets.insert(triplets.begin(),lhs_mom_begin, lhs_mom_end);
+    triplets.insert(triplets.begin(),lhs_bnd_begin, lhs_bnd_end);
+    
+    size_t system_size = num_nodes_ + num_pipes_ + num_nodes_; 
+
+    sparse_matrix_t LHS(system_size, system_size);    
+    LHS.setFromTriplets(triplets.begin(), triplets.end()); 
+    
+    vector_t rhs = vector_t::Zero(system_size);
+    rhs.head(num_nodes_) =  lhs_rhs_mass.second;   
+    rhs.segment(num_nodes_, num_pipes_) = lhs_rhs_mom.second;   
+    rhs.tail(num_nodes_) =  lhs_rhs_bnd.second;  
+    return std::make_pair(LHS, rhs);
 }
 
 
@@ -70,6 +205,8 @@ bool linearized_fluid_solver::convergence(const vector_t& diff,
 }
 
 
+
+
 void
 linearized_fluid_solver::run(const vector_t& area_pipes,
                             const vector_t& inlet_nodes,
@@ -93,27 +230,21 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
     //    const gerg_params& gerg_nodes,
     //    const gerg_params& gerg_pipes,
 
+
     eos->initialization(this);
 
     for(size_t iter = 0; iter <= MAX_ITERS_; iter++)
     {   
-
         std::cout<< "Solver at iteration k ..."<< iter << std::endl;
 
         press_pipes_ = average(press_, inc_);
 
         auto [c2_nodes, c2_pipes] = eos->speed_of_sound(this); 
 
-        auto mass = continuity(dt_,Tm_, press_,press_time,c2_nodes, inc_, graph_);
-        auto mom  = momentum(  dt_,Tm_, flux_, flux_time, press_, press_pipes_,
-                                                          c2_pipes, inc_, graph_);
-        
-        auto rho = eos->density_correction();
-        auto bcnd = boundary(num_nodes_,num_pipes_,area_pipes, p_in, flux_,flux_ext,
-                                                                rho, inlet_nodes);
-
-        auto [LHS, rhs]= assemble(mass, mom, bcnd, graph_);
-
+        auto mass = continuity(press_,press_time, c2_nodes);
+        auto mom  = momentum(press_, press_pipes_, flux_, flux_time, c2_pipes);       
+        auto bcnd = boundary(area_pipes, p_in, flux_,flux_ext,inlet_nodes, eos);
+        auto [LHS, rhs]= assemble(mass, mom, bcnd);
 
         Eigen::SparseLU<sparse_matrix_t> solver;
         solver.compute(LHS);
@@ -140,8 +271,6 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
         } 
 
         vector_t diff = LHS * sol - rhs; 
-
-
         if (convergence(diff, sol))
         {
             sol_time.head(num_nodes_) = press_;

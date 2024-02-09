@@ -14,7 +14,6 @@
 #include "../src/infrastructure_graph.h"
 #include "../src/incidence_matrix.h"
 #include "../src/conservation_matrices.h"
-#include "../src/assemble.h"
 #include "verify_test.h"
 #include "MATLAB_GERG_functions.hpp"
 
@@ -138,49 +137,25 @@ int main()
 
     vector_t flux (num_pipes), flux_old(num_pipes);
     vector_t pressure (num_nodes), pressure_old(num_nodes);
+    vector_t c2_nodes (num_nodes), c2_pipes(num_pipes);  
  
-    flux << 2.448496272217528e+01,
-            2.171503727782473e+01,
-            6.315037277824726e+00; 
-
+    flux << 2.448496272217528e+01,2.171503727782473e+01, 6.315037277824726e+00; 
+    c2_nodes << 138267.2930151191,138578.7460692530,138546.3842273756;
+    c2_pipes << 138422.1905008311,138406.1731482413,138562.5561693802;
+    pressure << 5101325.0, 4977209.550248852, 4990077.876609823;   
+    pressure_old = pressure;
     flux_old = flux;
     //flux_ext = flux;
-
-    pressure << 5101325.0, 4977209.550248852, 4990077.876609823;
-    
-    pressure_old = pressure;
-
-    gerg_params gerg_nodes = make_gerg(num_nodes); 
-    gerg_params gerg_pipes = make_gerg(num_pipes); 
 
     infrastructure_graph graph;
     make_init_graph(graph);
 
     incidence inc(graph);
+    linearized_fluid_solver lfs(1, dt, temperature,inc, graph);
 
-    auto x_nodes = build_x_nodes(graph);
-    auto x_pipes = inc.matrix_in().transpose() * x_nodes;
-    auto [rr_nodes, mm_nodes] = make_rr_mm(num_nodes);
-    auto [rr_pipes, mm_pipes] = make_rr_mm(num_pipes);
-
-    vector_t c2_nodes (num_nodes), c2_pipes(num_pipes);  
-    c2_nodes << 138267.2930151191,138578.7460692530,138546.3842273756;
-    c2_pipes << 138422.1905008311,138406.1731482413,138562.5561693802;
-
-    //auto eos_nodes = equation_of_state(temperature, pressure, x_nodes, gerg_nodes);
-    //vector_t c2_nodes = eos_nodes.Z.cwiseProduct(rr_nodes) * temperature; 
-
-    //vector_t pressure_pipes = average(pressure, inc);
-    //auto eos_pipes = equation_of_state(temperature, pressure_pipes, x_pipes, gerg_pipes);
-    //vector_t c2_pipes = eos_pipes.Z.cwiseProduct(rr_pipes) * temperature;
-    
     vector_t pressure_pipes = average(pressure, inc);
-
-    auto mass = continuity(dt, temperature, pressure, pressure_old, c2_nodes,
-                            inc, graph);
-    auto mom = momentum( dt, temperature, flux, flux_old, 
-                                pressure, pressure_pipes, c2_pipes, 
-                                inc, graph);
+    auto mass = lfs.continuity(pressure, pressure_old, c2_nodes);
+    auto mom = lfs.momentum( pressure, pressure_pipes, flux, flux_old, c2_pipes);
 
     sparse_matrix_t LHS_mass(num_nodes, system_size);
     sparse_matrix_t LHS_mom(system_size, system_size);

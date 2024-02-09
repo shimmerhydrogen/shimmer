@@ -14,7 +14,6 @@
 #include "../src/infrastructure_graph.h"
 #include "../src/incidence_matrix.h"
 #include "../src/conservation_matrices.h"
-#include "../src/assemble.h"
 #include "verify_test.h"
 #include "MATLAB_GERG_functions.hpp"
 #include "../src/fluid_solver.h"

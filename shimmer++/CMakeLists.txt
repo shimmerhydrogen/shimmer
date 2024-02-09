@@ -47,7 +47,7 @@ set(LINK_LIBS ${LINK_LIBS} Eigen3::Eigen)
 #set(SHIMMER_SOURCES src/infrastructure_graph.cpp)
 set(SHIMMER_SOURCES src/infrastructure_graph.cpp src/geometry_properties.cpp
     src/gas_law.cpp
-    src/conservation_matrices.cpp src/incidence_matrix.cpp src/assemble.cpp
+    src/conservation_matrices.cpp src/incidence_matrix.cpp
     src/matrix_manipulations.cpp src/pipe_calculator.cpp src/matlab_manip.cpp
     src/fluid_solver.cpp)
 

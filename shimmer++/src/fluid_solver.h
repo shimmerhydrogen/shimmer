@@ -8,19 +8,25 @@
 
 #pragma once
 
+#include "../src/matrix_manipulations.h"
 #include "../src/infrastructure_graph.h"
 #include "../src/incidence_matrix.h"
 #include "../src/conservation_matrices.h"
-#include "../src/assemble.h"
 #include "../src/gas_law.h"
 
 namespace shimmer{
 
+using sparse_matrix_t = Eigen::SparseMatrix<double>; 
+using triplet_t = Eigen::Triplet<double>;
+using pair_trip_vec_t = std::pair<std::vector<triplet_t>, vector_t>;
+
 class equation_of_state;
-class linearized_fluid_solver;
+//class linearized_fluid_solver;
 
 class linearized_fluid_solver
 {
+
+
     size_t MAX_ITERS_;
     size_t num_pipes_;
     size_t num_nodes_;
@@ -42,11 +48,40 @@ class linearized_fluid_solver
 
 public:
 
-    linearized_fluid_solver(const double& tolerance, 
-                        const double& dt,
-                        const double& Tm,
+    linearized_fluid_solver(double tolerance, 
+                        double dt,
+                        double Tm,
                         const incidence & inc,
                         const infrastructure_graph& graph);
+
+
+    pair_trip_vec_t
+    continuity(const vector_t& pressure, 
+            const vector_t& pressure_old,
+            const vector_t& c2);
+
+
+    pair_trip_vec_t
+    momentum(const vector_t& pressure_nodes,
+             const vector_t& pressure_pipes,
+             const vector_t& flux,
+             const vector_t& flux_old,
+             const vector_t& c2);
+
+
+    pair_trip_vec_t
+    boundary(const vector_t& area_pipes,
+            const vector_t& p_in,
+            const vector_t& flux,
+            const vector_t& flux_ext,
+            const vector_t& inlet_nodes,
+            equation_of_state *eos);
+
+
+    std::pair<sparse_matrix_t, vector_t>
+    assemble(const pair_trip_vec_t& lhs_rhs_mass, 
+             const pair_trip_vec_t& lhs_rhs_mom,
+             const pair_trip_vec_t& lhs_rhs_bnd);
 
 
     bool 

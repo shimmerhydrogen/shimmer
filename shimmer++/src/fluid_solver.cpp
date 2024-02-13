@@ -103,7 +103,7 @@ linearized_fluid_solver::boundary(const vector_t& area_pipes,
          const vector_t& inlet_nodes,
          equation_of_state *eos)
 {
-    auto rho  = eos->density_correction();
+    auto rho  = eos->density();
 
     /// vel [m/s] velocity of the gas within pipes.
     vector_t vel = flux.cwiseQuotient(area_pipes.cwiseProduct(rho));

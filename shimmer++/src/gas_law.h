@@ -39,14 +39,14 @@ public:
     vector_t Rspecific_;
 
     equation_of_state(){};
+    void compute_density(linearized_fluid_solver *, const vector_t&);
 
     virtual void initialization(linearized_fluid_solver *) = 0; 
     virtual void compute_molar_mass(const matrix_t&, const matrix_t&) = 0;
-
     virtual std::pair<vector_t, vector_t>
     speed_of_sound(linearized_fluid_solver *) = 0;
 
-    const vector_t& density_correction(); 
+    const vector_t& density(); 
 };
 
 
@@ -108,7 +108,7 @@ public:
 
     void initialization(linearized_fluid_solver *lfs); 
 
-    gerg_thermo_props_t
+    vector_t
     compute(const double  & temperature,
             const vector_t& pressure,
             const matrix_t& x,

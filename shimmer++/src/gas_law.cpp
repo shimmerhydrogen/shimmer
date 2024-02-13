@@ -10,8 +10,16 @@
 
 namespace shimmer{
 
+void
+equation_of_state::compute_density(linearized_fluid_solver *lfs,
+                                   const vector_t& c2_pipes)
+{
+    density_ = lfs->pressure_pipes().array() / c2_pipes.array();
+}
+
+
 const vector_t& 
-equation_of_state::density_correction()
+equation_of_state::density()
 {
     return density_; 
 }
@@ -62,7 +70,7 @@ papay::speed_of_sound(linearized_fluid_solver *lfs)
     vector_t c2_nodes = Z_nodes.cwiseProduct(R_nodes_) * lfs->temperature(); 
     vector_t c2_pipes = Z_pipes.cwiseProduct(R_pipes_) * lfs->temperature();
 
-    density_ = lfs->pressure_pipes().array() / c2_pipes.array();
+    compute_density(lfs,c2_pipes);
 
     return std::make_pair(c2_nodes, c2_pipes);
 }
@@ -157,51 +165,36 @@ gerg::initialization(linearized_fluid_solver *lfs)
 }
 
 
-gerg_thermo_props_t
+vector_t 
 gerg::compute(  const double& temperature,
                     const vector_t& pressure,
                     const matrix_t& x,
                     const gerg_params& gp)
 {
-    return GERG::thermodynamic_properties(pressure, temperature, x,
+    auto eos =  GERG::thermodynamic_properties(pressure, temperature, x,
                                               gp.reducing_params,
                                               gp.pseudo_critical_pt,
                                               gp.params);
-
+    return eos.Z;
 }
-
-/*
-std::pair<vector_t, vector_t>
-gerg::compute(linearized_fluid_solver *lfs)
-{
-    auto eos_nodes = compute_equation_of_state( lfs->temperature(),
-                                        lfs->pressure_nodes(),
-                                        lfs->x_nodes(), params_nodes_);
-    auto eos_pipes = compute_equation_of_state( lfs->temperature(),
-                                        lfs->pressure_pipes(),
-                                        lfs->x_pipes(), params_pipes_);
-    return std::make_pair(eos_nodes, eos_pipes);
-}
-*/
 
 
 std::pair<vector_t, vector_t>
 gerg::speed_of_sound(linearized_fluid_solver *lfs)
 {
     std::cout<< "EOS nodes" << std::endl;
-    auto eos_nodes = compute( lfs->temperature(),
-                                        lfs->pressure_nodes(),
-                                        lfs->x_nodes(), params_nodes_);
+    vector_t Z_nodes = compute( lfs->temperature(),
+                                lfs->pressure_nodes(),
+                                lfs->x_nodes(), params_nodes_);
     std::cout<< "EOS pipes" << std::endl;
-    auto eos_pipes = compute( lfs->temperature(),
-                                        lfs->pressure_pipes(),
-                                        lfs->x_pipes(), params_pipes_);
+    vector_t Z_pipes = compute( lfs->temperature(),
+                                lfs->pressure_pipes(),
+                                lfs->x_pipes(), params_pipes_);
 
-    vector_t c2_nodes = eos_nodes.Z.cwiseProduct(R_nodes_) * lfs->temperature(); 
-    vector_t c2_pipes = eos_pipes.Z.cwiseProduct(R_pipes_) * lfs->temperature();
+    vector_t c2_nodes = Z_nodes.cwiseProduct(R_nodes_) * lfs->temperature(); 
+    vector_t c2_pipes = Z_pipes.cwiseProduct(R_pipes_) * lfs->temperature();
 
-    density_ =  eos_pipes.D.cwiseProduct(mm_pipes_); 
-
+    compute_density(lfs, c2_pipes);
     return std::make_pair(c2_nodes, c2_pipes);
 }
 

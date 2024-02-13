@@ -124,44 +124,11 @@ gerg::compute_params(const matrix_t& x)
 }
 
 
-
-gerg_params
-make_gerg(size_t size)
-{
-    gerg_reducing_params_t reducing_parameters;
-    reducing_parameters.Tr.resize(size,1);
-    reducing_parameters.Dr.resize(size,1);
-    reducing_parameters.Tr.setConstant(1.905640000000000e+02);
-    reducing_parameters.Dr.setConstant(1.013934271900000e+01);
-
-    gerg_pseudo_critical_pt_t psc_point;
-    psc_point.Tcx.resize(size, 1);
-    psc_point.Dcx.resize(size, 1);
-    psc_point.Vcx.resize(size, 1);
-    psc_point.Tcx.setConstant(1.905640000000000e+02);
-    psc_point.Dcx.setConstant(1.013934271900000e+01);
-    psc_point.Vcx.setConstant(9.862572236818776e-02);
-    
-    gerg_thermo_params_t parameters;
-    parameters.Type = gerg_thermo_params_t::Types::Gas_phase;
-    
-    gerg_params gerg(reducing_parameters, psc_point, parameters); 
-
-    return gerg;
-}
-
-
-
 void
 gerg::initialization(linearized_fluid_solver *lfs)
 {
-    //params_nodes_ = compute_params(lfs->x_nodes());
-    //params_pipes_ = compute_params(lfs->x_pipes());
-
-    params_nodes_ = make_gerg(3); 
-    params_pipes_ = make_gerg(3); 
-
-
+    params_nodes_ = compute_params(lfs->x_nodes());
+    params_pipes_ = compute_params(lfs->x_pipes());
 }
 
 

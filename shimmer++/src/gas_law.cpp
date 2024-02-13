@@ -28,6 +28,20 @@ void
 papay::initialization(linearized_fluid_solver *lfs){}
 
 
+
+void
+papay::compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes)
+{
+    mm_nodes_ = vector_t::Zero(y_nodes.rows()); 
+    mm_pipes_ = vector_t::Zero(y_pipes.rows()); 
+
+    mm_nodes_.setConstant(16.0);
+    mm_pipes_.setConstant(16.0);
+
+    R_nodes_= Runiversal_ * mm_nodes_.cwiseInverse();     
+    R_pipes_= Runiversal_ * mm_pipes_.cwiseInverse();     
+}
+
 vector_t 
 papay::compute(double temperature, const vector_t& pressure)
 {

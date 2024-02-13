@@ -17,12 +17,14 @@
 #include "../src/matlab_manip.h"
 #include "../src/gas_law.h"
 #include "MATLAB_GERG_functions.hpp"
+#include "../src/temporal.h"
 
 namespace shimmer{
 
 using sparse_matrix_t = Eigen::SparseMatrix<double>; 
 using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1>; 
 using matrix_t = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>; 
+
 
 
 vector_t

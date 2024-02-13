@@ -206,21 +206,17 @@ bool linearized_fluid_solver::convergence(const vector_t& diff,
 
 
 
-
 void
 linearized_fluid_solver::run(const vector_t& area_pipes,
                             const vector_t& inlet_nodes,
                             const vector_t& p_in,
                             const vector_t& flux_ext,
-                            equation_of_state *eos,
-                            vector_t& sol_time)
+                            variable& var_time,
+                            equation_of_state *eos)
 {
     // Initialization of varibales with solution in time n; 
-    vector_t press_time = sol_time.head(num_nodes_);
-    vector_t flux_time  = sol_time.segment(num_nodes_, num_pipes_);
-
-    press_ = press_time;
-    flux_  = flux_time;
+    press_ = var_time.pressure;
+    flux_  = var_time.flux;
 
     std::cout<< "Initializing ..."<< std::endl;
 
@@ -241,9 +237,9 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
 
         auto [c2_nodes, c2_pipes] = eos->speed_of_sound(this); 
 
-        auto mass = continuity(press_,press_time, c2_nodes);
-        auto mom  = momentum(press_, press_pipes_, flux_, flux_time, c2_pipes);       
-        auto bcnd = boundary(area_pipes, p_in, flux_,flux_ext,inlet_nodes, eos);
+        auto mass = continuity(press_, var_time.pressure, c2_nodes);
+        auto mom  = momentum(press_, press_pipes_, flux_, var_time.flux, c2_pipes);       
+        auto bcnd = boundary(area_pipes, p_in, flux_,flux_ext, inlet_nodes, eos);
         auto [LHS, rhs]= assemble(mass, mom, bcnd);
 
         Eigen::SparseLU<sparse_matrix_t> solver;
@@ -273,9 +269,9 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
         vector_t diff = LHS * sol - rhs; 
         if (convergence(diff, sol))
         {
-            sol_time.head(num_nodes_) = press_;
-            sol_time.segment(num_nodes_, num_pipes_) = flux_;
-            sol_time.tail(num_nodes_) = sol.tail(num_nodes_);
+            var_time.pressure = press_;
+            var_time.flux = flux_;
+            var_time.L_rate = sol.tail(num_nodes_);
             return; 
         }
         

@@ -13,6 +13,7 @@
 #include "../src/incidence_matrix.h"
 #include "../src/conservation_matrices.h"
 #include "../src/gas_law.h"
+#include "../src/temporal.h"
 
 namespace shimmer{
 
@@ -94,8 +95,9 @@ public:
         const vector_t& inlet_nodes,
         const vector_t& p_in,
         const vector_t& flux_ext,
-        equation_of_state *eos,
-        vector_t& sol_time);
+        variable& var_time,
+        equation_of_state *eos
+        );
                           
 
     double temperature();         

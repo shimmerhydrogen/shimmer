@@ -60,6 +60,8 @@ public:
     
     void initialization(linearized_fluid_solver *lfs); 
 
+    void compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes);
+
     vector_t
     compute(double temperature, const vector_t& pressure);
 

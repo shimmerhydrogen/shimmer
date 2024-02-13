@@ -7,7 +7,8 @@ set(SHIMMER_SOURCES_T ../src/infrastructure_graph.cpp
         ../src/matlab_manip.cpp 
         ../src/pipe_calculator.cpp
         ../src/gas_law.cpp
-        ../src/fluid_solver.cpp)
+        ../src/fluid_solver.cpp
+        ../src/temporal.cpp)
 
 #set(SHIMMER_SOURCES_T ../${SHIMMER_SOURCES} verify_test.cpp)
 
@@ -46,3 +47,7 @@ add_test(NAME test_friction_factor COMMAND test_friction_factor)
 add_executable(test_fluid_solver test_fluid_solver.cpp ${SHIMMER_SOURCES_T})
 target_link_libraries(test_fluid_solver ${LINK_LIBS})
 add_test(NAME test_fluid_solver COMMAND test_fluid_solver)
+
+add_executable(test_time_cycle test_time_cycle.cpp ${SHIMMER_SOURCES_T})
+target_link_libraries(test_time_cycle ${LINK_LIBS})
+add_test(NAME test_time_cycle COMMAND test_time_cycle)

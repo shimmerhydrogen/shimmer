@@ -111,17 +111,18 @@ int main()
     double dt = 180;
     double temperature = 293.15;
     double tolerance = 1e-4;
-    vector_t sol (num_pipes + num_nodes + num_bcnd), flux_ext(num_pipes);
+    vector_t pressure(num_nodes), flux(num_pipes), L_rate(num_bcnd), flux_ext(num_pipes);
     
     flux_ext << 0.0, 30.80, 15.4;
+    pressure << 5101325.0,
+                4977209.550248852,
+                4990077.876609823;
+    flux <<     2.448496272217528e+01,
+                2.171503727782473e+01,
+                6.315037277824726e+00;
+    L_rate <<   0.0, 0.0, 0.0;
 
-    sol <<  5101325.0,
-            4977209.550248852,
-            4990077.876609823,
-            2.448496272217528e+01,
-            2.171503727782473e+01,
-            6.315037277824726e+00,
-            0.0, 0.0, 0.0;
+    variable var(pressure, flux, L_rate);
 
     vector_t pressure_in(num_inlet), inlet_nodes(num_inlet);
     pressure_in.setConstant(5101325.0);   
@@ -142,7 +143,12 @@ int main()
     gerg_eos.compute_molar_mass(y_nodes, y_pipes);
 
     linearized_fluid_solver lfs(tolerance, dt,temperature,inc, graph);
-    lfs.run(area_pipes, inlet_nodes, pressure_in, flux_ext,  &gerg_eos, sol);
+    lfs.run(area_pipes, inlet_nodes, pressure_in, flux_ext, var, &gerg_eos);
+
+    vector_t sol(num_bcnd + num_pipes + num_nodes);
+    sol.head(num_nodes) = var.pressure;
+    sol.segment(num_nodes, num_pipes) = var.flux;
+    sol.tail(num_bcnd) = var.L_rate;
 
     bool pass = verify_test("Test fluid-dynamic solver", sol, ref_sol); 
 

@@ -49,7 +49,8 @@ set(SHIMMER_SOURCES src/infrastructure_graph.cpp src/geometry_properties.cpp
     src/gas_law.cpp
     src/conservation_matrices.cpp src/incidence_matrix.cpp
     src/matrix_manipulations.cpp src/pipe_calculator.cpp src/matlab_manip.cpp
-    src/fluid_solver.cpp)
+    src/fluid_solver.cpp
+    src/temporal.cpp)
 
 add_executable(shimmer src/main.cpp ${SHIMMER_SOURCES})
 target_link_libraries(shimmer ${LINK_LIBS})

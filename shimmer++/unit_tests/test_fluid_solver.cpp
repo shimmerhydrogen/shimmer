@@ -124,8 +124,8 @@ int main()
 
     variable var(pressure, flux, L_rate);
 
-    vector_t pressure_in(num_inlet), inlet_nodes(num_inlet);
-    pressure_in.setConstant(5101325.0);   
+    double pressure_in = 5101325.0;   
+    vector_t inlet_nodes(num_inlet);
     inlet_nodes << 0; 
 
 

@@ -97,7 +97,7 @@ linearized_fluid_solver::momentum(
 
 pair_trip_vec_t
 linearized_fluid_solver::boundary(const vector_t& area_pipes,
-         const vector_t& p_in,
+         double p_in,
          const vector_t& flux,
          const vector_t& flux_ext,
          const vector_t& inlet_nodes,
@@ -113,21 +113,35 @@ linearized_fluid_solver::boundary(const vector_t& area_pipes,
     auto triplets = build_triplets(sId, 0, num_nodes_ + num_pipes_);
 
     vector_t rhs = flux_ext;
+    std::cout << "flux_ext: " <<  std::endl ;
+    for (int k = 0; k < flux_ext.size(); ++k)
+        std::cout <<"    " << flux_ext(k)<< std::endl ;
+    std::cout <<  std::endl ;
+
 
     for(size_t i = 0; i < inlet_nodes.size(); i++)
     {
         size_t idx = inlet_nodes(i);
 
+        /*
         if (vel(idx) > 0.0)
         {
             // Change equation to impose pressure instead of flux
+
+            // check if this is : 
+            //                 triplet_t(num_pipes_ + num_nodes_ + idx, idx, 1.))
             triplets.push_back(triplet_t(num_pipes_ + num_nodes_ + idx, 0, 1.));
             sId.coeffRef(idx, idx) = 0.0;
             rhs(idx) = p_in(i);
         }
         else
             rhs(idx) = 0.0;
+        */
 
+            // Change equation to impose pressure instead of flux
+            triplets.push_back(triplet_t(num_pipes_ + num_nodes_ + idx, idx, 1.));
+            sId.coeffRef(idx, idx) = 0.0;
+            rhs(idx) = p_in;
     }
 
     auto t_sId_bcnd = build_triplets(sId, num_nodes_+num_pipes_, num_nodes_+num_pipes_);
@@ -209,7 +223,7 @@ bool linearized_fluid_solver::convergence(const vector_t& diff,
 void
 linearized_fluid_solver::run(const vector_t& area_pipes,
                             const vector_t& inlet_nodes,
-                            const vector_t& p_in,
+                            double p_in,
                             const vector_t& flux_ext,
                             variable& var_time,
                             equation_of_state *eos)
@@ -260,15 +274,39 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
             exit(1);
         }
 
+        /*
+            size_t count = 0; 
+            for (int k = 0; k < LHS.outerSize(); ++k)
+            {
+                for (itor_t it(LHS,k); it; ++it, count++)
+                { 
+                    std::cout << std::setprecision(16) << "" << it.row() 
+                                << " , " << it.col() << " , " << it.value() 
+                                << " ; " << std::endl ;
+                }
+            }
+        
+        std::cout << "rhs = "<< std::endl;
+        for (int k = 0; k < rhs.size(); ++k)
+            std::cout << "  " << rhs[k]  <<  std::endl;
+        */
+
         vector_t sol = solver.solve(rhs);
         if(solver.info() != Eigen::Success) {
             std::cout << "Error solving system" <<std::endl;
             exit(1);
         } 
 
+        std::cout << " * XXX_k at iter ...."<< iter << std::endl;
+            for (int k = 0; k < sol.size(); ++k)
+                std::cout << "  " << sol[k]  <<  std::endl;
+
+
+
         vector_t diff = LHS * sol - rhs; 
         if (convergence(diff, sol))
         {
+
             var_time.pressure = press_;
             var_time.flux = flux_;
             var_time.L_rate = sol.tail(num_nodes_);

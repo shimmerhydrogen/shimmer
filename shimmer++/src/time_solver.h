@@ -31,7 +31,6 @@ class time_solver
     double temperature_;
     variable var_;
     vector_t inlet_nodes_;
-    vector_t outlet_nodes_;
     matrix_t flux_ext_;
     vector_t Pset_;
     incidence inc_;
@@ -41,13 +40,13 @@ public:
             double Tm,
             const vector_t& Pset,
             const matrix_t& flux_ext,
-            const vector_t& inlet_nodes,
-            const vector_t& outlet_nodes): 
+            const vector_t& inlet_nodes): 
             temperature_(Tm), Pset_(Pset), flux_ext_(flux_ext),
-            inlet_nodes_(inlet_nodes), outlet_nodes_(outlet_nodes)
+            inlet_nodes_(inlet_nodes)
     {
         inc_ = incidence(g);
     }
+
 
     void
     initialization( const vector_t& Pguess,
@@ -80,7 +79,7 @@ public:
             eos.compute_molar_mass(y_nodes, y_pipes);
 
             linearized_fluid_solver lfs(tolerance, dt, temperature_,inc_, graph);
-            lfs.run(area_pipes, inlet_nodes_, Pset_.row(it), flux_ext_.col(it),  var_, &eos);
+            lfs.run(area_pipes, inlet_nodes_, Pset_(it), flux_ext_.row(it),  var_, &eos);
 
             //p_0(:,it)= var_.pressure;
             //G_0(:,it)= var_.flux;

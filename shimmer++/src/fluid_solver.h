@@ -72,7 +72,7 @@ public:
 
     pair_trip_vec_t
     boundary(const vector_t& area_pipes,
-            const vector_t& p_in,
+            double p_in,
             const vector_t& flux,
             const vector_t& flux_ext,
             const vector_t& inlet_nodes,
@@ -93,7 +93,7 @@ public:
     void
     run(const vector_t& area_pipes,
         const vector_t& inlet_nodes,
-        const vector_t& p_in,
+        double p_in,
         const vector_t& flux_ext,
         variable& var_time,
         equation_of_state *eos

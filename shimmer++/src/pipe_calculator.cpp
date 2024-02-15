@@ -185,10 +185,9 @@ friction_resistance(const edge_properties& pipe, const vertex_properties& node_i
 
     auto mu = viscosity(temperature, node_in.gas_mixture);
     auto f = friction_factor_average(pipe, temperature, flux, mu);
-    std::cout << f << std::endl;
     auto a = pipe.area();
 
-    std::cout << f  << "*" << c2 << "*" << pipe.length << "/ ("<< a<< "*" <<a<< "*" <<pipe.diameter <<")" << std::endl;
+    //std::cout << f  << "*" << c2 << "*" << pipe.length << "/ ("<< a<< "*" <<a<< "*" <<pipe.diameter <<")" << std::endl;
 
 
     return  f * c2 * pipe.length / (a * a * pipe.diameter );    

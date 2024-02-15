@@ -101,6 +101,115 @@ make_mass_fraction(size_t size, const infrastructure_graph& graph)
 }
 
 
+
+variable
+make_guess_steady(size_t num_nodes, size_t num_pipes)
+{
+    vector_t Gguess(num_pipes), Pguess(num_nodes);
+    Gguess.setConstant(50);
+    Pguess <<   70.000000000000000, 70.000000000000000, 69.299999999999997,
+                69.299999999999997, 68.606999999999999, 67.920929999999998,
+                67.241720700000002, 67.920929999999998, 67.241720700000002,
+                67.241720700000002, 66.569303493000007, 66.569303493000007,
+                67.241720700000002;
+
+    //---------------------------------------------------------------
+    // Read L from Gsnam / equal than in unsteady
+    vector_t Lguess(num_nodes);
+    std::ifstream ifs("../unit_tests/gsnam.txt");
+    if (!ifs.is_open()) 
+    {
+        std::cout<< "ERROR: gsnam.txt not open" << std::endl;
+        exit(1);
+    }
+
+    for (size_t icol = 0; icol < num_nodes; icol++)
+        ifs >>  Lguess(icol);
+    ifs.close();
+
+
+    return variable(Pguess, Gguess, Lguess); 
+}
+
+
+
+variable
+make_guess_unsteady(size_t num_nodes, size_t num_pipes)
+{
+    vector_t Gguess(num_pipes), Pguess(num_nodes);
+    Pguess << 70.000000000000000, 66.142581067404251, 66.329787615521283,
+              67.765953321847363, 63.706915015080810, 63.514270630072645,
+              62.091515901977836, 61.486931580426337, 60.701860284128337,
+              63.622896665695691, 55.649766619875237, 57.638531011806919,
+              41.742844776429060;
+    Gguess <<  239.0,    -25.0,  -94.0078045237288,   44.0078045237288,
+              69.7886210532947,   20.0, 1.7376816440997, -92.0587439329238,
+             -32.0587439329238,  -30.0, -10.0,-62.5, -38.7035744229765,
+              16.5, 75.2035744229765;
+    
+    Pguess *= 1e5;
+
+    //---------------------------------------------------------------
+    // Read L from Gsnam
+    vector_t Lguess(num_nodes);
+    std::ifstream ifs("../unit_tests/gsnam.txt");
+    if (!ifs.is_open()) 
+    {
+        std::cout<< "ERROR: gsnam.txt not open" << std::endl;
+        exit(1);
+    }
+
+    for (size_t icol = 0; icol < num_nodes; icol++)
+        ifs >>  Lguess(icol);
+    ifs.close();
+
+    return variable(Pguess, Gguess, Lguess); 
+}
+
+
+std::pair<vector_t, matrix_t>
+make_bnd_cond(size_t num_nodes, size_t num_pipes, size_t num_steps)
+{
+    size_t num_outlet = 9;    
+
+    vector_t outlet_nodes(num_outlet);
+    outlet_nodes << 1, 2, 5, 6, 8, 9, 10, 11, 12;
+
+    vector_t Pset(num_steps);
+    Pset << 70.000000000000000,  69.416666666666671,  68.833333333333343,
+            68.250000000000000,  67.666666666666671,  67.083333333333343,
+            66.500000000000000,  67.083333333333329,  67.666666666666657,
+            68.249999999999986,  68.833333333333329,  69.416666666666657,
+            70.000000000000000,  72.333333333333329,  74.666666666666657,
+            76.999999999999972,  79.333333333333300,  81.666666666666629,
+            84.000000000000000,  81.666666666666657,  79.333333333333329,
+            77.000000000000000,  74.666666666666686,  72.333333333333357,
+            70.000000000000000;
+    Pset  *=1E5;
+    //---------------------------------------------------------------
+    matrix_t Gsnam(num_steps, num_nodes);
+    std::ifstream ifs("../unit_tests/gsnam.txt");
+    if (!ifs.is_open()) 
+    {
+        std::cout<< "ERROR: gsnam.txt not open" << std::endl;
+        exit(1);
+    }
+
+    for (size_t icol = 0; icol < num_nodes; icol++)
+        for (size_t irow = 0; irow < num_steps; irow++)
+            ifs >>  Gsnam(irow, icol);
+    ifs.close();
+
+    //---------------------------------------------------------------
+    matrix_t flux_ext = matrix_t::Zero(num_steps, num_nodes);
+    for(size_t i= 0 ; i < outlet_nodes.size(); i++)
+    {   size_t idx = outlet_nodes(i);
+        flux_ext.col(idx) = Gsnam.col(idx);     
+    }
+
+    return std::make_pair(Pset, flux_ext);  
+}
+
 int main()
 {
      std::vector<double> ref_sol = {5101325,
@@ -113,10 +222,7 @@ int main()
                                     30.8,
                                     15.4};
     size_t num_steps = 25;
-
     size_t num_inlet = 1;
-    size_t num_outlet = 9;    
-
     size_t num_pipes = 15;
     size_t num_nodes = 13;
 
@@ -128,54 +234,16 @@ int main()
     double temperature = 293.15;
     double tolerance = 1e-6;
 
-    vector_t Pguess(num_nodes), Gguess(num_pipes), Lguess(num_nodes);        
-    vector_t Pset(num_steps), inlet_nodes(num_inlet), outlet_nodes(num_outlet);
-
+    double tol_std = 1e-10; 
+    double dt_std = 1;
+    size_t MAX_ITER=1500;
+  
+    vector_t inlet_nodes(num_inlet);
     inlet_nodes << 0; 
-    outlet_nodes << 1, 2, 5, 6, 8, 9, 10, 11, 12;
-    Pguess << 70.000000000000000, 66.142581067404251, 66.329787615521283,
-              67.765953321847363, 63.706915015080810, 63.514270630072645,
-              62.091515901977836, 61.486931580426337, 60.701860284128337,
-              63.622896665695691, 55.649766619875237,  57.638531011806919,
-              41.742844776429060;
-    Gguess <<  239.0, -25.0, -94.0078045237288, 44.0078045237288,
-              69.7886210532947,   20.0, 1.7376816440997, -92.0587439329238,
-             -32.0587439329238, -30.0, -10.0, -62.5, -38.7035744229765,
-              16.5, 75.2035744229765;
-    Pset << 70.000000000000000,  69.416666666666671,  68.833333333333343,
-            68.250000000000000,  67.666666666666671,  67.083333333333343,
-            66.500000000000000,  67.083333333333329,  67.666666666666657,
-            68.249999999999986,  68.833333333333329,  69.416666666666657,
-            70.000000000000000,  72.333333333333329,  74.666666666666657,
-            76.999999999999972,  79.333333333333300,  81.666666666666629,
-            84.000000000000000,  81.666666666666657,  79.333333333333329,
-            77.000000000000000,  74.666666666666686,  72.333333333333357,
-            70.000000000000000;
-    Pset  *=1E5;
-    Pguess *= 1e5;
 
-    matrix_t Gsnam(num_steps, num_nodes);
-    std::ifstream ifs("../unit_tests/gsnam.txt");
-    if (!ifs.is_open()) 
-    {
-        std::cout<< "ERROR: gsnam.txt not open" << std::endl;
-        return 1;
-    }
-
-    for (size_t icol = 0; icol < num_nodes; icol++)
-        for (size_t irow = 0; irow < num_steps; irow++)
-            ifs >>  Gsnam(irow, icol);
-    ifs.close();
-
-
-    //---------------------------------------------------------------
-    matrix_t flux_ext = matrix_t::Zero(num_steps, num_nodes);
-    for(size_t i= 0 ; i < outlet_nodes.size(); i++)
-    {   size_t idx = outlet_nodes(i);
-        flux_ext.col(idx) = Gsnam.col(idx);     
-    }
-
-    Lguess =  Gsnam.row(0);
+    variable var = make_guess_unsteady(num_nodes, num_pipes);
+    variable var_std = make_guess_steady(num_nodes, num_pipes);
+    auto [Pset, flux_ext] = make_bnd_cond(num_nodes, num_pipes, num_steps);
     //---------------------------------------------------------------
 
     infrastructure_graph graph;
@@ -184,8 +252,11 @@ int main()
     auto [y_nodes, y_pipes] = make_mass_fraction(num_nodes, graph);
 
     time_solver<papay> ts(graph, temperature, Pset, flux_ext, inlet_nodes);
-    ts.initialization(Pguess, Gguess, Lguess);
-    ts.advance(dt, num_steps, tolerance, graph, y_nodes, y_pipes);
+
+    ts.initialization(var, dt_std, tol_std, y_nodes, y_pipes);    
+
+    //ts.set_initialization(var);    
+    //ts.advance(dt, num_steps, tolerance, y_nodes, y_pipes);
 
     vector_t sol(num_bcnd + num_pipes + num_nodes);
     //sol.head(num_nodes) = var.pressure;

@@ -147,15 +147,16 @@ int main()
     flux_old = flux;
     //flux_ext = flux;
 
+    bool unsteady = true;
     infrastructure_graph graph;
     make_init_graph(graph);
 
     incidence inc(graph);
-    linearized_fluid_solver lfs(1, dt, temperature,inc, graph);
+    linearized_fluid_solver lfs(unsteady, 0, dt, temperature,inc, graph);
 
     vector_t pressure_pipes = average(pressure, inc);
     auto mass = lfs.continuity(pressure, pressure_old, c2_nodes);
-    auto mom = lfs.momentum( pressure, pressure_pipes, flux, flux_old, c2_pipes);
+    auto mom = lfs.momentum(pressure, pressure_pipes, flux, flux_old, c2_pipes);
 
     sparse_matrix_t LHS_mass(num_nodes, system_size);
     sparse_matrix_t LHS_mom(system_size, system_size);

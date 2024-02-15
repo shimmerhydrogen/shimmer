@@ -13,13 +13,14 @@ matrix_t linearized_fluid_solver::x_pipes(){return x_pipes_;}
 const incidence& linearized_fluid_solver::get_incidence(){return inc_;}
 
 linearized_fluid_solver::linearized_fluid_solver(
-                        double tolerance, 
+                        const bool& unsteady,
+                        double tol, 
                         double dt,
                         double Tm,
                         const incidence & inc,
-                        const infrastructure_graph& graph):
-                        tolerance_(tolerance), dt_(dt), Tm_(Tm),
-                        inc_(inc), graph_(graph)  
+                        const infrastructure_graph& g):
+                        tolerance_(tol), dt_(dt), Tm_(Tm),
+                        inc_(inc), graph_(g), is_unsteady_(unsteady)  
 {
     MAX_ITERS_ = 500;
 
@@ -78,20 +79,25 @@ linearized_fluid_solver::momentum(
     vector_t ADP_p = sADP.cwiseAbs() * nodes_pressure;
 
     vector_t rf = resistance_friction(Tm_, c2, flux, graph_);
-    vector_t ri = resistance_inertia(dt_, pipes_pressure, inc_, graph_);
-    vector_t r = (-rf-ri).array() / ADP_p.array();
-    auto t_sR   = build_triplets( r, num_nodes_, num_nodes_);
+    vector_t r = -rf; 
+    vector_t rhs = -0.5 * rf.cwiseProduct(flux);
+
+    if (is_unsteady_)
+    {
+        vector_t ri = resistance_inertia(dt_, pipes_pressure, inc_, graph_);
+        r -= ri; 
+        rhs -= ri.cwiseProduct(flux_old);
+    }
+    
+    vector_t r_scale = r.cwiseQuotient(ADP_p);
+    auto t_sR   = build_triplets( r_scale , num_nodes_, num_nodes_);
     auto t_sADP = build_triplets( sADP,  num_nodes_, 0);
 
-    //std::vector<triplet_t> triplets =  t_sAPA;
     std::vector<triplet_t> triplets =  t_sADP;
     triplets.insert(triplets.begin(), t_sR.begin(), t_sR.end());
 
-    vector_t rhs = ((-0.5) * rf.array() * flux.array()
-                      - ri.array() * flux_old.array())/ADP_p.array();
-
-
-    return std::make_pair(triplets, rhs);
+    vector_t rhs_scale = rhs.cwiseQuotient(ADP_p);
+    return std::make_pair(triplets, rhs_scale);
 }
 
 

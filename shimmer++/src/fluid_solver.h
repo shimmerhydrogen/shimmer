@@ -26,8 +26,7 @@ class equation_of_state;
 
 class linearized_fluid_solver
 {
-
-
+    bool is_unsteady_;
     size_t MAX_ITERS_;
     size_t num_pipes_;
     size_t num_nodes_;
@@ -49,7 +48,8 @@ class linearized_fluid_solver
 
 public:
 
-    linearized_fluid_solver(double tolerance, 
+    linearized_fluid_solver(const bool& is_unsteady,
+                        double tolerance, 
                         double dt,
                         double Tm,
                         const incidence & inc,
@@ -63,7 +63,8 @@ public:
 
 
     pair_trip_vec_t
-    momentum(const vector_t& pressure_nodes,
+    momentum(
+             const vector_t& pressure_nodes,
              const vector_t& pressure_pipes,
              const vector_t& flux,
              const vector_t& flux_old,

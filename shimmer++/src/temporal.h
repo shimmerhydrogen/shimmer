@@ -24,6 +24,7 @@ struct variable
 
     variable();
     variable(const vector_t&p,const vector_t&f,const vector_t&l);
+    vector_t make_vector();
 };
 
 }

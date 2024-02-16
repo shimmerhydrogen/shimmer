@@ -6,7 +6,7 @@ namespace shimmer{
 
 
 double linearized_fluid_solver::temperature(){return Tm_;}
-vector_t linearized_fluid_solver::pressure_nodes(){return press_;}
+vector_t linearized_fluid_solver::pressure_nodes(){return var_.pressure;}
 vector_t linearized_fluid_solver::pressure_pipes(){return press_pipes_;}
 matrix_t linearized_fluid_solver::x_nodes(){return x_nodes_;}
 matrix_t linearized_fluid_solver::x_pipes(){return x_pipes_;}
@@ -34,9 +34,6 @@ linearized_fluid_solver::linearized_fluid_solver(
     x_nodes_ = build_x_nodes(graph_);
     x_pipes_ = inc_.matrix_in().transpose() * x_nodes_;
 
-    press_.resize(num_nodes_);
-    flux_.resize(num_pipes_);
-    press_pipes_.resize(num_pipes_);
 }
 
 
@@ -195,23 +192,19 @@ linearized_fluid_solver::assemble(
 bool linearized_fluid_solver::convergence(const vector_t& diff, 
                 const vector_t& sol)
 {
-    /*  Warning: Marco computes diff = LHS * sol - rhs, with rhs evaluated
-        using the current flux (G_k). Here, the rhs is evaluated in the 
-        previous step G_{k-1}. 
-        res = norm(ADP*p_k -  (Rf * abs(G_k)*G_k) + Ri. * (G_k - G_n)));
-            = norm(ADP*p_k -(2 Rf * abs(G_k)+ Ri)*G_k + (Rf *abs(G_k_1)G_k_1 + Ri * G_n))); 
+    /*  Warning: Marco computes diff = LHS^(k+1) * sol^(k+1) - rhs^(k+1)
+        While here, sol^{k+1} - sol^{k}
     */
-    // diff = lhs sol - rhs
 
     auto norm_mass = diff.head(num_nodes_).norm();
     auto norm_mom  = diff.segment(num_nodes_, num_pipes_).norm();
     auto residual  = std::max(norm_mass, norm_mom);
 
-    vector_t press_next = a_p_*press_+(1.0-a_p_)*sol.head(num_nodes_);
-    vector_t flux_next  = a_G_*flux_ +(1.0-a_G_)*sol.segment(num_nodes_, num_pipes_);
+    vector_t press_next = a_p_*var_.pressure+(1.0-a_p_)*sol.head(num_nodes_);
+    vector_t flux_next  = a_G_*var_.flux +(1.0-a_G_)*sol.segment(num_nodes_, num_pipes_);
 
-    press_ = press_next;
-    flux_  = flux_next;
+    var_.pressure = press_next;
+    var_.flux  = flux_next;
 
     std::cout << "sol: ("<< norm_mass<< " , " << norm_mom << ")" <<  std::endl ;
     for (int k = 0; k < sol.size(); ++k)
@@ -234,10 +227,12 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
                             variable& var_time,
                             equation_of_state *eos)
 {
-    // Initialization of varibales with solution in time n; 
-    press_ = var_time.pressure;
-    flux_  = var_time.flux;
+    press_pipes_.resize(num_pipes_);
 
+    // Initialization of varibales with solution in time n; 
+    var_.pressure = var_time.pressure;
+    var_.flux  = var_time.flux;
+    var_.L_rate = flux_ext;
     std::cout<< "Initializing ..."<< std::endl;
 
     // Here it takes the x_nodes_/x_pipes_ if needed. For example, for gerg, here it
@@ -253,13 +248,13 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
     {   
         std::cout<< "Solver at iteration k ..."<< iter << std::endl;
 
-        press_pipes_ = average(press_, inc_);
+        press_pipes_ = average(var_.pressure, inc_);
 
         auto [c2_nodes, c2_pipes] = eos->speed_of_sound(this); 
 
-        auto mass = continuity(press_, var_time.pressure, c2_nodes);
-        auto mom  = momentum(press_, press_pipes_, flux_, var_time.flux, c2_pipes);       
-        auto bcnd = boundary(area_pipes, p_in, flux_,flux_ext, inlet_nodes, eos);
+        auto mass = continuity(var_.pressure, var_time.pressure, c2_nodes);
+        auto mom  = momentum(var_.pressure, press_pipes_, var_.flux, var_time.flux, c2_pipes);       
+        auto bcnd = boundary(area_pipes, p_in, var_.flux,flux_ext, inlet_nodes, eos);
         auto [LHS, rhs]= assemble(mass, mom, bcnd);
 
         Eigen::SparseLU<sparse_matrix_t> solver;
@@ -308,13 +303,12 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
                 std::cout << "  " << sol[k]  <<  std::endl;
 
 
-
-        vector_t diff = LHS * sol - rhs; 
+        vector_t diff = sol - var_.make_vector(); 
         if (convergence(diff, sol))
         {
 
-            var_time.pressure = press_;
-            var_time.flux = flux_;
+            var_time.pressure = var_.pressure;
+            var_time.flux = var_.flux;
             var_time.L_rate = sol.tail(num_nodes_);
             return; 
         }

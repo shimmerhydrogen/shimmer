@@ -253,12 +253,12 @@ int main()
 
     time_solver<papay> ts(graph, temperature, Pset, flux_ext, inlet_nodes);
 
-    ts.initialization(var, dt_std, tol_std, y_nodes, y_pipes);    
+    //ts.initialization(var, dt_std, tol_std, y_nodes, y_pipes);    
 
-    //ts.set_initialization(var);    
-    //ts.advance(dt, num_steps, tolerance, y_nodes, y_pipes);
+    ts.set_initialization(var);    
+    ts.advance(dt, num_steps, tolerance, y_nodes, y_pipes);
 
-    vector_t sol(num_bcnd + num_pipes + num_nodes);
+    //vector_t sol(num_bcnd + num_pipes + num_nodes);
     //sol.head(num_nodes) = var.pressure;
     //sol.segment(num_nodes, num_pipes) = var.flux;
     //sol.tail(num_bcnd) = var.L_rate;

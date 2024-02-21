@@ -12,6 +12,7 @@
 
 #include <iostream>
 #include <Eigen/Sparse>
+#include <iomanip>
 
 #include "../src/temporal.h"
 #include "../src/gas_law.h"
@@ -30,6 +31,7 @@ class time_solver
 {
 
     double temperature_;
+    variable var_guess_;
     variable var_;
     vector_t inlet_nodes_;
     matrix_t flux_ext_;
@@ -56,7 +58,7 @@ public:
     void
     set_initialization( const variable& var)
     {
-        var_ = var; 
+        var_guess_ = var; 
     }
 
     void
@@ -69,13 +71,13 @@ public:
 
         bool unsteady = false;
 
-        var_ = var;
+        var_guess_ = var;
     
         EQ_OF_STATE eos; 
         eos.compute_molar_mass(y_nodes, y_pipes);
 
         linearized_fluid_solver lfs(unsteady, tolerance, dt, temperature_, inc_, graph_);
-        lfs.run(area_pipes_, inlet_nodes_, Pset_(0), flux_ext_.row(0), var_, &eos);
+        lfs.run(area_pipes_, inlet_nodes_, Pset_(0), flux_ext_.row(0), var_guess_, &eos);
     }
     
 
@@ -91,25 +93,38 @@ public:
 
         bool unsteady = true;
 
+        matrix_t var_in_time(num_steps, num_edges(graph_) + 2 * num_vertices(graph_));
+ 
+        var_ = var_guess_;
+        var_in_time.row(0) =  var_.make_vector();
+
         double t = 0;
         for(size_t it = 1; it < num_steps; it++, t+=dt)
         {
+            std::cout << "=============================================="<< it<< std::endl;
+            std::cout << "=============================================="<< it<< std::endl;
             std::cout << "Solving at time ...."<<t<< " with iteration..."<< it<< std::endl;
             EQ_OF_STATE eos; 
             eos.compute_molar_mass(y_nodes, y_pipes);
 
             linearized_fluid_solver lfs(unsteady, tolerance, dt, temperature_,inc_, graph_);
-            lfs.run(area_pipes_, inlet_nodes_, Pset_(it), flux_ext_.row(it),  var_, &eos);
-
-            //p_0(:,it)= var_.pressure;
-            //G_0(:,it)= var_.flux;
-            //L_0(:,it)= var_.L_rate;
-            // This maybe should be inside LP(:,it) = dx.*pm(:,k).*AA./cc2b; %kg
-
-            //G_n = G_0(:,ii);
-            //p_n = p_0(:,ii);
+            lfs.run(area_pipes_, inlet_nodes_, Pset_(it), flux_ext_.row(it),  var_guess_, var_, &eos);  
+            var_in_time.row(it) =  var_.make_vector();
         }
 
+        std::ofstream ofs("var_in_time.dat");
+        if(!ofs.is_open())
+            std::cout<<"WARNING: var_in_time file has not been opened." << std::endl;
+
+        for(size_t i = 0; i < var_in_time.rows(); i++)
+        {
+            for(size_t j = 0; j < var_in_time.cols(); j++)
+                ofs << std::setprecision(16) << var_in_time(i,j) << " ";
+            ofs << std::endl; 
+        }
+        ofs.close();
+
+    /*
         std::cout << " * Pressure : ["; //<< std::endl;
         for (int k = 0; k < var_.pressure.size(); ++k)
             std::cout << var_.pressure[k] << ", "  <<  std::endl ;
@@ -124,7 +139,7 @@ public:
         for (int k = 0; k < var_.L_rate.size(); ++k)
             std::cout << var_.L_rate[k] << ", " <<  std::endl ;
         std::cout << "]; "<<std::endl;
-
+    */
     }
 };
 

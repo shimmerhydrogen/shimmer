@@ -56,8 +56,7 @@ public:
 
 
     pair_trip_vec_t
-    continuity(const vector_t& pressure, 
-            const vector_t& pressure_old,
+    continuity(const vector_t& pressure_old,
             const vector_t& c2);
 
 
@@ -86,8 +85,7 @@ public:
 
 
     bool 
-    convergence(const vector_t& diff, 
-                const vector_t& sol);
+    convergence(const vector_t& sol);
 
 
     void
@@ -95,6 +93,7 @@ public:
         const vector_t& inlet_nodes,
         double p_in,
         const vector_t& flux_ext,
+        const variable& var_guess,
         variable& var_time,
         equation_of_state *eos
         );

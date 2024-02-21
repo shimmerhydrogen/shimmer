@@ -145,7 +145,7 @@ int main()
     gerg_eos.compute_molar_mass(y_nodes, y_pipes);
 
     linearized_fluid_solver lfs(unsteady,tolerance, dt,temperature,inc, graph);
-    lfs.run(area_pipes, inlet_nodes, pressure_in, flux_ext, var, &gerg_eos);
+    lfs.run(area_pipes, inlet_nodes, pressure_in, flux_ext, var, var, &gerg_eos);
 
     vector_t sol(num_bcnd + num_pipes + num_nodes);
     sol.head(num_nodes) = var.pressure;

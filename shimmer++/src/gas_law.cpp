@@ -7,6 +7,7 @@
  */
 
 #include "../src/gas_law.h"
+#include <iomanip>
 
 namespace shimmer{
 
@@ -57,6 +58,7 @@ papay::compute(double temperature, const vector_t& pressure)
     auto coef1 = std::exp(-1.878 * (temperature/T_cr_)) * 0.274/(p_cr_*p_cr_); 
     vector_t Z = 1.0 - coef0 *  pressure.array() 
                         + coef1 * pressure.array().square() ;
+
     return Z;
 }
 
@@ -71,6 +73,8 @@ papay::speed_of_sound(linearized_fluid_solver *lfs)
     vector_t c2_pipes = Z_pipes.cwiseProduct(R_pipes_) * lfs->temperature();
 
     compute_density(lfs,c2_pipes);
+
+
 
     return std::make_pair(c2_nodes, c2_pipes);
 }
@@ -149,11 +153,9 @@ gerg::compute(  const double& temperature,
 std::pair<vector_t, vector_t>
 gerg::speed_of_sound(linearized_fluid_solver *lfs)
 {
-    std::cout<< "EOS nodes" << std::endl;
     vector_t Z_nodes = compute( lfs->temperature(),
                                 lfs->pressure_nodes(),
                                 lfs->x_nodes(), params_nodes_);
-    std::cout<< "EOS pipes" << std::endl;
     vector_t Z_pipes = compute( lfs->temperature(),
                                 lfs->pressure_pipes(),
                                 lfs->x_pipes(), params_pipes_);

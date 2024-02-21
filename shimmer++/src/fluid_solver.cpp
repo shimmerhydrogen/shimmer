@@ -40,7 +40,6 @@ linearized_fluid_solver::linearized_fluid_solver(
 
 pair_trip_vec_t
 linearized_fluid_solver::continuity(
-            const vector_t& pressure,
             const vector_t& pressure_old,
             const vector_t& c2)
 {
@@ -55,6 +54,19 @@ linearized_fluid_solver::continuity(
     triplets.insert(triplets.begin(), t_sA.begin(), t_sA.end());
 
     vector_t rhs = phi_vec.array() * pressure_old.array();
+
+    std::cout << "* PHI: " <<  std::endl;
+    for (int k = 0; k < phi_vec.size(); ++k)
+        std::cout << std::setprecision(16) <<phi_vec(k)<< std::endl;
+    std::cout <<  std::endl ;
+
+    
+    std::cout << "* p_n: " <<  std::endl;
+    for (int k = 0; k < pressure_old.size(); ++k)
+        std::cout << std::setprecision(16) << pressure_old(k)<< std::endl;
+    std::cout <<  std::endl ;
+
+
 
     return std::make_pair(triplets, rhs);
 }
@@ -189,15 +201,16 @@ linearized_fluid_solver::assemble(
 }
 
 
-bool linearized_fluid_solver::convergence(const vector_t& diff, 
+bool linearized_fluid_solver::convergence( 
                 const vector_t& sol)
 {
     /*  Warning: Marco computes diff = LHS^(k+1) * sol^(k+1) - rhs^(k+1)
         While here, sol^{k+1} - sol^{k}
     */
 
-    auto norm_mass = diff.head(num_nodes_).norm();
-    auto norm_mom  = diff.segment(num_nodes_, num_pipes_).norm();
+    vector_t diff = sol - var_.make_vector();
+    auto norm_mass = diff.head(num_nodes_).norm()/(var_.pressure).norm();
+    auto norm_mom  = diff.segment(num_nodes_, num_pipes_).norm()/(var_.flux).norm();
     auto residual  = std::max(norm_mass, norm_mom);
 
     vector_t press_next = a_p_*var_.pressure+(1.0-a_p_)*sol.head(num_nodes_);
@@ -206,11 +219,12 @@ bool linearized_fluid_solver::convergence(const vector_t& diff,
     var_.pressure = press_next;
     var_.flux  = flux_next;
 
+/*
     std::cout << "sol: ("<< norm_mass<< " , " << norm_mom << ")" <<  std::endl ;
     for (int k = 0; k < sol.size(); ++k)
         std::cout << std::setprecision(16) << sol(k)<< std::endl ;
     std::cout <<  std::endl ;
-
+*/
 
     if(residual < tolerance_)
         return true; 
@@ -224,14 +238,15 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
                             const vector_t& inlet_nodes,
                             double p_in,
                             const vector_t& flux_ext,
+                            const variable& var_guess,
                             variable& var_time,
                             equation_of_state *eos)
 {
     press_pipes_.resize(num_pipes_);
 
     // Initialization of varibales with solution in time n; 
-    var_.pressure = var_time.pressure;
-    var_.flux  = var_time.flux;
+    var_.pressure = var_guess.pressure;
+    var_.flux  = var_guess.flux;
     var_.L_rate = flux_ext;
     std::cout<< "Initializing ..."<< std::endl;
 
@@ -245,17 +260,35 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
     eos->initialization(this);
 
     for(size_t iter = 0; iter <= MAX_ITERS_; iter++)
-    {   
+    {  
+        std::cout<< "---------------------------------" << std::endl; 
         std::cout<< "Solver at iteration k ..."<< iter << std::endl;
 
         press_pipes_ = average(var_.pressure, inc_);
 
         auto [c2_nodes, c2_pipes] = eos->speed_of_sound(this); 
 
-        auto mass = continuity(var_.pressure, var_time.pressure, c2_nodes);
+        std::cout << "* c2_nodes: " <<  std::endl;
+        for (int k = 0; k < c2_nodes.size(); ++k)
+            std::cout << std::setprecision(16) << c2_nodes(k)<< std::endl;
+        std::cout <<  std::endl ;
+
+
+        auto mass = continuity(var_time.pressure, c2_nodes);
         auto mom  = momentum(var_.pressure, press_pipes_, var_.flux, var_time.flux, c2_pipes);       
         auto bcnd = boundary(area_pipes, p_in, var_.flux,flux_ext, inlet_nodes, eos);
         auto [LHS, rhs]= assemble(mass, mom, bcnd);
+
+/*
+        //std::vector<triplet_t> LHS_MOM  = mom.second;
+        std::cout << "Momemtum " << std::endl;
+        for (const triplet_t & trip : mom.first)
+        {
+            std::cout << std::setprecision(16) << "" << trip.row() 
+                            << " , " << trip.col() << " , " << trip.value() 
+                            << " ; " << std::endl ;
+        }
+*/
 
         Eigen::SparseLU<sparse_matrix_t> solver;
         solver.compute(LHS);
@@ -275,22 +308,22 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
             exit(1);
         }
 
-        /*
-            size_t count = 0; 
-            for (int k = 0; k < LHS.outerSize(); ++k)
-            {
-                for (itor_t it(LHS,k); it; ++it, count++)
-                { 
-                    std::cout << std::setprecision(16) << "" << it.row() 
-                                << " , " << it.col() << " , " << it.value() 
-                                << " ; " << std::endl ;
-                }
+/*               
+        size_t count = 0; 
+        for (int k = 0; k < LHS.outerSize(); ++k)
+        {
+            for (itor_t it(LHS,k); it; ++it, count++)
+            { 
+                std::cout << std::setprecision(16) << "" << it.row() 
+                            << " , " << it.col() << " , " << it.value() 
+                            << " ; " << std::endl ;
             }
-        
+        }
+
         std::cout << "rhs = "<< std::endl;
         for (int k = 0; k < rhs.size(); ++k)
             std::cout << "  " << rhs[k]  <<  std::endl;
-        */
+*/        
 
         vector_t sol = solver.solve(rhs);
         if(solver.info() != Eigen::Success) {
@@ -298,13 +331,13 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
             exit(1);
         } 
 
+    /*
         std::cout << " * XXX_k at iter ...."<< iter << std::endl;
-            for (int k = 0; k < sol.size(); ++k)
-                std::cout << "  " << sol[k]  <<  std::endl;
+        for (int k = 0; k < sol.size(); ++k)
+            std::cout << "  " << sol[k]  <<  std::endl;
+    */
 
-
-        vector_t diff = sol - var_.make_vector(); 
-        if (convergence(diff, sol))
+        if (convergence(sol))
         {
 
             var_time.pressure = var_.pressure;

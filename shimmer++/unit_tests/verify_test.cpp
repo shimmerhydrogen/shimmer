@@ -6,25 +6,27 @@
  * karol.cascavita@polito.it  
  */
 #include "verify_test.h"
-
+#include <iomanip>
 
 bool verify_test(const std::string & name, 
                  const Eigen::Matrix<double, Eigen::Dynamic, 1>& vals,
                  const std::vector<double>& ref )
 {
     if(vals.size() != ref.size()) 
-        return false;
+        throw std::invalid_argument("ERROR: solution and reference dont have same size.");
+
 
     bool pass = true;
 
+    std::cout << "Vec:" << std::endl;
     for (int k = 0; k < vals.size(); ++k)
     {
-        // std::cout << vals[k]  <<  std::endl ;
+         std::cout << std::setprecision(16) << vals[k]  <<  std::endl ;
         auto e_val = std::abs((vals[k] - ref.at(k)) /  ref.at(k));
         if(e_val > 1.e-12)
         {
             pass = false;
-            break;  
+        //    break;  
         }
     }
     
@@ -43,8 +45,11 @@ bool verify_test(const std::string & name,
                  const Eigen::SparseMatrix<double>& mat,
                  const std::vector<std::array<double, 3>>& ref )
 {
+
+    std::cout << " Inside verify test 2 " << std::endl; 
+
     if(mat.nonZeros() != ref.size()) 
-        return false;
+        throw std::invalid_argument("ERROR: solution and reference dont have same size.");
 
 
     using itor_t = Eigen::SparseMatrix<double>::InnerIterator;

@@ -77,7 +77,7 @@ public:
         eos.compute_molar_mass(y_nodes, y_pipes);
 
         linearized_fluid_solver lfs(unsteady, tolerance, dt, temperature_, inc_, graph_);
-        lfs.run(area_pipes_, inlet_nodes_, Pset_(0), flux_ext_.row(0), var_guess_, &eos);
+        lfs.run(area_pipes_, inlet_nodes_, Pset_(0), flux_ext_.row(0), var_guess_,var_guess_, &eos);
     }
     
 

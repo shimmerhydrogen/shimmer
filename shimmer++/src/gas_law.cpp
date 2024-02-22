@@ -74,8 +74,6 @@ papay::speed_of_sound(linearized_fluid_solver *lfs)
 
     compute_density(lfs,c2_pipes);
 
-
-
     return std::make_pair(c2_nodes, c2_pipes);
 }
 

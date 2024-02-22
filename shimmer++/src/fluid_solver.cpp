@@ -17,9 +17,10 @@ linearized_fluid_solver::linearized_fluid_solver(
                         double tol, 
                         double dt,
                         double Tm,
+                        const vector_t& mu,
                         const incidence & inc,
                         const infrastructure_graph& g):
-                        tolerance_(tol), dt_(dt), Tm_(Tm),
+                        tolerance_(tol), dt_(dt), Tm_(Tm), mu_(mu),
                         inc_(inc), graph_(g), is_unsteady_(unsteady)  
 {
     MAX_ITERS_ = 500;
@@ -55,6 +56,7 @@ linearized_fluid_solver::continuity(
 
     vector_t rhs = phi_vec.array() * pressure_old.array();
 
+/*
     std::cout << "* PHI: " <<  std::endl;
     for (int k = 0; k < phi_vec.size(); ++k)
         std::cout << std::setprecision(16) <<phi_vec(k)<< std::endl;
@@ -65,9 +67,7 @@ linearized_fluid_solver::continuity(
     for (int k = 0; k < pressure_old.size(); ++k)
         std::cout << std::setprecision(16) << pressure_old(k)<< std::endl;
     std::cout <<  std::endl ;
-
-
-
+*/
     return std::make_pair(triplets, rhs);
 }
 
@@ -87,7 +87,7 @@ linearized_fluid_solver::momentum(
     sparse_matrix_t sADP = adp_matrix(c2, graph_, inc_);
     vector_t ADP_p = sADP.cwiseAbs() * nodes_pressure;
 
-    vector_t rf = resistance_friction(Tm_, c2, flux, graph_);
+    vector_t rf = resistance_friction(Tm_, mu_, c2, flux, graph_);
     vector_t r = -rf; 
     vector_t rhs = -0.5 * rf.cwiseProduct(flux);
 
@@ -128,11 +128,13 @@ linearized_fluid_solver::boundary(const vector_t& area_pipes,
     auto triplets = build_triplets(sId, 0, num_nodes_ + num_pipes_);
 
     vector_t rhs = flux_ext;
+
+/*
     std::cout << "flux_ext: " <<  std::endl ;
     for (int k = 0; k < flux_ext.size(); ++k)
         std::cout <<"    " << flux_ext(k)<< std::endl ;
     std::cout <<  std::endl ;
-
+*/
 
     for(size_t i = 0; i < inlet_nodes.size(); i++)
     {
@@ -267,13 +269,6 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
         press_pipes_ = average(var_.pressure, inc_);
 
         auto [c2_nodes, c2_pipes] = eos->speed_of_sound(this); 
-
-        std::cout << "* c2_nodes: " <<  std::endl;
-        for (int k = 0; k < c2_nodes.size(); ++k)
-            std::cout << std::setprecision(16) << c2_nodes(k)<< std::endl;
-        std::cout <<  std::endl ;
-
-
         auto mass = continuity(var_time.pressure, c2_nodes);
         auto mom  = momentum(var_.pressure, press_pipes_, var_.flux, var_time.flux, c2_pipes);       
         auto bcnd = boundary(area_pipes, p_in, var_.flux,flux_ext, inlet_nodes, eos);

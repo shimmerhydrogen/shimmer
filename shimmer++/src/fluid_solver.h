@@ -40,6 +40,7 @@ class linearized_fluid_solver
     matrix_t x_nodes_;
     matrix_t x_pipes_;
     vector_t press_pipes_;
+    vector_t mu_; 
 
     variable var_;
     const incidence& inc_; 
@@ -51,6 +52,7 @@ public:
                         double tolerance, 
                         double dt,
                         double Tm,
+                        const vector_t& mu,
                         const incidence & inc,
                         const infrastructure_graph& graph);
 

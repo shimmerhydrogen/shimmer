@@ -106,26 +106,25 @@ resistance_inertia( const double & dt, const vector_t & pipes_pressure,
 
 vector_t
 resistance_friction(const double& temperature,
+                    const vector_t& mu,
                     const vector_t& c2,
                     const vector_t & flux,
                     const infrastructure_graph  & g)
 {
     vector_t Omega = vector_t::Zero(num_edges(g));
 
-    size_t i = 0;
     auto edge_range = edges(g);
     auto begin = edge_range.first;
     auto end = edge_range.second;
+
+    size_t i = 0;
     for(auto itor = begin; itor != end; itor++,i++ ){
         auto pipe = g[*itor]; 
-        auto node_in = g[source(*itor, g)];                        
-        auto rf = friction_resistance(pipe, node_in, c2(i), temperature, flux(i));
+        auto rf = friction_resistance(pipe, temperature, mu(i),c2(i), flux(i));       
         Omega(i) = 2.0 * rf * std::abs(flux(i)); 
-
     }
     return Omega;
 } 
-
 
 
 } //end namespace shimmer

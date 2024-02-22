@@ -16,6 +16,7 @@
 #include "../src/conservation_matrices.h"
 #include "verify_test.h"
 #include "../src/matrix_manipulations.h"
+#include "../src/viscosity.h"
 
 using triple_t = std::array<double, 3>;
 using namespace shimmer;
@@ -90,8 +91,9 @@ int main()
 
     incidence inc(graph);
 
+    auto mu = viscosity<viscosity_type::Kukurugya>(temperature, graph); 
     vector_t pipes_pressure = average(pressure, inc);
-    vector_t rf = resistance_friction(temperature, c2_edges, flux, graph);
+    vector_t rf = resistance_friction(temperature, mu, c2_edges, flux, graph);
     vector_t ri = resistance_inertia(dt, pipes_pressure, inc, graph);
 
     sparse_matrix_t sPHI = phi_matrix(dt, c2_vertex, graph);

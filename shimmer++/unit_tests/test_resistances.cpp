@@ -15,7 +15,7 @@
 #include "../src/incidence_matrix.h"
 #include "../src/pipe_calculator.h"
 #include "verify_test.h"
-
+#include "../src/viscosity.h"
 
 using namespace shimmer;
 using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1>; 
@@ -89,6 +89,8 @@ int main(int argc, char **argv)
     vector_t flux (num_edges(graph));
     flux << 19.0, 23.0, 37.0, 51.0, 17.0;
 
+    auto mu = viscosity<viscosity_type::Kukurugya>(temperature, graph); 
+
     int i = 0;
     auto e_range = edges(graph);
     for(auto itor = e_range.first; itor != e_range.second; itor++, i++)
@@ -96,7 +98,7 @@ int main(int argc, char **argv)
         auto pipe = graph[*itor];
         auto node_in = graph[source(*itor, graph)];   
         ri(i) = inertia_resistance(pipe, dt, p);
-        rf(i) = friction_resistance(pipe, node_in, c2, temperature, flux(i));
+        rf(i) = friction_resistance(pipe, temperature, mu(i), c2, flux(i));
     }
 
     std::cout << __FILE__ << std::endl; 

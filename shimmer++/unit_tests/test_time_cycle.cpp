@@ -18,7 +18,7 @@
 #include "MATLAB_GERG_functions.hpp"
 #include "../src/fluid_solver.h"
 #include "../src/time_solver.h"
-
+#include "../src/viscosity.h"
 using triple_t = std::array<double, 3>;
 
 using namespace shimmer;
@@ -95,7 +95,6 @@ make_mass_fraction(size_t size, const infrastructure_graph& graph)
     y_nodes.col(0).setConstant(1);
 
     matrix_t y_pipes = inc.matrix_in().transpose() * y_nodes;    
-
 
     return  std::make_pair(y_nodes, y_pipes); 
 }
@@ -215,17 +214,41 @@ make_bnd_cond(size_t num_nodes, size_t num_pipes, size_t num_steps)
     return std::make_pair(Pset, flux_ext);  
 }
 
+
+std::pair<std::vector<double>, std::vector<double>>
+make_reference(size_t num_nodes, size_t num_pipes)
+{
+    std::vector<double> ref_sol_unsteady = {7000000, 
+        6934772.559942949, 6951327.384841953, 
+        6994631.435108416, 6862997.00400152, 
+        6846719.528087921, 6763531.784680299, 
+        6756996.296753552, 6718661.845875668, 
+        6898350.420853097, 6215288.565656994, 
+        5636790.522900792, 3959225.464465233, 
+        37.24788747552144, -24.06761888895476, 
+       -52.4176615374912,   25.9037384225945, 
+        40.34447212121921,  19.10036619989154, 
+         1.223796919133901,-75.36356796841562, 
+       -10.34670526035165, -49.06902068560661, 
+       -12.11458220852576, -45.36865478624177,
+       -32.85117746725343,  16.09781416668034, 
+        36.45784656739564, -15.11186799782956, 
+        25, 20,0, 0,20,30,0, 50,20, 16.5,50,12.5};
+
+
+    variable var = make_guess_unsteady(num_nodes, num_pipes);
+    vector_t vec = var.make_vector();
+
+    std::vector<double> ref_sol_steady(num_nodes*2 + num_pipes);
+    for(size_t i = 0; i< vec.size(); i++)
+        ref_sol_steady[i] = vec(i);
+
+    return std::make_pair(ref_sol_steady, ref_sol_unsteady);
+}
+
+
 int main()
 {
-     std::vector<double> ref_sol = {5101325,
-                                    4977209.550249534,
-                                    4990077.876609622,
-                                    24.48496271836996,
-                                    21.71503728211033,
-                                    6.315037282326063,
-                                    -46.20000000048003,
-                                    30.8,
-                                    15.4};
     size_t num_steps = 25;
     size_t num_inlet = 1;
     size_t num_pipes = 15;
@@ -237,17 +260,17 @@ int main()
     double tf = 25*3600;
     double dt = 3600;
     double temperature = 293.15;
-    double tolerance = 1e-4;
+    double tol = 1e-4;
 
-    double tol_std = 1e-10; 
+    double tol_std = 1e-4; 
     double dt_std = 1;
     size_t MAX_ITER=1500;
   
     vector_t inlet_nodes(num_inlet);
     inlet_nodes << 0; 
 
-    variable var = make_guess_unsteady(num_nodes, num_pipes);
-    variable var_std = make_guess_steady(num_nodes, num_pipes);
+    variable guess_unstd = make_guess_unsteady(num_nodes, num_pipes);
+    variable guess_std   = make_guess_steady(num_nodes, num_pipes);
     auto [Pset, flux_ext] = make_bnd_cond(num_nodes, num_pipes, num_steps);
     //---------------------------------------------------------------
 
@@ -256,20 +279,30 @@ int main()
 
     auto [y_nodes, y_pipes] = make_mass_fraction(num_nodes, graph);
 
-    time_solver<papay> ts(graph, temperature, Pset, flux_ext, inlet_nodes);
+    using time_solver_t = time_solver<papay, viscosity_type::Constant>; 
 
-    //ts.initialization(var, dt_std, tol_std, y_nodes, y_pipes);    
+    /*
+    time_solver_t ts0(graph, temperature, Pset, flux_ext, inlet_nodes);
+    ts0.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);    
+    auto sol_std =  ts0.guess();
+    */
 
-    ts.set_initialization(var);    
-    ts.advance(dt, num_steps, tolerance, y_nodes, y_pipes);
+    time_solver_t ts1(graph, temperature, Pset, flux_ext, inlet_nodes);
+    ts1.set_initialization(guess_unstd);    
+    ts1.advance(dt, num_steps, tol, y_nodes, y_pipes);
+    auto sol_set_unstd  = ts1.solution();
 
-    //vector_t sol(num_bcnd + num_pipes + num_nodes);
-    //sol.head(num_nodes) = var.pressure;
-    //sol.segment(num_nodes, num_pipes) = var.flux;
-    //sol.tail(num_bcnd) = var.L_rate;
+    /*
+    time_solver_t ts2(graph, temperature, Pset, flux_ext, inlet_nodes);
+    ts2.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);    
+    ts2.advance(dt, num_steps, tol, y_nodes, y_pipes);
+    auto sol_init_unstd = ts2.solution();
+    */
+    //---------------------------------------------------------------
+    auto [ref_std, ref_unstd] = make_reference(num_nodes, num_pipes);
+    //bool pass0 = verify_test("time initialization", sol_std,  ref_std); 
+    bool pass1 = verify_test("time solver with given init", sol_set_unstd, ref_unstd); 
+    //bool pass2 = verify_test("time solver computing  init", sol_init_unstd, ref_unstd); 
 
-    bool pass = false;//verify_test("Test fluid-dynamic solver", sol, ref_sol); 
-
-
-    return !pass;
+    return !(pass1);
 }

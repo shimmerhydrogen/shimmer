@@ -16,6 +16,8 @@
 #include "../src/conservation_matrices.h"
 #include "verify_test.h"
 #include "MATLAB_GERG_functions.hpp"
+#include "../src/viscosity.h"
+
 
 using triple_t = std::array<double, 3>;
 
@@ -151,12 +153,14 @@ int main()
     infrastructure_graph graph;
     make_init_graph(graph);
 
+    auto mu = viscosity<viscosity_type::Kukurugya>(temperature, graph); 
+
     incidence inc(graph);
-    linearized_fluid_solver lfs(unsteady, 0, dt, temperature,inc, graph);
+    linearized_fluid_solver lfs(unsteady, 0, dt, temperature,mu, inc, graph);
 
     vector_t pressure_pipes = average(pressure, inc);
     auto mass = lfs.continuity(pressure_old, c2_nodes);
-    auto mom = lfs.momentum(pressure, pressure_pipes, flux, flux_old, c2_pipes);
+    auto mom  = lfs.momentum(pressure, pressure_pipes, flux, flux_old, c2_pipes);
 
     sparse_matrix_t LHS_mass(num_nodes, system_size);
     sparse_matrix_t LHS_mom(system_size, system_size);

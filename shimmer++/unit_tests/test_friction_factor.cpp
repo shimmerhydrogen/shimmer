@@ -14,9 +14,9 @@
 #include "../src/infrastructure_graph.h"
 #include "../src/pipe_calculator.h"
 #include "verify_test.h"
+#include "../src/viscosity.h"
 
 using triple_t = std::array<double, 3>;
-
 using namespace shimmer;
 
 void
@@ -77,25 +77,20 @@ int main()
     infrastructure_graph graph;
     make_init_graph(graph);
 
-    vector_t mu(num_edges(graph)), lambda(num_edges(graph));
+    vector_t lambda(num_edges(graph));
+
+    auto mu = viscosity<viscosity_type::Kukurugya>(Tm, graph); 
 
     size_t i = 0;
     auto edge_range = edges(graph);
     for(auto itor = edge_range.first; itor != edge_range.second; itor++,i++ )
     {
         auto pipe = graph[*itor];
-        auto node_in = source(*itor, graph);
-        mu(i) = viscosity(Tm,  graph[node_in].gas_mixture);
         lambda(i) = friction_factor_average(pipe, Tm, flux(i), mu(i)); 
     }
     
     bool mu_pass = verify_test("Test viscosity", mu, ref_mu);
     bool f_pass = verify_test("Test friction factor", lambda, ref_f);
-
-
-    std::cout << "Friction Factor" << std::endl;
-    for(const auto & lambda_p : lambda)
-        std::cout << std::setprecision(16) << lambda_p << std::endl;
     
     return !(mu_pass && f_pass);
 }

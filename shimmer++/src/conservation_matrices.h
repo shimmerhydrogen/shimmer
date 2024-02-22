@@ -52,7 +52,9 @@ resistance_inertia( const double & dt, const vector_t & pressure,
 
 
 vector_t
-resistance_friction(const double& temperature, const vector_t& c2,
+resistance_friction(const double& temperature,
+                    const vector_t& mu,
+                    const vector_t& c2,
                     const vector_t & flux,
                     const infrastructure_graph & g);
 

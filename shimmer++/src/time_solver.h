@@ -18,7 +18,7 @@
 #include "../src/gas_law.h"
 #include "../src/fluid_solver.h"
 #include "../src/incidence_matrix.h"
-
+#include "../src/viscosity.h"
 
 namespace shimmer{
 
@@ -26,7 +26,7 @@ using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1>;
 using matrix_t = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>; 
 
 
-template<typename EQ_OF_STATE>
+template<typename EQ_OF_STATE, int viscosity_type>
 class time_solver
 {
 
@@ -76,7 +76,10 @@ public:
         EQ_OF_STATE eos; 
         eos.compute_molar_mass(y_nodes, y_pipes);
 
-        linearized_fluid_solver lfs(unsteady, tolerance, dt, temperature_, inc_, graph_);
+        // To be finish when it is clear how x changes and modifies mu. 
+        auto mu = viscosity<viscosity_type>(temperature_, graph_); 
+
+        linearized_fluid_solver lfs(unsteady, tolerance, dt, temperature_, mu, inc_, graph_);
         lfs.run(area_pipes_, inlet_nodes_, Pset_(0), flux_ext_.row(0), var_guess_,var_guess_, &eos);
     }
     
@@ -84,7 +87,7 @@ public:
     void
     advance(double dt, 
             size_t num_steps, 
-            double tolerance, 
+            double tol, 
             const matrix_t& y_nodes, 
             const matrix_t& y_pipes)
     {
@@ -101,14 +104,15 @@ public:
         double t = 0;
         for(size_t it = 1; it < num_steps; it++, t+=dt)
         {
-            std::cout << "=============================================="<< it<< std::endl;
-            std::cout << "=============================================="<< it<< std::endl;
             std::cout << "Solving at time ...."<<t<< " with iteration..."<< it<< std::endl;
             EQ_OF_STATE eos; 
             eos.compute_molar_mass(y_nodes, y_pipes);
 
-            linearized_fluid_solver lfs(unsteady, tolerance, dt, temperature_,inc_, graph_);
-            lfs.run(area_pipes_, inlet_nodes_, Pset_(it), flux_ext_.row(it),  var_guess_, var_, &eos);  
+            // To be finish when it is clear how x changes and modifies mu. 
+            auto mu = viscosity<viscosity_type>(temperature_, graph_); 
+
+            linearized_fluid_solver lfs(unsteady, tol, dt, temperature_, mu, inc_, graph_);
+            lfs.run(area_pipes_, inlet_nodes_, Pset_(it), flux_ext_.row(it), var_guess_, var_, &eos);  
             var_in_time.row(it) =  var_.make_vector();
         }
 
@@ -124,7 +128,7 @@ public:
         }
         ofs.close();
 
-    /*
+/*
         std::cout << " * Pressure : ["; //<< std::endl;
         for (int k = 0; k < var_.pressure.size(); ++k)
             std::cout << var_.pressure[k] << ", "  <<  std::endl ;
@@ -139,8 +143,12 @@ public:
         for (int k = 0; k < var_.L_rate.size(); ++k)
             std::cout << var_.L_rate[k] << ", " <<  std::endl ;
         std::cout << "]; "<<std::endl;
-    */
+*/
+        return;    
     }
+
+    vector_t solution(){return var_.make_vector();}
+    vector_t guess(){return var_guess_.make_vector();}
 };
 
 }

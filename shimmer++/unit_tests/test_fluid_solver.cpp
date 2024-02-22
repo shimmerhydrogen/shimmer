@@ -17,6 +17,8 @@
 #include "verify_test.h"
 #include "MATLAB_GERG_functions.hpp"
 #include "../src/fluid_solver.h"
+#include "../src/viscosity.h"
+
 
 using triple_t = std::array<double, 3>;
 
@@ -144,7 +146,9 @@ int main()
     gerg gerg_eos; 
     gerg_eos.compute_molar_mass(y_nodes, y_pipes);
 
-    linearized_fluid_solver lfs(unsteady,tolerance, dt,temperature,inc, graph);
+    auto mu = viscosity<viscosity_type::Kukurugya>(temperature, graph); 
+
+    linearized_fluid_solver lfs(unsteady,tolerance, dt,temperature, mu,inc, graph);
     lfs.run(area_pipes, inlet_nodes, pressure_in, flux_ext, var, var, &gerg_eos);
 
     vector_t sol(num_bcnd + num_pipes + num_nodes);

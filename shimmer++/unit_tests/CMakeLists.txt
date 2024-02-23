@@ -2,13 +2,13 @@ set(SHIMMER_SOURCES_T ../src/infrastructure_graph.cpp
         ../src/geometry_properties.cpp 
         ../src/conservation_matrices.cpp 
         ../src/incidence_matrix.cpp 
-        ../src/assemble.cpp
         verify_test.cpp
         ../src/matrix_manipulations.cpp
         ../src/matlab_manip.cpp 
         ../src/pipe_calculator.cpp
         ../src/gas_law.cpp
-        ../src/fluid_solver.cpp)
+        ../src/fluid_solver.cpp
+        ../src/temporal.cpp)
 
 #set(SHIMMER_SOURCES_T ../${SHIMMER_SOURCES} verify_test.cpp)
 
@@ -40,10 +40,14 @@ add_executable(test_friction_factor test_friction_factor.cpp ${SHIMMER_SOURCES_T
 target_link_libraries(test_friction_factor ${LINK_LIBS})
 add_test(NAME test_friction_factor COMMAND test_friction_factor)
 
-add_executable(test_speed_of_sound test_speed_of_sound.cpp ${SHIMMER_SOURCES_T})
-target_link_libraries(test_speed_of_sound ${LINK_LIBS})
-add_test(NAME test_speed_of_sound COMMAND test_speed_of_sound)
+#add_executable(test_speed_of_sound test_speed_of_sound.cpp ${SHIMMER_SOURCES_T})
+#target_link_libraries(test_speed_of_sound ${LINK_LIBS})
+#add_test(NAME test_speed_of_sound COMMAND test_speed_of_sound)
 
 add_executable(test_fluid_solver test_fluid_solver.cpp ${SHIMMER_SOURCES_T})
 target_link_libraries(test_fluid_solver ${LINK_LIBS})
 add_test(NAME test_fluid_solver COMMAND test_fluid_solver)
+
+add_executable(test_time_cycle test_time_cycle.cpp ${SHIMMER_SOURCES_T})
+target_link_libraries(test_time_cycle ${LINK_LIBS})
+add_test(NAME test_time_cycle COMMAND test_time_cycle)

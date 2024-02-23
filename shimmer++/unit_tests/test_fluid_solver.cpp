@@ -14,10 +14,11 @@
 #include "../src/infrastructure_graph.h"
 #include "../src/incidence_matrix.h"
 #include "../src/conservation_matrices.h"
-#include "../src/assemble.h"
 #include "verify_test.h"
 #include "MATLAB_GERG_functions.hpp"
 #include "../src/fluid_solver.h"
+#include "../src/viscosity.h"
+
 
 using triple_t = std::array<double, 3>;
 
@@ -55,17 +56,13 @@ make_init_graph(infrastructure_graph& g)
     boost::add_edge( vds[2], vds[1], ep2, g);
 }
 
-
-std::pair<vector_t, vector_t>
-make_rr_mm(size_t size)
+matrix_t 
+make_mass_fraction(size_t size)
 {
-    vector_t rrb(size);
-    rrb.setConstant(518.2783563119373);
+    matrix_t mass_frac(size, 21);
+    mass_frac.col(0).setConstant(1);
 
-    vector_t molar_mass(size);
-    molar_mass.setConstant(16.04246);
-
-    return std::make_pair(rrb, molar_mass); 
+    return  mass_frac; 
 }
 
 
@@ -73,8 +70,8 @@ gerg_params
 make_gerg(size_t size)
 {
     gerg_reducing_params_t reducing_parameters;
-    reducing_parameters.Tr.resize(size);
-    reducing_parameters.Dr.resize(size);
+    reducing_parameters.Tr.resize(size,1);
+    reducing_parameters.Dr.resize(size,1);
     reducing_parameters.Tr.setConstant(1.905640000000000e+02);
     reducing_parameters.Dr.setConstant(1.013934271900000e+01);
 
@@ -107,6 +104,7 @@ int main()
                                     30.8,
                                     15.4};
 
+    size_t num_inlet = 1;    
     size_t num_pipes = 3;
     size_t num_nodes = 3;
     size_t num_bcnd = num_nodes;
@@ -115,41 +113,48 @@ int main()
     double dt = 180;
     double temperature = 293.15;
     double tolerance = 1e-4;
-    vector_t sol (num_pipes + num_nodes + num_bcnd), flux_ext(num_pipes);
+    vector_t pressure(num_nodes), flux(num_pipes), L_rate(num_bcnd), flux_ext(num_pipes);
     
     flux_ext << 0.0, 30.80, 15.4;
+    pressure << 5101325.0,
+                4977209.550248852,
+                4990077.876609823;
+    flux <<     2.448496272217528e+01,
+                2.171503727782473e+01,
+                6.315037277824726e+00;
+    L_rate <<   0.0, 0.0, 0.0;
 
-    sol <<  5101325.0,
-            4977209.550248852,
-            4990077.876609823,
-            2.448496272217528e+01,
-            2.171503727782473e+01,
-            6.315037277824726e+00,
-            0.0, 0.0, 0.0;
+    variable var(pressure, flux, L_rate);
 
-    double pressure_in = 5101325.0; 
+    double pressure_in = 5101325.0;   
+    vector_t inlet_nodes(num_inlet);
+    inlet_nodes << 0; 
 
-    gerg_params gerg_nodes = make_gerg(num_nodes); 
-    gerg_params gerg_pipes = make_gerg(num_pipes); 
 
     infrastructure_graph graph;
     make_init_graph(graph);
 
     incidence inc(graph);
+   
+    matrix_t y_nodes = make_mass_fraction(num_nodes);
+    matrix_t y_pipes = inc.matrix_in().transpose() * y_nodes;    
 
-    auto x_nodes = build_x_nodes(graph);
-    auto x_pipes = inc.matrix_in().transpose() * x_nodes;
-    auto [rr_nodes, mm_nodes] = make_rr_mm(num_nodes);
-    auto [rr_pipes, mm_pipes] = make_rr_mm(num_pipes);
+    vector_t area_pipes = area(graph);
 
-    vector_t inlet_nodes(1); inlet_nodes << 0; 
+    bool unsteady = true;
 
-    linearized_fluid_solver( tolerance, dt,temperature,
-                        inc, graph, inlet_nodes, 
-                        pressure_in, flux_ext, 
-                        rr_nodes, rr_pipes, mm_pipes,
-                        gerg_nodes, gerg_pipes,
-                        sol);
+    gerg gerg_eos; 
+    gerg_eos.compute_molar_mass(y_nodes, y_pipes);
+
+    auto mu = viscosity<viscosity_type::Kukurugya>(temperature, graph); 
+
+    linearized_fluid_solver lfs(unsteady,tolerance, dt,temperature, mu,inc, graph);
+    lfs.run(area_pipes, inlet_nodes, pressure_in, flux_ext, var, var, &gerg_eos);
+
+    vector_t sol(num_bcnd + num_pipes + num_nodes);
+    sol.head(num_nodes) = var.pressure;
+    sol.segment(num_nodes, num_pipes) = var.flux;
+    sol.tail(num_bcnd) = var.L_rate;
 
     bool pass = verify_test("Test fluid-dynamic solver", sol, ref_sol); 
 

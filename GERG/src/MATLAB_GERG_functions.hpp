@@ -67,8 +67,8 @@ namespace GERG
   thermodynamic_properties( const vector_type& Psim,
                             const double& Tm,
                             const matrix_type& x,
-                            const Reducing_parameters<vector_type>& reducing_parameters,
-                            const Pseudo_critical_point<vector_type>& pseudo_critical_point, 
+                            const Reducing_parameters<matrix_type>& reducing_parameters,
+                            const Pseudo_critical_point<matrix_type>& pseudo_critical_point, 
                             const Thermodynamic_properties_parameters& parameters)
   {
     const Matlab_interface& matlab = Matlab_interface::get_instance();

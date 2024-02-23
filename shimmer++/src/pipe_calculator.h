@@ -24,9 +24,11 @@ inertia_resistance( const edge_properties& pipe, const double& dt,
                     const double& mean_pressure) ;
 
 double 
-friction_resistance(const edge_properties& pipe, const vertex_properties& node_in,
-                    const double & c2, const double& temperature, 
-                    const double & flux); 
+friction_resistance(const  edge_properties& pipe,
+                    double temperature,
+                    double mu,
+                    double c2, 
+                    double flux);
 
 
 } //end namespace shimmer

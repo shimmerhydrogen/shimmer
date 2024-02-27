@@ -8,7 +8,8 @@ set(SHIMMER_SOURCES_T ../src/infrastructure_graph.cpp
         ../src/pipe_calculator.cpp
         ../src/gas_law.cpp
         ../src/fluid_solver.cpp
-        ../src/temporal.cpp)
+        ../src/temporal.cpp
+        ../src/boundary.cpp)
 
 #set(SHIMMER_SOURCES_T ../${SHIMMER_SOURCES} verify_test.cpp)
 
@@ -51,3 +52,7 @@ add_test(NAME test_fluid_solver COMMAND test_fluid_solver)
 add_executable(test_time_cycle test_time_cycle.cpp ${SHIMMER_SOURCES_T})
 target_link_libraries(test_time_cycle ${LINK_LIBS})
 add_test(NAME test_time_cycle COMMAND test_time_cycle)
+
+add_executable(test_stations test_stations.cpp ${SHIMMER_SOURCES_T})
+target_link_libraries(test_stations ${LINK_LIBS})
+add_test(NAME test_stations COMMAND test_stations)

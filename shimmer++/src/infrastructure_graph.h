@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <boost/graph/adjacency_list.hpp>
 #include <Eigen/Dense>
+#include "../src/boundary.h"
 
 namespace shimmer {
 
@@ -50,7 +51,21 @@ struct vertex_properties {
     double          pressure;
     double          mass_flow;
     double          height;
-    vector_t        gas_mixture;   
+    vector_t        gas_mixture; 
+    std::unique_ptr<station> node_station;   
+
+    friend std::ostream& operator<<(std::ostream& ofs, const vertex_properties& vp) 
+    {
+        ofs << " name : " << vp.name << "\n";
+        ofs << " node_num : " << vp.node_num << "\n";
+        ofs << " pressure : " << vp.pressure << "\n";
+        ofs << " mass_flow: " << vp.mass_flow << "\n";
+        ofs << " station:   ";
+        vp.node_station->print();
+
+        return ofs;
+    }
+
 };
 
 enum class edge_type {

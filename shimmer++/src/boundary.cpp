@@ -91,46 +91,87 @@ junction::junction()
 }
 
 
-/*
-
-remi_wo_backflow::remi_wo_backflow(double Pset,
-                const std::vector<pair_input_t>& user_limits_s0,
-                const std::vector<pair_input_t>& user_limits_s1)
+void
+remi_wo_backflow::set_boundary(double Pset, const std::vector<pair_input_t>& user_limits_s0)
 {
-    count_ = 0;
-
     auto s0_bnd = constraint(hardness_type::BOUNDARY,
-                                constraint_type::P_EQUAL, Pset); 
-    auto s1_bnd = constraint(hardness_type::BOUNDARY,
-                                constraint_type::L_EQUAL, 0.0); 
-
+                                constraint_type::P_EQUAL, Pset);
     auto s0_int = constraint(hardness_type::HARD,
-                                constraint_type::L_LOWER_EQUAL, 0.0);       
-    auto s1_int = constraint(hardness_type::HARD,
-                                constraint_type::P_GREATER_EQUAL, Pset);
+                                constraint_type::L_LOWER_EQUAL, 0.0); 
+
 
     std::vector<constraint> s0_ext(user_limits_s0.size());
-    std::vector<constraint> s1_ext(user_limits_s1.size());
-
     size_t i = 0;
     for(const auto&  ec : user_limits_s0) 
         s0_ext[i++] = constraint(hardness_type::SOFT, user_limits_s0[i].first,
                                                     user_limits_s0[i].second);
 
-    i = 0;
+    states_[0] = state(s0_bnd, s0_int, s0_ext);
+}
+
+
+
+// WK: This functions are equal since the type of the values changes. Improve this
+void
+remi_wo_backflow::set_boundary(const vector_t& Pset, const std::vector<pair_input_t>& user_limits_s0)
+{
+    auto s0_bnd = constraint(hardness_type::BOUNDARY,
+                                constraint_type::P_EQUAL, Pset);
+    auto s0_int = constraint(hardness_type::HARD,
+                                constraint_type::L_LOWER_EQUAL, 0.0); 
+
+
+    std::vector<constraint> s0_ext(user_limits_s0.size());
+    size_t i = 0;
+    for(const auto&  ec : user_limits_s0) 
+        s0_ext[i++] = constraint(hardness_type::SOFT, user_limits_s0[i].first,
+                                                    user_limits_s0[i].second);
+
+    states_[0] = state(s0_bnd, s0_int, s0_ext);
+}
+
+
+
+// WK: This functions are equal since the type of the values changes. Improve this
+void 
+remi_wo_backflow::set_boundary_to_switch(double Pset,
+            const std::vector<pair_input_t>& user_limits_s1)
+{
+    auto s1_bnd = constraint(hardness_type::BOUNDARY,
+                                constraint_type::L_EQUAL, 0.0); 
+    auto s1_int = constraint(hardness_type::HARD,
+                                constraint_type::P_GREATER_EQUAL, Pset);
+
+    std::vector<constraint> s1_ext(user_limits_s1.size());
+    size_t i = 0;
     for(const auto&  ec : user_limits_s1)
         s1_ext[i++] = constraint(hardness_type::SOFT, user_limits_s1[i].first,
                                                     user_limits_s1[i].second);
-    
-
-    num_states_ = 2;
-    states_.resize(2);
-    states_[0] = state(s0_bnd, s0_int, s0_ext);
     states_[1] = state(s1_bnd, s1_int, s1_ext);
 }
 
 
-void remi_wo_backflow::switch_state()
+void 
+remi_wo_backflow::set_boundary_to_switch(const vector_t& Pset,
+            const std::vector<pair_input_t>& user_limits_s1)
+{
+    auto s1_bnd = constraint(hardness_type::BOUNDARY,
+                                constraint_type::L_EQUAL, 0.0); 
+
+    auto s1_int = constraint(hardness_type::HARD,
+                                constraint_type::P_GREATER_EQUAL, Pset);
+
+    std::vector<constraint> s1_ext(user_limits_s1.size());
+    size_t i = 0;
+    for(const auto&  ec : user_limits_s1)
+        s1_ext[i++] = constraint(hardness_type::SOFT, user_limits_s1[i].first,
+                                                    user_limits_s1[i].second);
+    states_[1] = state(s1_bnd, s1_int, s1_ext);
+}
+
+
+void 
+remi_wo_backflow::switch_state()
 {
     count_++;
     index_ = count_%num_states_;
@@ -158,7 +199,7 @@ remi_wo_backflow::check_soft(double p, double l, size_t step)
         {
             success = false;
             std::cout << "WARNING: REMI_WO constraint violated => "
-                      << e.type() << " " << e.values(step) <<std::endl;                        
+                      << e.type() << " " << e.value(step) <<std::endl;                        
         }
     }
 
@@ -166,7 +207,6 @@ remi_wo_backflow::check_soft(double p, double l, size_t step)
 }
 
 const constraint & remi_wo_backflow::boundary(){ return states_[index_].boundary;}
-*/
 
 
 } //end namespace shimmer

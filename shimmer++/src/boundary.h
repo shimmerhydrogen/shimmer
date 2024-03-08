@@ -81,10 +81,10 @@ class station
 public: 
 
     station(){};
-    virtual void set_boundary(const vector_t& vals, const std::vector<pair_input_t>& user_limits ={}) = 0;
-    virtual void set_boundary(double val, const std::vector<pair_input_t>& user_limits = {} ) = 0;
-    virtual void set_boundary_to_switch(const vector_t& vals, const std::vector<pair_input_t>& user_limits = {}){};
-    virtual void set_boundary_to_switch(double val, const std::vector<pair_input_t>& user_limits = {} ){};
+    virtual void set_state(const vector_t& vals, const std::vector<pair_input_t>& user_limits ={}) = 0;
+    virtual void set_state(double val, const std::vector<pair_input_t>& user_limits = {} ) = 0;
+    virtual void set_state_to_switch(const vector_t& vals, const std::vector<pair_input_t>& user_limits = {}){};
+    virtual void set_state_to_switch(double val, const std::vector<pair_input_t>& user_limits = {} ){};
 
     virtual bool check_hard(double, double, size_t) {return true;};
     virtual bool check_soft(double, double, size_t) {return true;};
@@ -103,8 +103,8 @@ class junction: public station
 public:
     junction();
 
-    inline void set_boundary(const vector_t& vals,const std::vector<pair_input_t>& user_limits ={}){}
-    inline void set_boundary(double val,  const std::vector<pair_input_t>& user_limits ={}){}
+    inline void set_state(const vector_t& vals,const std::vector<pair_input_t>& user_limits ={}){}
+    inline void set_state(double val,  const std::vector<pair_input_t>& user_limits ={}){}
     inline const constraint& boundary(){return s0.boundary;};
     inline void print(){std::cout << "JUNCTION" << std::endl;}
 };
@@ -116,12 +116,12 @@ class inlet_station: public station
     state s0;
 public:
     inline inlet_station(){};
-    inline void set_boundary(const vector_t& vals,const std::vector<pair_input_t>& user_limits ={})
+    inline void set_state(const vector_t& vals,const std::vector<pair_input_t>& user_limits ={})
     {
         s0.boundary = constraint(hardness_type::BOUNDARY,
                                  constraint_type::P_EQUAL, vals); 
     }
-    inline void set_boundary(double val,const std::vector<pair_input_t>& user_limits ={})    
+    inline void set_state(double val,const std::vector<pair_input_t>& user_limits ={})    
     {
         s0.boundary = constraint(hardness_type::BOUNDARY,
                                  constraint_type::P_EQUAL, val); 
@@ -138,13 +138,13 @@ class outlet_station: public station
 
 public:
     inline outlet_station(){};   
-    inline void set_boundary(const vector_t& vals, const std::vector<pair_input_t>& user_limits ={})
+    inline void set_state(const vector_t& vals, const std::vector<pair_input_t>& user_limits ={})
     {
         s0.boundary = constraint(hardness_type::BOUNDARY,
                                  constraint_type::L_EQUAL, vals); 
 
     }  
-    inline void set_boundary(double val,const std::vector<pair_input_t>& user_limits ={})
+    inline void set_state(double val,const std::vector<pair_input_t>& user_limits ={})
     {
         s0.boundary = constraint(hardness_type::BOUNDARY,
                                  constraint_type::L_EQUAL, val); 
@@ -171,13 +171,13 @@ public:
         states_.resize(num_states_);
     };
 
-    void set_boundary(double,
+    void set_state(double,
                      const std::vector<pair_input_t>&);
-    void set_boundary(const vector_t& ,
+    void set_state(const vector_t& ,
                      const std::vector<pair_input_t>&);
-    void set_boundary_to_switch(double,
+    void set_state_to_switch(double,
                      const std::vector<pair_input_t>&);
-    void set_boundary_to_switch(const vector_t& ,
+    void set_state_to_switch(const vector_t& ,
                      const std::vector<pair_input_t>&);
 
     void switch_state();

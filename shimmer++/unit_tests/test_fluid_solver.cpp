@@ -40,11 +40,11 @@ make_init_graph(infrastructure_graph& g)
     //---------------------------------------------------------------
     std::vector<std::unique_ptr<station>> stations(num_nodes);
     stations[0] = std::make_unique<inlet_station>();
-    stations[0]->set_boundary(pressure_in);
+    stations[0]->set_state(pressure_in);
     stations[1] = std::make_unique<outlet_station>();
-    stations[1]->set_boundary(flux_ext(1));
+    stations[1]->set_state(flux_ext(1));
     stations[2] = std::make_unique<outlet_station>();
-    stations[2]->set_boundary(flux_ext(2));
+    stations[2]->set_state(flux_ext(2));
     //---------------------------------------------------------------
     std::vector<vertex_descriptor> vds;
 

@@ -83,34 +83,32 @@ public:
         lfs.run(area_pipes_, flux_ext_.row(iter), var_guess_,var_guess_, &eos);
     }
 
-    /*
-    bool
-    check_hard_constraints()
-    {
-        bool do_iter = false;
-        for(size_t i = 0; i < num_vertices(graph_); i++)
-        {
-            auto p = var_.pressure[i];
-            auto l = var_.L_rate[i];
 
-            do_iter = do_iter || (nodes_stations[i].check_hard(p, l));
+    bool
+    check_hard_constraints(size_t step)
+    {
+        bool pass_all = false;
+        int i = 0;
+        auto v_range = boost::vertices(graph_);
+        for(auto itor = v_range.first; itor != v_range.second; itor++, i++)
+        {
+            bool pass = graph_[*itor].node_station->check_hard(var_.pressure[i], var_.L_rate[i], step);
+            pass_all = pass_all || pass;
         }
 
-        return !do_iter;
+        return pass_all;
     }    
 
 
     void
-    check_soft_constraints()
+    check_soft_constraints(size_t step)
     {
-        for(size_t i = 0; i < num_nodes; i++)
-        {
-            auto p = var_.pressure[i];
-            auto l = var_.L_rate[i];
-            nodes_stations[i].check_soft();
-        }
+        int i = 0;
+        auto v_range = boost::vertices(graph_);
+        for(auto itor = v_range.first; itor != v_range.second; itor++, i++)
+            graph_[*itor].node_station->check_soft(var_.pressure[i], var_.L_rate[i], step);
     }
-*/
+
 
     void
     advance(double dt, 
@@ -131,8 +129,8 @@ public:
 
         double t = 0;
         for(size_t it = 1; it < num_steps; it++, t+=dt)
-        {            
-            /*for(size_t ic = 1; ic < MAX_CONSTRAINT_ITER; i++)
+        {   
+            /*for(size_t ic = 0; ic < MAX_CONSTRAINT_ITER; ic++)
             {
             */
             std::cout << "Solving at time ...."<<t<< " with iteration..."<< it<< std::endl;
@@ -146,18 +144,15 @@ public:
             lfs.run(area_pipes_, flux_ext_.row(it), var_guess_, var_, &eos);  
             var_in_time.row(it) =  var_.make_vector();
 
-            /*
-                check_soft();
+            check_soft_constraints(it);
+            check_hard_constraints(it);
 
-                if(check_hard_constraint)
-                    break;
-                else
-                    is_violated = true; 
-            }
-            
-            if(is_violated)
-                std::cout << "ERROR: No success in applying constraints.";
-            */
+            //if(check_hard_constraints(it))
+            //    break;
+            //}
+            //if(it == MAX_CONSTRAINT_ITER)
+            //    std::cout << "ERROR: No success in applying constraints.";
+
         }
 
         std::ofstream ofs("var_in_time.dat");

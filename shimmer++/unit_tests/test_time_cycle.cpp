@@ -108,11 +108,11 @@ make_init_graph(infrastructure_graph& g)
         {
             case(station_type::INLET):
                 stations[i] = std::make_unique<inlet_station>();
-                stations[i]->set_boundary(Pset);
+                stations[i]->set_state(Pset);
                 break;
             case(station_type::OUTLET):
                 stations[i] = std::make_unique<outlet_station>();
-                stations[i]->set_boundary(Gsnam.col(i));
+                stations[i]->set_state(Gsnam.col(i));
                 break;
             case(station_type::JUNCTION):
                 stations[i] = std::make_unique<junction>();

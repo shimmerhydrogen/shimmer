@@ -92,7 +92,7 @@ junction::junction()
 
 
 void
-remi_wo_backflow::set_boundary(double Pset, const std::vector<pair_input_t>& user_limits_s0)
+remi_wo_backflow::set_state(double Pset, const std::vector<pair_input_t>& user_limits_s0)
 {
     auto s0_bnd = constraint(hardness_type::BOUNDARY,
                                 constraint_type::P_EQUAL, Pset);
@@ -113,7 +113,7 @@ remi_wo_backflow::set_boundary(double Pset, const std::vector<pair_input_t>& use
 
 // WK: This functions are equal since the type of the values changes. Improve this
 void
-remi_wo_backflow::set_boundary(const vector_t& Pset, const std::vector<pair_input_t>& user_limits_s0)
+remi_wo_backflow::set_state(const vector_t& Pset, const std::vector<pair_input_t>& user_limits_s0)
 {
     auto s0_bnd = constraint(hardness_type::BOUNDARY,
                                 constraint_type::P_EQUAL, Pset);
@@ -134,7 +134,7 @@ remi_wo_backflow::set_boundary(const vector_t& Pset, const std::vector<pair_inpu
 
 // WK: This functions are equal since the type of the values changes. Improve this
 void 
-remi_wo_backflow::set_boundary_to_switch(double Pset,
+remi_wo_backflow::set_state_to_switch(double Pset,
             const std::vector<pair_input_t>& user_limits_s1)
 {
     auto s1_bnd = constraint(hardness_type::BOUNDARY,
@@ -152,7 +152,7 @@ remi_wo_backflow::set_boundary_to_switch(double Pset,
 
 
 void 
-remi_wo_backflow::set_boundary_to_switch(const vector_t& Pset,
+remi_wo_backflow::set_state_to_switch(const vector_t& Pset,
             const std::vector<pair_input_t>& user_limits_s1)
 {
     auto s1_bnd = constraint(hardness_type::BOUNDARY,

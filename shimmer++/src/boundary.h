@@ -82,6 +82,7 @@ public:
 
     station(){};
     virtual void set_boundary(const vector_t& vals) = 0;
+    virtual void set_boundary(double val) = 0;
     virtual void set_hard_constraints(const std::vector<pair_input_t>&) = 0;
     virtual void set_soft_constraints(const std::vector<pair_input_t>&) = 0;
 
@@ -101,6 +102,7 @@ public:
     junction();
 
     inline void set_boundary(const vector_t& vals){}
+    inline void set_boundary(double val){}
     inline void set_hard_constraints(const std::vector<pair_input_t>&){};
     inline void set_soft_constraints(const std::vector<pair_input_t>&){};
     inline bool check_hard(double, double, size_t) {return true;};
@@ -121,6 +123,12 @@ public:
         s0.boundary = constraint(hardness_type::BOUNDARY,
                                  constraint_type::P_EQUAL, vals); 
     }
+    inline void set_boundary(double val)    
+    {
+        s0.boundary = constraint(hardness_type::BOUNDARY,
+                                 constraint_type::P_EQUAL, val); 
+    }
+
     inline void set_hard_constraints(const std::vector<pair_input_t>&){};
     inline void set_soft_constraints(const std::vector<pair_input_t>&){};
     inline bool check_hard(double p, double l, size_t step){return true;};
@@ -142,7 +150,12 @@ public:
                                  constraint_type::L_EQUAL, vals); 
 
     }  
+    inline void set_boundary(double val)
+    {
+        s0.boundary = constraint(hardness_type::BOUNDARY,
+                                 constraint_type::L_EQUAL, val); 
 
+    }  
     inline void set_hard_constraints(const std::vector<pair_input_t>&){};
     inline void set_soft_constraints(const std::vector<pair_input_t>&){};
     inline bool check_hard(double p, double l, size_t step){return true;};

@@ -141,8 +141,8 @@ viscosity(double temperature, const infrastructure_graph& g)
         for(auto itor = begin; itor != end; itor++,i++ )
         {
             auto pipe = g[*itor]; 
-            auto node_in = g[source(*itor, g)];                        
-            mu(i) = viscosity_kukurugya(temperature, node_in.gas_mixture);
+            auto node_in_x = g[source(*itor, g)].gas_mixture;                        
+            mu(i) = viscosity_kukurugya(temperature, node_in_x);
         }
     } 
     if constexpr (viscosity_type == Constant)

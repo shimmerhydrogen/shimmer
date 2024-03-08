@@ -30,6 +30,7 @@ class linearized_fluid_solver
     size_t MAX_ITERS_;
     size_t num_pipes_;
     size_t num_nodes_;
+    size_t at_step_;
 
     double tolerance_;
     double a_G_;
@@ -48,7 +49,7 @@ class linearized_fluid_solver
 
 public:
 
-    linearized_fluid_solver(const bool& is_unsteady,
+    linearized_fluid_solver(size_t at_step, const bool& is_unsteady,
                         double tolerance, 
                         double dt,
                         double Tm,
@@ -73,10 +74,7 @@ public:
 
     pair_trip_vec_t
     boundary(const vector_t& area_pipes,
-            double p_in,
             const vector_t& flux,
-            const vector_t& flux_ext,
-            const vector_t& inlet_nodes,
             equation_of_state *eos);
 
 
@@ -92,8 +90,6 @@ public:
 
     void
     run(const vector_t& area_pipes,
-        const vector_t& inlet_nodes,
-        double p_in,
         const vector_t& flux_ext,
         const variable& var_guess,
         variable& var_time,

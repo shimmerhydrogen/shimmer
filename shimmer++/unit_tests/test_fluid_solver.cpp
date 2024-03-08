@@ -23,20 +23,44 @@
 using triple_t = std::array<double, 3>;
 
 using namespace shimmer;
+ 
+    size_t num_pipes = 3;
+    size_t num_nodes = 3;
+    size_t num_bcnd = 3;
+
+
 
 
 void
 make_init_graph(infrastructure_graph& g)
 {
-
+    double pressure_in = 5101325.0; 
+    vector_t flux_ext(num_nodes);
+    flux_ext << 0.0, 30.80, 15.4;
+    //---------------------------------------------------------------
+    std::vector<std::unique_ptr<station>> stations(num_nodes);
+    stations[0] = std::make_unique<inlet_station>();
+    stations[0]->set_boundary(pressure_in);
+    stations[1] = std::make_unique<outlet_station>();
+    stations[1]->set_boundary(flux_ext(1));
+    stations[2] = std::make_unique<outlet_station>();
+    stations[2]->set_boundary(flux_ext(2));
+    //---------------------------------------------------------------
     std::vector<vertex_descriptor> vds;
+
+    auto add_vertex = [&](vertex_properties&& vp) 
+    {
+        auto v = boost::add_vertex(g);
+        g[v] = std::move(vp);
+        return v;
+    };
 
     vector_t  x = vector_t::Zero(21);
     x(GAS_TYPE::CH4) = 1.0;
 
-    vds.push_back( boost::add_vertex( { "station 0", 0, 0., 0.,  0., x}, g) );
-    vds.push_back( boost::add_vertex( { "station 1", 1, 0., 0.,  0., x}, g) );
-    vds.push_back( boost::add_vertex( { "station 2", 2, 0., 0.,  0., x}, g) );
+    vds.push_back( add_vertex( { "station 0", 0, 0., 0.,  0., x, std::move(stations[0])}) );
+    vds.push_back( add_vertex( { "station 1", 1, 0., 0.,  0., x, std::move(stations[1])}) );
+    vds.push_back( add_vertex( { "station 2", 2, 0., 0.,  0., x, std::move(stations[2])}) );
 
     edge_properties ep0  = {edge_type::pipe, 0,    80000, 0.6, 0.000012};
     edge_properties ep1  = {edge_type::pipe, 1,    90000, 0.6, 0.000012};
@@ -104,16 +128,12 @@ int main()
                                     30.8,
                                     15.4};
 
-    size_t num_inlet = 1;    
-    size_t num_pipes = 3;
-    size_t num_nodes = 3;
-    size_t num_bcnd = num_nodes;
     size_t system_size = num_nodes + num_pipes;
 
     double dt = 180;
     double temperature = 293.15;
     double tolerance = 1e-4;
-    vector_t pressure(num_nodes), flux(num_pipes), L_rate(num_bcnd), flux_ext(num_pipes);
+    vector_t pressure(num_nodes), flux(num_pipes), L_rate(num_bcnd), flux_ext(num_nodes);
     
     flux_ext << 0.0, 30.80, 15.4;
     pressure << 5101325.0,
@@ -126,11 +146,7 @@ int main()
 
     variable var(pressure, flux, L_rate);
 
-    double pressure_in = 5101325.0;   
-    vector_t inlet_nodes(num_inlet);
-    inlet_nodes << 0; 
-
-
+  
     infrastructure_graph graph;
     make_init_graph(graph);
 
@@ -148,8 +164,8 @@ int main()
 
     auto mu = viscosity<viscosity_type::Kukurugya>(temperature, graph); 
 
-    linearized_fluid_solver lfs(unsteady,tolerance, dt,temperature, mu,inc, graph);
-    lfs.run(area_pipes, inlet_nodes, pressure_in, flux_ext, var, var, &gerg_eos);
+    linearized_fluid_solver lfs(0, unsteady,tolerance, dt,temperature, mu,inc, graph);
+    lfs.run(area_pipes, flux_ext, var, var, &gerg_eos);
 
     vector_t sol(num_bcnd + num_pipes + num_nodes);
     sol.head(num_nodes) = var.pressure;

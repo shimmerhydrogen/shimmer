@@ -19,6 +19,7 @@
 #include "../src/fluid_solver.h"
 #include "../src/incidence_matrix.h"
 #include "../src/viscosity.h"
+#include "../src/boundary.h"
 
 namespace shimmer{
 
@@ -33,9 +34,7 @@ class time_solver
     double temperature_;
     variable var_guess_;
     variable var_;
-    vector_t inlet_nodes_;
     matrix_t flux_ext_;
-    vector_t Pset_;
     vector_t area_pipes_;
 
     incidence inc_;
@@ -44,14 +43,12 @@ class time_solver
 public:
     time_solver(const  infrastructure_graph& g,
                 double Tm,
-                const  vector_t& Pset,
-                const  matrix_t& flux_ext,
-                const  vector_t& inlet_nodes): 
-                temperature_(Tm), Pset_(Pset), flux_ext_(flux_ext),
-                inlet_nodes_(inlet_nodes), graph_(g)
+                const  matrix_t& flux_ext): 
+                graph_(g), temperature_(Tm), 
+                flux_ext_(flux_ext)
     {
         inc_ = incidence(g);
-        area_pipes_ = area(g);
+        area_pipes_ = area(g);    
     }
 
 
@@ -60,6 +57,8 @@ public:
     {
         var_guess_ = var; 
     }
+
+
 
     void
     initialization( const variable& var,
@@ -79,10 +78,39 @@ public:
         // To be finish when it is clear how x changes and modifies mu. 
         auto mu = viscosity<viscosity_type>(temperature_, graph_); 
 
-        linearized_fluid_solver lfs(unsteady, tolerance, dt, temperature_, mu, inc_, graph_);
-        lfs.run(area_pipes_, inlet_nodes_, Pset_(0), flux_ext_.row(0), var_guess_,var_guess_, &eos);
+        size_t iter = 0;
+        linearized_fluid_solver lfs(iter, unsteady, tolerance, dt, temperature_, mu, inc_, graph_);
+        lfs.run(area_pipes_, flux_ext_.row(iter), var_guess_,var_guess_, &eos);
     }
-    
+
+    /*
+    bool
+    check_hard_constraints()
+    {
+        bool do_iter = false;
+        for(size_t i = 0; i < num_vertices(graph_); i++)
+        {
+            auto p = var_.pressure[i];
+            auto l = var_.L_rate[i];
+
+            do_iter = do_iter || (nodes_stations[i].check_hard(p, l));
+        }
+
+        return !do_iter;
+    }    
+
+
+    void
+    check_soft_constraints()
+    {
+        for(size_t i = 0; i < num_nodes; i++)
+        {
+            auto p = var_.pressure[i];
+            auto l = var_.L_rate[i];
+            nodes_stations[i].check_soft();
+        }
+    }
+*/
 
     void
     advance(double dt, 
@@ -103,7 +131,10 @@ public:
 
         double t = 0;
         for(size_t it = 1; it < num_steps; it++, t+=dt)
-        {
+        {            
+            /*for(size_t ic = 1; ic < MAX_CONSTRAINT_ITER; i++)
+            {
+            */
             std::cout << "Solving at time ...."<<t<< " with iteration..."<< it<< std::endl;
             EQ_OF_STATE eos; 
             eos.compute_molar_mass(y_nodes, y_pipes);
@@ -111,9 +142,22 @@ public:
             // To be finish when it is clear how x changes and modifies mu. 
             auto mu = viscosity<viscosity_type>(temperature_, graph_); 
 
-            linearized_fluid_solver lfs(unsteady, tol, dt, temperature_, mu, inc_, graph_);
-            lfs.run(area_pipes_, inlet_nodes_, Pset_(it), flux_ext_.row(it), var_guess_, var_, &eos);  
+            linearized_fluid_solver lfs(it, unsteady, tol, dt, temperature_, mu, inc_, graph_);
+            lfs.run(area_pipes_, flux_ext_.row(it), var_guess_, var_, &eos);  
             var_in_time.row(it) =  var_.make_vector();
+
+            /*
+                check_soft();
+
+                if(check_hard_constraint)
+                    break;
+                else
+                    is_violated = true; 
+            }
+            
+            if(is_violated)
+                std::cout << "ERROR: No success in applying constraints.";
+            */
         }
 
         std::ofstream ofs("var_in_time.dat");

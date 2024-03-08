@@ -23,30 +23,131 @@ using triple_t = std::array<double, 3>;
 
 using namespace shimmer;
 
+size_t num_steps = 25;
+size_t num_inlet = 1;
+size_t num_pipes = 15;
+size_t num_nodes = 13;
+
+
+enum station_type
+{
+    INLET,
+    OUTLET,
+    JUNCTION,
+};
+
+
+std::vector<station_type>
+make_stations_type_vector()
+{
+    vector_t outlet_nodes(9);
+    outlet_nodes << 1, 2, 5, 6, 8, 9, 10, 11, 12;
+
+    vector_t inlet_nodes(1);
+    inlet_nodes << 0; 
+
+    vector_t junction_nodes(3);
+    junction_nodes << 3, 4, 7; 
+
+    std::vector<station_type> vec(num_nodes); 
+    for(size_t i = 0; i < outlet_nodes.size(); i++)
+        vec[outlet_nodes[i]] = station_type::OUTLET;            
+    for(size_t i = 0; i < inlet_nodes.size(); i++)
+        vec[inlet_nodes[i]] = station_type::INLET;            
+    for(size_t i = 0; i < junction_nodes.size(); i++)
+        vec[junction_nodes[i]] = station_type::JUNCTION;            
+    
+    return vec;
+}
+
+
+std::pair<vector_t, matrix_t>
+read_boundary_data()
+{
+    vector_t Pset(num_steps);
+    Pset << 70.000000000000000,  69.416666666666671,  68.833333333333343,
+            68.250000000000000,  67.666666666666671,  67.083333333333343,
+            66.500000000000000,  67.083333333333329,  67.666666666666657,
+            68.249999999999986,  68.833333333333329,  69.416666666666657,
+            70.000000000000000,  72.333333333333329,  74.666666666666657,
+            76.999999999999972,  79.333333333333300,  81.666666666666629,
+            84.000000000000000,  81.666666666666657,  79.333333333333329,
+            77.000000000000000,  74.666666666666686,  72.333333333333357,
+            70.000000000000000;
+    Pset *=1E5;
+    //---------------------------------------------------------------
+    matrix_t Gsnam(num_steps, num_nodes);
+    std::ifstream ifs("../unit_tests/gsnam.txt");
+    if (!ifs.is_open()) 
+    {
+        std::cout<< "ERROR: gsnam.txt not open" << std::endl;
+        exit(1);
+    }
+
+    for (size_t icol = 0; icol < num_nodes; icol++)
+        for (size_t irow = 0; irow < num_steps; irow++)
+            ifs >>  Gsnam(irow, icol);
+    ifs.close();
+
+    return std::make_pair(Pset, Gsnam);
+}
 
 void
 make_init_graph(infrastructure_graph& g)
 {
+    //---------------------------------------------------------------
+    auto [Pset, Gsnam] = read_boundary_data();
+    //---------------------------------------------------------------
+    auto station_type_vec = make_stations_type_vector();
+    //---------------------------------------------------------------
+    std::vector<std::unique_ptr<station>> stations(num_nodes);
+
+    for(size_t i = 0 ; i < num_nodes; i++)
+    {   
+        switch(station_type_vec[i])
+        {
+            case(station_type::INLET):
+                stations[i] = std::make_unique<inlet_station>();
+                stations[i]->set_boundary(Pset);
+                break;
+            case(station_type::OUTLET):
+                stations[i] = std::make_unique<outlet_station>();
+                stations[i]->set_boundary(Gsnam.col(i));
+                break;
+            case(station_type::JUNCTION):
+                stations[i] = std::make_unique<junction>();
+                break;
+            default:
+                throw std::invalid_argument("Station type not found");    
+        }
+    }
+    //---------------------------------------------------------------
 
     std::vector<vertex_descriptor> vds;
+
+    auto add_vertex = [&](vertex_properties&& vp) 
+    {
+        auto v = boost::add_vertex(g);
+        g[v] = std::move(vp);
+        return v;
+    };
 
     vector_t  x = vector_t::Zero(21);
     x(GAS_TYPE::CH4) = 1.0;
 
-    vds.push_back( boost::add_vertex( { "station 0",  0, 70.000000000,-230, 0.,x }, g) );
-    vds.push_back( boost::add_vertex( { "station 1",  1, 70.000000000,  20 ,0.,x }, g) );
-    vds.push_back( boost::add_vertex( { "station 2",  2, 69.300000000,  25 ,0.,x }, g) );
-    vds.push_back( boost::add_vertex( { "station 3",  3, 69.300000000,   0 ,0.,x }, g) );
-    vds.push_back( boost::add_vertex( { "station 4",  4, 68.607000000,   0 ,0.,x }, g) );
-    vds.push_back( boost::add_vertex( { "station 5",  5, 67.920930000,  20 ,0.,x }, g) );
-    vds.push_back( boost::add_vertex( { "station 6",  6, 67.241720700,  30 ,0.,x }, g) );
-    vds.push_back( boost::add_vertex( { "station 7",  7, 67.920930000,   0 ,0.,x }, g) );
-    vds.push_back( boost::add_vertex( { "station 8",  8, 67.241720700,  50 ,0.,x }, g) );
-    vds.push_back( boost::add_vertex( { "station 9",  9, 67.241720700,  20 ,0.,x }, g) );
-    vds.push_back( boost::add_vertex( { "station 10",10, 66.569303493,  15 ,0.,x }, g) );
-    vds.push_back( boost::add_vertex( { "station 11",11, 66.569303493,  40 ,0.,x }, g) );
-    vds.push_back( boost::add_vertex( { "station 12",12, 67.241720700,  10 ,0.,x }, g) );
-
+    vds.push_back( add_vertex({"station 0",  0, 70.000000000,-230 ,0.,x , std::move(stations[0])}));
+    vds.push_back( add_vertex({"station 1",  1, 70.000000000,  20 ,0.,x , std::move(stations[1])}) );
+    vds.push_back( add_vertex({"station 2",  2, 69.300000000,  25 ,0.,x , std::move(stations[2])}) );
+    vds.push_back( add_vertex({"station 3",  3, 69.300000000,   0 ,0.,x , std::move(stations[3])}) );
+    vds.push_back( add_vertex({"station 4",  4, 68.607000000,   0 ,0.,x , std::move(stations[4])}) );
+    vds.push_back( add_vertex({"station 5",  5, 67.920930000,  20 ,0.,x , std::move(stations[5])}) );
+    vds.push_back( add_vertex({"station 6",  6, 67.241720700,  30 ,0.,x , std::move(stations[6])}) );
+    vds.push_back( add_vertex({"station 7",  7, 67.920930000,   0 ,0.,x , std::move(stations[7])}) );
+    vds.push_back( add_vertex({"station 8",  8, 67.241720700,  50 ,0.,x , std::move(stations[8])}) );
+    vds.push_back( add_vertex({"station 9",  9, 67.241720700,  20 ,0.,x , std::move(stations[9])}) );
+    vds.push_back( add_vertex({"station 10",10, 66.569303493,  15 ,0.,x , std::move(stations[10])}) );
+    vds.push_back( add_vertex({"station 11",11, 66.569303493,  40 ,0.,x , std::move(stations[11])}) );
+    vds.push_back( add_vertex({"station 12",12, 67.241720700,  10 ,0.,x , std::move(stations[12])}) );
 
     using eprop_t = edge_properties;
 
@@ -82,7 +183,6 @@ make_init_graph(infrastructure_graph& g)
     boost::add_edge( vds[ 7], vds[ 9], ep12, g);
     boost::add_edge( vds[ 9], vds[10], ep13, g);
     boost::add_edge( vds[ 3], vds[ 9], ep14, g);
-
 }
 
 
@@ -249,7 +349,6 @@ make_reference(size_t num_nodes, size_t num_pipes)
     return std::make_pair(ref_sol_steady, ref_sol_unsteady);
 }
 
-
 int main()
 {
     size_t num_steps = 25;
@@ -289,6 +388,7 @@ int main()
     //ts0.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);    
     //auto sol_std =  ts0.guess();
     
+
 
     time_solver_t ts1(graph, temperature, Pset, flux_ext, inlet_nodes);
     ts1.set_initialization(guess_unstd);    

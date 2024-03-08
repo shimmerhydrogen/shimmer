@@ -13,15 +13,17 @@ matrix_t linearized_fluid_solver::x_pipes(){return x_pipes_;}
 const incidence& linearized_fluid_solver::get_incidence(){return inc_;}
 
 linearized_fluid_solver::linearized_fluid_solver(
+                        size_t at_step,
                         const bool& unsteady,
                         double tol, 
                         double dt,
                         double Tm,
                         const vector_t& mu,
                         const incidence & inc,
-                        const infrastructure_graph& g):
+                        const infrastructure_graph& g): at_step_(at_step),
+                        is_unsteady_(unsteady), 
                         tolerance_(tol), dt_(dt), Tm_(Tm), mu_(mu),
-                        inc_(inc), graph_(g), is_unsteady_(unsteady)  
+                        inc_(inc), graph_(g) 
 {
     MAX_ITERS_ = 500;
 
@@ -113,33 +115,44 @@ linearized_fluid_solver::momentum(
 
 pair_trip_vec_t
 linearized_fluid_solver::boundary(const vector_t& area_pipes,
-         double p_in,
          const vector_t& flux,
-         const vector_t& flux_ext,
-         const vector_t& inlet_nodes,
          equation_of_state *eos)
 {
-    auto rho  = eos->density();
 
+    size_t offset =  num_nodes_ + num_pipes_;
+
+    auto rho  = eos->density();
     /// vel [m/s] velocity of the gas within pipes.
     vector_t vel = flux.cwiseQuotient(area_pipes.cwiseProduct(rho));
 
     sparse_matrix_t sId (num_nodes_, num_nodes_);
     sId.setIdentity();
-    auto triplets = build_triplets(sId, 0, num_nodes_ + num_pipes_);
 
-    vector_t rhs = flux_ext;
+    //std::vector<triplet_t> triplets;
+    //triplets.reserve(num_nodes_);
+    auto triplets = build_triplets(sId, 0, offset);
 
-/*
-    std::cout << "flux_ext: " <<  std::endl ;
-    for (int k = 0; k < flux_ext.size(); ++k)
-        std::cout <<"    " << flux_ext(k)<< std::endl ;
-    std::cout <<  std::endl ;
-*/
+    vector_t rhs(num_nodes_);
 
-    for(size_t i = 0; i < inlet_nodes.size(); i++)
+    int idx = 0;
+    auto v_range = boost::vertices(graph_);
+    for(auto itor = v_range.first; itor != v_range.second; itor++, idx++)
     {
-        size_t idx = inlet_nodes(i);
+        auto bnd =  graph_[*itor].node_station->boundary();
+
+        switch(bnd.type())
+        {
+            case constraint_type::L_EQUAL:
+                triplets.push_back(triplet_t(idx + offset, idx + offset, 1.));
+                break;
+            case constraint_type::P_EQUAL:            
+                triplets.push_back(triplet_t(idx + offset, idx, 1.));
+                break;
+            default:
+                throw std::invalid_argument("Boundary type not valid.");
+        }
+        rhs(idx) = bnd.value(at_step_);
+    }
 
         /*
         if (vel(idx) > 0.0)
@@ -155,15 +168,6 @@ linearized_fluid_solver::boundary(const vector_t& area_pipes,
         else
             rhs(idx) = 0.0;
         */
-
-            // Change equation to impose pressure instead of flux
-            triplets.push_back(triplet_t(num_pipes_ + num_nodes_ + idx, idx, 1.));
-            sId.coeffRef(idx, idx) = 0.0;
-            rhs(idx) = p_in;
-    }
-
-    auto t_sId_bcnd = build_triplets(sId, num_nodes_+num_pipes_, num_nodes_+num_pipes_);
-    triplets.insert(triplets.begin(), t_sId_bcnd.begin(), t_sId_bcnd.end());
 
     return  std::make_pair(triplets, rhs); 
 }
@@ -238,8 +242,6 @@ bool linearized_fluid_solver::convergence(
 
 void
 linearized_fluid_solver::run(const vector_t& area_pipes,
-                            const vector_t& inlet_nodes,
-                            double p_in,
                             const vector_t& flux_ext,
                             const variable& var_guess,
                             variable& var_time,
@@ -272,7 +274,7 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
         auto [c2_nodes, c2_pipes] = eos->speed_of_sound(this); 
         auto mass = continuity(var_time.pressure, c2_nodes);
         auto mom  = momentum(var_.pressure, press_pipes_, var_.flux, var_time.flux, c2_pipes);       
-        auto bcnd = boundary(area_pipes, p_in, var_.flux,flux_ext, inlet_nodes, eos);
+        auto bcnd = boundary(area_pipes, var_.flux, eos);
         auto [LHS, rhs]= assemble(mass, mom, bcnd);
 
 /*

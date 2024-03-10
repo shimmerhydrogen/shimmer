@@ -107,13 +107,19 @@ make_init_graph(infrastructure_graph& g)
         switch(station_type_vec[i])
         {
             case(station_type::INLET):
+            {
+                auto sin = make_inlet(Pset);
                 stations[i] = std::make_unique<inlet_station>();
-                stations[i]->set_state(Pset);
+                stations[i]->set_state(sin);
                 break;
+            }
             case(station_type::OUTLET):
+            {
+                auto sout = make_outlet(Gsnam.col(i));
                 stations[i] = std::make_unique<outlet_station>();
-                stations[i]->set_state(Gsnam.col(i));
+                stations[i]->set_state(sout);
                 break;
+            }
             case(station_type::JUNCTION):
                 stations[i] = std::make_unique<junction>();
                 break;

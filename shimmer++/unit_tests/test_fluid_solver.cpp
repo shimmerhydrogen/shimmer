@@ -37,14 +37,19 @@ make_init_graph(infrastructure_graph& g)
     double pressure_in = 5101325.0; 
     vector_t flux_ext(num_nodes);
     flux_ext << 0.0, 30.80, 15.4;
+
+    auto sint0 = make_inlet(pressure_in);
+    auto sout1 = make_outlet(flux_ext(1));
+    auto sout2 = make_outlet(flux_ext(2));
+
     //---------------------------------------------------------------
     std::vector<std::unique_ptr<station>> stations(num_nodes);
     stations[0] = std::make_unique<inlet_station>();
-    stations[0]->set_state(pressure_in);
+    stations[0]->set_state(sint0);
     stations[1] = std::make_unique<outlet_station>();
-    stations[1]->set_state(flux_ext(1));
+    stations[1]->set_state(sout1);
     stations[2] = std::make_unique<outlet_station>();
-    stations[2]->set_state(flux_ext(2));
+    stations[2]->set_state(sout2);
     //---------------------------------------------------------------
     std::vector<vertex_descriptor> vds;
 
@@ -80,6 +85,8 @@ make_init_graph(infrastructure_graph& g)
     boost::add_edge( vds[2], vds[1], ep2, g);
 }
 
+
+
 matrix_t 
 make_mass_fraction(size_t size)
 {
@@ -88,6 +95,7 @@ make_mass_fraction(size_t size)
 
     return  mass_frac; 
 }
+
 
 
 gerg_params
@@ -114,6 +122,7 @@ make_gerg(size_t size)
 
     return gerg;
 }
+
 
 
 int main()

@@ -60,114 +60,35 @@ constraint::check(double p, double l, size_t step)
     switch(type_)
     {
         case L_LOWER_EQUAL:             
-            return (l < (values_[step] + 1.e-14));  
+            return (l < (value(step) + 1.e-14));  
         case L_GREATER_EQUAL:             
-            return (l > (values_[step] - 1.e-14));  
+            return (l > (value(step) - 1.e-14));  
         case L_EQUAL:
-            return  (std::abs(l - values_[step]) < 1.e-14);
+            return  (std::abs(l - value(step)) < 1.e-14);
         case P_LOWER_EQUAL:             
-            return (p < (values_[step] + 1.e-14));  
+            return (p < (value(step) + 1.e-14));  
         case P_GREATER_EQUAL:             
-            return (p > (values_[step] - 1.e-14));  
+            return (p > (value(step) - 1.e-14));  
         case P_EQUAL:
-            return (std::abs(p - values_[step]) < 1.e-14);
+            return (std::abs(p - value(step)) < 1.e-14);
         default:
             throw std::invalid_argument("Boundary conditions not specified");
     }           
 }
 
 
-
-state::state(const constraint& b,
-             const constraint& i,
-             const std::vector<constraint>& e):
-             boundary(b), internal(i), externals(e){};
-
-
-
-junction::junction()
+std::vector<constraint>
+build_user_constraints(const std::vector<pair_input_t>& user_limits)
 {
-    s0.boundary = constraint(hardness_type::BOUNDARY, constraint_type::L_EQUAL, 0.0);
-}
-
-
-void
-remi_wo_backflow::set_state(double Pset, const std::vector<pair_input_t>& user_limits_s0)
-{
-    auto s0_bnd = constraint(hardness_type::BOUNDARY,
-                                constraint_type::P_EQUAL, Pset);
-    auto s0_int = constraint(hardness_type::HARD,
-                                constraint_type::L_LOWER_EQUAL, 0.0); 
-
-
-    std::vector<constraint> s0_ext(user_limits_s0.size());
+   std::vector<constraint> externals(user_limits.size());
     size_t i = 0;
-    for(const auto&  ec : user_limits_s0) 
-        s0_ext[i++] = constraint(hardness_type::SOFT, user_limits_s0[i].first,
-                                                    user_limits_s0[i].second);
-
-    states_[0] = state(s0_bnd, s0_int, s0_ext);
+    for(const auto&  ec : user_limits) 
+        externals[i++] = constraint(hardness_type::SOFT, 
+                                user_limits[i].first,
+                                user_limits[i].second);
+    return externals;
 }
 
-
-
-// WK: This functions are equal since the type of the values changes. Improve this
-void
-remi_wo_backflow::set_state(const vector_t& Pset, const std::vector<pair_input_t>& user_limits_s0)
-{
-    auto s0_bnd = constraint(hardness_type::BOUNDARY,
-                                constraint_type::P_EQUAL, Pset);
-    auto s0_int = constraint(hardness_type::HARD,
-                                constraint_type::L_LOWER_EQUAL, 0.0); 
-
-
-    std::vector<constraint> s0_ext(user_limits_s0.size());
-    size_t i = 0;
-    for(const auto&  ec : user_limits_s0) 
-        s0_ext[i++] = constraint(hardness_type::SOFT, user_limits_s0[i].first,
-                                                    user_limits_s0[i].second);
-
-    states_[0] = state(s0_bnd, s0_int, s0_ext);
-}
-
-
-
-// WK: This functions are equal since the type of the values changes. Improve this
-void 
-remi_wo_backflow::set_state_to_switch(double Pset,
-            const std::vector<pair_input_t>& user_limits_s1)
-{
-    auto s1_bnd = constraint(hardness_type::BOUNDARY,
-                                constraint_type::L_EQUAL, 0.0); 
-    auto s1_int = constraint(hardness_type::HARD,
-                                constraint_type::P_GREATER_EQUAL, Pset);
-
-    std::vector<constraint> s1_ext(user_limits_s1.size());
-    size_t i = 0;
-    for(const auto&  ec : user_limits_s1)
-        s1_ext[i++] = constraint(hardness_type::SOFT, user_limits_s1[i].first,
-                                                    user_limits_s1[i].second);
-    states_[1] = state(s1_bnd, s1_int, s1_ext);
-}
-
-
-void 
-remi_wo_backflow::set_state_to_switch(const vector_t& Pset,
-            const std::vector<pair_input_t>& user_limits_s1)
-{
-    auto s1_bnd = constraint(hardness_type::BOUNDARY,
-                                constraint_type::L_EQUAL, 0.0); 
-
-    auto s1_int = constraint(hardness_type::HARD,
-                                constraint_type::P_GREATER_EQUAL, Pset);
-
-    std::vector<constraint> s1_ext(user_limits_s1.size());
-    size_t i = 0;
-    for(const auto&  ec : user_limits_s1)
-        s1_ext[i++] = constraint(hardness_type::SOFT, user_limits_s1[i].first,
-                                                    user_limits_s1[i].second);
-    states_[1] = state(s1_bnd, s1_int, s1_ext);
-}
 
 
 void 
@@ -175,7 +96,7 @@ remi_wo_backflow::switch_state()
 {
     count_++;
     index_ = count_%num_states_;
-    std::cout << "Switch done" << std::endl;
+    std::cout << "SWITCH done!" << std::endl;
 }
 
 
@@ -189,16 +110,17 @@ remi_wo_backflow::check_hard(double p, double l, size_t step)
     return false;
 }
 
+
 bool
 remi_wo_backflow::check_soft(double p, double l, size_t step)
 {
     bool success = true; 
     for(auto& e : states_[index_].externals)
     {
-        if(e.check(p, l, step))
+        if(!e.check(p, l, step))
         {
             success = false;
-            std::cout << "WARNING: REMI_WO constraint violated => "
+            std::cout << "WARNING: REMI_WO constraint violated with ("<<p << "," << l<< ") ... "
                       << e.type() << " " << e.value(step) <<std::endl;                        
         }
     }
@@ -207,6 +129,50 @@ remi_wo_backflow::check_soft(double p, double l, size_t step)
 }
 
 const constraint & remi_wo_backflow::boundary(){ return states_[index_].boundary;}
+
+
+void 
+injection_wp_control::switch_state()
+{
+    count_++;
+    index_ = count_%num_states_;
+    std::cout << "SWITCH done!" << std::endl;
+}
+
+
+bool
+injection_wp_control::check_hard(double p, double l, size_t step)
+{
+    if(states_[index_].boundary.check(p, l, step)) 
+        return true;
+
+    switch_state();
+    return false;
+}
+
+bool
+injection_wp_control::check_soft(double p, double l, size_t step)
+{
+    bool success = true; 
+    for(auto& e : states_[index_].externals)
+    {
+        if(!e.check(p, l, step))
+        {
+            success = false;
+            std::cout << "WARNING: INJ WP constraint violated with ("<<p << "," << l<< ") ... "
+                      << e.type() << " " << e.value(step) <<std::endl;                        
+        }
+    }
+
+    return success;
+}
+
+const constraint & injection_wp_control::boundary(){ 
+    std::cout<< " * index :" << index_ << std::endl;
+    std::cout<< " * states.size :" << states_.size() << std::endl;
+
+    return states_[index_].boundary;}
+
 
 
 } //end namespace shimmer

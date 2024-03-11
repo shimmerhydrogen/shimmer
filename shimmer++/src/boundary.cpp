@@ -30,6 +30,7 @@ std::ostream& operator <<(std::ostream& os, const constraint_type& o)
 }
 
 
+
 constraint::constraint(const hardness_type& h, const constraint_type& t, double v):
             hardness_(h), type_(t), value_(v)
 {
@@ -42,6 +43,8 @@ constraint::constraint(const hardness_type& h, const constraint_type& t, double 
     is_varying_in_time = false;
 }
 
+
+
 constraint::constraint(const hardness_type& h, const constraint_type& t, const vector_t& v):
             hardness_(h), type_(t), values_(v)
 {
@@ -52,6 +55,7 @@ constraint::constraint(const hardness_type& h, const constraint_type& t, const v
     }
     is_varying_in_time = true;
 }
+
 
 
 bool
@@ -77,6 +81,7 @@ constraint::check(double p, double l, size_t step)
 }
 
 
+
 std::vector<constraint>
 build_user_constraints(const std::vector<pair_input_t>& user_limits)
 {
@@ -96,19 +101,30 @@ remi_wo_backflow::switch_state()
 {
     count_++;
     index_ = count_%num_states_;
-    std::cout << "SWITCH done!" << std::endl;
 }
+
 
 
 bool
 remi_wo_backflow::check_hard(double p, double l, size_t step)
 {
-    if(states_[index_].boundary.check(p, l, step)) 
-        return true;
 
+    if(states_[index_].internal.check(p, l, step)) 
+    {
+        return true;
+    }
+
+
+    std::cout << "WARNING HARD: REMI_WO_BACKFLOW constraint violated => SWITCH done." << std::endl;
+    std::cout << " * REMI_WO_BACKFLOW ("<< index_ <<"): " << std::endl;
+    std::cout << "  ** press: "<< p << std::endl;
+    std::cout << "  ** lrate: "<< l << std::endl;
+    std::cout << "  ** hard : "<< states_[index_].internal.type() 
+                              << states_[index_].internal.value(step) << std::endl;
     switch_state();
     return false;
 }
+
 
 
 bool
@@ -120,7 +136,7 @@ remi_wo_backflow::check_soft(double p, double l, size_t step)
         if(!e.check(p, l, step))
         {
             success = false;
-            std::cout << "WARNING: REMI_WO constraint violated with ("<<p << "," << l<< ") ... "
+            std::cout << "WARNING SOFT: REMI_WO_BACKFLOW constraint violated with ("<<p << "," << l<< ") ... "
                       << e.type() << " " << e.value(step) <<std::endl;                        
         }
     }
@@ -131,24 +147,37 @@ remi_wo_backflow::check_soft(double p, double l, size_t step)
 const constraint & remi_wo_backflow::boundary(){ return states_[index_].boundary;}
 
 
+
 void 
 injection_wp_control::switch_state()
 {
     count_++;
     index_ = count_%num_states_;
-    std::cout << "SWITCH done!" << std::endl;
+
+    std::cout<< "INJ_WP: INSIDE SWITCH_STATEEEEEEEEEEEEEEEEEEEEEEEEEeee" <<std::endl;
 }
+
 
 
 bool
 injection_wp_control::check_hard(double p, double l, size_t step)
 {
-    if(states_[index_].boundary.check(p, l, step)) 
+
+    if(states_[index_].internal.check(p, l, step)){
+        std::cout << "INJ_WP_CONTROL ("<< index_ <<"): " << std::endl;
+        std::cout << "  * press: "<< p << std::endl;
+        std::cout << "  * lrate: "<< l << std::endl;
+        std::cout << "  * hard : "<< states_[index_].internal.type() 
+                                  << states_[index_].internal.value(step) << std::endl;
         return true;
+    } 
 
     switch_state();
+    std::cout << "WARNING HARD: INJ_WP_CONTROL constraint violated => SWITCH done." << std::endl;
     return false;
 }
+
+
 
 bool
 injection_wp_control::check_soft(double p, double l, size_t step)
@@ -166,6 +195,7 @@ injection_wp_control::check_soft(double p, double l, size_t step)
 
     return success;
 }
+
 
 const constraint & injection_wp_control::boundary(){ 
     std::cout<< " * index :" << index_ << std::endl;

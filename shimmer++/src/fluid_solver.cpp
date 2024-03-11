@@ -1,6 +1,7 @@
 #include <Eigen/SparseLU>
 #include "../src/fluid_solver.h"
 #include <iomanip>
+#include <fstream>
 namespace shimmer{
 
 
@@ -58,19 +59,27 @@ linearized_fluid_solver::continuity(
     triplets.insert(triplets.begin(), t_sA.begin(), t_sA.end());
 
     vector_t rhs = phi_vec.array() * pressure_old.array();
-
-/*
+    /*
     std::cout << "* PHI: " <<  std::endl;
     for (int k = 0; k < phi_vec.size(); ++k)
         std::cout << std::setprecision(16) <<phi_vec(k)<< std::endl;
     std::cout <<  std::endl ;
+    */
+    
+    std::ofstream ofs;
+    ofs.open("p_n_karol.dat", std::ios_base::app);
+
+    for(size_t j = 0; j < pressure_old.size(); j++)
+        ofs << std::setprecision(16) << pressure_old(j) << " ";
+    ofs << std::endl; 
+    ofs.close();
 
     
     std::cout << "* p_n: " <<  std::endl;
     for (int k = 0; k < pressure_old.size(); ++k)
         std::cout << std::setprecision(16) << pressure_old(k)<< std::endl;
-    std::cout <<  std::endl ;
-*/
+    std::cout <<  std::endl;
+
     return std::make_pair(triplets, rhs);
 }
 
@@ -94,11 +103,19 @@ linearized_fluid_solver::momentum(
     vector_t r = -rf; 
     vector_t rhs = -0.5 * rf.cwiseProduct(flux);
 
+
     if (is_unsteady_)
     {
         vector_t ri = resistance_inertia(dt_, pipes_pressure, inc_, graph_);
         r -= ri; 
         rhs -= ri.cwiseProduct(flux_old);
+
+        /*
+        std::cout << "* ri: " <<  std::endl;
+        for (int k = 0; k < ri.size(); ++k)
+            std::cout << std::setprecision(16) <<ri(k)<< std::endl;
+        std::cout <<  std::endl ;
+        */
     }
     
     vector_t r_scale = r.cwiseQuotient(ADP_p);
@@ -109,6 +126,42 @@ linearized_fluid_solver::momentum(
     triplets.insert(triplets.begin(), t_sR.begin(), t_sR.end());
 
     vector_t rhs_scale = rhs.cwiseQuotient(ADP_p);
+
+    /*
+    std::cout << "* nodes_pressure: " <<  std::endl;
+    for (int k = 0; k < nodes_pressure.size(); ++k)
+        std::cout << std::setprecision(16) <<nodes_pressure(k)<< std::endl;
+    std::cout <<  std::endl ;
+    */
+    /*
+    std::cout << "* rf: " <<  std::endl;
+    for (int k = 0; k < rf.size(); ++k)
+        std::cout << std::setprecision(16) <<rf(k)<< std::endl;
+    std::cout <<  std::endl ;
+
+
+    std::cout << "* c2_pipes: " <<  std::endl;
+    for (int k = 0; k < c2.size(); ++k)
+        std::cout << std::setprecision(16) <<c2(k)<< std::endl;
+    std::cout <<  std::endl ;
+
+
+    std::cout << "* ADP_p: " <<  std::endl;
+    for (int k = 0; k < ADP_p.size(); ++k)
+        std::cout << std::setprecision(16) <<ADP_p(k)<< std::endl;
+    std::cout <<  std::endl ;
+
+    std::cout << "* r_scale: " <<  std::endl;
+    for (int k = 0; k < r_scale.size(); ++k)
+        std::cout << std::setprecision(16) <<r_scale(k)<< std::endl;
+    std::cout <<  std::endl ;
+
+    std::cout << "* rhs_scale: " <<  std::endl;
+    for (int k = 0; k < rhs_scale.size(); ++k)
+        std::cout << std::setprecision(16) <<rhs_scale(k)<< std::endl;
+    std::cout <<  std::endl ;
+    */
+
     return std::make_pair(triplets, rhs_scale);
 }
 
@@ -207,6 +260,13 @@ linearized_fluid_solver::assemble(
     return std::make_pair(LHS, rhs);
 }
 
+/*
+bool linearized_fluid_solver::convergence_denerg( 
+                const vector_t& sol)
+{
+
+}
+*/
 
 bool linearized_fluid_solver::convergence( 
                 const vector_t& sol)
@@ -225,7 +285,7 @@ bool linearized_fluid_solver::convergence(
 
     var_.pressure = press_next;
     var_.flux  = flux_next;
-
+    var_.L_rate = sol.tail(num_nodes_);
 /*
     std::cout << "sol: ("<< norm_mass<< " , " << norm_mom << ")" <<  std::endl ;
     for (int k = 0; k < sol.size(); ++k)
@@ -240,11 +300,11 @@ bool linearized_fluid_solver::convergence(
 
 
 
-void
+bool
 linearized_fluid_solver::run(const vector_t& area_pipes,
-                            const vector_t& flux_ext,
+                            //const vector_t& flux_ext,
                             const variable& var_guess,
-                            variable& var_time,
+                            const variable& var_time,
                             equation_of_state *eos)
 {
     press_pipes_.resize(num_pipes_);
@@ -252,7 +312,7 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
     // Initialization of varibales with solution in time n; 
     var_.pressure = var_guess.pressure;
     var_.flux  = var_guess.flux;
-    var_.L_rate = flux_ext;
+    var_.L_rate = vector_t::Zero(num_nodes_);//flux_ext;
     std::cout<< "Initializing ..."<< std::endl;
 
     // Here it takes the x_nodes_/x_pipes_ if needed. For example, for gerg, here it
@@ -277,7 +337,8 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
         auto bcnd = boundary(area_pipes, var_.flux, eos);
         auto [LHS, rhs]= assemble(mass, mom, bcnd);
 
-/*
+
+        /*
         //std::vector<triplet_t> LHS_MOM  = mom.second;
         std::cout << "Momemtum " << std::endl;
         for (const triplet_t & trip : mom.first)
@@ -286,7 +347,7 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
                             << " , " << trip.col() << " , " << trip.value() 
                             << " ; " << std::endl ;
         }
-*/
+        */
 
         Eigen::SparseLU<sparse_matrix_t> solver;
         solver.compute(LHS);
@@ -306,7 +367,15 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
             exit(1);
         }
 
-/*               
+         
+
+        vector_t sol = solver.solve(rhs);
+        if(solver.info() != Eigen::Success) {
+            std::cout << "Error solving system" <<std::endl;
+            exit(1);
+        } 
+
+    /*
         size_t count = 0; 
         for (int k = 0; k < LHS.outerSize(); ++k)
         {
@@ -317,31 +386,21 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
                             << " ; " << std::endl ;
             }
         }
+    
 
         std::cout << "rhs = "<< std::endl;
         for (int k = 0; k < rhs.size(); ++k)
             std::cout << "  " << rhs[k]  <<  std::endl;
-*/        
-
-        vector_t sol = solver.solve(rhs);
-        if(solver.info() != Eigen::Success) {
-            std::cout << "Error solving system" <<std::endl;
-            exit(1);
-        } 
-
-    /*
+    */     
         std::cout << " * XXX_k at iter ...."<< iter << std::endl;
         for (int k = 0; k < sol.size(); ++k)
             std::cout << "  " << sol[k]  <<  std::endl;
-    */
+    
+        std::cout<< "Solver at iteration k ..."<< iter << std::endl;
 
         if (convergence(sol))
         {
-
-            var_time.pressure = var_.pressure;
-            var_time.flux = var_.flux;
-            var_time.L_rate = sol.tail(num_nodes_);
-            return; 
+            return true; 
         }
         
     }
@@ -350,6 +409,44 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
 }
 
 
+
+bool
+linearized_fluid_solver::check_hard_constraints(size_t step)
+{
+    bool pass_all = true;
+    int i = 0;
+    auto v_range = boost::vertices(graph_);
+    for(auto itor = v_range.first; itor != v_range.second; itor++, i++)
+    {
+        bool pass = graph_[*itor].node_station->check_hard(var_.pressure[i], var_.L_rate[i], step);
+        std::cout<< " * Hard ("<< i << ") : "<< pass << std::endl;  
+        pass_all = pass_all && pass;
+    }
+
+    return pass_all;
+}    
+
+
+bool
+linearized_fluid_solver::check_soft_constraints(size_t step)
+{
+    int i = 0;
+    auto v_range = boost::vertices(graph_);
+    for(auto itor = v_range.first; itor != v_range.second; itor++, i++)
+        graph_[*itor].node_station->check_soft(var_.pressure[i], var_.L_rate[i], step);
+}
+
+
+bool
+linearized_fluid_solver::check_constraints(size_t step)
+{
+    if(check_hard_constraints(step))
+    {
+        check_soft_constraints(step);
+        return true;
+    }
+    return false;
+}
 
 
 

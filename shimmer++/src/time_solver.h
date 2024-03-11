@@ -84,30 +84,6 @@ public:
     }
 
 
-    bool
-    check_hard_constraints(size_t step)
-    {
-        bool pass_all = false;
-        int i = 0;
-        auto v_range = boost::vertices(graph_);
-        for(auto itor = v_range.first; itor != v_range.second; itor++, i++)
-        {
-            bool pass = graph_[*itor].node_station->check_hard(var_.pressure[i], var_.L_rate[i], step);
-            pass_all = pass_all || pass;
-        }
-
-        return pass_all;
-    }    
-
-
-    void
-    check_soft_constraints(size_t step)
-    {
-        int i = 0;
-        auto v_range = boost::vertices(graph_);
-        for(auto itor = v_range.first; itor != v_range.second; itor++, i++)
-            graph_[*itor].node_station->check_soft(var_.pressure[i], var_.L_rate[i], step);
-    }
 
 
     void
@@ -120,39 +96,55 @@ public:
         //matrix_t y_nodes = make_mass_fraction(num_nodes);
         //matrix_t y_pipes = inc_.matrix_in().transpose() * y_nodes;    
 
+        size_t MAX_CONSTRAINT_ITER = 10;
+
         bool unsteady = true;
 
-        matrix_t var_in_time(num_steps, num_edges(graph_) + 2 * num_vertices(graph_));
+        matrix_t var_in_time(num_steps +1, num_edges(graph_) + 2 * num_vertices(graph_));
  
         var_ = var_guess_;
         var_in_time.row(0) =  var_.make_vector();
 
         double t = 0;
         for(size_t it = 1; it < num_steps; it++, t+=dt)
-        {   
-            /*for(size_t ic = 0; ic < MAX_CONSTRAINT_ITER; ic++)
+        {  
+            std::cout<<"========================================================"<< std::endl;
+            std::cout<<"========================================================"<< std::endl;
+            std::cout << "Solving at time ...."<< it <<std::endl;
+            std::cout<<"========================================================"<< std::endl;
+            std::cout<<"========================================================"<< std::endl;
+
+            size_t ic; 
+
+            for(ic = 0; ic <= MAX_CONSTRAINT_ITER; ic++)
             {
-            */
-            std::cout << "Solving at time ...."<<t<< " with iteration..."<< it<< std::endl;
-            EQ_OF_STATE eos; 
-            eos.compute_molar_mass(y_nodes, y_pipes);
+                std::cout<<"***************************************************"<< std::endl;
+                std::cout << " Iteration it ..."<<ic<< " ... at time "<< it << std::endl;
+                std::cout<<"***************************************************"<< std::endl;
 
-            // To be finish when it is clear how x changes and modifies mu. 
-            auto mu = viscosity<viscosity_type>(temperature_, graph_); 
+                EQ_OF_STATE eos; 
+                eos.compute_molar_mass(y_nodes, y_pipes);
 
-            linearized_fluid_solver lfs(it, unsteady, tol, dt, temperature_, mu, inc_, graph_);
-            lfs.run(area_pipes_, flux_ext_.row(it), var_guess_, var_, &eos);  
+                // To be finish when it is clear how x changes and modifies mu. 
+                auto mu = viscosity<viscosity_type>(temperature_, graph_); 
+
+                linearized_fluid_solver lfs(it, unsteady, tol, dt, temperature_, mu, inc_, graph_);
+                //lfs.run(area_pipes_, flux_ext_.row(it), var_guess_, var_, &eos);  
+                lfs.run(area_pipes_, var_guess_, var_, &eos);  
+                if(lfs.check_constraints(it))
+                {
+                    std::cout<< "++++++++++++++++++**** MODIFIED VARIABLE ****++++++++++++++++++++++ " << std::endl;
+                    var_ =  lfs.get_variable();
+                    break;
+                }
+            }
+            
+            if(ic == MAX_CONSTRAINT_ITER)
+                std::cout << "ERROR: FAILURE to apply HARD constraints. Max number of iterations has been reached.";
+
             var_in_time.row(it) =  var_.make_vector();
 
-            check_soft_constraints(it);
-            check_hard_constraints(it);
-
-            //if(check_hard_constraints(it))
-            //    break;
-            //}
-            //if(it == MAX_CONSTRAINT_ITER)
-            //    std::cout << "ERROR: No success in applying constraints.";
-
+            //var_guess_ = var_;
         }
 
         std::ofstream ofs("var_in_time.dat");

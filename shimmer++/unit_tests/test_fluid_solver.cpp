@@ -174,13 +174,16 @@ int main()
     auto mu = viscosity<viscosity_type::Kukurugya>(temperature, graph); 
 
     linearized_fluid_solver lfs(0, unsteady,tolerance, dt,temperature, mu,inc, graph);
-    lfs.run(area_pipes, flux_ext, var, var, &gerg_eos);
+    //lfs.run(area_pipes, flux_ext, var, var, &gerg_eos);
+    lfs.run(area_pipes, var, var, &gerg_eos);
+    auto sol = lfs.get_variable().make_vector();    
 
+    /*
     vector_t sol(num_bcnd + num_pipes + num_nodes);
     sol.head(num_nodes) = var.pressure;
     sol.segment(num_nodes, num_pipes) = var.flux;
     sol.tail(num_bcnd) = var.L_rate;
-
+    */
     bool pass = verify_test("Test fluid-dynamic solver", sol, ref_sol); 
 
     return !pass;

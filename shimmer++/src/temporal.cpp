@@ -12,7 +12,7 @@ variable::variable(const vector_t&p,const vector_t&f,const vector_t&l)
 
 
 vector_t
-variable::make_vector()
+variable::make_vector() const
 {
     size_t num_pipes = flux.size();
     size_t num_nodes = pressure.size();

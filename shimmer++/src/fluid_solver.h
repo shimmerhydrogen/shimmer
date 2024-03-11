@@ -88,21 +88,24 @@ public:
     convergence(const vector_t& sol);
 
 
-    void
+    bool 
     run(const vector_t& area_pipes,
-        const vector_t& flux_ext,
+        //const vector_t& flux_ext,
         const variable& var_guess,
-        variable& var_time,
+        const variable& var_time,
         equation_of_state *eos
         );
-                          
-
+    bool check_hard_constraints(size_t step);
+    bool check_soft_constraints(size_t step);
+    bool check_constraints(size_t step);
+               
     double temperature();         
     vector_t pressure_nodes();
     vector_t pressure_pipes();
     matrix_t x_nodes();
     matrix_t x_pipes();
     const incidence& get_incidence(); 
+    inline const variable& get_variable(){return var_;}
 };
 
 

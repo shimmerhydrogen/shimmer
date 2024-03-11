@@ -56,3 +56,7 @@ add_test(NAME test_time_cycle COMMAND test_time_cycle)
 add_executable(test_stations test_stations.cpp ${SHIMMER_SOURCES_T})
 target_link_libraries(test_stations ${LINK_LIBS})
 add_test(NAME test_stations COMMAND test_stations)
+
+add_executable(test_non-pipe_at_nodes test_non-pipe_at_nodes.cpp ${SHIMMER_SOURCES_T})
+target_link_libraries(test_non-pipe_at_nodes ${LINK_LIBS})
+add_test(NAME test_non-pipe_at_nodes COMMAND test_stations)

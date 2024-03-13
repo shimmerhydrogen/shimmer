@@ -107,19 +107,13 @@ make_init_graph(infrastructure_graph& g)
         switch(station_type_vec[i])
         {
             case(station_type::INLET):
-            {
-                auto sin = make_inlet(Pset);
                 stations[i] = std::make_unique<inlet_station>();
-                stations[i]->set_state(sin);
+                stations[i]->set_boundary(Pset);
                 break;
-            }
             case(station_type::OUTLET):
-            {
-                auto sout = make_outlet(Gsnam.col(i));
                 stations[i] = std::make_unique<outlet_station>();
-                stations[i]->set_state(sout);
+                stations[i]->set_boundary(Gsnam.col(i));
                 break;
-            }
             case(station_type::JUNCTION):
                 stations[i] = std::make_unique<junction>();
                 break;
@@ -189,6 +183,7 @@ make_init_graph(infrastructure_graph& g)
     boost::add_edge( vds[ 7], vds[ 9], ep12, g);
     boost::add_edge( vds[ 9], vds[10], ep13, g);
     boost::add_edge( vds[ 3], vds[ 9], ep14, g);
+
 }
 
 
@@ -355,6 +350,7 @@ make_reference(size_t num_nodes, size_t num_pipes)
     return std::make_pair(ref_sol_steady, ref_sol_unsteady);
 }
 
+
 int main()
 {
     size_t num_steps = 25;
@@ -389,20 +385,18 @@ int main()
 
     using time_solver_t = time_solver<papay, viscosity_type::Constant>; 
 
-    
-    //time_solver_t ts0(graph, temperature, Pset, flux_ext, inlet_nodes);
-    //ts0.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);    
-    //auto sol_std =  ts0.guess();
-    
+    /*
+    time_solver_t ts0(graph, temperature, Pset, flux_ext, inlet_nodes);
+    ts0.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);    
+    auto sol_std =  ts0.guess();
+    */
 
-
-    time_solver_t ts1(graph, temperature, Pset, flux_ext, inlet_nodes);
+    time_solver_t ts1(graph, temperature, flux_ext);
     ts1.set_initialization(guess_unstd);    
     ts1.advance(dt, num_steps, tol, y_nodes, y_pipes);
     auto sol_set_unstd  = ts1.solution();
 
-    
-    time_solver_t ts2(graph, temperature, Pset, flux_ext, inlet_nodes);
+    time_solver_t ts2(graph, temperature, flux_ext);
     ts2.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);    
     ts2.advance(dt, num_steps, tol, y_nodes, y_pipes);
     auto sol_init_unstd = ts2.solution();

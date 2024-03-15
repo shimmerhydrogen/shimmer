@@ -50,8 +50,13 @@ linearized_fluid_solver::continuity(
     size_t num_nodes_ = num_vertices(graph_); 
     size_t num_pipes_ = num_edges(graph_);
 
+<<<<<<< HEAD
     vector_t phi_vec = is_unsteady_? phi_vector(dt_, c2, graph_) 
                                    : vector_t::Zero(num_nodes_);
+=======
+    vector_t phi_vec = (is_unsteady_)? phi_vector(dt_, c2, graph_) 
+                                     : vector_t::Zero(num_nodes_);
+>>>>>>> d40a451 (Solve steady state computation in fluid_solver.)
     auto t_sPHI = build_triplets( phi_vec);
     auto t_sA   = build_triplets( inc_.matrix(), 0, num_nodes_ );
 
@@ -64,7 +69,7 @@ linearized_fluid_solver::continuity(
     for (int k = 0; k < phi_vec.size(); ++k)
         std::cout << std::setprecision(16) <<phi_vec(k)<< std::endl;
     std::cout <<  std::endl ;
-    */
+    
     
     std::ofstream ofs;
     ofs.open("p_n_karol.dat", std::ios_base::app);
@@ -74,11 +79,11 @@ linearized_fluid_solver::continuity(
     ofs << std::endl; 
     ofs.close();
 
-    
     std::cout << "* p_n: " <<  std::endl;
     for (int k = 0; k < pressure_old.size(); ++k)
         std::cout << std::setprecision(16) << pressure_old(k)<< std::endl;
     std::cout <<  std::endl;
+    */
 
     return std::make_pair(triplets, rhs);
 }
@@ -132,8 +137,7 @@ linearized_fluid_solver::momentum(
     for (int k = 0; k < nodes_pressure.size(); ++k)
         std::cout << std::setprecision(16) <<nodes_pressure(k)<< std::endl;
     std::cout <<  std::endl ;
-    */
-    /*
+
     std::cout << "* rf: " <<  std::endl;
     for (int k = 0; k < rf.size(); ++k)
         std::cout << std::setprecision(16) <<rf(k)<< std::endl;
@@ -174,15 +178,14 @@ linearized_fluid_solver::boundary(const vector_t& area_pipes,
 
     size_t offset =  num_nodes_ + num_pipes_;
 
+    // This is here due to the first code in matlab. But could be not necessary.
     auto rho  = eos->density();
     /// vel [m/s] velocity of the gas within pipes.
     vector_t vel = flux.cwiseQuotient(area_pipes.cwiseProduct(rho));
 
+
     sparse_matrix_t sId (num_nodes_, num_nodes_);
     sId.setIdentity();
-
-    //std::vector<triplet_t> triplets;
-    //triplets.reserve(num_nodes_);
     auto triplets = build_triplets(sId, 0, offset);
 
     vector_t rhs(num_nodes_);
@@ -206,21 +209,6 @@ linearized_fluid_solver::boundary(const vector_t& area_pipes,
         }
         rhs(idx) = bnd.value(at_step_);
     }
-
-        /*
-        if (vel(idx) > 0.0)
-        {
-            // Change equation to impose pressure instead of flux
-
-            // check if this is : 
-            //                 triplet_t(num_pipes_ + num_nodes_ + idx, idx, 1.))
-            triplets.push_back(triplet_t(num_pipes_ + num_nodes_ + idx, 0, 1.));
-            sId.coeffRef(idx, idx) = 0.0;
-            rhs(idx) = p_in(i);
-        }
-        else
-            rhs(idx) = 0.0;
-        */
 
     return  std::make_pair(triplets, rhs); 
 }
@@ -375,7 +363,8 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
             exit(1);
         } 
 
-    /*
+        /*
+        std::cout << "LHS : " <<std::endl;
         size_t count = 0; 
         for (int k = 0; k < LHS.outerSize(); ++k)
         {
@@ -387,15 +376,15 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
             }
         }
     
-
+     
         std::cout << "rhs = "<< std::endl;
         for (int k = 0; k < rhs.size(); ++k)
             std::cout << "  " << rhs[k]  <<  std::endl;
-    */     
+    
         std::cout << " * XXX_k at iter ...."<< iter << std::endl;
         for (int k = 0; k < sol.size(); ++k)
             std::cout << "  " << sol[k]  <<  std::endl;
-    
+        */    
         std::cout<< "Solver at iteration k ..."<< iter << std::endl;
 
         if (convergence(sol))

@@ -156,6 +156,9 @@ make_guess_unsteady(size_t num_nodes, size_t num_pipes)
     //---------------------------------------------------------------
     // Read L from Gsnam
     vector_t Lguess(num_nodes);
+    Lguess << -239, 25, 25, 0, 0,  20, 30, 0, 62.5, 20, 16.5,30, 10;
+
+    #if 0
     std::ifstream ifs("../unit_tests/gsnam.txt");
     if (!ifs.is_open()) 
     {
@@ -166,7 +169,7 @@ make_guess_unsteady(size_t num_nodes, size_t num_pipes)
     for (size_t icol = 0; icol < num_nodes; icol++)
         ifs >>  Lguess(icol);
     ifs.close();
-
+    #endif
     return variable(Pguess, Gguess, Lguess); 
 }
 
@@ -262,7 +265,7 @@ int main()
     double temperature = 293.15;
     double tol = 1e-4;
 
-    double tol_std = 1e-4; 
+    double tol_std = 1e-14; 
     double dt_std = 1;
     size_t MAX_ITER=1500;
   
@@ -281,28 +284,29 @@ int main()
 
     using time_solver_t = time_solver<papay, viscosity_type::Constant>; 
 
-    /*
-    time_solver_t ts0(graph, temperature, Pset, flux_ext, inlet_nodes);
-    ts0.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);    
-    auto sol_std =  ts0.guess();
-    */
+    
+    //time_solver_t ts0(graph, temperature, Pset, flux_ext, inlet_nodes);
+    //ts0.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);    
+    //auto sol_std =  ts0.guess();
+    
 
     time_solver_t ts1(graph, temperature, Pset, flux_ext, inlet_nodes);
     ts1.set_initialization(guess_unstd);    
     ts1.advance(dt, num_steps, tol, y_nodes, y_pipes);
     auto sol_set_unstd  = ts1.solution();
 
-    /*
+    
     time_solver_t ts2(graph, temperature, Pset, flux_ext, inlet_nodes);
     ts2.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);    
     ts2.advance(dt, num_steps, tol, y_nodes, y_pipes);
     auto sol_init_unstd = ts2.solution();
-    */
+    
     //---------------------------------------------------------------
+    std::cout << __FILE__ << std::endl; 
     auto [ref_std, ref_unstd] = make_reference(num_nodes, num_pipes);
     //bool pass0 = verify_test("time initialization", sol_std,  ref_std); 
     bool pass1 = verify_test("time solver with given init", sol_set_unstd, ref_unstd); 
-    //bool pass2 = verify_test("time solver computing  init", sol_init_unstd, ref_unstd); 
+    bool pass2 = verify_test("time solver computing  init", sol_init_unstd, ref_unstd); 
 
-    return !(pass1);
+    return !(pass1 && pass2);
 }

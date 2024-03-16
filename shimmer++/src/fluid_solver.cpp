@@ -50,13 +50,8 @@ linearized_fluid_solver::continuity(
     size_t num_nodes_ = num_vertices(graph_); 
     size_t num_pipes_ = num_edges(graph_);
 
-<<<<<<< HEAD
     vector_t phi_vec = is_unsteady_? phi_vector(dt_, c2, graph_) 
                                    : vector_t::Zero(num_nodes_);
-=======
-    vector_t phi_vec = (is_unsteady_)? phi_vector(dt_, c2, graph_) 
-                                     : vector_t::Zero(num_nodes_);
->>>>>>> d40a451 (Solve steady state computation in fluid_solver.)
     auto t_sPHI = build_triplets( phi_vec);
     auto t_sA   = build_triplets( inc_.matrix(), 0, num_nodes_ );
 

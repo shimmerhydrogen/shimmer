@@ -179,8 +179,10 @@ int main()
     infrastructure_graph g;
     std::vector<vertex_descriptor> vds;
 
-    auto add_vertex = [&g,&stations](vertex_properties&& vp) 
+    auto add_vertex = [&](vertex_properties&& vp, const vector_t& x_in, size_t i) 
     {
+        vp.gas_mixture = x_in;
+        vp.node_station = std::move(stations[i]);
         auto v = boost::add_vertex(g);
         g[v] = std::move(vp);
         return v;
@@ -189,19 +191,19 @@ int main()
     vector_t  x = vector_t::Zero(21);
     x(GAS_TYPE::CH4) = 1.0;
 
-    vds.push_back( add_vertex({"station 0",  0, 70.000000000,-230 ,0.,x , std::move(stations[0])}));
-    vds.push_back( add_vertex({"station 1",  1, 70.000000000,  20 ,0.,x , std::move(stations[1])}) );
-    vds.push_back( add_vertex({"station 2",  2, 69.300000000,  25 ,0.,x , std::move(stations[2])}) );
-    vds.push_back( add_vertex({"station 3",  3, 69.300000000,   0 ,0.,x , std::move(stations[3])}) );
-    vds.push_back( add_vertex({"station 4",  4, 68.607000000,   0 ,0.,x , std::move(stations[4])}) );
-    vds.push_back( add_vertex({"station 5",  5, 67.920930000,  20 ,0.,x , std::move(stations[5])}) );
-    vds.push_back( add_vertex({"station 6",  6, 67.241720700,  30 ,0.,x , std::move(stations[6])}) );
-    vds.push_back( add_vertex({"station 7",  7, 67.920930000,   0 ,0.,x , std::move(stations[7])}) );
-    vds.push_back( add_vertex({"station 8",  8, 67.241720700,  50 ,0.,x , std::move(stations[8])}) );
-    vds.push_back( add_vertex({"station 9",  9, 67.241720700,  20 ,0.,x , std::move(stations[9])}) );
-    vds.push_back( add_vertex({"station 10",10, 66.569303493,  15 ,0.,x , std::move(stations[10])}) );
-    vds.push_back( add_vertex({"station 11",11, 66.569303493,  40 ,0.,x , std::move(stations[11])}) );
-    vds.push_back( add_vertex({"station 12",12, 67.241720700,  10 ,0.,x , std::move(stations[12])}) );
+    vds.push_back( add_vertex(vertex_properties("station 0",  0, 70.000000000,-230 ,0.),x ,0));
+    vds.push_back( add_vertex(vertex_properties("station 1",  1, 70.000000000,  20 ,0.),x ,1));
+    vds.push_back( add_vertex(vertex_properties("station 2",  2, 69.300000000,  25 ,0.),x ,2));
+    vds.push_back( add_vertex(vertex_properties("station 3",  3, 69.300000000,   0 ,0.),x ,3));
+    vds.push_back( add_vertex(vertex_properties("station 4",  4, 68.607000000,   0 ,0.),x ,4));
+    vds.push_back( add_vertex(vertex_properties("station 5",  5, 67.920930000,  20 ,0.),x ,5));
+    vds.push_back( add_vertex(vertex_properties("station 6",  6, 67.241720700,  30 ,0.),x ,6));
+    vds.push_back( add_vertex(vertex_properties("station 7",  7, 67.920930000,   0 ,0.),x ,7));
+    vds.push_back( add_vertex(vertex_properties("station 8",  8, 67.241720700,  50 ,0.),x ,8));
+    vds.push_back( add_vertex(vertex_properties("station 9",  9, 67.241720700,  20 ,0.),x ,9));
+    vds.push_back( add_vertex(vertex_properties("station 10",10, 66.569303493,  15 ,0.),x ,10));
+    vds.push_back( add_vertex(vertex_properties("station 11",11, 66.569303493,  40 ,0.),x ,11));
+    vds.push_back( add_vertex(vertex_properties("station 12",12, 67.241720700,  10 ,0.),x ,12));
 
     using eprop_t = edge_properties;
 
@@ -251,4 +253,7 @@ int main()
         values[i] =  g[*itor].node_station->boundary().value(step);
     //make_init_graph(graph, node_stations);
     bool pass = verify_test("stations", values, ref_values); 
+
+    std::cout<< !pass << std::endl;
+    return !pass;
 }

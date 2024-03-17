@@ -59,7 +59,7 @@ public:
     }
 
 
-
+    
     void
     initialization( const variable& var,
                     double dt, 
@@ -71,7 +71,10 @@ public:
         bool unsteady = false;
 
         var_guess_ = var;
-    
+        auto var_time = variable(vector_t::Zero( num_vertices(graph_)),
+                                 vector_t::Zero(num_edges(graph_)),
+                                 vector_t::Zero( num_vertices(graph_)));
+
         EQ_OF_STATE eos; 
         eos.compute_molar_mass(y_nodes, y_pipes);
 
@@ -80,7 +83,7 @@ public:
 
         size_t iter = 0;
         linearized_fluid_solver lfs(iter, unsteady, tolerance, dt, temperature_, mu, inc_, graph_);
-        lfs.run(area_pipes_, flux_ext_.row(iter), var_guess_,var_guess_, &eos);
+        lfs.run(area_pipes_, var_guess_,var_time, &eos);
     }
 
 

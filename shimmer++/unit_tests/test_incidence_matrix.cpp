@@ -47,15 +47,22 @@ make_init_graph(infrastructure_graph& igraph)
 
     std::vector<vertex_descriptor> vds;
 
-    vds.push_back( boost::add_vertex( { "station 0", 0, 5000., -60, 0. }, igraph) );
-    vds.push_back( boost::add_vertex( { "station 1", 1, 0., 20 ,0. }, igraph) );
-    vds.push_back( boost::add_vertex( { "station 2", 2, 0., 25 ,0. }, igraph) );
-    vds.push_back( boost::add_vertex( { "station 3", 3, 0., 30 ,0. }, igraph) );
-    vds.push_back( boost::add_vertex( { "station 4", 4, 0., 35 ,0. }, igraph) );
-    vds.push_back( boost::add_vertex( { "station 5", 5, 0., 40 ,0. }, igraph) );
-    vds.push_back( boost::add_vertex( { "station 6", 6, 0., 45 ,0. }, igraph) );
-    vds.push_back( boost::add_vertex( { "station 7", 7, 0., 50 ,0. }, igraph) );
+    auto add_vertex = [&](vertex_properties&& vp) 
+    {
+        auto v = boost::add_vertex(igraph);
+        igraph[v] = std::move(vp);
+        return v;
+    };
 
+
+    vds.push_back(add_vertex( vertex_properties("station 0", 0, 5000., -60, 0.)) );
+    vds.push_back(add_vertex( vertex_properties( "station 1", 1, 0., 20 ,0. )) );
+    vds.push_back(add_vertex( vertex_properties( "station 2", 2, 0., 25 ,0. )) );
+    vds.push_back(add_vertex( vertex_properties( "station 3", 3, 0., 30 ,0. )) );
+    vds.push_back(add_vertex( vertex_properties( "station 4", 4, 0., 35 ,0. )) );
+    vds.push_back(add_vertex( vertex_properties( "station 5", 5, 0., 40 ,0. )) );
+    vds.push_back(add_vertex( vertex_properties( "station 6", 6, 0., 45 ,0. )) );
+    vds.push_back(add_vertex( vertex_properties( "station 7", 7, 0., 50 ,0. )) );
 
     using eprop_t = edge_properties;
 

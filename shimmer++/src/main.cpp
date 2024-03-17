@@ -37,11 +37,19 @@ init_lua(sol::state& lua)
 static void
 make_dummy_infrastructure(infrastructure_graph& igraph)
 {
+    auto add_vertex = [&](vertex_properties&& vp) 
+    {
+        auto v = boost::add_vertex(igraph);
+        igraph[v] = std::move(vp);
+
+        return v;
+    };
+
     std::vector<vertex_descriptor> vds;
-    vds.push_back( boost::add_vertex( { "station1", 1, 100., 10. }, igraph) );
-    vds.push_back( boost::add_vertex( { "station2", 2, 120., 30. }, igraph) );
-    vds.push_back( boost::add_vertex( { "station3", 3,  90., 20. }, igraph) );
-    vds.push_back( boost::add_vertex( { "station4", 4, 160., 40. }, igraph) );
+    vds.push_back( add_vertex( vertex_properties( "station1", 1, 100., 10.,0) ) );
+    vds.push_back( add_vertex( vertex_properties( "station2", 2, 120., 30.,0) ) );
+    vds.push_back( add_vertex( vertex_properties( "station3", 3,  90., 20.,0) ) );
+    vds.push_back( add_vertex( vertex_properties( "station4", 4, 160., 40.,0) ) );
 
     edge_properties ep;
     boost::add_edge( vds[0], vds[1], ep, igraph);

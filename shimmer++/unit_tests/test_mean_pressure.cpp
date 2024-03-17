@@ -24,12 +24,19 @@ static void
 make_init_graph(infrastructure_graph& igraph)
 {
 
- std::vector<vertex_descriptor> vds;
+    std::vector<vertex_descriptor> vds;
 
-    vds.push_back( boost::add_vertex( { "station 0", 0, 0., 0., 100 }, igraph) );
-    vds.push_back( boost::add_vertex( { "station 1", 1, 0., 0.,  30 }, igraph) );
-    vds.push_back( boost::add_vertex( { "station 2", 2, 0., 0.,  60 }, igraph) );
-    vds.push_back( boost::add_vertex( { "station 3", 3, 0., 0.,  80 }, igraph) );
+    auto add_vertex = [&](vertex_properties&& vp) 
+    {
+        auto v = boost::add_vertex(igraph);
+        igraph[v] = std::move(vp);
+        return v;
+    };
+
+    vds.push_back( add_vertex( vertex_properties( "station 0", 0, 0., 0., 100 )) );
+    vds.push_back( add_vertex( vertex_properties( "station 1", 1, 0., 0.,  30 )) );
+    vds.push_back( add_vertex( vertex_properties( "station 2", 2, 0., 0.,  60 )) );
+    vds.push_back( add_vertex( vertex_properties( "station 3", 3, 0., 0.,  80 )) );
 
     edge_properties ep0  = {edge_type::pipe, 0,   5, 0.7, 0.012};
     edge_properties ep1  = {edge_type::pipe, 1,   9, 0.2, 0.012};

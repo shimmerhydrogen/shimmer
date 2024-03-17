@@ -26,13 +26,23 @@ make_init_graph(infrastructure_graph& igraph)
 {
 
     std::vector<vertex_descriptor> vds;
+
+    auto add_vertex = [&](vertex_properties&& vp, const vector_t& x_in) 
+    {
+        vp.gas_mixture = x_in;
+        auto v = boost::add_vertex(igraph);
+        igraph[v] = std::move(vp);
+        return v;
+    };
+
     vector_t x(21);
     x.setConstant(1.);
 
-    vds.push_back( boost::add_vertex( { "station 0", 0, 5000.,-60,0., x},igraph));
-    vds.push_back( boost::add_vertex( { "station 1", 1, 0., 20 ,0., x},igraph));
-    vds.push_back( boost::add_vertex( { "station 2", 2, 0., 25 ,0., x},igraph));
-    vds.push_back( boost::add_vertex( { "station 3", 3, 0., 25 ,0., x},igraph));
+
+    vds.push_back( add_vertex(vertex_properties( "station 0", 0, 5000.,-60,0.), x));
+    vds.push_back( add_vertex(vertex_properties( "station 1", 1, 0., 20 ,0.), x));
+    vds.push_back( add_vertex(vertex_properties( "station 2", 2, 0., 25 ,0.), x));
+    vds.push_back( add_vertex(vertex_properties( "station 3", 3, 0., 25 ,0.), x));
 
     edge_properties ep0  = {edge_type::pipe, 0,   5, 0.7, 0.00001};
     edge_properties ep1  = {edge_type::pipe, 1,   9, 0.2, 0.00003};
@@ -96,7 +106,6 @@ int main(int argc, char **argv)
     for(auto itor = e_range.first; itor != e_range.second; itor++, i++)
     {   
         auto pipe = graph[*itor];
-        auto node_in = graph[source(*itor, graph)];   
         ri(i) = inertia_resistance(pipe, dt, p);
         rf(i) = friction_resistance(pipe, temperature, mu(i), c2, flux(i));
     }

@@ -418,6 +418,7 @@ linearized_fluid_solver::check_soft_constraints(size_t step)
     auto v_range = boost::vertices(graph_);
     for(auto itor = v_range.first; itor != v_range.second; itor++, i++)
         graph_[*itor].node_station->check_soft(var_.pressure[i], var_.L_rate[i], step);
+    return true;
 }
 
 

@@ -54,6 +54,16 @@ struct vertex_properties {
     vector_t        gas_mixture; 
     std::unique_ptr<station> node_station;   
 
+    vertex_properties(){}
+    vertex_properties(std::string     iname,
+    int             inode_num,
+    double          ipressure,
+    double          imass_flow,
+    double          iheight): name(iname), node_num(inode_num), 
+                            pressure(ipressure),mass_flow(imass_flow),
+                            height(iheight)   {} 
+
+
     friend std::ostream& operator<<(std::ostream& ofs, const vertex_properties& vp) 
     {
         ofs << " name : " << vp.name << "\n";

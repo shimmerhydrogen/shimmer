@@ -70,12 +70,21 @@ make_init_graph(infrastructure_graph& g)
 
     std::vector<vertex_descriptor> vds;
 
+    auto add_vertex = [&](vertex_properties&& vp, const vector_t& x_in) 
+    {
+        vp.gas_mixture = x_in;
+        auto v = boost::add_vertex(g);
+        g[v] = std::move(vp);
+        return v;
+    };
+
+
     vector_t  x = vector_t::Zero(21);
     x(GAS_TYPE::CH4) = 1.0;
 
-    vds.push_back( boost::add_vertex( { "station 0", 0, 0., 0.,  0., x}, g) );
-    vds.push_back( boost::add_vertex( { "station 1", 1, 0., 0.,  0., x}, g) );
-    vds.push_back( boost::add_vertex( { "station 2", 2, 0., 0.,  0., x}, g) );
+    vds.push_back( add_vertex( vertex_properties( "station 0", 0, 0., 0.,  0.), x));
+    vds.push_back( add_vertex( vertex_properties( "station 1", 1, 0., 0.,  0.), x));
+    vds.push_back( add_vertex( vertex_properties( "station 2", 2, 0., 0.,  0.), x));
 
     edge_properties ep0  = {edge_type::pipe, 0,    80000, 0.6, 0.000012};
     edge_properties ep1  = {edge_type::pipe, 1,    90000, 0.6, 0.000012};
@@ -156,7 +165,7 @@ int main()
     auto mu = viscosity<viscosity_type::Kukurugya>(temperature, graph); 
 
     incidence inc(graph);
-    linearized_fluid_solver lfs(unsteady, 0, dt, temperature,mu, inc, graph);
+    linearized_fluid_solver lfs(0, unsteady, 0, dt, temperature,mu, inc, graph);
 
     vector_t pressure_pipes = average(pressure, inc);
     auto mass = lfs.continuity(pressure_old, c2_nodes);

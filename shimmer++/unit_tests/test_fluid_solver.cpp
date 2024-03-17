@@ -53,8 +53,12 @@ make_init_graph(infrastructure_graph& g)
     //---------------------------------------------------------------
     std::vector<vertex_descriptor> vds;
 
-    auto add_vertex = [&](vertex_properties&& vp) 
+
+    auto add_vertex = [&](vertex_properties&& vp, const vector_t& x_in,  size_t i) 
     {
+        vp.gas_mixture = x_in;
+        vp.node_station = std::move(stations[i]);
+
         auto v = boost::add_vertex(g);
         g[v] = std::move(vp);
         return v;
@@ -63,9 +67,9 @@ make_init_graph(infrastructure_graph& g)
     vector_t  x = vector_t::Zero(21);
     x(GAS_TYPE::CH4) = 1.0;
 
-    vds.push_back( add_vertex( { "station 0", 0, 0., 0.,  0., x, std::move(stations[0])}) );
-    vds.push_back( add_vertex( { "station 1", 1, 0., 0.,  0., x, std::move(stations[1])}) );
-    vds.push_back( add_vertex( { "station 2", 2, 0., 0.,  0., x, std::move(stations[2])}) );
+    vds.push_back( add_vertex( vertex_properties( "station 0", 0, 0., 0.,  0.), x,0)) ;
+    vds.push_back( add_vertex( vertex_properties( "station 1", 1, 0., 0.,  0.), x, 1));
+    vds.push_back( add_vertex( vertex_properties( "station 2", 2, 0., 0.,  0.), x, 2));
 
     edge_properties ep0  = {edge_type::pipe, 0,    80000, 0.6, 0.000012};
     edge_properties ep1  = {edge_type::pipe, 1,    90000, 0.6, 0.000012};

@@ -21,8 +21,12 @@ bool verify_test(const std::string & name,
    // std::cout << "Vec:" << std::endl;
     for (int k = 0; k < vals.size(); ++k)
     {
-        //std::cout << std::setprecision(16) << vals[k]  <<  std::endl ;
-        auto e_val = std::abs((vals[k] - ref.at(k)) /  ref.at(k));
+        std::cout << std::setprecision(16) << vals[k]  <<  std::endl ;
+        double e_val;
+        if(std::abs(ref.at(k)) > 1.e-15)
+            e_val = std::abs((vals[k] - ref.at(k)) /  ref.at(k));
+        else 
+            e_val = vals[k];
         if(e_val > 1.e-12)
         {
             pass = false;

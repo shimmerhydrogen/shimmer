@@ -59,9 +59,9 @@ public:
     }
 
 
-    
+
     void
-    initialization( const variable& var,
+    initialization( const variable& var_guess,
                     double dt, 
                     double tolerance, 
                     const matrix_t& y_nodes, 
@@ -70,11 +70,7 @@ public:
 
         bool unsteady = false;
 
-        var_guess_ = var;
-        auto var_time = variable(vector_t::Zero( num_vertices(graph_)),
-                                 vector_t::Zero(num_edges(graph_)),
-                                 vector_t::Zero( num_vertices(graph_)));
-
+    
         EQ_OF_STATE eos; 
         eos.compute_molar_mass(y_nodes, y_pipes);
 
@@ -82,8 +78,12 @@ public:
         auto mu = viscosity<viscosity_type>(temperature_, graph_); 
 
         size_t iter = 0;
+        auto var_time = variable(vector_t::Zero(num_vertices(graph_)),
+                                 vector_t::Zero(num_edges(graph_)),
+                                 vector_t::Zero(num_vertices(graph_)));
         linearized_fluid_solver lfs(iter, unsteady, tolerance, dt, temperature_, mu, inc_, graph_);
-        lfs.run(area_pipes_, var_guess_,var_time, &eos);
+        lfs.run(area_pipes_, var_guess, var_time, &eos);
+        var_guess_ = lfs.get_variable(); 
     }
 
 
@@ -111,16 +111,24 @@ public:
         double t = 0;
         for(size_t it = 1; it < num_steps; it++, t+=dt)
         {  
-            std::cout<<"========================================================"<< std::endl;
+            std::ofstream ofs;
+            ofs.open("warnings.txt", std::ios::app);
+            ofs<<"========================================================"<< std::endl;
+            ofs << "Solving at time ...."<< it <<std::endl;
+            ofs.close();
+
             std::cout<<"========================================================"<< std::endl;
             std::cout << "Solving at time ...."<< it <<std::endl;
             std::cout<<"========================================================"<< std::endl;
-            std::cout<<"========================================================"<< std::endl;
 
             size_t ic; 
-
             for(ic = 0; ic <= MAX_CONSTRAINT_ITER; ic++)
             {
+                std::ofstream ofs;
+                ofs.open("warnings.txt", std::ios::app);
+                ofs << " * Iteration it ..."<<ic<< std::endl;
+                ofs.close();
+
                 std::cout<<"***************************************************"<< std::endl;
                 std::cout << " Iteration it ..."<<ic<< " ... at time "<< it << std::endl;
                 std::cout<<"***************************************************"<< std::endl;
@@ -132,7 +140,6 @@ public:
                 auto mu = viscosity<viscosity_type>(temperature_, graph_); 
 
                 linearized_fluid_solver lfs(it, unsteady, tol, dt, temperature_, mu, inc_, graph_);
-                //lfs.run(area_pipes_, flux_ext_.row(it), var_guess_, var_, &eos);  
                 lfs.run(area_pipes_, var_guess_, var_, &eos);  
                 if(lfs.check_constraints(it))
                 {

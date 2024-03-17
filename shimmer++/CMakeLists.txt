@@ -4,6 +4,11 @@ project(shimmer++)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_DEBUGSANITIZED "-g -fsanitize=address")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASENATIVE "-O3 -DNDEBUG -march=native")
+
 option(ENABLE_GERG "Enable GERG matlab interface" OFF)
 option(BUILD_SHIMMER_UNIT_TESTS "Build SHIMMER++ unitary tests" ON)
 
@@ -52,8 +57,8 @@ set(SHIMMER_SOURCES src/infrastructure_graph.cpp src/geometry_properties.cpp
     src/fluid_solver.cpp  ../src/boundary.cpp
     src/temporal.cpp)
 
-add_executable(shimmer src/main.cpp ${SHIMMER_SOURCES})
-target_link_libraries(shimmer ${LINK_LIBS})
+#add_executable(shimmer src/main.cpp ${SHIMMER_SOURCES})
+#target_link_libraries(shimmer ${LINK_LIBS})
 
 if (BUILD_SHIMMER_UNIT_TESTS)
     include(CTest)

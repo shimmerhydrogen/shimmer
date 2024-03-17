@@ -84,7 +84,7 @@ public:
     station(){};
 
     virtual void set_state(const state& s) = 0;   
-    virtual void set_state_to_switch(const state& s){};   
+    virtual void set_state_to_switch(const state& s){};
 
     virtual bool check_hard(double, double, size_t) {return true;};
     virtual bool check_soft(double, double, size_t) {return true;};
@@ -137,15 +137,14 @@ build_user_constraints(const std::vector<pair_input_t>& user_limits);
 
 template<typename VALUE>
 state
-make_consumption_wo_press(const VALUE& Lset, const std::vector<pair_input_t>& user_limits_s0)
+make_consumption_wo_press(const VALUE& vals, const std::vector<pair_input_t>& user_limits)
 {
-    auto s0_bnd = constraint(hardness_type::BOUNDARY, constraint_type::L_EQUAL, Lset); 
+    auto s0_bnd = constraint(hardness_type::BOUNDARY, constraint_type::L_EQUAL, vals); 
     auto s0_int = constraint(hardness_type::HARD, constraint_type::L_GREATER_EQUAL, 0.0); 
-    auto s0_ext = build_user_constraints(user_limits_s0);
+    auto s0_ext = build_user_constraints(user_limits);
 
     return state(s0_bnd, s0_int, s0_ext);
 }
-
 
 
 template<typename VALUE>
@@ -267,7 +266,6 @@ public:
     const constraint & boundary();
     inline void print(){std::cout << "INJECTION W PRESSURE" << std::endl;}
 };
-
 
 
 

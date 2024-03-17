@@ -96,7 +96,7 @@ public:
         equation_of_state *eos
         );
     bool check_hard_constraints(size_t step);
-    bool check_soft_constraints(size_t step);
+    void check_soft_constraints(size_t step);
     bool check_constraints(size_t step);
                
     double temperature();         

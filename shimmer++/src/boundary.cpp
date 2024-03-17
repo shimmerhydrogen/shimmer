@@ -1,5 +1,5 @@
 #include "../src/boundary.h"
-
+#include <fstream>
 namespace shimmer {
 
 std::ostream& operator <<(std::ostream& os, const constraint_type& o)
@@ -114,13 +114,17 @@ remi_wo_backflow::check_hard(double p, double l, size_t step)
         return true;
     }
 
-
-    std::cout << "WARNING HARD: REMI_WO_BACKFLOW constraint violated => SWITCH done." << std::endl;
-    std::cout << " * REMI_WO_BACKFLOW ("<< index_ <<"): " << std::endl;
-    std::cout << "  ** press: "<< p << std::endl;
-    std::cout << "  ** lrate: "<< l << std::endl;
-    std::cout << "  ** hard : "<< states_[index_].internal.type() 
+    std::ofstream ofs;
+    ofs.open("warnings.txt", std::ios::app);
+    ofs << "WARNING HARD: REMI_WO_BACKFLOW constraint violated => SWITCH done." << std::endl;
+    ofs << " * REMI_WO_BACKFLOW ("<< index_ <<"): " << std::endl;
+    ofs << "  ** press: "<< p << std::endl;
+    ofs << "  ** lrate: "<< l << std::endl;
+    ofs << "  ** hard : "<< states_[index_].internal.type() 
                               << states_[index_].internal.value(step) << std::endl;
+    ofs.close();
+
+
     switch_state();
     return false;
 }
@@ -136,8 +140,12 @@ remi_wo_backflow::check_soft(double p, double l, size_t step)
         if(!e.check(p, l, step))
         {
             success = false;
-            std::cout << "WARNING SOFT: REMI_WO_BACKFLOW constraint violated with ("<<p << "," << l<< ") ... "
+            std::ofstream ofs;
+            ofs.open("warnings.txt", std::ios::app);
+
+            ofs << "WARNING SOFT: REMI_WO_BACKFLOW constraint violated with ("<<p << "," << l<< ") ... "
                       << e.type() << " " << e.value(step) <<std::endl;                        
+            ofs.close();
         }
     }
 

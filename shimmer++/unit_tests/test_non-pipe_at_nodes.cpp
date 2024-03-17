@@ -6,6 +6,7 @@
  * karol.cascavita@polito.it  
  */
 
+#include <immintrin.h>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -185,25 +186,26 @@ make_init_graph(infrastructure_graph& g, const vector_t& Pset, const matrix_t& G
 
         auto v = boost::add_vertex(g);
         g[v] = std::move(vp);
+
         return v;
     };
 
     vector_t  x = vector_t::Zero(21);
     x(GAS_TYPE::CH4) = 1.0;
 
-    vds.push_back(add_vertex(vertex_properties("station 0",  0, 70.000000000, -75 ,0.),x , 0));
-    vds.push_back(add_vertex(vertex_properties("station 1",  1, 70.000000000,  20 ,0.),x , 1));
-    vds.push_back(add_vertex(vertex_properties("station 2",  2, 69.300000000,   0 ,0.),x , 2));
-    vds.push_back(add_vertex(vertex_properties("station 3",  3, 69.300000000,   0 ,0.),x , 3));
-    vds.push_back(add_vertex(vertex_properties("station 4",  4, 68.607000000,   0 ,0.),x , 4));
-    vds.push_back(add_vertex(vertex_properties("station 5",  5, 67.920930000,  20 ,0.),x , 5));
-    vds.push_back(add_vertex(vertex_properties("station 6",  6, 67.241720700,   0 ,0.),x , 6));
-    vds.push_back(add_vertex(vertex_properties("station 7",  7, 67.920930000,   0 ,0.),x , 7));
-    vds.push_back(add_vertex(vertex_properties("station 8",  8, 67.241720700,  50 ,0.),x , 8));
-    vds.push_back(add_vertex(vertex_properties("station 9",  9, 67.241720700,   0 ,0.),x , 9));
-    vds.push_back(add_vertex(vertex_properties("station 10",10, 66.569303493,  15 ,0.),x , 10));
-    vds.push_back(add_vertex(vertex_properties("station 11",11, 70.000000000, -40 ,0.),x , 11));
-    vds.push_back(add_vertex(vertex_properties("station 12",12, 67.241720700,  10 ,0.),x , 12));
+    vds.push_back( add_vertex( vertex_properties("station 0",  0, 70.000000000, -75 ,0.),x , 0));
+    vds.push_back( add_vertex( vertex_properties("station 1",  1, 70.000000000,  20 ,0.),x , 1) );
+    vds.push_back( add_vertex( vertex_properties("station 2",  2, 69.300000000,   0 ,0.),x , 2) );
+    vds.push_back( add_vertex( vertex_properties("station 3",  3, 69.300000000,   0 ,0.),x , 3) );
+    vds.push_back( add_vertex( vertex_properties("station 4",  4, 68.607000000,   0 ,0.),x , 4) );
+    vds.push_back( add_vertex( vertex_properties("station 5",  5, 67.920930000,  20 ,0.),x , 5) );
+    vds.push_back( add_vertex( vertex_properties("station 6",  6, 67.241720700,   0 ,0.),x , 6) );
+    vds.push_back( add_vertex( vertex_properties("station 7",  7, 67.920930000,   0 ,0.),x , 7) );
+    vds.push_back( add_vertex( vertex_properties("station 8",  8, 67.241720700,  50 ,0.),x , 8) );
+    vds.push_back( add_vertex( vertex_properties("station 9",  9, 67.241720700,   0 ,0.),x , 9) );
+    vds.push_back( add_vertex( vertex_properties("station 10",10, 66.569303493,  15 ,0.),x , 10) );
+    vds.push_back( add_vertex( vertex_properties("station 11",11, 70.000000000, -40 ,0.),x , 11) );
+    vds.push_back( add_vertex( vertex_properties("station 12",12, 67.241720700,  10 ,0.),x , 12) );
 
     using eprop_t = edge_properties;
 
@@ -262,11 +264,14 @@ make_guess_steady()
 {
     vector_t Gguess(num_pipes), Pguess(num_nodes);
     Gguess.setConstant(50);
-    Pguess <<   70.000000000000000, 70.000000000000000, 69.299999999999997,
-                69.299999999999997, 68.606999999999999, 67.920929999999998,
-                67.241720700000002, 67.920929999999998, 67.241720700000002,
-                67.241720700000002, 66.569303493000007, 66.569303493000007,
+    Pguess <<   70.000000000000000,   70.000000000000000,
+                69.299999999999997,   69.299999999999997,
+                68.606999999999999,   67.920929999999998,
+                67.241720700000002,   67.920929999999998,
+                67.241720700000002,   67.241720700000002,
+                66.569303493000007,   70.000000000000000,
                 67.241720700000002;
+    Pguess *= 1E5;
 
     //---------------------------------------------------------------
     // Read L from Gsnam / equal than in unsteady
@@ -369,6 +374,7 @@ make_reference(variable& guess_unsteady)
 
 int main()
 {
+    _MM_SET_EXCEPTION_MASK(_MM_GET_EXCEPTION_MASK() & ~_MM_MASK_INVALID);
     size_t num_bcnd = num_nodes;
     size_t system_size = num_nodes + num_pipes;
 
@@ -377,7 +383,7 @@ int main()
     double temperature = 293.15;
     double tol = 1e-4;
 
-    double tol_std = 1e-4; 
+    double tol_std = 1e-14; 
     double dt_std = 1;
     size_t MAX_ITER=1500;
   
@@ -395,14 +401,31 @@ int main()
 
     using time_solver_t = time_solver<papay, viscosity_type::Constant>; 
 
+    #if 0
+    {
+    time_solver_t ts0(graph, temperature, flux_ext);
+    ts0.set_initialization(guess_unstd);    
+    ts0.advance(dt, 7, tol, y_nodes, y_pipes);
+    auto sol_set_unstd  = ts0.solution();
+    }
+    #endif
+
+    std::cout << "******************************************************************" <<std::endl;
+    std::cout << "******************************************************************" <<std::endl;
+    std::cout << "******************************************************************" <<std::endl;
+    std::cout << "******************************************************************" <<std::endl;
+    std::cout << "******************************************************************" <<std::endl;
+    std::cout << "******************************************************************" <<std::endl;
+    std::cout << "******************************************************************" <<std::endl;
+
     time_solver_t ts1(graph, temperature, flux_ext);
-    ts1.set_initialization(guess_unstd);    
+    ts1.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);  
     ts1.advance(dt, 7, tol, y_nodes, y_pipes);
-    auto sol_set_unstd  = ts1.solution();
+    auto sol_unstd  = ts1.solution();
 
     //---------------------------------------------------------------
     auto [ref_std, ref_unstd] = make_reference(guess_unstd);
-    bool pass1 = verify_test("time solver with given init", sol_set_unstd, ref_unstd); 
+    bool pass =  verify_test("time solver with computed init", sol_unstd, ref_unstd); 
 
-    return !(pass1);
+    return !(pass);
 }

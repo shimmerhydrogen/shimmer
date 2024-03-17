@@ -390,6 +390,7 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
     }
 
     std::cout << "Linearized fluid dynamics solver has NOT CONVERGED." << std::endl;
+    return false;
 }
 
 
@@ -411,14 +412,13 @@ linearized_fluid_solver::check_hard_constraints(size_t step)
 }    
 
 
-bool
+void
 linearized_fluid_solver::check_soft_constraints(size_t step)
 {
     int i = 0;
     auto v_range = boost::vertices(graph_);
     for(auto itor = v_range.first; itor != v_range.second; itor++, i++)
         graph_[*itor].node_station->check_soft(var_.pressure[i], var_.L_rate[i], step);
-    return true;
 }
 
 

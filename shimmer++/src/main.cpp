@@ -9,9 +9,9 @@
 #include <fstream>
 #include <string>
 
-#include <QApplication>
-#include <QtGui>
-#include <QWidget>
+//#include <QApplication>
+//#include <QtGui>
+//#include <QWidget>
 
 #include "sol/sol.hpp"
 
@@ -59,7 +59,7 @@ make_dummy_infrastructure(infrastructure_graph& igraph)
 
 int main(int argc, char **argv)
 {
-    QApplication app(argc, argv);
+    //QApplication app(argc, argv);
 
     sol::state lua;
     if (not init_lua(lua))
@@ -73,8 +73,8 @@ int main(int argc, char **argv)
 
     return 0;
 
-    QWidget w;
-    w.show();
-    return app.exec();
+    //QWidget w;
+    //w.show();
+    //return app.exec();
 }
 

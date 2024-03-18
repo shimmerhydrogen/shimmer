@@ -135,11 +135,9 @@ make_init_graph(infrastructure_graph& g, const vector_t& Pset, const matrix_t& G
                 break;
             case(station_type::REMI_WO_BACKFLOW):
             {
-                auto [s0,s1] = make_remi_wo_backflow(Pset, user_constraints,
+                auto remi = make_remi_wo_backflow(Pset, user_constraints,
                                                      user_constraints);
-                stations[i] = std::make_unique<remi_wo_backflow>();                
-                stations[i]->set_state(s0);
-                stations[i]->set_state_to_switch(s1);
+                stations[i] = std::make_unique<multiple_states_station>(remi);                
                 break;
             }
             case(station_type::INJ_W_PRESS_CONTROL):
@@ -148,27 +146,23 @@ make_init_graph(infrastructure_graph& g, const vector_t& Pset, const matrix_t& G
                 for(size_t j = 0; j < Gsnam.rows(); j++)
                     std::cout << Gsnam(j,i) << std::endl;     
 
-                auto [s0, s1] = make_inj_w_pressure(factor, 7500000.0, Gsnam.col(i),
+                auto inj_station = make_inj_w_pressure(factor, 7500000.0, Gsnam.col(i),
                                               user_constraints,
                                               user_constraints);
-                stations[i] = std::make_unique<injection_wp_control>();
-                stations[i]->set_state(s0);
-                stations[i]->set_state_to_switch(s1);
+                stations[i] = std::make_unique<multiple_states_station>(inj_station);
                 break;
             }
             case(station_type::CONSUMPTION_WO_PRESS):
             {
-                auto s = make_consumption_wo_press(Gsnam.col(i), user_constraints);
-                stations[i] = std::make_unique<outlet_station>();
-                stations[i]->set_state(s);
+                auto consumption = make_consumption_wo_press(Gsnam.col(i), user_constraints);
+                stations[i] = std::make_unique<one_state_station>(consumption);
                 break;
 
             }
             case(station_type::OUTLET):
             {
-                auto s = make_outlet(Gsnam.col(i));
-                stations[i] = std::make_unique<outlet_station>();
-                stations[i]->set_state(s);
+                auto exit_station = make_outlet(Gsnam.col(i));
+                stations[i] = std::make_unique<one_state_station>(exit_station);
                 break;
             }
             default:
@@ -378,7 +372,7 @@ int main()
     size_t num_bcnd = num_nodes;
     size_t system_size = num_nodes + num_pipes;
 
-    double tf = 25*3600;
+    size_t num_steps = 7;
     double dt = 3600;
     double temperature = 293.15;
     double tol = 1e-4;
@@ -405,22 +399,14 @@ int main()
     {
     time_solver_t ts0(graph, temperature, flux_ext);
     ts0.set_initialization(guess_unstd);    
-    ts0.advance(dt, 7, tol, y_nodes, y_pipes);
+    ts0.advance(dt, num_steps, tol, y_nodes, y_pipes);
     auto sol_set_unstd  = ts0.solution();
     }
     #endif
 
-    std::cout << "******************************************************************" <<std::endl;
-    std::cout << "******************************************************************" <<std::endl;
-    std::cout << "******************************************************************" <<std::endl;
-    std::cout << "******************************************************************" <<std::endl;
-    std::cout << "******************************************************************" <<std::endl;
-    std::cout << "******************************************************************" <<std::endl;
-    std::cout << "******************************************************************" <<std::endl;
-
     time_solver_t ts1(graph, temperature, flux_ext);
     ts1.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);  
-    ts1.advance(dt, 7, tol, y_nodes, y_pipes);
+    ts1.advance(dt, num_steps, tol, y_nodes, y_pipes);
     auto sol_unstd  = ts1.solution();
 
     //---------------------------------------------------------------

@@ -156,15 +156,13 @@ int main()
         switch(station_type_vec[i])
         {
             case(station_type::INLET):{
-                auto s = make_inlet(Pset);
-                stations[i] = std::make_unique<inlet_station>();
-                stations[i]->set_state(s);
+                auto entry = make_inlet(Pset);
+                stations[i] = std::make_unique<one_state_station>(entry);
                 break;
             }
             case(station_type::OUTLET):{
-                auto s = make_outlet(Gsnam.col(i));
-                stations[i] = std::make_unique<outlet_station>();
-                stations[i]->set_state(s);
+                auto outlet = make_outlet(Gsnam.col(i));
+                stations[i] = std::make_unique<one_state_station>(outlet);
                 break;
             }
             case(station_type::JUNCTION):

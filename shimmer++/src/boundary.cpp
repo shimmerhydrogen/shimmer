@@ -97,7 +97,7 @@ build_user_constraints(const std::vector<pair_input_t>& user_limits)
 
 
 void 
-remi_wo_backflow::switch_state()
+multiple_states_station::switch_state()
 {
     count_++;
     index_ = count_%num_states_;
@@ -106,89 +106,29 @@ remi_wo_backflow::switch_state()
 
 
 bool
-remi_wo_backflow::check_hard(double p, double l, size_t step)
-{
-
-    if(states_[index_].internal.check(p, l, step)) 
-    {
-        return true;
-    }
-
-    std::ofstream ofs;
-    ofs.open("warnings.txt", std::ios::app);
-    ofs << "WARNING HARD: REMI_WO_BACKFLOW constraint violated => SWITCH done." << std::endl;
-    ofs << " * REMI_WO_BACKFLOW ("<< index_ <<"): " << std::endl;
-    ofs << "  ** press: "<< p << std::endl;
-    ofs << "  ** lrate: "<< l << std::endl;
-    ofs << "  ** hard : "<< states_[index_].internal.type() 
-                              << states_[index_].internal.value(step) << std::endl;
-    ofs.close();
-
-
-    switch_state();
-    return false;
-}
-
-
-
-bool
-remi_wo_backflow::check_soft(double p, double l, size_t step)
-{
-    bool success = true; 
-    for(auto& e : states_[index_].externals)
-    {
-        if(!e.check(p, l, step))
-        {
-            success = false;
-            std::ofstream ofs;
-            ofs.open("warnings.txt", std::ios::app);
-
-            ofs << "WARNING SOFT: REMI_WO_BACKFLOW constraint violated with ("<<p << "," << l<< ") ... "
-                      << e.type() << " " << e.value(step) <<std::endl;                        
-            ofs.close();
-        }
-    }
-
-    return success;
-}
-
-const constraint & remi_wo_backflow::boundary(){ return states_[index_].boundary;}
-
-
-
-void 
-injection_wp_control::switch_state()
-{
-    count_++;
-    index_ = count_%num_states_;
-
-    std::cout<< "INJ_WP: INSIDE SWITCH_STATEEEEEEEEEEEEEEEEEEEEEEEEEeee" <<std::endl;
-}
-
-
-
-bool
-injection_wp_control::check_hard(double p, double l, size_t step)
+multiple_states_station::check_hard(double p, double l, size_t step)
 {
 
     if(states_[index_].internal.check(p, l, step)){
-        std::cout << "INJ_WP_CONTROL ("<< index_ <<"): " << std::endl;
-        std::cout << "  * press: "<< p << std::endl;
-        std::cout << "  * lrate: "<< l << std::endl;
-        std::cout << "  * hard : "<< states_[index_].internal.type() 
-                                  << states_[index_].internal.value(step) << std::endl;
+
         return true;
     } 
-
     switch_state();
-    std::cout << "WARNING HARD: INJ_WP_CONTROL constraint violated => SWITCH done." << std::endl;
+
+    std::cout << "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"<< std::endl;
+    std::cout << "WARNING HARD: In "<< name_ <<" constraint violated. SWITCH done." << std::endl;
+    std::cout << " * Hard constaint (" << index_ <<") : "<< states_[index_].internal.type() 
+                                    << states_[index_].internal.value(step) << std::endl;
+    std::cout << " * (press, lrate) : ( " << p <<" , "<< l<< " ) " << std::endl;
+    std::cout << "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"<< std::endl;
+
     return false;
 }
 
 
 
 bool
-injection_wp_control::check_soft(double p, double l, size_t step)
+multiple_states_station::check_soft(double p, double l, size_t step)
 {
     bool success = true; 
     for(auto& e : states_[index_].externals)
@@ -196,8 +136,9 @@ injection_wp_control::check_soft(double p, double l, size_t step)
         if(!e.check(p, l, step))
         {
             success = false;
-            std::cout << "WARNING: INJ WP constraint violated with ("<<p << "," << l<< ") ... "
-                      << e.type() << " " << e.value(step) <<std::endl;                        
+            std::cout << "WARNING SOFT:" << name_  << " constraint violated." << std::endl;
+            std::cout << " * Soft constraint ("<<index_ <<") : " << e.type() << " " << e.value(step) <<std::endl;     
+            std::cout << " * (press , lrate) :  ("<<p << "," << l<< ") " << std::endl;                        
         }
     }
 
@@ -205,7 +146,7 @@ injection_wp_control::check_soft(double p, double l, size_t step)
 }
 
 
-const constraint & injection_wp_control::boundary(){ 
+const constraint & multiple_states_station::boundary(){ 
     std::cout<< " * index :" << index_ << std::endl;
     std::cout<< " * states.size :" << states_.size() << std::endl;
 

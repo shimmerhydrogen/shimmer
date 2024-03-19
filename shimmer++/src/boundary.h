@@ -26,12 +26,10 @@ enum constraint_type
     P_GREATER_EQUAL,
     P_EQUAL,
 };
+std::ostream& operator <<(std::ostream& os, const constraint_type& o);
 
 
 using pair_input_t = std::pair<constraint_type,double>;
-
-
-std::ostream& operator <<(std::ostream& os, const constraint_type& o);
 
 
 class constraint
@@ -77,10 +75,11 @@ struct state
 };
 
 
+
 class station
 {
 public: 
-
+    std::string name_;
     station(){};
 
     virtual void set_state(const state& s) = 0;   
@@ -92,6 +91,9 @@ public:
     virtual void print(){std::cout << "STATION" << std::endl;}
     virtual void switch_state(){};
 };
+
+std::vector<constraint>
+build_user_constraints(const std::vector<pair_input_t>& user_limits);
 
 
 class junction: public station
@@ -110,92 +112,67 @@ public:
 
 
 
+class one_state_station: public station
+{
+    state s0;
+
+public:
+    one_state_station(std::string name) {name_ = name;}
+    inline void set_state(const state& s){s0 = s;}   
+ 
+    inline const constraint& boundary(){return s0.boundary;};
+    inline void print(){std::cout << name_ << std::endl;}
+};
+
+
+
 template<typename VALUE>
-state
+one_state_station
 make_inlet(const VALUE& vals)
 {
     state s0;
     s0.boundary = constraint(hardness_type::BOUNDARY, constraint_type::P_EQUAL, vals);
-    return s0;
+
+    one_state_station inlet("ENTRY");
+    inlet.set_state(s0);
+    return inlet;
 }
 
 
-class inlet_station: public station
-{
-    state s0;
-public:
-    inline inlet_station(){};
-    inline void set_state(const state& s){s0 = s;};
-    inline const constraint& boundary(){return s0.boundary;};
-    inline void print(){std::cout << "INLET" << std::endl;}
-};
-
-
-std::vector<constraint>
-build_user_constraints(const std::vector<pair_input_t>& user_limits);
-
 
 template<typename VALUE>
-state
+one_state_station
 make_consumption_wo_press(const VALUE& vals, const std::vector<pair_input_t>& user_limits)
 {
     auto s0_bnd = constraint(hardness_type::BOUNDARY, constraint_type::L_EQUAL, vals); 
     auto s0_int = constraint(hardness_type::HARD, constraint_type::L_GREATER_EQUAL, 0.0); 
     auto s0_ext = build_user_constraints(user_limits);
 
-    return state(s0_bnd, s0_int, s0_ext);
+    auto s0 = state(s0_bnd, s0_int, s0_ext);
+
+    one_state_station consumption_station("CONSUMPTION_WO_PRESSURE"); 
+    consumption_station.set_state(s0);
+    
+    return consumption_station;
 }
 
 
+
 template<typename VALUE>
-state
-//make_consumption_wo_press(const vector_t& vals)
+one_state_station
 make_outlet(const VALUE& vals)
 {
     state s0;
     s0.boundary = constraint(hardness_type::BOUNDARY, constraint_type::L_EQUAL, vals); 
-    return s0;
+
+    one_state_station out("EXIT"); 
+    out.set_state(s0);
+    return out;
 }
 
 
 
-class outlet_station: public station
-{
-    state s0;
-
-public:
-    inline outlet_station(){};
-    inline void set_state(const state& s){s0 = s;}   
- 
-    inline const constraint& boundary(){return s0.boundary;};
-    inline void print(){std::cout << "OUTLET" << std::endl;}
-};
-
-
-
-template<typename VALUE_TYPE>
-std::pair<state, state>
-make_remi_wo_backflow(  const VALUE_TYPE& Pset,
-                        const std::vector<pair_input_t>& user_limits_s0,
-                        const std::vector<pair_input_t>& user_limits_s1)
-{
-    auto s0_bnd = constraint(hardness_type::BOUNDARY, constraint_type::P_EQUAL, Pset);
-    auto s0_int = constraint(hardness_type::HARD,constraint_type::L_LOWER_EQUAL, 0.0); 
-    auto s0_ext = build_user_constraints(user_limits_s0);
-
-    auto s1_bnd = constraint(hardness_type::BOUNDARY, constraint_type::L_EQUAL, 0.0); 
-    auto s1_int = constraint(hardness_type::HARD, constraint_type::P_GREATER_EQUAL, Pset);
-    auto s1_ext = build_user_constraints(user_limits_s1);
-
-    auto s0 = state(s0_bnd, s0_int, s0_ext);
-    auto s1 = state(s1_bnd, s1_int, s1_ext);
-
-    return std::make_pair(s0, s1);
-}
-
-
-
-class remi_wo_backflow: public station
+class multiple_states_station: public station
 {
     size_t count_;
     size_t index_;
@@ -203,26 +180,38 @@ class remi_wo_backflow: public station
     std::vector<state> states_;
 
 public:
-    remi_wo_backflow(){
+    multiple_states_station(std::string name){
+        name_ = name;
         count_ = 0;
         index_ = 0;
         num_states_ = 2;
-        states_.resize(num_states_);
     };
 
-    inline void set_state(const state& s){states_[0] = s;}
-    inline void set_state_to_switch(const state& s){states_[1] = s;};
+    multiple_states_station(std::string name, size_t num_states){
+        name_ = name;
+        count_ = 0;
+        index_ = 0;
+        num_states_ = num_states;
+    };
+
+
+    inline void set_state(const state& s)
+    {
+        assert((states_.size() < num_states_)&& "Station have more states than given by definition");
+        states_.push_back(s);
+    }
+    void set_state_to_switch(){};
     void switch_state();
     bool check_hard(double, double, size_t);
     bool check_soft(double, double, size_t);
     const constraint & boundary();
-    inline void print(){std::cout << "REMI WO BACKFLOW" << std::endl;}
+    inline void print(){std::cout << name_  << std::endl;}
 };
 
 
 
 template<typename L_TYPE,typename P_TYPE >
-std::pair<state, state>
+multiple_states_station
 make_inj_w_pressure(double factor, const P_TYPE& Pset, const L_TYPE& Lset,
                     const std::vector<pair_input_t>& user_limits_s0,
                     const std::vector<pair_input_t>& user_limits_s1)
@@ -238,35 +227,39 @@ make_inj_w_pressure(double factor, const P_TYPE& Pset, const L_TYPE& Lset,
     auto s0 = state(s0_bnd, s0_int, s0_ext);
     auto s1 = state(s1_bnd, s1_int, s1_ext);
 
-    return std::make_pair(s0,s1);
+    multiple_states_station inj_station("INJECTION_WP_CONTROL");
+
+    inj_station.set_state(s0);
+    inj_station.set_state(s1);
+
+    return inj_station;
 }
 
 
 
-class injection_wp_control: public station
+template<typename VALUE_TYPE>
+multiple_states_station
+make_remi_wo_backflow(  const VALUE_TYPE& Pset,
+                        const std::vector<pair_input_t>& user_limits_s0,
+                        const std::vector<pair_input_t>& user_limits_s1)
 {
-    size_t count_;
-    size_t index_;
-    size_t num_states_;
-    std::vector<state> states_;
+    auto s0_bnd = constraint(hardness_type::BOUNDARY, constraint_type::P_EQUAL, Pset);
+    auto s0_int = constraint(hardness_type::HARD,constraint_type::L_LOWER_EQUAL, 0.0); 
+    auto s0_ext = build_user_constraints(user_limits_s0);
 
-public:
-    injection_wp_control(){
-        count_ = 0;
-        index_ = 0;
-        num_states_ = 2;
-        states_.resize(num_states_);
-    };
+    auto s1_bnd = constraint(hardness_type::BOUNDARY, constraint_type::L_EQUAL, 0.0); 
+    auto s1_int = constraint(hardness_type::HARD, constraint_type::P_GREATER_EQUAL, Pset);
+    auto s1_ext = build_user_constraints(user_limits_s1);
 
-    inline void set_state(const state& s){states_[0] = s;}
-    inline void set_state_to_switch(const state& s){states_[1] = s;};
-    void switch_state();
-    bool check_hard(double, double, size_t);
-    bool check_soft(double, double, size_t);
-    const constraint & boundary();
-    inline void print(){std::cout << "INJECTION W PRESSURE" << std::endl;}
-};
+    auto s0 = state(s0_bnd, s0_int, s0_ext);
+    auto s1 = state(s1_bnd, s1_int, s1_ext);
 
+    multiple_states_station remi("REMI_WO_BACKFLOW");
+    remi.set_state(s0);
+    remi.set_state(s1);
+
+    return remi;
+}
 
 
 } //end namespace shimmer

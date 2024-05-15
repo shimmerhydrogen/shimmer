@@ -128,6 +128,9 @@ make_init_graph(infrastructure_graph& g, const vector_t& Pset, const matrix_t& G
 
     for(size_t i = 0 ; i < num_nodes; i++)
     {   
+        assert(i < station_type_vec.size());
+        assert(i < stations.size());
+
         switch(station_type_vec[i])
         {
             case(station_type::JUNCTION):
@@ -390,6 +393,7 @@ int main()
 
     infrastructure_graph graph;
     make_init_graph(graph, Pset, Gsnam);
+
 
     auto [y_nodes, y_pipes] = make_mass_fraction(num_nodes, graph);
 

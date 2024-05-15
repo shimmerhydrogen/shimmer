@@ -81,6 +81,7 @@ class station
 public: 
     std::string name_;
     station(){};
+    virtual ~station() {}
 
     virtual void set_state(const state& s) = 0;   
     virtual void set_state_to_switch(const state& s){};

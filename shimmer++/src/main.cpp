@@ -9,10 +9,6 @@
 #include <fstream>
 #include <string>
 
-//#include <QApplication>
-//#include <QtGui>
-//#include <QWidget>
-
 #include "sol/sol.hpp"
 
 #include "infrastructure_graph.h"
@@ -59,8 +55,6 @@ make_dummy_infrastructure(infrastructure_graph& igraph)
 
 int main(int argc, char **argv)
 {
-    //QApplication app(argc, argv);
-
     sol::state lua;
     if (not init_lua(lua))
         return 1;
@@ -72,9 +66,5 @@ int main(int argc, char **argv)
     write_graphviz("test_graph.dot", igraph);
 
     return 0;
-
-    //QWidget w;
-    //w.show();
-    //return app.exec();
 }
 

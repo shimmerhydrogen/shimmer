@@ -17,11 +17,11 @@ endif()
 
 #######################################################################
 # Qt stuff
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
-find_package(Qt6 COMPONENTS Core Widgets REQUIRED)
-set(LINK_LIBS ${LINK_LIBS} Qt6::Core Qt6::Widgets)
+#set(CMAKE_AUTOMOC ON)
+#set(CMAKE_AUTORCC ON)
+#set(CMAKE_AUTOUIC ON)
+#find_package(Qt6 COMPONENTS Core Widgets REQUIRED)
+#set(LINK_LIBS ${LINK_LIBS} Qt6::Core Qt6::Widgets)
 
 #######################################################################
 # Boost stuff

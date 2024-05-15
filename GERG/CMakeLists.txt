@@ -43,8 +43,8 @@ list(APPEND GERG_LIBRARY_LINKED_LIBRARIES Matlab::MatlabEngine)
 list(APPEND GERG_LIBRARY_LINKED_LIBRARIES Matlab::MatlabDataArray)
 
 ## Threads
-find_package(Threads REQUIRED)
-list(APPEND GERG_LIBRARY_LINKED_LIBRARIES Threads::Threads)
+#find_package(Threads REQUIRED)
+#list(APPEND GERG_LIBRARY_LINKED_LIBRARIES Threads::Threads)
 
 # Insert Sources
 ###############################################################################################

@@ -417,5 +417,7 @@ int main()
     auto [ref_std, ref_unstd] = make_reference(guess_unstd);
     bool pass =  verify_test("time solver with computed init", sol_unstd, ref_unstd); 
 
+    std::cout << pass << std::endl; 
+
     return !(pass);
 }

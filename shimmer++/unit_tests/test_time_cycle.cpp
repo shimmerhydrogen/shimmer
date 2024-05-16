@@ -109,15 +109,13 @@ make_init_graph(infrastructure_graph& g)
             case(station_type::INLET):
             {
                 auto s = make_inlet(Pset);
-                stations[i] = std::make_unique<inlet_station>();
-                stations[i]->set_state(s);
+                stations[i] = std::make_unique<one_state_station>(s);
                 break;
             }
             case(station_type::OUTLET): 
             {
                 auto s = make_outlet(Gsnam.col(i));    
-                stations[i] = std::make_unique<outlet_station>();
-                stations[i]->set_state(s);
+                stations[i] = std::make_unique<one_state_station>(s);
                 break;
             }
             case(station_type::JUNCTION):
@@ -391,23 +389,24 @@ int main()
     auto sol_std =  ts0.guess();
     */
     
+    
     time_solver_t ts1(graph, temperature, flux_ext);
     ts1.set_initialization(guess_unstd);    
     ts1.advance(dt, num_steps, tol, y_nodes, y_pipes);
     auto sol_set_unstd  = ts1.solution();
     
-    /*
+   
     time_solver_t ts2(graph, temperature, flux_ext);
     ts2.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);    
     ts2.advance(dt, num_steps, tol, y_nodes, y_pipes);
     auto sol_init_unstd = ts2.solution();
-    */
+   
     //---------------------------------------------------------------
     std::cout << __FILE__ << std::endl; 
     auto [ref_std, ref_unstd] = make_reference(num_nodes, num_pipes);
     //bool pass0 = verify_test("time initialization", sol_std,  ref_std); 
     bool pass1 = verify_test("time solver with given init", sol_set_unstd, ref_unstd); 
-    //bool pass2 = verify_test("time solver computing  init", sol_init_unstd, ref_unstd); 
+    bool pass2 = verify_test("time solver computing  init", sol_init_unstd, ref_unstd); 
 
-    return !(pass1);
+    return !(pass1 and pass2);
 }

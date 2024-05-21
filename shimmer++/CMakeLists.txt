@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.22)
 project(shimmer++)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -9,16 +9,12 @@ set(CMAKE_CXX_FLAGS_DEBUGSANITIZED "-g -fsanitize=address")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASENATIVE "-O3 -DNDEBUG -march=native")
 
-option(ENABLE_GERG "Enable GERG matlab interface" OFF)
 option(BUILD_SHIMMER_UNIT_TESTS "Build SHIMMER++ unitary tests" ON)
 
 #######################################################################
 # GERG
-if (ENABLE_GERG)
-    find_package(Matlab REQUIRED)
-    find_package(GERG REQUIRED)
-    set(LINK_LIBS ${LINK_LIBS} GERG::GERG)
-endif()
+add_subdirectory(deps/gerg)
+set(LINK_LIBS ${LINK_LIBS} GERG::GERG)
 
 #######################################################################
 # Qt stuff
@@ -49,16 +45,20 @@ set(LINK_LIBS ${LINK_LIBS} Eigen3::Eigen)
 
 ######################################################################
 
-#set(SHIMMER_SOURCES src/infrastructure_graph.cpp)
-set(SHIMMER_SOURCES src/infrastructure_graph.cpp src/geometry_properties.cpp
-    src/gas_law.cpp
+set(SHIMMER_SOURCES
+    src/infrastructure_graph.cpp src/geometry_properties.cpp src/gas_law.cpp
     src/conservation_matrices.cpp src/incidence_matrix.cpp
     src/matrix_manipulations.cpp src/pipe_calculator.cpp src/matlab_manip.cpp
-    src/fluid_solver.cpp  ../src/boundary.cpp
+    src/fluid_solver.cpp  src/boundary.cpp
     src/temporal.cpp)
 
 #add_executable(shimmer src/main.cpp ${SHIMMER_SOURCES})
 #target_link_libraries(shimmer ${LINK_LIBS})
+
+add_library(shimmer SHARED ${SHIMMER_SOURCES})
+add_library(shimmer::shimmer ALIAS shimmer)
+target_link_libraries(shimmer ${LINK_LIBS})
+target_include_directories(shimmer PUBLIC src)
 
 if (BUILD_SHIMMER_UNIT_TESTS)
     include(CTest)

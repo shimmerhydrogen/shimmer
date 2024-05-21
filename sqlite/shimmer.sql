@@ -25,6 +25,16 @@ create table stations (
         REFERENCES station_types(s_type)
 );
 
+create table station_fd_parameters (
+    s_number    INTEGER,
+    s_pressure  REAL,
+    s_massflow  REAL,
+    
+    FOREIGN KEY (s_number)
+        REFERENCES stations(s_number)
+);
+
+
 -- Pipeline element type. Can be a pipe, a compressor, a regulator, ...
 create table pipeline_types (
     p_type      INTEGER,
@@ -73,8 +83,16 @@ create table pipeline_parameters (
 
 -- The gases. Which are the parameters associated to each gas?
 create table gases (
-    g_name      TEXT UNIQUE NOT NULL
+    g_name      TEXT,
+    --g_descr     TEXT,
+    PRIMARY KEY (g_name)
 );
+
+insert into gases(g_name) values ('CH4'), ('N2'), ('CO2'), ('C2H6'), ('C3H8'),
+    ('i_C4H10'), ('n_C4H10'), ('i_C5H12'), ('n_C5H12'), ('C6H14'), ('C7H16'),
+    ('C8H18'), ('C9H20'), ('C10H22'), ('H2'), ('O2'), ('CO'), ('H2O'), ('H2S'),
+    ('He'), ('Ar');
+
 
 -- Who injects what
 create table injects (
@@ -91,6 +109,8 @@ create table injects (
 );
 
 
+
+
 insert into stations values ('station 0',   0,  0,  0);
 insert into stations values ('station 1',   1,  0,  2);
 insert into stations values ('station 2',   2,  0,  3);
@@ -104,6 +124,23 @@ insert into stations values ('station 9',   9,  0,  3);
 insert into stations values ('station 10', 10,  0,  4);
 insert into stations values ('station 11', 11,  0,  1);
 insert into stations values ('station 12', 12,  0,  2);
+
+insert into station_fd_parameters values (0, 70.000000000, -75);
+insert into station_fd_parameters values (1, 70.000000000,  20);
+insert into station_fd_parameters values (2, 69.300000000,   0);
+insert into station_fd_parameters values (3, 69.300000000,   0);
+insert into station_fd_parameters values (4, 68.607000000,   0);
+insert into station_fd_parameters values (5, 67.920930000,  20);
+insert into station_fd_parameters values (6, 67.241720700,   0);
+insert into station_fd_parameters values (7, 67.920930000,   0);
+insert into station_fd_parameters values (8, 67.241720700,  50);
+insert into station_fd_parameters values (9, 67.241720700,   0);
+insert into station_fd_parameters values (10, 66.569303493,  15);
+insert into station_fd_parameters values (11, 70.000000000, -40);
+insert into station_fd_parameters values (12, 67.241720700,  10);
+
+
+
 
 select stations.s_name, station_types.t_descr
     from stations
@@ -124,6 +161,20 @@ insert into injects values (1, 'gas2', 0.5);
 insert into injects values (2, 'gas1', 0.3); 
 insert into injects values (2, 'gas2', 0.3); 
 insert into injects values (2, 'gas3', 0.3); 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 -- Ask which gases are injected by station 2
 --select stations.s_name, injects.g_name, injects.quantity

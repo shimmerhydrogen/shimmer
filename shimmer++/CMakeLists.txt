@@ -17,6 +17,11 @@ add_subdirectory(deps/gerg)
 set(LINK_LIBS ${LINK_LIBS} GERG::GERG)
 
 #######################################################################
+# SQLite
+find_package(SQLite3 REQUIRED)
+set(LINK_LIBS ${LINK_LIBS} SQLite::SQLite3)
+
+#######################################################################
 # Qt stuff
 #set(CMAKE_AUTOMOC ON)
 #set(CMAKE_AUTORCC ON)
@@ -50,7 +55,7 @@ set(SHIMMER_SOURCES
     src/conservation_matrices.cpp src/incidence_matrix.cpp
     src/matrix_manipulations.cpp src/pipe_calculator.cpp src/matlab_manip.cpp
     src/fluid_solver.cpp  src/boundary.cpp
-    src/temporal.cpp)
+    src/temporal.cpp src/sqlite.cpp)
 
 #add_executable(shimmer src/main.cpp ${SHIMMER_SOURCES})
 #target_link_libraries(shimmer ${LINK_LIBS})

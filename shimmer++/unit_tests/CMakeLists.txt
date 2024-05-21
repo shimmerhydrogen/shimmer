@@ -50,3 +50,7 @@ add_test(NAME test_stations COMMAND test_stations)
 add_executable(test_non-pipe_at_nodes test_non-pipe_at_nodes.cpp)
 target_link_libraries(test_non-pipe_at_nodes shimmer verify_test)
 add_test(NAME test_non-pipe_at_nodes COMMAND test_stations)
+
+add_executable(test_sqlite_import test_sqlite_import.cpp)
+target_link_libraries(test_sqlite_import shimmer)
+add_test(NAME test_sqlite_import COMMAND test_stations)

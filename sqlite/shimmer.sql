@@ -69,7 +69,7 @@ create table pipelines (
 
 -- Pipeline parameters as length, diameter and so on.
 create table pipeline_parameters (
-    p_name      TEXT_NOT_NULL,
+    p_name      TEXT NOT NULL,
     s_from      INTEGER,
     s_to        INTEGER,
     length      REAL NOT NULL,
@@ -139,20 +139,34 @@ insert into station_fd_parameters values (10, 66.569303493,  15);
 insert into station_fd_parameters values (11, 70.000000000, -40);
 insert into station_fd_parameters values (12, 67.241720700,  10);
 
-
+insert into pipelines values ('pipe-0-3', 0, 3, 0);
+insert into pipelines values ('pipe-1-2', 1, 2, 0);
+insert into pipelines values ('pipe-2-3', 2, 3, 0);
+insert into pipelines values ('pipe-2-4', 2, 4, 0);
+insert into pipelines values ('pipe-3-4', 3, 4, 0);
+insert into pipelines values ('pipe-4-5', 4, 5, 0);
+insert into pipelines values ('pipe-4-7', 4, 7, 0);
+insert into pipelines values ('pipe-6-4', 6, 4, 0);
+insert into pipelines values ('pipe-7-6', 7, 6, 0);
+insert into pipelines values ('pipe-11-6', 11, 6, 0);
+insert into pipelines values ('pipe-12-7', 12, 7, 0);
+insert into pipelines values ('pipe-8-7', 8, 7, 0);
+insert into pipelines values ('pipe-7-9', 7, 9, 0);
+insert into pipelines values ('pipe-9-10', 9, 10, 0);
+insert into pipelines values ('pipe-3-9', 3, 9, 0);
 
 
 select stations.s_name, station_types.t_descr
     from stations
     inner join station_types on stations.s_type = station_types.s_type;
 
-insert into pipelines values ('pipe1', 1, 2, 0);
-insert into pipelines values ('pipe2', 1, 3, 0);
-insert into pipelines values ('pipe3', 2, 4, 0);
+--insert into pipelines values ('pipe1', 1, 2, 0);
+--insert into pipelines values ('pipe2', 1, 3, 0);
+--insert into pipelines values ('pipe3', 2, 4, 0);
 
-insert into pipeline_parameters values ('pipe1', 1, 2, 100, 10, 0);
-insert into pipeline_parameters values ('pipe2', 1, 3, 200, 5, 0);
-insert into pipeline_parameters values ('pipe3', 2, 4, 50, 5, 0);
+--insert into pipeline_parameters values ('pipe1', 1, 2, 100, 10, 0);
+--insert into pipeline_parameters values ('pipe2', 1, 3, 200, 5, 0);
+--insert into pipeline_parameters values ('pipe3', 2, 4, 50, 5, 0);
 
 insert into gases values ('gas1'), ('gas2'), ('gas3');
 

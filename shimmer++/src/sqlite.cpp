@@ -97,6 +97,37 @@ network_db::read_station_fd_parameters()
 }
 
 int
+network_db::read_pipelines()
+{
+    int rc;
+    char *zErrMsg = nullptr;
+    std::string zSql = "SELECT * FROM pipelines";
+
+    sqlite3_stmt *stmt;
+    rc = sqlite3_prepare_v2(db_, zSql.c_str(), zSql.length(), &stmt, nullptr);
+    if (rc) {
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+        return 1;
+    }
+
+    size_t i = 0;
+    while (sqlite3_step(stmt) != SQLITE_DONE) {
+        std::string name = (char *) sqlite3_column_text(stmt, 0);
+        int from = sqlite3_column_int(stmt, 1);
+        int to = sqlite3_column_int(stmt, 2);
+        int type = sqlite3_column_int(stmt, 3);
+        i++;
+    }
+
+    std::cout << "Read " << i << " pipelines" << std::endl;
+
+    sqlite3_finalize(stmt);
+
+    return 0;
+}
+
+int
 network_db::populate(infrastructure_graph& g)
 {
     if (!db_)
@@ -105,6 +136,7 @@ network_db::populate(infrastructure_graph& g)
     // check errors!!!!!
     read_stations();
     read_station_fd_parameters();
+    read_pipelines();
 
     return 0;
 }

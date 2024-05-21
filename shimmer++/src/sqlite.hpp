@@ -15,6 +15,7 @@ class network_db {
 
     int read_stations();
     int read_station_fd_parameters();
+    int read_pipelines();
 
 public:
     network_db();

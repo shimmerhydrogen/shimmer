@@ -1,8 +1,8 @@
 /* This code is part of the SHIMMER project
  *
  * Politecnico di Torino, Dipartimento di Matematica (DISMA)
- * 
- * The authors (C) 2023 
+ *
+ * The authors (C) 2023
  */
 
 #pragma once
@@ -14,13 +14,13 @@
 
 namespace shimmer {
 
-using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1>; 
+using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1>;
 
 enum GAS_TYPE
 {   CH4,
     N2,
-    CO2, 
-    C2H6, 
+    CO2,
+    C2H6,
     C3H8,
     i_C4H10,
     n_C4H10,
@@ -38,7 +38,7 @@ enum GAS_TYPE
     H2S,
     He,
     Ar,
-}; 
+};
 
 struct gas_descriptor {
     std::string     name;
@@ -51,20 +51,20 @@ struct vertex_properties {
     double          pressure;
     double          mass_flow;
     double          height;
-    vector_t        gas_mixture; 
-    std::unique_ptr<station> node_station;   
+    vector_t        gas_mixture;
+    std::unique_ptr<station> node_station;
 
     vertex_properties(){}
     vertex_properties(std::string     iname,
     int             inode_num,
     double          ipressure,
     double          imass_flow,
-    double          iheight): name(iname), node_num(inode_num), 
+    double          iheight): name(iname), node_num(inode_num),
                             pressure(ipressure),mass_flow(imass_flow),
-                            height(iheight)   {} 
+                            height(iheight)   {}
 
 
-    friend std::ostream& operator<<(std::ostream& ofs, const vertex_properties& vp) 
+    friend std::ostream& operator<<(std::ostream& ofs, const vertex_properties& vp)
     {
         ofs << " name : \"" << vp.name << "\", ";
         ofs << " node_num : " << vp.node_num << ",";
@@ -82,10 +82,9 @@ struct vertex_properties {
 
 enum class edge_type {
     pipe,
-    resistor,
     compressor,
     regulator,
-    valve
+    valve,
 };
 
 struct edge_properties {

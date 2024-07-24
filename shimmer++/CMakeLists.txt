@@ -35,13 +35,13 @@ find_package(Boost REQUIRED COMPONENTS graph)
 
 #######################################################################
 # Lua stuff
-find_package(Lua REQUIRED)
-include_directories("${LUA_INCLUDE_DIR}")
-set(LINK_LIBS ${LINK_LIBS} ${LUA_LIBRARIES})
-set(BUILD_TESTING OFF CACHE BOOL "")
-set(SOL2_BUILD_LUA OFF CACHE BOOL "")
-add_subdirectory(deps/sol2)
-set(LINK_LIBS ${LINK_LIBS} sol2::sol2)
+#find_package(Lua REQUIRED)
+#include_directories("${LUA_INCLUDE_DIR}")
+#set(LINK_LIBS ${LINK_LIBS} ${LUA_LIBRARIES})
+#set(BUILD_TESTING OFF CACHE BOOL "")
+#set(SOL2_BUILD_LUA OFF CACHE BOOL "")
+#add_subdirectory(deps/sol2)
+#set(LINK_LIBS ${LINK_LIBS} sol2::sol2)
 ######################################################################
 ## Eigen3
 #add_subdirectory(contrib/eigen)

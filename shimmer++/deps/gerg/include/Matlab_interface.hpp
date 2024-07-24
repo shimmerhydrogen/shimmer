@@ -51,7 +51,7 @@ namespace GERG
       static matrix_type matlab_to_matrix(const matlab::data::TypedArray<double>& matrix)
       {
         matrix_type result;
-        const std::vector<unsigned long int> size = matrix.getDimensions();
+        const std::vector<size_t> size = matrix.getDimensions();
         result.resize(size.at(0),
                       size.at(1));
         std::copy(matrix.begin(), matrix.end(), result.data());

@@ -157,7 +157,6 @@ namespace control
         model m_;
         constraint_control internal_;
         control_type type_;
-        variable_to_control variable_name_;
 
         control_state(const model& m, const constraint_control& internal):
             m_(m), internal_(internal)
@@ -166,7 +165,7 @@ namespace control
             m_(model(type)), internal_(internal)
             {};
 
-        virtual control_hard(double value, double time = 0);
+        virtual control_hard(double time = 0);
 
         set_c1(double value){ m.set_cofficient(0, value)};
         set_c2(double value){ m.set_cofficient(1, value)};
@@ -251,8 +250,7 @@ namespace control
         public:
 
         control_rhs(const control_type& type,
-                    const constraint   & internal,
-                    const variable_to_control& var_name):
+                    const constraint   & internal):
                     control_state(type, internal),
                     type_(type),
                     variable_name_(var_name)
@@ -265,7 +263,7 @@ namespace control
                     type_ == control_type::PRESSURE_OUT));
         };
 
-        bool control_hard()
+        bool control_hard(double time)
         {
             bool pass = internal_.check(model.d);
 
@@ -461,15 +459,17 @@ namespace control
             return;
         };
 
+        inline num_controls(){return controls.size();};
+
+        /*
         bool
-        control_hard(std::unordered_map<control_variable_type, double>& variables, double time)
+        control_hard(double time)
         {
             size_t idx = count%controls.size();
 
             for (size_t i = 0; i < controls.size(); i++; idx++)
             {
-                auto var  = controls[idx].variable_to_control;
-                bool pass = controls[idx].control_hard(variables[var], time);
+                bool pass = controls[idx].control_hard(time);
 
                 if (!pass)
                 {
@@ -480,6 +480,7 @@ namespace control
 
             return true;
         }
+        */
 
 
         bool
@@ -565,7 +566,7 @@ namespace control
     make_compressor(size_t control_node,
                     double ramp,
                     double efficiency,
-                    double power_driver_nominal,
+                    double power_nominal,
                     const std::vector<double>& activate_history,
                     const std::vector<pair_input_t>& pressure_limits,
                     const std::vector<pair_input_t>& hard_limits,
@@ -614,3 +615,4 @@ namespace control
 // 1. t is really time t? why -1? It is not it-1?
 // 2. Use pipes as by_pass....not to heavy? Maybe better just add real stations?
 // 3. Marco: In PWD, Ki = ZiTiR.. what about R? at nodes or at pipe? => use c2_nodes, c2_pipes? combination?
+// 4. Marco: Maybe here I should recheck constraint to be sure new pwd < pwd_nominal;

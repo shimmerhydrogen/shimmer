@@ -19,10 +19,10 @@ namespace shimmer
         FLUX,
     };
 
-    enum constraint_pipe_type
+    enum constraint_edge_type
     {
-        B_IN_MIN_GREATER_EQUAL,
-        B_MAX_LOWER_EQUAL,
+        BETA_MIN_GREATER_EQUAL,
+        BETA_MAX_LOWER_EQUAL,
         P_OUT_MAX_LOWER_EQUAL,
         P_OUT_MIN_GREATER_EQUAL,
         P_IN_MIN_GREATER_EQUAL,
@@ -34,6 +34,12 @@ namespace shimmer
         PW_NOMINAL_LOWER_EQUAL,
     }
 
+    class constraint_edge
+    {
+        constraint_edge(const hardness_type& h, const constraint_type& t, double v);
+        bool  check(double p, const double l, size_t step);
+        inline double value() const {return value_;}
+    };
 
     class model
     {
@@ -79,14 +85,15 @@ namespace shimmer
     }
 
     auto
-    make_compressor(size_t control_node,const std::vector<double>& activation_times,
+    make_compressor(size_t control_node, double ramp, double efficiency,
+            const std::vector<double>& activation_times,
             const std::vector<pair_input_t>& pressure_limits,
             const std::vector<pair_input_t>& hard_limits,
             const std::vector<pair_input_t>& user_limits)
     {
         auto thresholds = build_multiple_constraints<constraint>(pressure_limits, hardness_type::HARD);
-        auto internals  = build_multiple_constraints<constraint_pipe>(hard_limits, hardness_type::HARD);
-        auto externals  = build_multiple_constraints<constraint_pipe>(user_limits, hardness_type::SOFT);
+        auto internals  = build_multiple_constraints<constraint_edge>(hard_limits, hardness_type::HARD);
+        auto externals  = build_multiple_constraints<constraint_edge>(user_limits, hardness_type::SOFT);
 
         station_pipe compressor("COMPRESSOR", internals, externals);
         compressor.set_control_node(control_node, thresholds);
@@ -97,18 +104,21 @@ namespace shimmer
     }
 
 
-
     void
-    compressor_activation()
+    compressor_activation(  bool active,
+                            double p_in,
+                            double p_out,
+                            double p_node,
+                            const std::vector<constraint>& threshold_pressure)
     {
         if (active)
         {
-            if (Pn < P_THRESHOLD_DOWN) //threshold_pressure_[0].check(Pn, 0, 0);
+            if(!threshold_pressure_[P_GREATER_EQUAL].check(p_node, 0, 0));
                 return control_modes_[i];
         }
         else
         {
-            if (Pn > P_THRESHOLD_UP) //threshold_pressure_[1].check(Pn, 0, 0);
+            if (!threshold_pressure_[P_LOWER_EQUAL].check(p_node, 0, 0));
                 return control_modes_[i];
         }
 
@@ -119,26 +129,28 @@ namespace shimmer
     }
 
 
-
-
     double
-    check_beta()
+    check_beta( double p_in,
+                double p_out,
+                const std::vector<constraint_edge>& internals)
     {
         double beta;
+        double beta_min = internals[BETA_MIN_GREATER_EQUAL].value();
+        double beta_max = internals[BETA_MAX_LOWER_EQUAL].value();
 
-        if (pout < beta_min * p_in)
+        if (p_out < beta_min * p_in)
         {
             beta = beta_min;
             p_out = beta_min * p_in;
 
             if ()
             {
-                p_out = p_out_min;
+                p_out = internals[P_OUT_MIN_GREATER_EQUAL].value();
                 beta = p_out/p_in;
             }
             if ()
             {
-                p_out = p_out_max;
+                p_out = internals[P_OUT_MAX_LOWER_EQUAL].value();
                 beta = p_out/p_in;
             }
         }
@@ -149,12 +161,12 @@ namespace shimmer
 
             if ()
             {
-                p_out = p_out_min;
+                p_out = internals[P_OUT_MIN_GREATER_EQUAL].value();;
                 beta = p_out/p_in;
             }
             if ()
             {
-                p_out = p_out_max;
+                p_out = internals[P_OUT_MAX_LOWER_EQUAL].value();
                 beta = p_out/p_in;
             }
 
@@ -167,13 +179,17 @@ namespace shimmer
 
 
     model
-    control_power_driver(double t, double ramp, double p_out, double mass_flow)
+    control_power_driver(double t,
+                        double ramp,
+                        double p_in,
+                        double p_out,
+                        double mass_flow,
+                        const std::vector<constraint_edge>& internals)
     {
         auto beta = check_beta();
-        internals[POWER_DRIVER].check();
 
-        if (pw_driver < pw_nominal)
-            pw_driver = pw_driver * (t - 1) + ramp * (pw_nominal);
+        if (internals[PW_NOMINAL_LOWER_EQUAL].check(pw_driver))
+            pw_driver = pw_driver * (t - 1.0) + ramp * (pw_nominal);
         else
             pw_driver = pw_nominal;
 
@@ -210,7 +226,9 @@ namespace shimmer
         return m;
     }
 
-    auto control_flow_rate(double flow_rate)
+
+    auto
+    control_flow_rate(double flow_rate)
     {
         model m;
         model.c1 = 0.0;
@@ -220,6 +238,7 @@ namespace shimmer
 
         return m;
     }
+
 
     auto
     control_shut_off()
@@ -233,6 +252,7 @@ namespace shimmer
 
         return m;
     }
+
 
     auto
     control_by_pass()
@@ -259,13 +279,13 @@ namespace shimmer
         std::vector<control_type> control_modes_;
 
         std::vector<constraint> threshold_pressure_;
-        std::vector<constraint_pipe> internals_;
-        std::vector<constraint_pipe> externals_;
+        std::vector<constraint_edge> internals_;
+        std::vector<constraint_edge> externals_;
 
 
         station_pipe(const std::string& name,
-            const std::vector<constraint_pipe>& internals,
-            const std::vector<constraint_pipe>& externals_):
+            const std::vector<constraint_edge>& internals,
+            const std::vector<constraint_edge>& externals_):
             name_(name), internals_(internals), externals_(externals)
         {};
 
@@ -316,7 +336,7 @@ namespace shimmer
     };
 
 // 1. REGULATOR: control modes and actions?
-// 2. COMPRESSOR: activation times as sense? Or is it needed only for regulator and valve?
+// 2. COMPRESSOR: activation times has sense? Or is it needed only for regulator and valve?
 //                how do i compute power driver? and coefficients Ki, ci?
 // 3. NONPIPES_pipes iterate in the same cycle of NONPIPE_nodes?
 } //end namespace shimmer

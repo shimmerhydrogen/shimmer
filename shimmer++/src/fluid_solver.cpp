@@ -88,8 +88,8 @@ linearized_fluid_solver::continuity(
 
 
 void
-linearized_fluid_solver::control_stations(std::vector<triplet_t>& triplets_mom,
-                                          vector_t& rhs_mom)
+linearized_fluid_solver::impose_edge_station_model(std::vector<triplet_t>& triplets_mom,
+    vector_t& rhs_mom)
 {
     size_t offset = num_nodes_;
 
@@ -101,27 +101,106 @@ linearized_fluid_solver::control_stations(std::vector<triplet_t>& triplets_mom,
     for (auto itor = begin; itor != end; itor++, idx++)
     {
         auto pipe = g[*itor];
-
         if (pipe.type == edge_type::pipe) continue;
 
-        if (!pipe.pipe_station->active(time ? ? ? )) continue;
+        auto& st = pipe.pipe_station;
+
+        //if (!st->active(at_step_))  continue;
 
         auto pipe_idx = pipe.branch_num;
-        auto model = pipe.pipe_station->control();
 
         size_t row = pipe_idx + offset;
         auto s = source(*itor, g);
         auto t = target(*itor, g);
 
-        triplets_mom.push_back(triplet_t(row, g[s].node_num, model.c1));
-        triplets_mom.push_back(triplet_t(row, g[t].node_num, model.c2));
-        triplets_mom.push_back(triplet_t(row, row, model.c3));
-        rhs_mom(row) = model.d;
+        auto source_node = g[s].node_num;
+        auto target_node = g[t].node_num;
+
+        triplets_mom.push_back(triplet_t(row, source_node, st.model_c1()));
+        triplets_mom.push_back(triplet_t(row, target_node, st.model_c2()));
+        triplets_mom.push_back(triplet_t(row, row, st.model_c3()));
+        rhs_mom(row) = st.model_rhs();
     }
 
     return;
 }
 
+
+void
+linearized_fluid_solver::control_stations(
+            const vector_t& c2_nodes,
+            const vector_t& nodes_pressure,
+            const vector_t& pipes_pressure,
+            const vector_t& flux)
+    {
+    size_t offset = num_nodes_;
+
+    int idx = 0;
+    auto edge_range = boost::edges(g);
+    auto begin = edge_range.first;
+    auto end = edge_range.second;
+
+    for (auto itor = begin; itor != end; itor++, idx++)
+    {
+        auto pipe = g[*itor];
+        if (pipe.type == edge_type::pipe) continue;
+
+        auto& st = pipe.pipe_station;
+
+        //if (!st->active(at_step_))  continue;
+
+        auto pipe_idx = pipe.branch_num;
+
+        size_t row = pipe_idx + offset;
+        auto s = source(*itor, g);
+        auto t = target(*itor, g);
+
+        auto source_node = g[s].node_num;
+        auto target_node = g[t].node_num;
+
+
+        switch (st->which_control_type())
+        {
+            case control_type::SHUT_OFF:
+            case control_type::BY_PASS:
+                break;
+            case control_type::POWER_DRIVER:
+            {
+                auto gamma = 1.4; // Or read from GERG
+                auto ck  = gamma - 1.0 / gamma;
+                auto beta= nodes_pressure[target_node] /
+                                nodes_pressure[source_node];//edge_stations::compute_beta();
+                auto ZTR = c2_nodes[source_node];
+                auto K   = ZTR / st.efficiency();
+                auto G   = flux[pipe_idx];
+                auto KGB = K * G * beta;
+
+                auto c3 = (K / ck) * (std::pow(beta, ck) - 1.0);
+                auto pwd = c3 * G;
+
+                st.set_c1(-KGB / nodes_pressure[source_node]);
+                st.set_c2( KGB / nodes_pressure[target_node]);
+                st.set_c3( c3 );
+                st.set_rhs(pwd);
+                break;
+            }
+            case control_type::PRESSURE_IN:
+                st.set_rhs(nodes_pressure[source_node]);
+                break;
+            case control_type::PRESSURE_OUT:
+                st.set_rhs(nodes_pressure[target_node]);
+                break;
+            case control_type::FLUX:
+                st.set_rhs(flux[pipe_idx]);
+                break;
+            default:
+                std::cout << "ERROR: Fluid solver does not know this control type.\n";
+                throw std::exception;
+        }
+    }
+
+    return;
+}
 
 pair_trip_vec_t
 linearized_fluid_solver::momentum(
@@ -141,7 +220,6 @@ linearized_fluid_solver::momentum(
     vector_t rf = resistance_friction(Tm_, mu_, c2, flux, graph_);
     vector_t r = -rf;
     vector_t rhs = -0.5 * rf.cwiseProduct(flux);
-
 
     if (is_unsteady_)
     {
@@ -166,7 +244,7 @@ linearized_fluid_solver::momentum(
 
     vector_t rhs_scale = rhs.cwiseQuotient(ADP_p);
 
-    control_stations(triplets, rhs_scale);
+    impose_edge_station_model(triplets, rhs_scale);
     /*
     std::cout << "* nodes_pressure: " <<  std::endl;
     for (int k = 0; k < nodes_pressure.size(); ++k)
@@ -353,8 +431,10 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
         std::cout<< "Solver at iteration k ..."<< iter << std::endl;
 
         press_pipes_ = average(var_.pressure, inc_);
-
         auto [c2_nodes, c2_pipes] = eos->speed_of_sound(this);
+
+        control_edge_stations(c2_nodes);
+
         auto mass = continuity(var_time.pressure, c2_nodes);
         auto mom  = momentum(var_.pressure, press_pipes_, var_.flux, var_time.flux, c2_pipes);
         auto bcnd = boundary(area_pipes, var_.flux, eos);
@@ -450,6 +530,54 @@ linearized_fluid_solver::check_hard_constraints(size_t step)
     return pass_all;
 }
 
+bool
+linearized_fluid_solver::check_edge_hard_constraints(size_t step)
+    {}
+
+bool
+linearized_fluid_solver::check_edge_control_constraints(size_t step)
+{
+    bool pass_all = true;
+
+    auto edge_range = boost::edges(g);
+    auto begin = edge_range.first;
+    auto end = edge_range.second;
+
+    for (auto itor = begin; itor != end; itor++)
+    {
+        auto pipe = g[*itor];
+
+        if (pipe.type == edge_type::pipe) continue;
+
+        auto& st = pipe.pipe_station;
+
+        if (!st->active(step)) continue;
+
+        auto pipe_idx = pipe.branch_num;
+        auto s_node_idx = g[source(*itor, g)].node_num;
+        auto t_node_idx = g[target(*itor, g)].node_num;
+
+        double p_in  = var_.pressure[s_node_idx];
+        double p_out = var_.pressure[t_node_idx];
+        double flow  = var_.flux[pipe_idx];
+        bool pin_greater_pout = p_in < p_out;
+
+        using cvar_t = control::variable_to_control;
+
+        auto control_vars = std::unordered_map<double>{ {cvar_t::PRESSURE_IN, pin },
+                                                        {cvar_t::PRESSURE_OUT, p_out},
+                                                        {cvar_t::FLOW, flow},
+                                                        {cvar_t::PIN_LOWER_POUT, pin < pout} };
+
+        auto pass = pipe.edge_station->control_hard(control_vars, step * dt_);
+
+        std::cout << " * Hard (" << idx << ") : " << pass << std::endl;
+
+        pass_all = pass_all && pass;
+    }
+
+    return pass_all;
+}
 
 void
 linearized_fluid_solver::check_soft_constraints(size_t step)
@@ -458,6 +586,24 @@ linearized_fluid_solver::check_soft_constraints(size_t step)
     auto v_range = boost::vertices(graph_);
     for(auto itor = v_range.first; itor != v_range.second; itor++, i++)
         graph_[*itor].node_station->check_soft(var_.pressure[i], var_.L_rate[i], step);
+}
+
+
+void
+linearized_fluid_solver::check_edge_soft_constraints(size_t step)
+{
+    auto edge_range = boost::edges(g);
+    auto begin = edge_range.first;
+    auto end = edge_range.second;
+
+    for (auto itor = begin; itor != end; itor++)
+    {
+        auto pipe = g[*itor];
+
+        if (pipe.type == edge_type::pipe) continue;
+
+        graph_[*itor].node_station->check_soft(var_.pressure[i], var_.L_rate[i], step);
+    }
 }
 
 
@@ -472,6 +618,18 @@ linearized_fluid_solver::check_constraints(size_t step)
     return false;
 }
 
+
+bool
+linearized_fluid_solver::check_edge_constraints(size_t step)
+{
+    if (check_edge_control_constraints(step))
+    {
+        //check_edge_hard_constraints(step);
+        check_edge_soft_constraints(step);
+        return true;
+    }
+    return false;
+}
 
 
 } //end namespace shimmer

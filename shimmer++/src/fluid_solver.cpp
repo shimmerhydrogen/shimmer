@@ -163,15 +163,23 @@ linearized_fluid_solver::control_stations(
             // Set variable
             switch (st->which_control_type())
                 {
-                    case control_type::SHUT_OFF:
-                    case control_type::BY_PASS:
+                    case control::type::SHUT_OFF:
+                    case control::type::BY_PASS:
                         break;
-                    case control_type::POWER_DRIVER:
+                    case control::type::BETA:
+                        auto beta = nodes_pressure[target_node] /
+                            nodes_pressure[source_node];
+                        st.set_c1(beta);
+                        break;
+                    case control::type::POWER_DRIVER:
                     {
                         auto gamma = 1.4; // Or read from GERG
                         auto ck = gamma - 1.0 / gamma;
                         auto beta = nodes_pressure[target_node] /
-                                    nodes_pressure[source_node];//edge_stations::compute_beta();
+                            nodes_pressure[source_node];
+                        //beta = edge_stations::compressor_beta(nodes_pressure[source_node],
+                        //nodes_pressure[target_node],
+                        //st.internals());
                         auto ZTR = c2_nodes[source_node];
                         auto K = ZTR / st.efficiency();
                         auto G = flux[pipe_idx];
@@ -185,14 +193,14 @@ linearized_fluid_solver::control_stations(
                         st.set_c3(c3);
                         st.set_rhs(pwd);
                         break;
-                        }
-                    case control_type::PRESSURE_IN:
+                    }
+                    case control::type::PRESSURE_IN:
                         st.set_rhs(nodes_pressure[source_node]);
                         break;
-                    case control_type::PRESSURE_OUT:
+                    case control::type::PRESSURE_OUT:
                         st.set_rhs(nodes_pressure[target_node]);
                         break;
-                    case control_type::FLUX:
+                    case control::type::FLUX:
                         st.set_rhs(flux[pipe_idx]);
                         break;
                     default:
@@ -541,6 +549,7 @@ bool
 linearized_fluid_solver::check_edge_hard_constraints(size_t step)
     {}
 
+/*
 bool
 linearized_fluid_solver::check_edge_control_constraints(size_t step)
 {
@@ -585,6 +594,7 @@ linearized_fluid_solver::check_edge_control_constraints(size_t step)
 
     return pass_all;
 }
+*/
 
 void
 linearized_fluid_solver::check_soft_constraints(size_t step)
@@ -595,7 +605,7 @@ linearized_fluid_solver::check_soft_constraints(size_t step)
         graph_[*itor].node_station->check_soft(var_.pressure[i], var_.L_rate[i], step);
 }
 
-
+/*
 void
 linearized_fluid_solver::check_edge_soft_constraints(size_t step)
 {
@@ -612,7 +622,7 @@ linearized_fluid_solver::check_edge_soft_constraints(size_t step)
         graph_[*itor].node_station->check_soft(var_.pressure[i], var_.L_rate[i], step);
     }
 }
-
+*/
 
 bool
 linearized_fluid_solver::check_constraints(size_t step)
@@ -625,18 +635,17 @@ linearized_fluid_solver::check_constraints(size_t step)
     return false;
 }
 
-
+/*
 bool
 linearized_fluid_solver::check_edge_constraints(size_t step)
 {
-    if (check_edge_control_constraints(step))
-    {
-        //check_edge_hard_constraints(step);
+
+    if(check_edge_hard_constraints(step))
         check_edge_soft_constraints(step);
         return true;
     }
     return false;
 }
-
+*/
 
 } //end namespace shimmer

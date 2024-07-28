@@ -31,18 +31,7 @@ namespace control
     };
 
 
-    enum variable_to_control
-    {
-        PRESSURE_OUT,
-        PRESSURE_IN,
-        PIN_LOWER_POUT,
-        BETA,
-        FLUX,
-        NONE,
-    };
-
-
-    enum control_type
+    enum type
     {
         BY_PASS,
         SHUT_OFF,
@@ -97,75 +86,111 @@ namespace control
     {
         std::vector<double> coeffs;
         std:vector<int> free_index;
+        int control_index_;
 
         public:
-        model(control_type ctype)
+        model(control::type ctype)
         {
             switch (ctype)
             {
-            case control_type::BY_PASS:
+            case control::type::BY_PASS:
                 coeffs[0] =-1.0;
                 coeffs[1] = 1.0;
                 coeffs[2] = 0.0;
                 coeffs[3] = 0.0;
+                control_index_ = -1;
                 break;
-            case control_type::SHUT_OFF:
+            case control::type::SHUT_OFF:
                 coeffs[0] = 0.0;
                 coeffs[1] = 0.0;
                 coeffs[2] = 1.0;
                 coeffs[3] = 0.0;
+                control_index_ = -1;
                 break;
-            case control_type::POWER_DRIVER:
+            case control::type::POWER_DRIVER:
                 free_index = std : vector<int>{ 0,1,2,3 };
+                control_index_ = 3;
                 break;
-            case control_type::PRESSURE_IN:
+            case control::type::PRESSURE_IN:
                 coeffs[0] = 1.0;
                 coeffs[1] = 0.0;
                 coeffs[2] = 0.0;
                 free_index = std:vector<int>{ 3 };
+                control_index_ = 3;
                 break;
-            case control_type::PRESSURE_OUT:
+            case control::type::PRESSURE_OUT:
                 coeffs[0] = 0.0;
                 coeffs[1] = 1.0;
                 coeffs[2] = 0.0;
                 free_index = std:vector<int>{ 3 };
+                control_index_ = 3;
                 break;
-            case control_type::FLUX:
+            case control::type::FLUX:
                 coeffs[0] = 0.0;
                 coeffs[1] = 0.0;
                 coeffs[2] = 1.0;
                 free_index = std:vector<int>{ 3 };
+                control_index_ = 3;
+                break;
+            case control::type::BETA:
+                coeffs[1] = 1.0;
+                coeffs[2] = 0.0;
+                coeffs[3] = 0.0;
+                free_index = std:vector<int>{0};
+                control_index_ = 1;
                 break;
             default:
                 break;
             }
         }
 
-        set_coefficient(size_t index, double value)
+        void set_coefficient(size_t index, double value)
         {
             assert(free_index.size() > 0);
             assert("Error: In model of edge station, coefficient at index is not modifiable" && std::find(free_index.begin(), free_index.end(), item) != vec.end())
 
             coeffs[index] = value;
         }
+        void set_control_coefficient(double value)
+        {
+            coeffs[control_index_] = value;
+        }
+
+        double control_coefficient()
+        {
+            return coeffs[control_index_];
+        }
     };
 
 
-    class control_state
+    class state
     {
     public:
-        model m_;
+        model model_;
         constraint_control internal_;
-        control_type type_;
+        control::type type_;
 
-        control_state(const model& m, const constraint_control& internal):
-            m_(m), internal_(internal)
+        state(const model& m, const constraint_control& internal):
+            model_(m), internal_(internal)
             {};
-        control_state(const control_type& type, const constraint_control& internal):
-            m_(model(type)), internal_(internal)
+        state(const control::type& type, const constraint_control& internal):
+            model_(model(type)), internal_(internal)
             {};
 
-        virtual control_hard(double time = 0);
+        virtual control_hard(double time = 0)
+        {
+            // Get stored variable in model
+            auto variable = model_.control_coefficient();
+
+            // 1. Check constraint
+            bool pass = internal_.check(variable);
+
+            // 2. Control variable with hard limit
+            if (!pass)
+                model_.set_control_coefficient(internal_.value());
+
+            return pass;
+        }
 
         set_c1(double value){ m.set_cofficient(0, value)};
         set_c2(double value){ m.set_cofficient(1, value)};
@@ -180,11 +205,11 @@ namespace control
 
 
 /*
-    class shut_off : control_state
+    class shut_off : state
     { public:
         shut_off()
         {
-            type_ = control_type::SHUT_OFF;
+            type_ = control::type::SHUT_OFF;
         };
         bool control_hard(double & p_in,
                           double & p_out,
@@ -197,12 +222,12 @@ namespace control
     };
 
 
-    class by_pass: control_state
+    class by_pass: state
     {
         public:
         by_pass()
         {
-            type_ = control_type::BY_PASS;
+            type_ = control::type::BY_PASS;
         };
 
         bool control_hard(double value, const std::vector<>& internals)
@@ -213,78 +238,85 @@ namespace control
     };
 */
 
-    class control_power_driver: public control_state
+    class control_power_driver: public state
     {
         double ramp_coeff_;
 
         public:
 
         power_driver(double ramp, const constraint& hard):
-            type_(control_type::POWER_DRIVER),
-            control_state(type_, hard),
+            type_(control::type::POWER_DRIVER),
+            state(type_, hard),
             ramp_coeff_(ramp)
         {};
 
 
         bool control_hard(double time)
         {
-            // 1. Check constraint
-            bool pass = internal_.check(model.d, time);
+            // Get stored power driver in model
+            auto pwd = model_.control_coefficient();
 
-            // 2. Control variable
+            // 1. Check constraint
+            bool pass = internal_.check(pwd);
+
+            // 2. Control variable with hard limit
+
+            // 2.1 Hard limit
             auto pw_nominal = internal_.value();
 
+            // 2.2 Control
             if (pass)
-                model.d = model.d * (t - 1.0) + ramp_coeff_ * pw_nominal;
+                model_.set_control_coefficient(pwd * (t - 1.0) + ramp_coeff_ * pw_nominal);
                 // WK: Maybe here I should recheck constraint to be sure new pwd < pwd_nominal;
             else
-                model.d = pw_nominal;
+                model_.set_control_coefficient(pw_nominal);
 
             return pass;
         }
     };
 
 
-    class control_rhs : public control_state
+    /*
+    class control_rhs : public state
     {
         public:
 
-        control_rhs(const control_type& type,
+        control_rhs(const control::type& type,
                     const constraint   & internal):
-                    control_state(type, internal),
-                    type_(type),
-                    variable_name_(var_name)
+                    state(type, internal),
+                    type_(type)
         {
             assert("ERROR: Your control state allows modifications of fixed coefficients"
-                && (type_ == control_type::BY_PASS ||
-                    type_ == control_type::SHUT_OFF ||
-                    type_ == control_type::FLUX ||
-                    type_ == control_type::PRESSURE_IN ||
-                    type_ == control_type::PRESSURE_OUT));
+                && (type_ == control::type::BY_PASS ||
+                    type_ == control::type::SHUT_OFF ||
+                    type_ == control::type::FLUX ||
+                    type_ == control::type::PRESSURE_IN ||
+                    type_ == control::type::PRESSURE_OUT));
         };
 
         bool control_hard(double time)
         {
-            bool pass = internal_.check(model.d);
+            bool pass = internal_.check(model.control_coeff());
 
             // Check constraint
             if (pass)
                 return true;
 
             // Control variable
-            model.d = internal_.value();
+            model.set_control_coeff(internal_.value());
 
             return false;
         }
     };
+*/
 
 /*
-    class pressure_out : control_state
+    class pressure_out : state
     {
             public:
         pressure_out()
         {
-            type_ = control_type::PRESSURE_OUT;
+            type_ = control::type::PRESSURE_OUT;
         };
 
         bool control_hard(double & p_in,
@@ -311,12 +343,12 @@ namespace control
     };
 
 
-    class pressure_in: control_state
+    class pressure_in: state
     {
         public:
         pressure_in()
         {
-            type_ = control_type::PRESSURE_IN;
+            type_ = control::type::PRESSURE_IN;
         };
 
         bool control_hard(double & p_in,
@@ -341,12 +373,12 @@ namespace control
     };
 
 
-    class flux: control_state
+    class flux: state
     {
         public:
         flux()
         {
-            type_ = control_type::FLUX;
+            type_ = control::type::FLUX;
         };
 
 
@@ -389,7 +421,7 @@ namespace control
         auto internal = constraint_control(hardness_type::HARD_CONTROL,
                     constraint_type::LOWER_EQUAL, pressure_out_max);
 
-        return control_rhs(control_type::PRESSURE_OUT, internal, variable_to_control::PRESSURE_OUT);
+        return state(control::type::PRESSURE_OUT, internal);
     }
 
     auto
@@ -399,35 +431,55 @@ namespace control
                                            constraint_type::GREATER_EQUAL,
                                            pressure_in_min);
 
-        return control_rhs(control_type::PRESSURE_IN, internal, variable_to_control::PRESSURE_IN);
+        return state(control::type::PRESSURE_IN, internal);
     }
 
     auto
-    make_by_pass_control(const variable_to_control & control_var)
+    make_by_pass_control()
     {
         auto internal = constraint_edge(hardness_type::HARD_CONTROL,
                                         constraint_type::GENERAL_EQUAL, 0);
 
-        auto c = control_rhs(control_type::BY_PASS, internal, control_var);
-
-        c.set_rhs(0);
-
-        return c;
+        return state(control::type::BY_PASS, internal);
     }
 
     auto
-    make_shutoff_control(const variable_to_control& control_var)
+    make_shutoff_control()
     {
         auto internal = constraint_edge(hardness_type::HARD_CONTROL,
                                         constraint_type::GENERAL_EQUAL, 1);
 
-        auto c = control_rhs(control_type::SHUT_OFF, internal, control_var);
-
-        c.set_rhs(0);
-
-        return c;
+        return  state(control::type::SHUT_OFF, internal);
     }
-} //end namespace control
+
+    auto
+    make_beta_min_control(double beta_min)
+    {
+        auto internal = constraint_edge(hardness_type::HARD_CONTROL,
+                                        constraint_type::LOWER_EQUAL, beta_min);
+
+        return  state(control::type::BETA, internal);
+    }
+
+    auto
+    make_beta_max_control(double beta_max)
+    {
+        auto internals = constraint_edge(hardness_type::HARD_CONTROL,
+                                        constraint_type::GREATER_EQUAL, beta_max);
+
+        return  state(control::type::BETA, internal);
+    }
+
+    auto
+    make_flux_control(double flux_max)
+    {
+        auto internals = constraint_edge(hardness_type::HARD_CONTROL,
+                                        constraint_type::GREATER_EQUAL, flux_max);
+
+        return  state(control::type::FLUX, internal);
+    }
+
+    } //end namespace control
 
     class station
     {
@@ -438,8 +490,8 @@ namespace control
         std::vector<constraint_edge> internals_;
         std::vector<constraint_edge> externals_;
 
-        std::vector<control_state> controls_off;
-        std::vector<control_state> controls_on;
+        std::vector<control::state> controls_off;
+        std::vector<control::state> controls_on;
 
         station(const std::string& name, const std::vector<bool>& active,
                      const std::vector<constraint_edge>& internals,
@@ -459,10 +511,24 @@ namespace control
             return;
         };
 
-        inline num_controls(){return controls.size();};
+        inline numodel_controls(){return controls.size();};
+
+
+        bool
+        control_hard(double time)
+        {
+            size_t idx = count % controls.size();
+            bool pass = controls[idx].control_hard(time);
+
+            if (!pass)
+            {
+                count++;
+                return false;
+            }
+        }
 
         /*
-        bool
+                bool
         control_hard(double time)
         {
             size_t idx = count%controls.size();
@@ -566,7 +632,7 @@ namespace control
     make_compressor(size_t control_node,
                     double ramp,
                     double efficiency,
-                    double power_nominal,
+                    double power_driver_nominal,
                     const std::vector<double>& activate_history,
                     const std::vector<pair_input_t>& pressure_limits,
                     const std::vector<pair_input_t>& hard_limits,
@@ -579,13 +645,27 @@ namespace control
         station compressor("COMPRESSOR", activate_history, internals, externals);
 
         compressor.set_control_node(control_node, thresholds);
-        compressor.set_control_modes(std::vector<control_type>{POWER_DRIVER, P_OUT, P_IN, BETA, FLUX});
+        compressor.set_control_modes(std::vector<control::type>{POWER_DRIVER, P_OUT, P_IN, BETA, FLUX});
 
-        auto c_by_pass = make_by_pass_control(variable_to_control::PIN_LOWER_POUT);
-        auto c_shutoff = make_shutoff_control(variable_to_control::PIN_LOWER_POUT);
+        auto c_by_pass = make_by_pass_control();
+        auto c_shutoff = make_shutoff_control();
 
         compressor.set_control_off(c_by_pass);
         compressor.set_control_off(c_shutoff);
+
+        auto c_power_driver = make_power_driver_control( power_driver_nominal,  ramp);
+        auto c_beta_min = make_beta_min_control(beta_min);
+        auto c_beta_max = make_beta_min_control(beta_max);
+        auto c_press_in = make_pressure_in_control(pressure_in_min);
+        auto c_press_out = make_pressure_out_control(pressure_out_max);
+        auto c_flux = make_flux_control(flux_max);
+
+        compressor.set_control_on(c_power_driver);
+        compressor.set_control_on(c_press_in);
+        compressor.set_control_on(c_press_out);
+        compressor.set_control_on(c_beta_max);
+        compressor.set_control_on(c_beta_min);
+        compressor.set_control_on(c_flux);
 
         return compressor;
     }
@@ -609,7 +689,47 @@ namespace control
         return (K * G / ck) * (std::pow(beta, ck) - 1.0);
     }
 
-} //end namespace control
+
+    double
+    compressor_beta( double p_in,
+                double p_out,
+                const std::vector<constraint_edge>& internals)
+    {
+        double press_rate = p_out / p_in;
+
+
+        const auto& beta_min_constr  = internals[BETA_MIN_LOWER_EQUAL];
+        const auto& beta_max_constr  = internals[BETA_MAX_GREATER_EQUAL];
+        const auto& p_out_min_constr = internals[P_OUT_MIN_LOWER_EQUAL];
+        const auto& p_out_max_constr = internals[P_OUT_MAX_GREATER_EQUAL];
+
+        bool pass_min = beta_min_constr.check(press_rate);
+        bool pass_max = beta_max_constr.check(press_rate);
+
+        if (pass_min & pass_max)
+            return press_rate;
+
+        double beta_min = internals[BETA_MIN_GREATER_EQUAL].value();
+        double beta_max = internals[BETA_MAX_LOWER_EQUAL].value();
+
+        double beta;
+        if (!pass_min)
+            beta = beta_min;
+        else if (!pass_max)
+            beta = beta_max;
+
+        p_out = beta * p_in;
+
+        if (!p_out_min_constr.check(p_out))
+            p_out = p_out_min_constr.value();
+        else if (!p_out_max_constr.check(p_out))
+            p_out = p_out_max_constr.value();
+
+        return p_out / p_in;
+    }
+
+
+    } //end namespace control
 }//end namespace shimmer
 
 // 1. t is really time t? why -1? It is not it-1?

@@ -132,7 +132,7 @@ linearized_fluid_solver::control_stations(
             const vector_t& nodes_pressure,
             const vector_t& pipes_pressure,
             const vector_t& flux)
-    {
+{
     size_t offset = num_nodes_;
 
     int idx = 0;
@@ -147,8 +147,6 @@ linearized_fluid_solver::control_stations(
 
         auto& st = pipe.pipe_station;
 
-        //if (!st->active(at_step_))  continue;
-
         auto pipe_idx = pipe.branch_num;
 
         size_t row = pipe_idx + offset;
@@ -158,60 +156,60 @@ linearized_fluid_solver::control_stations(
         auto source_node = g[s].node_num;
         auto target_node = g[t].node_num;
 
-        for (auto c = 0; c < st.num_controls();c++)
+        //for (auto c = 0; c < st.num_controls();c++)
+        //{
+        auto p_in = nodes_pressure[source_node];
+        auto p_out = nodes_pressure[target_node];
+
+        // Set variable
+        switch (st->which_control_type(at_step_))
         {
-            // Set variable
-            switch (st->which_control_type())
-                {
-                    case control::type::SHUT_OFF:
-                    case control::type::BY_PASS:
-                        break;
-                    case control::type::BETA:
-                        auto beta = nodes_pressure[target_node] /
-                            nodes_pressure[source_node];
-                        st.set_c1(beta);
-                        break;
-                    case control::type::POWER_DRIVER:
-                    {
-                        auto gamma = 1.4; // Or read from GERG
-                        auto ck = gamma - 1.0 / gamma;
-                        auto beta = nodes_pressure[target_node] /
-                            nodes_pressure[source_node];
-                        //beta = edge_stations::compressor_beta(nodes_pressure[source_node],
-                        //nodes_pressure[target_node],
-                        //st.internals());
-                        auto ZTR = c2_nodes[source_node];
-                        auto K = ZTR / st.efficiency();
-                        auto G = flux[pipe_idx];
-                        auto KGB = K * G * beta;
+            case control::type::SHUT_OFF:
+            case control::type::BY_PASS:
+                set.set_c3(p_in < p_out);
+                break;
+            case control::type::BETA:
+                auto beta = p_out /p_in;
+                st.set_c1(beta);
+                break;
+            case control::type::POWER_DRIVER:
+            {
+                auto gamma = 1.4; // Or read from GERG
+                auto ck = gamma - 1.0 / gamma;
+                auto beta = p_out /p_in;
+                //beta = edge_stations::compressor_beta(p_in, p_out, st.internals());
+                auto ZTR = c2_nodes[source_node];
+                auto K = ZTR / st.efficiency();
+                auto G = flux[pipe_idx];
+                auto KGB = K * G * beta;
 
-                        auto c3 = (K / ck) * (std::pow(beta, ck) - 1.0);
-                        auto pwd = c3 * G;
+                auto c3 = (K / ck) * (std::pow(beta, ck) - 1.0);
+                auto pwd = c3 * G;
 
-                        st.set_c1(-KGB / nodes_pressure[source_node]);
-                        st.set_c2( KGB / nodes_pressure[target_node]);
-                        st.set_c3(c3);
-                        st.set_rhs(pwd);
-                        break;
-                    }
-                    case control::type::PRESSURE_IN:
-                        st.set_rhs(nodes_pressure[source_node]);
-                        break;
-                    case control::type::PRESSURE_OUT:
-                        st.set_rhs(nodes_pressure[target_node]);
-                        break;
-                    case control::type::FLUX:
-                        st.set_rhs(flux[pipe_idx]);
-                        break;
-                    default:
-                        std::cout << "ERROR: Fluid solver does not know this control type.\n";
-                        throw std::exception;
-                }
-
-            // Control variable
-            st.control_hard( at_step_* dt_);
-
+                st.set_c1(-KGB / p_in);
+                st.set_c2( KGB / p_out);
+                st.set_c3(c3);
+                st.set_rhs(pwd);
+                break;
+            }
+            case control::type::PRESSURE_IN:
+                st.set_rhs(p_in);
+                break;
+            case control::type::PRESSURE_OUT:
+                st.set_rhs(p_out);
+                break;
+            case control::type::FLUX:
+                st.set_rhs(flux[pipe_idx]);
+                break;
+            default:
+                std::cout << "ERROR: Fluid solver does not know this control type.\n";
+                throw std::exception;
         }
+
+        // Control variable
+        st.control_hard( at_step_* dt_);
+
+//      }
     }
 
     return;

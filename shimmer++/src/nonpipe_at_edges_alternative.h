@@ -22,12 +22,13 @@ namespace control
 
 
     enum constraint_type
-        {
+    {
         LOWER,
         GREATER,
         EQUAL,
         LOWER_EQUAL,
         GREATER_EQUAL,
+        NONE,
     };
 
 
@@ -158,6 +159,9 @@ namespace control
 
         double control_coefficient()
         {
+            if (control_index_ < 0)
+                return INF;
+
             return coeffs[control_index_];
         }
     };
@@ -199,45 +203,10 @@ namespace control
         {
             m.set_cofficient(3, value)
         };
-
-
     };
 
 
 /*
-    class shut_off : state
-    { public:
-        shut_off()
-        {
-            type_ = control::type::SHUT_OFF;
-        };
-        bool control_hard(double & p_in,
-                          double & p_out,
-                          double & G,
-                          double & L,
-                          const std::vector<>& internals)
-        {
-            return true; //p_out > p_in; //hard_.check(p_in, p_out);
-        }
-    };
-
-
-    class by_pass: state
-    {
-        public:
-        by_pass()
-        {
-            type_ = control::type::BY_PASS;
-        };
-
-        bool control_hard(double value, const std::vector<>& internals)
-        {
-            //p_in > p_out;
-            return true;  //hard_.check(vel);
-        }
-    };
-*/
-
     class control_power_driver: public state
     {
         double ramp_coeff_;
@@ -265,146 +234,15 @@ namespace control
             auto pw_nominal = internal_.value();
 
             // 2.2 Control
-            if (pass)
-                model_.set_control_coefficient(pwd * (t - 1.0) + ramp_coeff_ * pw_nominal);
-                // WK: Maybe here I should recheck constraint to be sure new pwd < pwd_nominal;
-            else
+            if (!pass)
                 model_.set_control_coefficient(pw_nominal);
+                // WK: Maybe here I should recheck constraint to be sure new pwd < pwd_nominal;
 
             return pass;
         }
     };
-
-
-    /*
-    class control_rhs : public state
-    {
-        public:
-
-        control_rhs(const control::type& type,
-                    const constraint   & internal):
-                    state(type, internal),
-                    type_(type)
-        {
-            assert("ERROR: Your control state allows modifications of fixed coefficients"
-                && (type_ == control::type::BY_PASS ||
-                    type_ == control::type::SHUT_OFF ||
-                    type_ == control::type::FLUX ||
-                    type_ == control::type::PRESSURE_IN ||
-                    type_ == control::type::PRESSURE_OUT));
-        };
-
-        bool control_hard(double time)
-        {
-            bool pass = internal_.check(model.control_coeff());
-
-            // Check constraint
-            if (pass)
-                return true;
-
-            // Control variable
-            model.set_control_coeff(internal_.value());
-
-            return false;
-        }
-    };
 */
 
-/*
-    class pressure_out : state
-    {
-            public:
-        pressure_out()
-        {
-            type_ = control::type::PRESSURE_OUT;
-        };
-
-        bool control_hard(double & p_in,
-                          double & p_out,
-                          double & G,
-                          double & L,
-                          const std::vector<>& internals)
-        {
-            bool pass = hard_.check(p_out);
-
-            // Check constraint
-            if (pass)
-            {
-                model.d = p_out;
-                return true;
-            }
-
-            // Control variable
-            model.d = hard_.value();
-
-
-            return false;
-        }
-    };
-
-
-    class pressure_in: state
-    {
-        public:
-        pressure_in()
-        {
-            type_ = control::type::PRESSURE_IN;
-        };
-
-        bool control_hard(double & p_in,
-                          double & p_out,
-                          double & G,
-                          double & L,
-                          const std::vector<>& internals)
-        {
-            bool pass = hard_.check(p_in);
-
-            // Check constraint
-            if (pass)
-            {
-                model.d = p_in;
-                return true;
-            }
-
-            // Control variable
-            model.d = hard_.value();
-
-        }
-    };
-
-
-    class flux: state
-    {
-        public:
-        flux()
-        {
-            type_ = control::type::FLUX;
-        };
-
-
-        bool control_hard(double & p_in,
-                          double & p_out,
-                          double & G,
-                          double & L,
-                          const std::vector<>& internals)
-        {
-            bool pass = hard_.check(G);
-
-            // Check constraint
-            if (pass)
-            {
-                model.d = G;
-                return true;
-            }
-
-            // Control variable
-            model.d = hard_.value();
-
-            return false;
-        }
-    };
-
-*/
     auto
     make_power_driver_control(double PWD_nominal, double ramp)
     {
@@ -435,19 +273,19 @@ namespace control
     }
 
     auto
-    make_by_pass_control()
+    make_by_pass_control(const constraint_type& ctype)
     {
         auto internal = constraint_edge(hardness_type::HARD_CONTROL,
-                                        constraint_type::GENERAL_EQUAL, 0);
+                                        ctype, 0);
 
         return state(control::type::BY_PASS, internal);
     }
 
     auto
-    make_shutoff_control()
+    make_shutoff_control(const constraint_type& ctype)
     {
         auto internal = constraint_edge(hardness_type::HARD_CONTROL,
-                                        constraint_type::GENERAL_EQUAL, 1);
+                                        ctype, 1);
 
         return  state(control::type::SHUT_OFF, internal);
     }
@@ -479,7 +317,7 @@ namespace control
         return  state(control::type::FLUX, internal);
     }
 
-    } //end namespace control
+} //end namespace control
 
     class station
     {
@@ -493,9 +331,10 @@ namespace control
         std::vector<control::state> controls_off;
         std::vector<control::state> controls_on;
 
-        station(const std::string& name, const std::vector<bool>& active,
-                     const std::vector<constraint_edge>& internals,
-                     const std::vector<constraint_edge>& externals):
+        station(const std::string& name,
+                const std::vector<bool>& active,
+                const std::vector<constraint_edge>& internals,
+                const std::vector<constraint_edge>& externals):
                      name_(name), active_(active),
                      internals_(internals), externals_(externals)
         {
@@ -510,9 +349,6 @@ namespace control
             controls[idx].type;
             return;
         };
-
-        inline numodel_controls(){return controls.size();};
-
 
         bool
         control_hard(double time)
@@ -547,7 +383,6 @@ namespace control
             return true;
         }
         */
-
 
         bool
         check_soft(double p, double l, size_t step)
@@ -592,6 +427,54 @@ namespace control
     };
 
 
+    class compressor : public station
+    {
+        double ramp_coeff_;
+        double efficiency;
+
+        compressor(const std::string& name,
+                    double efficiency,
+                    double ramp_coeff,
+                    const std::vector<bool>& activate_history,
+                    const std::vector<constraint_type>& internals,
+                    const std::vector<constraint_type>& externals):
+            station(name, activate_history, internals, externals){};
+
+        control_hard(double t)
+        {
+            size_t idx = count % controls.size();
+            bool pass = controls[idx].control_hard(time);
+
+            if (pass && controls[idx].type() == POWER_DRIVER)
+                model_.set_control_coefficient(pwd * (t - 1.0) + ramp_coeff_ * pw_nominal);
+
+
+            if (!pass)
+            {
+                count++;
+                return false;
+            }
+
+        }
+
+        activate()
+        {
+            auto pn = pressure_nodes[control_node];
+            bool pass_down = threshold[0].check(pn);
+            bool pass_up   = threshold[1].check(pn);
+
+            bool turn_on = (!active & pass_up) || (active & !pass_down);
+
+            if (turn_on)
+                // iterate over controls_on
+            else
+                //iterate over controls_off
+
+        }
+
+    };
+
+
     template<typename CONSTR_NONPIPE>
     std::vector<CONSTR_NONPIPE>
     build_multiple_constraints(const std::vector<pair_input_t>&limits, hardness_type ht)
@@ -605,6 +488,25 @@ namespace control
         return constr_vector;
     }
 
+    auto
+    make_regulator(const std::vector<bool>& activate_history,
+                   const std::vector<pair_input_t>& user_limits)
+    {
+        auto internal = constraint_edge(hardness_type::HARD,
+                                        constraint_type::GREATER_EQUAL,
+                                         velocity_limit);
+        auto externals = build_multiple_constraints<constraint_edge>(user_limits);
+
+        station regulator("REGULATOR", activate_history, internal, externals);
+
+        auto c_by_pass = make_by_pass_control(constraint_type::GREATER_EQUAL);
+        auto c_shutoff = make_shutoff_control(constraint_type::LOWER);
+
+        valve.set_control_on(c_by_pass);
+        valve.set_control_off(c_shutoff);
+
+        return;
+    }
 
     auto
     make_valve(const std::vector<bool>& activate_history,
@@ -618,15 +520,14 @@ namespace control
 
         station valve("VALVE", activate_history, internal, externals);
 
-        auto c_by_pass = make_by_pass_control(variable_to_control::NONE);
-        auto c_shutoff = make_shutoff_control(variable_to_control::NONE);
+        auto c_by_pass = make_by_pass_control(constraint_type::NONE);
+        auto c_shutoff = make_shutoff_control(constraint_type::NONE);
 
-        valve.set_control(c_by_pass);
-        valve.set_control(c_shutoff);
+        valve.set_control_on(c_by_pass);
+        valve.set_control_off(c_shutoff);
 
         return;
     }
-
 
     auto
     make_compressor(size_t control_node,
@@ -642,32 +543,31 @@ namespace control
         auto internals  = build_multiple_constraints<constraint_edge>(hard_limits, hardness_type::HARD);
         auto externals  = build_multiple_constraints<constraint_edge>(user_limits, hardness_type::SOFT);
 
-        station compressor("COMPRESSOR", activate_history, internals, externals);
+        compressor cmp("COMPRESSOR", activate_history, internals, externals, thresholds);
 
-        compressor.set_control_node(control_node, thresholds);
-        compressor.set_control_modes(std::vector<control::type>{POWER_DRIVER, P_OUT, P_IN, BETA, FLUX});
+        cmp.set_control_node(control_node, thresholds);
 
-        auto c_by_pass = make_by_pass_control();
-        auto c_shutoff = make_shutoff_control();
+        auto c_by_pass = make_by_pass_control(constraint_type::EQUAL);
+        auto c_shutoff = make_shutoff_control(constraint_type::EQUAL);
 
-        compressor.set_control_off(c_by_pass);
-        compressor.set_control_off(c_shutoff);
+        cmp.set_control_off(c_by_pass);
+        cmp.set_control_off(c_shutoff);
 
         auto c_power_driver = make_power_driver_control( power_driver_nominal,  ramp);
         auto c_beta_min = make_beta_min_control(beta_min);
-        auto c_beta_max = make_beta_min_control(beta_max);
+        auto c_beta_max = make_beta_max_control(beta_max);
         auto c_press_in = make_pressure_in_control(pressure_in_min);
         auto c_press_out = make_pressure_out_control(pressure_out_max);
         auto c_flux = make_flux_control(flux_max);
 
-        compressor.set_control_on(c_power_driver);
-        compressor.set_control_on(c_press_in);
-        compressor.set_control_on(c_press_out);
-        compressor.set_control_on(c_beta_max);
-        compressor.set_control_on(c_beta_min);
-        compressor.set_control_on(c_flux);
+        cmp.set_control_on(c_power_driver);
+        cmp.set_control_on(c_press_in);
+        cmp.set_control_on(c_press_out);
+        cmp.set_control_on(c_beta_max);
+        cmp.set_control_on(c_beta_min);
+        cmp.set_control_on(c_flux);
 
-        return compressor;
+        return cmp;
     }
 
 

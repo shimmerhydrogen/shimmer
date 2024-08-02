@@ -1,0 +1,48 @@
+*debug*
+*Debug*
+*release*
+*Release*
+*RelWithDebInfo*
+*.user
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Matlab data
+Roots/Roots_Conforming_VEM_3D_1D/MATLABInterface
+#!Roots/Roots_Conforming_VEM_3D_1D/MATLABInterface/*.m
+#!Roots/Roots_Conforming_VEM_3D_1D/MATLABInterface/*.ini
+
+Roots/Roots_Natural_VEM_3D_1D/MATLABInterface
+#!Roots/Roots_Natural_VEM_3D_1D/MATLABInterface/*.m
+#!Roots/Roots_Natural_VEM_3D_1D/MATLABInterface/*.ini

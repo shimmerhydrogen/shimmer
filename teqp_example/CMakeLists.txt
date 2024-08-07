@@ -8,6 +8,7 @@ set(TEQP_DIR "/home/geoscore/Desktop/GEO++/shimmer/teqp")
 
 list(APPEND CMAKE_PREFIX_PATH "${TEQP_DIR}/build/install")
 
+find_package(Boost REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(autodiff REQUIRED)
 find_package(nlohmann_json_schema_validator REQUIRED)

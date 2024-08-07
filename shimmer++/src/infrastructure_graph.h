@@ -42,6 +42,15 @@ enum GAS_TYPE
     Ar,
 };
 
+enum station_type_x
+{
+    REMI_WO_BACKFLOW,
+    INJ_W_PRESS_CONTROL,
+    OUTLET,
+    JUNCTION,
+    CONSUMPTION_WO_PRESS,
+};
+
 struct gas_descriptor {
     std::string     name;
     double          percentage;
@@ -49,29 +58,37 @@ struct gas_descriptor {
 
 struct vertex_properties {
     std::string     name;
+    
+    [[deprecated("Use u_snum or i_snum")]]
     int             node_num;
-    double          pressure;
-    double          mass_flow;
+    int             u_snum;
+    int             i_snum;
+    station_type_x  type;
+    //double          pressure;
+    //double          mass_flow;
     double          height;
     vector_t        gas_mixture;
-    std::unique_ptr<station> node_station;
+    std::unique_ptr<station> node_station;   
+
 
     vertex_properties(){}
+
+    [[deprecated("xxx")]]
     vertex_properties(std::string     iname,
     int             inode_num,
     double          ipressure,
     double          imass_flow,
-    double          iheight): name(iname), node_num(inode_num),
-                            pressure(ipressure),mass_flow(imass_flow),
-                            height(iheight)   {}
+    double          iheight): name(iname), node_num(inode_num), 
+                            //pressure(ipressure),mass_flow(imass_flow),
+                            height(iheight)   {} 
 
 
     friend std::ostream& operator<<(std::ostream& ofs, const vertex_properties& vp)
     {
         ofs << " name : \"" << vp.name << "\", ";
         ofs << " node_num : " << vp.node_num << ",";
-        ofs << " pressure : " << vp.pressure << ", ";
-        ofs << " mass_flow: " << vp.mass_flow << "\n";
+        //ofs << " pressure : " << vp.pressure << ", ";
+        //ofs << " mass_flow: " << vp.mass_flow << "\n";
         if (vp.node_station) {
             ofs << " station:   ";
             vp.node_station->print();

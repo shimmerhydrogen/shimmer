@@ -30,6 +30,8 @@ int main(int argc, char **argv)
   std::cout<< "R: " << R << std::endl;
   const auto Tc = model.red.get_Tcvec();
   const auto Vc = model.red.get_vcvec();
+  const auto Tr = model.red.get_Tr(molefrac);
+  const auto rho_r = model.red.get_rhor(molefrac);
 
   return 0;
 }

@@ -13,7 +13,7 @@ find_package(Eigen3 REQUIRED)
 find_package(autodiff REQUIRED)
 find_package(nlohmann_json_schema_validator REQUIRED)
 
-add_executable(hello main.cpp)
+add_executable(hello main.cpp shimmer_teqp_utilities.hpp)
 target_link_libraries(hello PRIVATE teqpcpp PRIVATE Eigen3::Eigen PRIVATE autodiff::autodiff PRIVATE nlohmann_json_schema_validator)
 target_link_directories(hello PRIVATE "${TEQP_DIR}/build")
 target_link_directories(hello PRIVATE "${TEQP_DIR}/build/install/lib")

@@ -116,6 +116,56 @@ linearized_fluid_solver::impose_edge_station_model(std::vector<triplet_t>& tripl
         auto source_node = g[s].node_num;
         auto target_node = g[t].node_num;
 
+        auto p_in = nodes_pressure[source_node];
+        auto p_out = nodes_pressure[target_node];
+
+        // Set variables
+        switch (st->which_control_type(at_step_))
+        {
+            case control::type::SHUT_OFF:
+            case control::type::BY_PASS:
+                set.set_c3(p_in < p_out);
+                break;
+            case control::type::BETA:
+            {
+                auto beta = p_out /p_in;
+                st.set_c1(beta);
+                break;
+            }
+            case control::type::POWER_DRIVER:
+            {
+                auto gamma = 1.4; // Or read from GERG
+                auto ck = gamma - 1.0 / gamma;
+                //auto beta = p_out /p_in;
+                auto beta = edge_stations::compressor_beta(p_in, p_out, st.externals());
+                auto ZTR = c2_nodes[source_node];
+                auto K = ZTR / st.efficiency();
+                auto G = flux[pipe_idx];
+                auto KGB = K * G * beta;
+
+                auto c3 = (K / ck) * (std::pow(beta, ck) - 1.0);
+                auto pwd = c3 * G;
+
+                st.set_c1(-KGB / p_in);
+                st.set_c2( KGB / p_out);
+                st.set_c3(c3);
+                st.set_rhs(pwd);
+                break;
+            }
+            case control::type::PRESSURE_IN:
+                st.set_rhs(p_in);
+                break;
+            case control::type::PRESSURE_OUT:
+                st.set_rhs(p_out);
+                break;
+            case control::type::FLUX:
+                st.set_rhs(flux[pipe_idx]);
+                break;
+            default:
+                std::cout << "ERROR: Fluid solver does not know this control type.\n";
+                throw std::exception;
+        }
+
         triplets_mom.push_back(triplet_t(row, source_node, st.model_c1()));
         triplets_mom.push_back(triplet_t(row, target_node, st.model_c2()));
         triplets_mom.push_back(triplet_t(row, row, st.model_c3()));
@@ -126,6 +176,7 @@ linearized_fluid_solver::impose_edge_station_model(std::vector<triplet_t>& tripl
 }
 
 
+#if 0
 void
 linearized_fluid_solver::control_stations(
             const vector_t& c2_nodes,
@@ -156,8 +207,6 @@ linearized_fluid_solver::control_stations(
         auto source_node = g[s].node_num;
         auto target_node = g[t].node_num;
 
-        //for (auto c = 0; c < st.num_controls();c++)
-        //{
         auto p_in = nodes_pressure[source_node];
         auto p_out = nodes_pressure[target_node];
 
@@ -214,6 +263,8 @@ linearized_fluid_solver::control_stations(
 
     return;
 }
+#endif
+
 
 pair_trip_vec_t
 linearized_fluid_solver::momentum(
@@ -374,13 +425,7 @@ linearized_fluid_solver::assemble(
     return std::make_pair(LHS, rhs);
 }
 
-/*
-bool linearized_fluid_solver::convergence_denerg(
-                const vector_t& sol)
-{
 
-}
-*/
 
 bool linearized_fluid_solver::convergence(
                 const vector_t& sol)
@@ -526,7 +571,6 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
 }
 
 
-
 bool
 linearized_fluid_solver::check_hard_constraints(size_t step)
 {
@@ -543,13 +587,9 @@ linearized_fluid_solver::check_hard_constraints(size_t step)
     return pass_all;
 }
 
-bool
-linearized_fluid_solver::check_edge_hard_constraints(size_t step)
-    {}
 
-/*
 bool
-linearized_fluid_solver::check_edge_control_constraints(size_t step)
+linearized_fluid_solver::check_hard_controls(size_t step)
 {
     bool pass_all = true;
 
@@ -567,6 +607,7 @@ linearized_fluid_solver::check_edge_control_constraints(size_t step)
 
         if (!st->active(step)) continue;
 
+        /*
         auto pipe_idx = pipe.branch_num;
         auto s_node_idx = g[source(*itor, g)].node_num;
         auto t_node_idx = g[target(*itor, g)].node_num;
@@ -582,8 +623,9 @@ linearized_fluid_solver::check_edge_control_constraints(size_t step)
                                                         {cvar_t::PRESSURE_OUT, p_out},
                                                         {cvar_t::FLOW, flow},
                                                         {cvar_t::PIN_LOWER_POUT, pin < pout} };
+        */
 
-        auto pass = pipe.edge_station->control_hard(control_vars, step * dt_);
+        auto pass = pipe.edge_station->control_hard(step * dt_);
 
         std::cout << " * Hard (" << idx << ") : " << pass << std::endl;
 
@@ -592,7 +634,7 @@ linearized_fluid_solver::check_edge_control_constraints(size_t step)
 
     return pass_all;
 }
-*/
+
 
 void
 linearized_fluid_solver::check_soft_constraints(size_t step)
@@ -605,7 +647,7 @@ linearized_fluid_solver::check_soft_constraints(size_t step)
 
 /*
 void
-linearized_fluid_solver::check_edge_soft_constraints(size_t step)
+linearized_fluid_solver::check_soft_controls(size_t step)
 {
     auto edge_range = boost::edges(g);
     auto begin = edge_range.first;
@@ -633,17 +675,19 @@ linearized_fluid_solver::check_constraints(size_t step)
     return false;
 }
 
-/*
-bool
-linearized_fluid_solver::check_edge_constraints(size_t step)
-{
 
-    if(check_edge_hard_constraints(step))
-        check_edge_soft_constraints(step);
+bool
+linearized_fluid_solver::check_controls(size_t step)
+{
+    if (check_hard_controls(step))
+    {
+        check_soft_controls(step);
         return true;
+
     }
+
     return false;
 }
-*/
+
 
 } //end namespace shimmer

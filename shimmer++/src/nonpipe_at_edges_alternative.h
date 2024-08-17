@@ -20,7 +20,6 @@ namespace control
         BOUNDARY,
     };
 
-
     enum constraint_type
     {
         LOWER,
@@ -30,7 +29,6 @@ namespace control
         GREATER_EQUAL,
         NONE,
     };
-
 
     enum type
     {
@@ -43,8 +41,7 @@ namespace control
         FLUX,
     };
 
-
-    class constraint_control
+    class constraint
     {
         hardness_type   hardness_;
         constraint_type type_;
@@ -81,7 +78,6 @@ namespace control
 
         inline const constraint_type& type() {return type_;};
     };
-
 
     class model
     {
@@ -166,22 +162,21 @@ namespace control
         }
     };
 
-
     class state
     {
     public:
         model model_;
-        constraint_control internal_;
+        control::constraint internal_;
         control::type type_;
 
-        state(const model& m, const constraint_control& internal):
+        state(const model& m, const control::constraint& internal):
             model_(m), internal_(internal)
             {};
-        state(const control::type& type, const constraint_control& internal):
+        state(const control::type& type, const control::constraint& internal):
             model_(model(type)), internal_(internal)
             {};
 
-        virtual control_hard(double time = 0)
+        virtual bool control_hard(double time = 0)
         {
             // Get stored variable in model
             auto variable = model_.control_coefficient();
@@ -196,15 +191,16 @@ namespace control
             return pass;
         }
 
-        set_c1(double value){ m.set_cofficient(0, value)};
-        set_c2(double value){ m.set_cofficient(1, value)};
-        set_c3(double value){ m.set_cofficient(2, value)};
-        set_rhs(double value)
+        inline void set_c1(double value){ m.set_cofficient(0, value)};
+        inline void set_c2(double value){ m.set_cofficient(1, value)};
+        inline void set_c3(double value){ m.set_cofficient(2, value)};
+        inline void set_rhs(double value)
         {
             m.set_cofficient(3, value)
         };
-    };
 
+        inline auto control_value() {return internal_.value()};
+    };
 
 /*
     class control_power_driver: public state
@@ -246,17 +242,17 @@ namespace control
     auto
     make_power_driver_control(double PWD_nominal, double ramp)
     {
-        auto internal = constraint_control(hardness_type::HARD_CONTROL,
+        auto internal = control::constraint(hardness_type::HARD_CONTROL,
                                            constraint_type::GREATER_EQUAL,
                                            PWD_nominal);
-
-        return control_power_driver(ramp, internal);
+        return state(control::type::POWER_DRIVER, internal);
+        //return control_power_driver(ramp, internal);
     }
 
     auto
     make_pressure_out_control(double pressure_out_max)
     {
-        auto internal = constraint_control(hardness_type::HARD_CONTROL,
+        auto internal = control::constraint(hardness_type::HARD_CONTROL,
                     constraint_type::LOWER_EQUAL, pressure_out_max);
 
         return state(control::type::PRESSURE_OUT, internal);
@@ -265,7 +261,7 @@ namespace control
     auto
     make_pressure_in_control(double pressure_in_min)
     {
-        auto internal = constraint_control(hardness_type::HARD_CONTROL,
+        auto internal = control::constraint(hardness_type::HARD_CONTROL,
                                            constraint_type::GREATER_EQUAL,
                                            pressure_in_min);
 
@@ -275,7 +271,7 @@ namespace control
     auto
     make_by_pass_control(const constraint_type& ctype)
     {
-        auto internal = constraint_edge(hardness_type::HARD_CONTROL,
+        auto internal = control::constraint(hardness_type::HARD_CONTROL,
                                         ctype, 0);
 
         return state(control::type::BY_PASS, internal);
@@ -284,7 +280,7 @@ namespace control
     auto
     make_shutoff_control(const constraint_type& ctype)
     {
-        auto internal = constraint_edge(hardness_type::HARD_CONTROL,
+        auto internal = control::constraint(hardness_type::HARD_CONTROL,
                                         ctype, 1);
 
         return  state(control::type::SHUT_OFF, internal);
@@ -293,7 +289,7 @@ namespace control
     auto
     make_beta_min_control(double beta_min)
     {
-        auto internal = constraint_edge(hardness_type::HARD_CONTROL,
+        auto internal = control::constraint(hardness_type::HARD_CONTROL,
                                         constraint_type::LOWER_EQUAL, beta_min);
 
         return  state(control::type::BETA, internal);
@@ -302,7 +298,7 @@ namespace control
     auto
     make_beta_max_control(double beta_max)
     {
-        auto internals = constraint_edge(hardness_type::HARD_CONTROL,
+        auto internals = control::constraint(hardness_type::HARD_CONTROL,
                                         constraint_type::GREATER_EQUAL, beta_max);
 
         return  state(control::type::BETA, internal);
@@ -311,7 +307,7 @@ namespace control
     auto
     make_flux_control(double flux_max)
     {
-        auto internals = constraint_edge(hardness_type::HARD_CONTROL,
+        auto internals = control::constraint(hardness_type::HARD_CONTROL,
                                         constraint_type::GREATER_EQUAL, flux_max);
 
         return  state(control::type::FLUX, internal);
@@ -319,35 +315,50 @@ namespace control
 
 } //end namespace control
 
+    enum external_type
+    {
+        BETA_MIN_GREATER_EQUAL,
+        BETA_MAX_LOWER_EQUAL,
+        P_OUT_MAX_LOWER_EQUAL,
+        P_OUT_MIN_GREATER_EQUAL,
+        P_IN_MIN_GREATER_EQUAL,
+        P_IN_MAX_LOWER_EQUAL,
+        FLUX_MIN_GREATER_EQUAL,
+        FLUX_MAX_LOWER_EQUAL,
+        V_MAX_LOWER_EQUAL,
+        V_MIN_GREATER_EQUAL,
+        PW_NOMINAL_LOWER_EQUAL,
+    }
+
+
     class station
     {
         size_t count;
         std::string name_;
         std::vector<bool> active_;
 
-        std::vector<constraint_edge> internals_;
-        std::vector<constraint_edge> externals_;
+        std::vector<control::constraint> internals_;
+        std::unordered_map<control::constraint> externals_;
 
         std::vector<control::state> controls_off;
         std::vector<control::state> controls_on;
 
         station(const std::string& name,
                 const std::vector<bool>& active,
-                const std::vector<constraint_edge>& internals,
-                const std::vector<constraint_edge>& externals):
+                const std::vector<control::constraint>& internals,
+                const std::unordered_map<control::constraint>& externals):
                      name_(name), active_(active),
                      internals_(internals), externals_(externals)
         {
             count = 0;
         };
 
-        inline active(int step){ return active_[step]};
+        inline auto active(int step){ return active_[step]};
 
-        inline which_control_type()
+        inline auto which_control_type()
         {
             size_t idx = count % controls.size();
-            controls[idx].type;
-            return;
+            return controls[idx].type;
         };
 
         bool
@@ -363,7 +374,7 @@ namespace control
             }
         }
 
-        /*
+            /*
                 bool
         control_hard(double time)
         {
@@ -402,7 +413,6 @@ namespace control
             return success;
         }
 
-
         //set coefficients of the current control model
         void set_c1(double value)
         {
@@ -437,17 +447,13 @@ namespace control
                     double ramp_coeff,
                     const std::vector<bool>& activate_history,
                     const std::vector<constraint_type>& internals,
-                    const std::vector<constraint_type>& externals):
+                    const std::unordered_map<constraint_type>& externals):
             station(name, activate_history, internals, externals){};
 
-        control_hard(double t)
+        bool control_hard(double t)
         {
             size_t idx = count % controls.size();
             bool pass = controls[idx].control_hard(time);
-
-            if (pass && controls[idx].type() == POWER_DRIVER)
-                model_.set_control_coefficient(pwd * (t - 1.0) + ramp_coeff_ * pw_nominal);
-
 
             if (!pass)
             {
@@ -455,6 +461,15 @@ namespace control
                 return false;
             }
 
+            if(controls[idx].type() == type::POWER_DRIVER)
+            {
+                auto pwd = controls[idx].model_.control_coefficient();
+                auto pwd_nominal = controls[idx].internal_value();
+                auto pwd_control = pwd * (t - 1.0) + ramp_coeff_ * pwd_nominal;
+                model_.set_control_coefficient(pwd_control);
+            }
+
+            return true;
         }
 
         activate()
@@ -476,12 +491,27 @@ namespace control
 
 
     template<typename CONSTR_NONPIPE>
-    std::vector<CONSTR_NONPIPE>
-    build_multiple_constraints(const std::vector<pair_input_t>&limits, hardness_type ht)
+    std::unordered_map<CONSTR_NONPIPE>
+    build_multiple_constraints(const std::vector<std::tuple<external_type, constraint_type, double>>& limits,
+                                hardness_type ht)
     {
-       std::vector<CONSTR_NONPIPE> constr_vector(limits.size());
+        std::unordered_map<CONSTR_NONPIPE> constr_vector(limits.size());
         size_t i = 0;
-        for(const auto&  ec : user_limits)
+        for(const auto&  l : limits)
+            constr_vector[get<0>(limits)] = constraint(ht,
+                                            get<1>(limits),
+                                            get<2>(limits));
+        return constr_vector;
+    }
+
+    template<typename CONSTR_NONPIPE>
+    std::vector<CONSTR_NONPIPE>
+    build_multiple_constraints(const std::vector<std::pair<constraint_type, double>>& limits,
+                                hardness_type ht)
+    {
+        std::vector<CONSTR_NONPIPE> constr_vector(limits.size());
+        size_t i = 0;
+        for(const auto&  l : limits)
             constr_vector[i++] = constraint(ht,
                                             limits[i].first,
                                             limits[i].second);
@@ -490,12 +520,12 @@ namespace control
 
     auto
     make_regulator(const std::vector<bool>& activate_history,
-                   const std::vector<pair_input_t>& user_limits)
+                   const std::vector<std::tuple<external_type, constraint_type, double>>& user_limits)
     {
-        auto internal = constraint_edge(hardness_type::HARD,
+        auto internal = control::constraint(hardness_type::HARD,
                                         constraint_type::GREATER_EQUAL,
                                          velocity_limit);
-        auto externals = build_multiple_constraints<constraint_edge>(user_limits);
+        auto externals = build_multiple_constraints<control::constraint>(user_limits);
 
         station regulator("REGULATOR", activate_history, internal, externals);
 
@@ -511,12 +541,12 @@ namespace control
     auto
     make_valve(const std::vector<bool>& activate_history,
                double velocity_limit,
-               const std::vector<pair_input_t>& user_limits)
+               const std::vector<std::tuple<external_type, constraint_type, double>>& user_limits)
     {
-        auto internal = constraint_edge(hardness_type::HARD,
+        auto internal = control::constraint(hardness_type::HARD,
                                         constraint_type::GREATER_EQUAL,
                                          velocity_limit);
-        auto externals = build_multiple_constraints<constraint_edge>(user_limits);
+        auto externals = build_multiple_constraints<control::constraint>(user_limits);
 
         station valve("VALVE", activate_history, internal, externals);
 
@@ -535,13 +565,12 @@ namespace control
                     double efficiency,
                     double power_driver_nominal,
                     const std::vector<double>& activate_history,
-                    const std::vector<pair_input_t>& pressure_limits,
-                    const std::vector<pair_input_t>& hard_limits,
-                    const std::vector<pair_input_t>& user_limits)
+                    const std::vector<std::pair<constraint_type, double>>& hard_limits,
+                    const std::vector<std::tuple<external_type, constraint_type, double>>& user_limits)
     {
         auto thresholds = build_multiple_constraints<constraint>(pressure_limits, hardness_type::HARD);
-        auto internals  = build_multiple_constraints<constraint_edge>(hard_limits, hardness_type::HARD);
-        auto externals  = build_multiple_constraints<constraint_edge>(user_limits, hardness_type::SOFT);
+        auto internals  = build_multiple_constraints<control::constraint>(hard_limits, hardness_type::HARD);
+        auto externals  = build_multiple_constraints<control::constraint>(user_limits, hardness_type::SOFT);
 
         compressor cmp("COMPRESSOR", activate_history, internals, externals, thresholds);
 
@@ -553,7 +582,13 @@ namespace control
         cmp.set_control_off(c_by_pass);
         cmp.set_control_off(c_shutoff);
 
-        auto c_power_driver = make_power_driver_control( power_driver_nominal,  ramp);
+        const auto beta_min  = externals[BETA_MIN_LOWER_EQUAL].value();
+        const auto beta_max  = externals[BETA_MAX_GREATER_EQUAL].value();
+        const auto p_in_min  = externals[P_IN_MIN_LOWER_EQUAL].value();
+        const auto p_out_max = externals[P_OUT_MAX_GREATER_EQUAL].value();
+        const auto flux_max  = externals[FLUX_MAX_GREATER_EQUAL].value();
+
+        auto c_power_driver = make_power_driver_control(power_driver_nominal, ramp);
         auto c_beta_min = make_beta_min_control(beta_min);
         auto c_beta_max = make_beta_max_control(beta_max);
         auto c_press_in = make_pressure_in_control(pressure_in_min);
@@ -570,7 +605,7 @@ namespace control
         return cmp;
     }
 
-
+/*
     double
     compressor_power_driver(double beta,
                             double pressure_in,
@@ -588,12 +623,12 @@ namespace control
         // 1. Compute power driver
         return (K * G / ck) * (std::pow(beta, ck) - 1.0);
     }
-
+*/
 
     double
     compressor_beta( double p_in,
-                double p_out,
-                const std::vector<constraint_edge>& internals)
+                     double p_out,
+                     const std::unordered_map<control::constraint>& internals)
     {
         double press_rate = p_out / p_in;
 

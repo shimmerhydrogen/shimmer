@@ -101,7 +101,9 @@ public:
     bool check_hard_constraints(size_t step);
     void check_soft_constraints(size_t step);
     bool check_constraints(size_t step);
-    bool check_edge_constraints(size_t step);
+    bool check_hard_controls(size_t step);
+    bool check_soft_controls(size_t step);
+    bool check_controls(size_t step);
 
     double temperature();
     vector_t pressure_nodes();

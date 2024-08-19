@@ -101,7 +101,7 @@ double control::model::control_coefficient()
 }
 
 
-virtual bool control::state::control_hard(double time)
+virtual bool control::state::control_hard(size_t step_)
 {
     // Get stored variable in model
     auto variable = model_.control_coefficient();
@@ -192,10 +192,10 @@ control::make_flux_control(double flux_max)
 //==========================================================
 
 bool
-station::control_hard(double time)
+station::control_hard(size_t step, double dummy_value)
 {
     size_t idx = count % controls.size();
-    bool pass = controls[idx].control_hard(time);
+    bool pass = controls[idx].control_hard(step);
 
     if (!pass)
     {
@@ -275,15 +275,15 @@ station::is_active(size_t step, double target_pressure)
 }
 
 bool
-compressor::control_hard(size_t step, const infrastructure_graph& graph, const variable& var)
+compressor::control_hard(size_t step, double target_pressure)
 {
-    bool is_on = is_active(step, graph, var);
+    bool is_on = is_active(step, target_pressure);
 
     auto controls = (is_on) ? std::make_shared<std::vector<control::state>>(controls_on)
                             : std::make_shared<std::vector<control::state>>(controls_off);
 
     size_t idx = count % controls.size();
-    bool pass = controls[idx].control_hard(time);
+    bool pass = controls[idx].control_hard(step);
 
     if (!pass)
     {

@@ -177,8 +177,9 @@ class station
     std::vector<control::state> controls_off;
     std::vector<control::state> controls_on;
 public:
+    station() = default;
     station(const std::string& name,
-            const std::vector<bool>& active_history,
+    const std::vector<bool>& active_history,
             const std::vector<control::constraint>& internals,
             const map_type& externals):
                     name_(name), active_history_(active_history),

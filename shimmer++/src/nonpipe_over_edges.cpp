@@ -5,7 +5,8 @@ namespace shimmer
 namespace edge_station
 {
 
-bool  control::constraint::check(double variable, size_t step)
+bool
+control::constraint::check(double variable, size_t step)
 {
     switch (type_)
     {
@@ -81,28 +82,33 @@ control::model::model(control::type ctype)
     }
 }
 
-void control::model::set_coefficient(size_t index, double value)
+void
+control::model::set_coefficient(size_t index, double value)
 {
     assert(free_index.size() > 0);
     assert("Error: In model of edge station, coefficient at index is not modifiable" && std::find(free_index.begin(), free_index.end(), item) != vec.end())
 
     coeffs[index] = value;
 }
-void control::model::set_control_coefficient(double value)
+
+void
+control::model::set_control_coefficient(double value)
 {
     coeffs[control_index_] = value;
 }
-double control::model::control_coefficient()
-{
+
+double
+control::model::control_coefficient()
+    {
     if (control_index_ < 0)
         return INF;
 
     return coeffs[control_index_];
 }
 
-
-virtual bool control::state::control_hard(size_t step_)
-{
+virtual bool
+control::state::control_hard(size_t step_)
+    {
     // Get stored variable in model
     auto variable = model_.control_coefficient();
 
@@ -344,7 +350,7 @@ make_valve(const std::vector<bool>& activate_history,
 }
 
 auto
-make_compressor(size_t control_node,
+make_compressor(
                 double ramp,
                 double efficiency,
                 double power_driver_nominal,
@@ -357,8 +363,6 @@ make_compressor(size_t control_node,
     auto externals  = build_multiple_constraints<control::constraint>(user_limits, hardness_type::SOFT);
 
     compressor cmp("COMPRESSOR", activate_history, internals, externals, thresholds);
-
-    cmp.set_control_node(control_node, thresholds);
 
     auto c_by_pass = make_by_pass_control(constraint_type::EQUAL);
     auto c_shutoff = make_shutoff_control(constraint_type::EQUAL);
@@ -393,14 +397,14 @@ make_compressor(size_t control_node,
 double
 compressor_beta(double p_in,
                 double p_out,
-                const std::unordered_map<control::constraint>& internals)
+                const std::unordered_map<control::constraint>& externals)
 {
     double press_rate = p_out / p_in;
 
-    const auto& beta_min_constr  = internals[BETA_MIN];
-    const auto& beta_max_constr  = internals[BETA_MAX];
-    const auto& p_out_min_constr = internals[P_OUT_MIN];
-    const auto& p_out_max_constr = internals[P_OUT_MAX];
+    const auto& beta_min_constr  = externals[BETA_MIN];
+    const auto& beta_max_constr  = externals[BETA_MAX];
+    const auto& p_out_min_constr = externals[P_OUT_MIN];
+    const auto& p_out_max_constr = externals[P_OUT_MAX];
 
     bool pass_min = beta_min_constr.check(press_rate);
     bool pass_max = beta_max_constr.check(press_rate);
@@ -408,8 +412,8 @@ compressor_beta(double p_in,
     if (pass_min & pass_max)
         return press_rate;
 
-    double beta_min = internals[BETA_MIN].value();
-    double beta_max = internals[BETA_MAX].value();
+    double beta_min = externals[BETA_MIN].value();
+    double beta_max = externals[BETA_MAX].value();
 
     double beta;
     if (!pass_min)

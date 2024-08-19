@@ -317,17 +317,21 @@ namespace control
 
     enum external_type
     {
-        BETA_MIN_GREATER_EQUAL,
-        BETA_MAX_LOWER_EQUAL,
-        P_OUT_MAX_LOWER_EQUAL,
-        P_OUT_MIN_GREATER_EQUAL,
-        P_IN_MIN_GREATER_EQUAL,
-        P_IN_MAX_LOWER_EQUAL,
-        FLUX_MIN_GREATER_EQUAL,
-        FLUX_MAX_LOWER_EQUAL,
-        V_MAX_LOWER_EQUAL,
-        V_MIN_GREATER_EQUAL,
-        PW_NOMINAL_LOWER_EQUAL,
+        //MIN_GREATER_EQUAL,
+        //MAX_LOWER_EQUAL,
+        BETA_MIN,
+        BETA_MAX,
+        P_OUT_MAX,
+        P_OUT_MIN,
+        P_IN_MIN,
+        P_IN_MAX,
+        FLUX_MINL,
+        FLUX_MAX,
+        V_MAX,
+        V_MIN,
+        PWD_NOMINAL,
+        P_THRESHOLD_MIN,
+        P_THRESHOLD_MAX,
     }
 
 
@@ -335,7 +339,8 @@ namespace control
     {
         size_t count;
         std::string name_;
-        std::vector<bool> active_;
+        bool is_on_;
+        std::vector<bool> active_history_;
 
         std::vector<control::constraint> internals_;
         std::unordered_map<control::constraint> externals_;
@@ -344,16 +349,17 @@ namespace control
         std::vector<control::state> controls_on;
 
         station(const std::string& name,
-                const std::vector<bool>& active,
+                const std::vector<bool>& active_history,
                 const std::vector<control::constraint>& internals,
                 const std::unordered_map<control::constraint>& externals):
-                     name_(name), active_(active),
+                     name_(name), active_history_(active_history),
                      internals_(internals), externals_(externals)
         {
             count = 0;
         };
 
-        inline auto active(int step){ return active_[step]};
+        inline virtual auto is_active(size_t step, const infrastructure_graph& graph, const variable& var)
+            {return active_history_[step]};
 
         inline auto which_control_type()
         {
@@ -441,17 +447,23 @@ namespace control
     {
         double ramp_coeff_;
         double efficiency;
+        int control_node;
 
         compressor(const std::string& name,
                     double efficiency,
                     double ramp_coeff,
                     const std::vector<bool>& activate_history,
-                    const std::vector<constraint_type>& internals,
-                    const std::unordered_map<constraint_type>& externals):
+                    const std::vector<control::constraint>& internals,
+                    const std::unordered_map<control::constraint>& externals):
             station(name, activate_history, internals, externals){};
 
-        bool control_hard(double t)
+        bool control_hard(size_t step, const infrastructure_graph& graph, const variable& var)
         {
+            bool is_on = is_active(step, graph, var);
+
+            auto controls = (is_on) ? std::make_shared<std::vector<control::state>>(controls_on)
+                                    : std::make_shared<std::vector<control::state>>(controls_off);
+
             size_t idx = count % controls.size();
             bool pass = controls[idx].control_hard(time);
 
@@ -461,30 +473,36 @@ namespace control
                 return false;
             }
 
-            if(controls[idx].type() == type::POWER_DRIVER)
+            if(controls[idx].type() == control::type::POWER_DRIVER)
             {
                 auto pwd = controls[idx].model_.control_coefficient();
                 auto pwd_nominal = controls[idx].internal_value();
-                auto pwd_control = pwd * (t - 1.0) + ramp_coeff_ * pwd_nominal;
+                auto pwd_control = pwd * (step - 1.0) + ramp_coeff_ * pwd_nominal;
                 model_.set_control_coefficient(pwd_control);
             }
 
             return true;
         }
 
-        activate()
+        bool is_active(size_t step, const infrastructure_graph& graph, const variable& var)
         {
-            auto pn = pressure_nodes[control_node];
-            bool pass_down = threshold[0].check(pn);
-            bool pass_up   = threshold[1].check(pn);
+            /* Warning: control node is set for the moment with itor = begin(),
+                        but it must be updated to source. This can be done easily
+                        with the new infrastructure already in branch MC/db_interface
+                        (a1847d9) and update to source once all is integrated
+            */
+            auto itor = boost::edges(g).first;
+            auto s = source(*itor, g);
+            auto control_node = g[s].node_num;
 
-            bool turn_on = (!active & pass_up) || (active & !pass_down);
+            auto pn = var_.pressure[control_node];
+            bool pass_down = externals_[BETA_MIN].check(pn);
+            bool pass_up   = externals_[BETA_MAX].check(pn);
 
-            if (turn_on)
-                // iterate over controls_on
-            else
-                //iterate over controls_off
+            bool is_on   = (!active_history_[step] & pass_up)
+                             || (active_history_[step] & !pass_down);
 
+            return is_on;
         }
 
     };
@@ -582,11 +600,11 @@ namespace control
         cmp.set_control_off(c_by_pass);
         cmp.set_control_off(c_shutoff);
 
-        const auto beta_min  = externals[BETA_MIN_LOWER_EQUAL].value();
-        const auto beta_max  = externals[BETA_MAX_GREATER_EQUAL].value();
-        const auto p_in_min  = externals[P_IN_MIN_LOWER_EQUAL].value();
-        const auto p_out_max = externals[P_OUT_MAX_GREATER_EQUAL].value();
-        const auto flux_max  = externals[FLUX_MAX_GREATER_EQUAL].value();
+        const auto beta_min  = externals[BETA_MIN].value();
+        const auto beta_max  = externals[BETA_MAX].value();
+        const auto p_in_min  = externals[P_IN_MIN].value();
+        const auto p_out_max = externals[P_OUT_MAX].value();
+        const auto flux_max  = externals[FLUX_MAX].value();
 
         auto c_power_driver = make_power_driver_control(power_driver_nominal, ramp);
         auto c_beta_min = make_beta_min_control(beta_min);
@@ -633,10 +651,10 @@ namespace control
         double press_rate = p_out / p_in;
 
 
-        const auto& beta_min_constr  = internals[BETA_MIN_LOWER_EQUAL];
-        const auto& beta_max_constr  = internals[BETA_MAX_GREATER_EQUAL];
-        const auto& p_out_min_constr = internals[P_OUT_MIN_LOWER_EQUAL];
-        const auto& p_out_max_constr = internals[P_OUT_MAX_GREATER_EQUAL];
+        const auto& beta_min_constr  = internals[BETA_MIN];
+        const auto& beta_max_constr  = internals[BETA_MAX];
+        const auto& p_out_min_constr = internals[P_OUT_MIN];
+        const auto& p_out_max_constr = internals[P_OUT_MAX];
 
         bool pass_min = beta_min_constr.check(press_rate);
         bool pass_max = beta_max_constr.check(press_rate);
@@ -644,8 +662,8 @@ namespace control
         if (pass_min & pass_max)
             return press_rate;
 
-        double beta_min = internals[BETA_MIN_GREATER_EQUAL].value();
-        double beta_max = internals[BETA_MAX_LOWER_EQUAL].value();
+        double beta_min = internals[BETA_MIN].value();
+        double beta_max = internals[BETA_MAX].value();
 
         double beta;
         if (!pass_min)
@@ -667,6 +685,7 @@ namespace control
     } //end namespace control
 }//end namespace shimmer
 
+// 0. Check activation warning
 // 1. t is really time t? why -1? It is not it-1?
 // 2. Use pipes as by_pass....not to heavy? Maybe better just add real stations?
 // 3. Marco: In PWD, Ki = ZiTiR.. what about R? at nodes or at pipe? => use c2_nodes, c2_pipes? combination?

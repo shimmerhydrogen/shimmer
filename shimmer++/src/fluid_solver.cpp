@@ -605,7 +605,7 @@ linearized_fluid_solver::check_hard_controls(size_t step)
 
         auto& st = pipe.pipe_station;
 
-        if (!st->active(step)) continue;
+        if (!st->active(var_, step)) continue;
 
         /*
         auto pipe_idx = pipe.branch_num;

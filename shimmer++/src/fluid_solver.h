@@ -15,7 +15,9 @@
 #include "../src/gas_law.h"
 #include "../src/temporal.h"
 
-namespace shimmer{
+
+namespace shimmer
+    {
 
 using sparse_matrix_t = Eigen::SparseMatrix<double>;
 using triplet_t = Eigen::Triplet<double>;

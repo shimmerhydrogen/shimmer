@@ -11,9 +11,10 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <Eigen/Dense>
 #include "../src/boundary.h"
-#include "../src/nonpipe_at_edges.h"
+#include "../src/nonpipe_over_edges.h"
 
-namespace shimmer {
+namespace shimmer
+    {
 
 using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1>;
 
@@ -95,7 +96,7 @@ struct edge_properties {
     double      diameter;
     double      friction_factor;
     int         grid_pts;
-    edge_station station;
+    edge_station::station pipe_station;
 
     double area()   const { return M_PI * 0.25 * diameter * diameter;}
     double volume() const { return area() * length;}

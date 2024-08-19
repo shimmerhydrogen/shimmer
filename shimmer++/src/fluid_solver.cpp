@@ -1,6 +1,5 @@
 #include <Eigen/SparseLU>
 #include "../src/fluid_solver.h"
-#include "../src/nonpipe_pipe.h"
 #include <iomanip>
 #include <fstream>
 
@@ -120,7 +119,7 @@ linearized_fluid_solver::impose_edge_station_model(std::vector<triplet_t>& tripl
         auto p_out = nodes_pressure[target_node];
 
         // Set variables
-        switch (st->which_control_type(at_step_))
+        switch (st->which_control_type())
         {
             case control::type::SHUT_OFF:
             case control::type::BY_PASS:
@@ -137,7 +136,7 @@ linearized_fluid_solver::impose_edge_station_model(std::vector<triplet_t>& tripl
                 auto gamma = 1.4; // Or read from GERG
                 auto ck = gamma - 1.0 / gamma;
                 //auto beta = p_out /p_in;
-                auto beta = edge_stations::compressor_beta(p_in, p_out, st.externals());
+                auto beta = edge_station::compressor_beta(p_in, p_out, st.externals());
                 auto ZTR = c2_nodes[source_node];
                 auto K = ZTR / st.efficiency();
                 auto G = flux[pipe_idx];

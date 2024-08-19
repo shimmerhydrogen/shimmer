@@ -61,7 +61,7 @@ namespace control
     class model
     {
         std::vector<double> coeffs;
-        std:vector<int> free_index;
+        std::vector<int> free_index;
         int control_index_;
 
         public:
@@ -87,11 +87,11 @@ namespace control
 
         virtual bool control_hard(double time = 0);
 
-        inline void set_c1(double value){ m.set_cofficient(0, value)};
-        inline void set_c2(double value){ m.set_cofficient(1, value)};
-        inline void set_c3(double value){ m.set_cofficient(2, value)};
-        inline void set_rhs(double value){m.set_cofficient(3, value)};
-        inline auto control_value() {return internal_.value()};
+        inline void set_c1(double value){ model_.set_coefficient(0, value);};
+        inline void set_c2(double value){ model_.set_coefficient(1, value);};
+        inline void set_c3(double value){ model_.set_coefficient(2, value);};
+        inline void set_rhs(double value){model_.set_coefficient(3, value);};
+        inline auto control_value() {return internal_.value();};
     };
 
 /*
@@ -110,7 +110,7 @@ namespace control
 
         bool control_hard(double time)
         {
-            // Get stored power driver in model
+            // get stored power driver in model
             auto pwd = model_.control_coefficient();
 
             // 1. Check constraint
@@ -184,7 +184,7 @@ namespace control
                      internals_(internals), externals_(externals), count(0)
         {};
 
-        inline virtual auto is_active(size_t step, const infrastructure_graph& graph, const variable& var)
+        inline virtual bool is_active(size_t step, double target_pressure)
             {return active_history_[step]};
 
         inline auto which_control_type()
@@ -201,6 +201,8 @@ namespace control
         void set_c2(double value);
         void set_c3(double value);
         void set_rhs(double value);
+
+        inline const auto & externals(){return externals_};
     };
 
 
@@ -217,7 +219,7 @@ namespace control
                     const std::vector<control::constraint>& internals,
                     const std::unordered_map<control::constraint>& externals):
             station(name, activate_history, internals, externals){};
-        bool is_active(size_t step, const infrastructure_graph& graph, const variable& var)
+        bool is_active(size_t step, double target_pressure)
         bool control_hard(size_t step, const infrastructure_graph& graph, const variable& var);
     };
 
@@ -230,9 +232,9 @@ namespace control
         std::unordered_map<CONSTR_NONPIPE> constr_vector(limits.size());
         size_t i = 0;
         for(const auto&  l : limits)
-            constr_vector[get<0>(limits)] = constraint(ht,
-                                            get<1>(limits),
-                                            get<2>(limits));
+            constr_vector[std::get<0>(limits)] = constraint(ht,
+                                            std::get<1>(limits),
+                                            std::get<2>(limits));
         return constr_vector;
     }
 

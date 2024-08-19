@@ -251,18 +251,20 @@ station::set_rhs(double value)
 };
 
 bool
-station::is_active(size_t step, const infrastructure_graph& graph, const variable& var)
+station::is_active(size_t step, double target_pressure)
 {
-    /* Warning: control node is set for the moment with itor = begin(),
-                but it must be updated to source. This can be done easily
-                with the new infrastructure already in branch MC/db_interface
-                (a1847d9) and update to source once all is integrated
-    */
-    auto itor = boost::edges(g).first;
-    auto s = source(*itor, g);
-    auto control_node = g[s].node_num;
+    /* Warning: control node is not set for the moment.
+    It is provided instead the pressure at the target node.
+    The graph is not passed to the station, since the graph
+    need station to be defined. Maybe improve by saving the
+    control node and pass var.
 
+    auto t = target(*itor, g);
+    auto control_node = g[s].node_num;
     auto pn = var_.pressure[control_node];
+    */
+
+    double pn = target_pressure;
     bool pass_down = externals_[BETA_MIN].check(pn);
     bool pass_up   = externals_[BETA_MAX].check(pn);
 
@@ -425,5 +427,5 @@ compressor_beta(double p_in,
     return p_out / p_in;
 }
 
-    } //end namespace control
-    }//end namespace shimmer
+} //end namespace control
+}//end namespace shimmer

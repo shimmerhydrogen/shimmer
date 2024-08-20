@@ -108,7 +108,7 @@ control::model::control_coefficient()
 
 virtual bool
 control::state::control_hard(size_t step_)
-    {
+{
     // Get stored variable in model
     auto variable = model_.control_coefficient();
 
@@ -181,7 +181,7 @@ control::make_beta_min_control(double beta_min)
 auto
 control::make_beta_max_control(double beta_max)
 {
-    auto internals = control::constraint(hardness_type::HARD_CONTROL,
+    auto internal = control::constraint(hardness_type::HARD_CONTROL,
                                     constraint_type::GREATER_EQUAL, beta_max);
 
     return  state(control::type::BETA, internal);
@@ -190,7 +190,7 @@ control::make_beta_max_control(double beta_max)
 auto
 control::make_flux_control(double flux_max)
 {
-    auto internals = control::constraint(hardness_type::HARD_CONTROL,
+    auto internal = control::constraint(hardness_type::HARD_CONTROL,
                                     constraint_type::GREATER_EQUAL, flux_max);
 
     return  state(control::type::FLUX, internal);
@@ -256,37 +256,51 @@ station::set_rhs(double value)
     controls[idx].set_coefficient(3, value);
 };
 
-bool
-station::is_active(size_t step, double target_pressure)
+void
+station::activate(size_t step, double target_pressure)
 {
-    /* Warning: control node is not set for the moment.
-    It is provided instead the pressure at the target node.
-    The graph is not passed to the station, since the graph
-    need station to be defined. Maybe improve by saving the
-    control node and pass var.
+    bool on   = active_history_[step];
 
-    auto t = target(*itor, g);
-    auto control_node = g[s].node_num;
-    auto pn = var_.pressure[control_node];
-    */
+    if (on)
+        itor = controls_on.begin();
+    else
+        itor = controls_off.begin();
 
-    double pn = target_pressure;
-    bool pass_down = externals_[BETA_MIN].check(pn);
-    bool pass_up   = externals_[BETA_MAX].check(pn);
-
-    bool is_on   = (!active_history_[step] & pass_up)
-                        || (active_history_[step] & !pass_down);
-
-    return is_on;
+    return;
 }
+
+
+compressor::compressor(const std::string& name,
+        double efficiency,
+        double ramp_coeff,
+        const std::vector<bool>& activate_history,
+        const std::vector<control::constraint>& internals,
+        const map_type& externals):
+        station(name, activate_history, internals, externals)
+{
+    std::vector<external_type> mandatory_exts = {BETA_MIN,
+    BETA_MAX,
+    P_OUT_MAX,
+    P_OUT_MIN,
+    P_IN_MIN,
+    PWD_NOMINAL,
+    P_THRESHOLD_MIN,
+    P_THRESHOLD_MAX};
+
+    for(const auto& e : mandatory_exts)
+    {
+        if (externals.find(e) == externals.end())
+        {
+            auto messsage = "Mandatory limit was not goven for" + e.key();
+            throw std::exception(message);
+        }
+    }
+};
+
 
 bool
 compressor::control_hard(size_t step, double target_pressure)
 {
-    bool is_on = is_active(step, target_pressure);
-
-    auto controls = (is_on) ? std::make_shared<std::vector<control::state>>(controls_on)
-                            : std::make_shared<std::vector<control::state>>(controls_off);
 
     size_t idx = count % controls.size();
     bool pass = controls[idx].control_hard(step);
@@ -307,6 +321,42 @@ compressor::control_hard(size_t step, double target_pressure)
 
     return true;
 }
+
+void
+compressor::activate(size_t step, double target_pressure)
+{
+    /* Warning: control node is not set for the moment.
+    It is provided instead the pressure at the target node.
+    The graph is not passed to the station, since the graph
+    need station to be defined. Maybe improve by saving the
+    control node and pass var.
+
+    auto t = target(*itor, g);
+    auto control_node = g[s].node_num;
+    auto pn = var_.pressure[control_node];
+    */
+
+    double pn = target_pressure;
+    bool pass_down = externals_[P_THRESHOLD_MIN].check(pn);
+    bool pass_up   = externals_[P_THRESHOLD_MAX].check(pn);
+
+    bool on   = (!active_history_[step] & pass_up)
+                || (active_history_[step] & !pass_down);
+
+    if (on)
+    {
+        itor_ = controls_on.begin();
+        return;
+    }
+
+    if (p_out > p_in)
+        itor_ = controls_off.begin() + 1;
+    else
+        itor_ = controls_off.begin() ;
+
+    return;
+}
+
 
 auto
 make_regulator(const std::vector<bool>& activate_history,
@@ -350,16 +400,18 @@ make_valve(const std::vector<bool>& activate_history,
 }
 
 auto
-make_compressor(
-                double ramp,
+make_compressor(double ramp,
                 double efficiency,
                 double power_driver_nominal,
                 const std::vector<double>& activate_history,
-                const std::vector<std::pair<constraint_type, double>>& hard_limits,
                 const std::vector<std::tuple<external_type, constraint_type, double>>& user_limits)
 {
-    auto thresholds = build_multiple_constraints<constraint>(pressure_limits, hardness_type::HARD);
-    auto internals  = build_multiple_constraints<control::constraint>(hard_limits, hardness_type::HARD);
+    auto flux_hard = control::constraint(hardness_type::HARD,
+                                         constraint_type::GREATER_EQUAL,
+                                         0.0);
+
+    std::vector<control::constraint> internals = { flux_hard };
+
     auto externals  = build_multiple_constraints<control::constraint>(user_limits, hardness_type::SOFT);
 
     compressor cmp("COMPRESSOR", activate_history, internals, externals, thresholds);

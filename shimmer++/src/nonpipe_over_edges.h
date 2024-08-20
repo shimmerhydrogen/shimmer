@@ -12,7 +12,6 @@ namespace edge_station
 {
 namespace control
 {
-
     enum hardness_type
     {
         HARD,
@@ -152,7 +151,7 @@ enum external_type
     P_OUT_MIN,
     P_IN_MIN,
     P_IN_MAX,
-    FLUX_MINL,
+    FLUX_MIN,
     FLUX_MAX,
     V_MAX,
     V_MIN,
@@ -186,8 +185,7 @@ public:
                     internals_(internals), externals_(externals), count(0)
     {};
 
-    inline virtual bool is_active(size_t step, double target_pressure)
-        {return active_history_[step];};
+    virtual void activate(size_t step, double target_pressure);
 
     inline auto which_control_type()
     {
@@ -215,13 +213,13 @@ class compressor : public station
     int control_node;
 
     compressor(const std::string& name,
-                double efficiency,
-                double ramp_coeff,
-                const std::vector<bool>& activate_history,
-                const std::vector<control::constraint>& internals,
-                const map_type& externals):
-        station(name, activate_history, internals, externals){};
-    bool is_active(size_t step, double target_pressure);
+        double efficiency,
+        double ramp_coeff,
+        const std::vector<bool>& activate_history,
+        const std::vector<control::constraint>& internals,
+        const map_type& externals);
+
+    void activate(size_t step, double target_pressure);
     bool control_hard(size_t step, double target_pressure);
 };
 
@@ -266,7 +264,6 @@ auto make_compressor(size_t control_node,
         double efficiency,
         double power_driver_nominal,
         const std::vector<double>& activate_history,
-        const std::vector<std::pair<constraint_type, double>>& hard_limits,
         const std::vector<std::tuple<external_type, constraint_type, double>>& user_limits);
 
 double compressor_beta(double pressure_in,

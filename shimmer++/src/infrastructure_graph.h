@@ -95,7 +95,6 @@ struct edge_properties {
     double      length;
     double      diameter;
     double      friction_factor;
-    int         grid_pts;
     edge_station::station pipe_station;
 
     double area()   const { return M_PI * 0.25 * diameter * diameter;}

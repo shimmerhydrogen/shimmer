@@ -1,6 +1,8 @@
 #ifndef __TEST_UTILITIES_HPP__
 #define __TEST_UTILITIES_HPP__
 
+#include <iostream>
+
 #define MIN_DOUBLE_TOL 2.0 * std::numeric_limits<double>::epsilon()
 
 #define ASSERT_MSG(exp, msg) \

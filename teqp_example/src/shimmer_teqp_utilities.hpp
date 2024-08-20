@@ -1,30 +1,53 @@
-#ifndef SHIMMER_TEQP_UTILITIES
-#define SHIMMER_TEQP_UTILITIES
+#ifndef __SHIMMER_TEQP_UTILITIES_HPP__
+#define __SHIMMER_TEQP_UTILITIES_HPP__
 
 #include <list>
 #include <ostream>
+#include <span>
 #include <vector>
+
+#include "shimmer_teqp_concepts.hpp"
 
 namespace shimmer_teqp
 {
   namespace utilities
   {
     // *********************************************************
-//    template<typename collection_type>
-//    std::ostream& operator<<(std::ostream& out,
-//                             const collection_type& elements)
-//    {
-//      out<< "{";
-//      unsigned int i = 0;
-//      for (const auto& element : elements)
-//      {
-//        out<< (i != 0 ? ", " : "")<< element;
-//        i++;
-//      }
-//      out<< "}";
+    template <concepts::IterableCollection collection>
+    std::ostream& operator<<(std::ostream& out,
+                             const collection& elements)
+    {
+      out<< "{";
+      unsigned int i = 0;
+      for (const auto& element : elements)
+      {
+        out<< (i != 0 ? ", " : "")<< element;
+        i++;
+      }
+      out<< "}";
 
-//      return out;
-//    }
+      return out;
+    }
+    // *************************************************************************
+    template <concepts::IterableCollection collection1,
+              concepts::IterableCollection collection2>
+    bool operator==(const collection1& elements1,
+                    const collection2& elements2)
+    {
+      assert(elements1.size() == elements2.size());
+      auto view1 = std::span{elements1};
+      auto view2 = std::span{elements2};
+
+      auto it2 = elements2.begin();
+      for (const auto& element1 : elements1)
+      {
+        if (element1 != (*it2))
+          return false;
+        it2++;
+      }
+
+      return true;
+    }
     // *********************************************************
     template<typename collection_type, typename value_type>
     std::vector<unsigned int> filter_components(const collection_type& mol_fracs,

@@ -37,10 +37,11 @@ list(APPEND SHMTEQP_LIBRARY_TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 
 list(APPEND SHMTEQP_LIBRARY_TEST_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/test_utilities.hpp)
 
-create_test_sourcelist(SHMTEQP_LIBRARY_TEST_TESTS
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_filter_components.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_temp_2.hpp
-  )
+list(APPEND SHMTEQP_LIBRARY_TEST_TESTS ${CMAKE_CURRENT_SOURCE_DIR}/test_filter_collection.hpp)
+list(APPEND SHMTEQP_LIBRARY_TEST_TESTS ${CMAKE_CURRENT_SOURCE_DIR}/test_filter_components.hpp)
+list(APPEND SHMTEQP_LIBRARY_TEST_TESTS ${CMAKE_CURRENT_SOURCE_DIR}/test_temp_2.hpp)
+
+MESSAGE(WARNING ${SHMTEQP_LIBRARY_TEST_TESTS})
 
 # Create library test executable
 ###############################################################################################

@@ -19,9 +19,9 @@
   ASSERT_MSG(expected == actual, msg)
 
 #define ASSERT_EQ(expected, actual) \
-  std::stringstream msg; \
+  {std::stringstream msg; \
   msg<< "Expected "<< expected<< " equal to "<< actual<< std::endl; \
-  ASSERT_EQ_MSG(expected, actual, msg.str())
+  ASSERT_EQ_MSG(expected, actual, msg.str())}
 
 #define ASSERT_LE_MSG(expected, actual, msg) \
   ASSERT_MSG(expected < actual || expected == actual, msg)

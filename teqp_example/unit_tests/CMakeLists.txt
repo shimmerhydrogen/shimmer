@@ -41,8 +41,6 @@ list(APPEND SHMTEQP_LIBRARY_TEST_TESTS ${CMAKE_CURRENT_SOURCE_DIR}/test_filter_c
 list(APPEND SHMTEQP_LIBRARY_TEST_TESTS ${CMAKE_CURRENT_SOURCE_DIR}/test_filter_components.hpp)
 list(APPEND SHMTEQP_LIBRARY_TEST_TESTS ${CMAKE_CURRENT_SOURCE_DIR}/test_temp_2.hpp)
 
-MESSAGE(WARNING ${SHMTEQP_LIBRARY_TEST_TESTS})
-
 # Create library test executable
 ###############################################################################################
 add_executable(${PROJECT_NAME}

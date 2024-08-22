@@ -64,17 +64,21 @@ public:
     continuity(const vector_t& pressure_old,
             const vector_t& c2);
 
+
     void
-    control_stations(std::vector<triplet_t>& triplets_mom,
-                     vector_t& rhs_mom);
+    impose_edge_station_model(  const vector_t& c2_nodes,
+                                const vector_t& pressure_nodes,
+                                const vector_t& flux,
+                                std::vector<triplet_t>& triplets_mom,
+                                vector_t& rhs_mom);
 
     pair_trip_vec_t
-    momentum(
-             const vector_t& pressure_nodes,
+    momentum(const vector_t& pressure_nodes,
              const vector_t& pressure_pipes,
              const vector_t& flux,
              const vector_t& flux_old,
-             const vector_t& c2);
+             const vector_t& c2_nodes,
+             const vector_t& c2_pipes);
 
 
     pair_trip_vec_t

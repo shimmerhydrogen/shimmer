@@ -52,7 +52,7 @@ namespace control
         constraint(const hardness_type& h, const constraint_type& t, double v)
         {};
 
-        bool  check(double variable, size_t step);
+        bool  check(double variable);
         inline double value() const {return value_;};
         inline const constraint_type& type() {return type_;};
     };
@@ -84,7 +84,7 @@ namespace control
             model_(model(type)), internal_(internal)
             {};
 
-        virtual bool control_hard(double time = 0);
+        virtual bool control_hard(size_t step = 0);
 
         inline void set_c1(double value){ model_.set_coefficient(0, value);};
         inline void set_c2(double value){ model_.set_coefficient(1, value);};
@@ -165,22 +165,23 @@ using map_type = std::unordered_map<external_type, control::constraint>;
 
 class station
 {
-    size_t count;
     std::string name_;
-    bool is_on_;
-    std::vector<bool> active_history_;
 
     std::vector<control::constraint> internals_;
-    map_type externals_;
+    std::vector<control::constraint> externals_;
 
+public:
     std::vector<control::state> controls_off;
     std::vector<control::state> controls_on;
-public:
+
+    std::vector<bool> active_history_;
+    size_t count;
+
     station() = default;
     station(const std::string& name,
     const std::vector<bool>& active_history,
             const std::vector<control::constraint>& internals,
-            const map_type& externals):
+            const std::vector<control::constraint>& externals):
                     name_(name), active_history_(active_history),
                     internals_(internals), externals_(externals), count(0)
     {};
@@ -189,8 +190,9 @@ public:
 
     inline auto which_control_type()
     {
-        size_t idx = count % controls.size();
-        return controls[idx].type;
+        // size_t idx = count % controls.size();
+        // return controls[idx].type;
+        return control::type::SHUT_OFF;
     };
 
     bool control_hard(size_t step, double target_pressure);
@@ -202,7 +204,8 @@ public:
     void set_c3(double value);
     void set_rhs(double value);
 
-    inline const auto & externals(){return externals_;};
+    inline void add_control_on(const control::state& md){ controls_on.push_back(md);};
+    inline void add_control_off(const control::state& md){ controls_off.push_back(md);};
 };
 
 
@@ -217,19 +220,21 @@ class compressor : public station
         double ramp_coeff,
         const std::vector<bool>& activate_history,
         const std::vector<control::constraint>& internals,
-        const map_type& externals);
+        const std::vector<control::constraint>& externals);
 
     void activate(size_t step, double target_pressure);
-    bool control_hard(size_t step, double target_pressure);
+    bool control_hard(size_t step);
+    double compute_beta(double pressure_in,
+                        double pressure_out);
 };
 
 
-template<typename CONSTR_NONPIPE, typename KEY>
-std::unordered_map<KEY,CONSTR_NONPIPE>
-build_multiple_constraints(const std::vector<std::tuple<KEY, constraint_type, double>>& limits,
-                            hardness_type ht)
+template<typename KEY>
+std::unordered_map<KEY,control::constraint>
+build_multiple_constraints(const std::vector<std::tuple<KEY, control::constraint_type, double>>& limits,
+                            control::hardness_type ht)
 {
-    std::unordered_map<KEY,CONSTR_NONPIPE> constr_vector(limits.size());
+    std::unordered_map<KEY, control::constraint> constr_vector(limits.size());
     size_t i = 0;
     for(const auto&  l : limits)
         constr_vector[std::get<0>(limits)] = constraint(ht,
@@ -238,37 +243,26 @@ build_multiple_constraints(const std::vector<std::tuple<KEY, constraint_type, do
     return constr_vector;
 }
 
-template<typename CONSTR_NONPIPE>
-std::vector<CONSTR_NONPIPE>
-build_multiple_constraints(const std::vector<std::pair<constraint_type, double>>& limits,
-                            hardness_type ht)
-{
-    std::vector<CONSTR_NONPIPE> constr_vector(limits.size());
-    size_t i = 0;
-    for(const auto&  l : limits)
-        constr_vector[i++] = constraint(ht,
-                                        limits[i].first,
-                                        limits[i].second);
-    return constr_vector;
-}
+std::vector<control::constraint>
+build_multiple_constraints(const std::vector<std::pair<control::constraint_type, double>>& limits,
+                            control::hardness_type ht);
 
 auto make_regulator(const std::vector<bool>& activate_history,
-        const std::vector<std::tuple<external_type, constraint_type, double>>& user_limits);
+                    const std::vector<std::tuple<external_type,
+                                                 control::constraint_type,
+                                                 double>> & user_limits);
 
-auto make_valve(const std::vector<bool>& activate_history,
-        double velocity_limit,
-        const std::vector<std::tuple<external_type, constraint_type, double>>& user_limits);
+auto make_valve(double velocity_limit,
+                const std::vector<bool>& activate_history,
+                const std::vector<std::tuple<external_type,
+                                             control::constraint_type,
+                                             double>> & user_limits);
 
-auto make_compressor(size_t control_node,
-        double ramp,
-        double efficiency,
-        double power_driver_nominal,
-        const std::vector<double>& activate_history,
-        const std::vector<std::tuple<external_type, constraint_type, double>>& user_limits);
-
-double compressor_beta(double pressure_in,
-        double pressure_out,
-        const map_type& externals);
+auto
+make_compressor(double ramp,
+    double efficiency,
+    const std::vector<double>& activate_history,
+    const std::unordered_map<external_type, std::pair<control::constraint_type, double>>& user_limits);
 
 
 } //end namespace control

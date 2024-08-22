@@ -87,6 +87,24 @@ public:
     }
 
 
+    void
+    activate_controls(size_t step)
+    {
+        auto edge_range = boost::edges(graph_);
+        auto begin = edge_range.first;
+        auto end = edge_range.second;
+
+        for (auto itor = begin; itor != end; itor++)
+        {
+            auto pipe = graph_[*itor];
+
+            if (pipe.type == edge_type::pipe) continue;
+
+            auto& st = pipe.pipe_station;
+
+            st->activate(step);
+        }
+    }
 
 
     void
@@ -120,6 +138,8 @@ public:
             std::cout<<"========================================================"<< std::endl;
             std::cout << "Solving at time ...."<< it <<std::endl;
             std::cout<<"========================================================"<< std::endl;
+
+            activate_controls(it);
 
             size_t ic;
             for(ic = 0; ic <= MAX_CONSTRAINT_ITER; ic++)

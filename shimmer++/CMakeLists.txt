@@ -22,6 +22,11 @@ find_package(SQLite3 REQUIRED)
 set(LINK_LIBS ${LINK_LIBS} SQLite::SQLite3)
 
 #######################################################################
+# Threads library
+find_package(Threads REQUIRED)
+set(LINK_LIBS ${LINK_LIBS} Threads::Threads)
+
+#######################################################################
 # Qt stuff
 #set(CMAKE_AUTOMOC ON)
 #set(CMAKE_AUTORCC ON)

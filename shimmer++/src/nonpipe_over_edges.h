@@ -31,7 +31,7 @@ namespace control
         NONE,
     };
 
-    enum type
+    enum mode_type
     {
         BY_PASS,
         SHUT_OFF,
@@ -67,7 +67,7 @@ namespace control
 
         public:
         model() = default;
-        model(control::type ctype);
+        model(control::mode_type ctype);
         void set_coefficient(size_t index, double value);
         void set_control_coefficient(double value);
         double coefficient(size_t index);
@@ -79,13 +79,13 @@ namespace control
     public:
         model model_;
         control::constraint internal_;
-        control::type type_;
+        control::mode_type type_;
 
         mode() = default;
         mode(const model& m, const control::constraint& internal):
             model_(m), internal_(internal)
             {};
-        mode(const control::type& type, const control::constraint& internal):
+        mode(const control::mode_type& type, const control::constraint& internal):
             model_(model(type)), internal_(internal)
             {};
 
@@ -107,8 +107,8 @@ namespace control
         public:
 
         power_driver(double ramp, const constraint& hard):
-            type_(control::type::POWER_DRIVER),
-            mode(type_, hard),
+            type_(control::mode_type::POWER_DRIVER),
+            mode(mode_type_, hard),
             ramp_coeff_(ramp)
         {};
 
@@ -136,21 +136,19 @@ namespace control
     };
 */
 
-    auto make_power_driver_control(double PWD_nominal, double ramp);
-    auto make_pressure_out_control(double pressure_out_max);
-    auto make_pressure_in_control(double pressure_in_min);
-    auto make_by_pass_control(const constraint_type& ctype);
-    auto make_shutoff_control(const constraint_type& ctype);
-    auto make_beta_min_control(double beta_min);
-    auto make_beta_max_control(double beta_max);
-    auto make_flux_control(double flux_max);
+    auto make_power_driver_mode(double PWD_nominal, double ramp);
+    auto make_pressure_out_mode(double pressure_out_max);
+    auto make_pressure_in_mode(double pressure_in_min);
+    auto make_by_pass_mode(const constraint_type& ctype);
+    auto make_shutoff_mode(const constraint_type& ctype);
+    auto make_beta_min_mode(double beta_min);
+    auto make_beta_max_mode(double beta_max);
+    auto make_flux_mode(double flux_max);
 
 }; //end namespace control
 
 enum external_type
 {
-    //MIN_GREATER_EQUAL,
-    //MAX_LOWER_EQUAL,
     BETA_MIN,
     BETA_MAX,
     P_OUT_MAX,
@@ -201,7 +199,7 @@ public:
                           int target_num,
                           const variable& var);
 
-    inline auto which_control_type()
+    inline auto which_mode_type()
     {
         // size_t idx = count % mode_.size();
         // return mode_[idx].type;
@@ -222,8 +220,8 @@ public:
     inline double model_c3() { return mode_.coefficient(2);};
     inline double model_rhs(){ return mode_.coefficient(3);};
 
-    inline void add_control_on(const control::mode& md) { controls_on.push_back(md);};
-    inline void add_control_off(const control::mode& md){ controls_off.push_back(md);};
+    inline void add_mode_on(const control::mode& md) { controls_on.push_back(md);};
+    inline void add_mode_off(const control::mode& md){ controls_off.push_back(md);};
 };
 
 

@@ -122,20 +122,21 @@ linearized_fluid_solver::impose_edge_station_model(
         auto p_in = nodes_pressure[source_node];
         auto p_out = nodes_pressure[target_node];
 
+        using mode_type = edge_station::control::mode_type;
         // Set variables
-        switch (st.which_control_type())
+        switch (st.which_mode_type())
         {
-            case edge_station::control::type::SHUT_OFF:
-            case edge_station::control::type::BY_PASS:
+            case mode_type::SHUT_OFF:
+            case mode_type::BY_PASS:
                 st.set_c3(p_in < p_out);
                 break;
-            case edge_station::control::type::BETA:
+            case mode_type::BETA:
             {
                 auto beta = p_out /p_in;
                 st.set_c1(beta);
                 break;
             }
-            case edge_station::control::type::POWER_DRIVER:
+            case mode_type::POWER_DRIVER:
             {
                 auto gamma = 1.4; // Or read from GERG
                 auto ck = gamma - 1.0 / gamma;
@@ -155,13 +156,13 @@ linearized_fluid_solver::impose_edge_station_model(
                 st.set_rhs(pwd);
                 break;
             }
-            case edge_station::control::type::PRESSURE_IN:
+            case mode_type::PRESSURE_IN:
                 st.set_rhs(p_in);
                 break;
-            case edge_station::control::type::PRESSURE_OUT:
+            case mode_type::PRESSURE_OUT:
                 st.set_rhs(p_out);
                 break;
-            case edge_station::control::type::FLUX:
+            case mode_type::FLUX:
                 st.set_rhs(flux[pipe_idx]);
                 break;
             default:
@@ -216,15 +217,15 @@ linearized_fluid_solver::control_stations(
         // Set variable
         switch (st->which_control_type(at_step_))
         {
-            case control::type::SHUT_OFF:
-            case control::type::BY_PASS:
+            case control::mode_type::SHUT_OFF:
+            case control::mode_type::BY_PASS:
                 set.set_c3(p_in < p_out);
                 break;
-            case control::type::BETA:
+            case control::mode_type::BETA:
                 auto beta = p_out /p_in;
                 st.set_c1(beta);
                 break;
-            case control::type::POWER_DRIVER:
+            case control::mode_type::POWER_DRIVER:
             {
                 auto gamma = 1.4; // Or read from GERG
                 auto ck = gamma - 1.0 / gamma;
@@ -244,13 +245,13 @@ linearized_fluid_solver::control_stations(
                 st.set_rhs(pwd);
                 break;
             }
-            case control::type::PRESSURE_IN:
+            case control::mode_type::PRESSURE_IN:
                 st.set_rhs(p_in);
                 break;
-            case control::type::PRESSURE_OUT:
+            case control::mode_type::PRESSURE_OUT:
                 st.set_rhs(p_out);
                 break;
-            case control::type::FLUX:
+            case control::mode_type::FLUX:
                 st.set_rhs(flux[pipe_idx]);
                 break;
             default:

@@ -27,50 +27,50 @@ control::constraint::check(double v) const
     }
 };
 
-control::model::model(control::type ctype)
+control::model::model(control::mode_type ctype)
 {
     switch (ctype)
     {
-    case control::type::BY_PASS:
+    case control::mode_type::BY_PASS:
         coeffs[0] =-1.0;
         coeffs[1] = 1.0;
         coeffs[2] = 0.0;
         coeffs[3] = 0.0;
         control_index_ = -1;
         break;
-    case control::type::SHUT_OFF:
+    case control::mode_type::SHUT_OFF:
         coeffs[0] = 0.0;
         coeffs[1] = 0.0;
         coeffs[2] = 1.0;
         coeffs[3] = 0.0;
         control_index_ = -1;
         break;
-    case control::type::POWER_DRIVER:
+    case control::mode_type::POWER_DRIVER:
         free_index = std::vector<int>{ 0,1,2,3 };
         control_index_ = 3;
         break;
-    case control::type::PRESSURE_IN:
+    case control::mode_type::PRESSURE_IN:
         coeffs[0] = 1.0;
         coeffs[1] = 0.0;
         coeffs[2] = 0.0;
         free_index = std::vector<int>{ 3 };
         control_index_ = 3;
         break;
-    case control::type::PRESSURE_OUT:
+    case control::mode_type::PRESSURE_OUT:
         coeffs[0] = 0.0;
         coeffs[1] = 1.0;
         coeffs[2] = 0.0;
         free_index = std::vector<int>{ 3 };
         control_index_ = 3;
         break;
-    case control::type::FLUX:
+    case control::mode_type::FLUX:
         coeffs[0] = 0.0;
         coeffs[1] = 0.0;
         coeffs[2] = 1.0;
         free_index = std::vector<int>{ 3 };
         control_index_ = 3;
         break;
-    case control::type::BETA:
+    case control::mode_type::BETA:
         coeffs[1] = 1.0;
         coeffs[2] = 0.0;
         coeffs[3] = 0.0;
@@ -129,77 +129,77 @@ control::mode::control_hard(size_t step_)
 }
 
 auto
-control::make_power_driver_control(double PWD_nominal, double ramp)
+control::make_power_driver_mode(double PWD_nominal, double ramp)
 {
     auto internal = control::constraint(control::hardness_type::HARD,
                                         control::constraint_type::GREATER_EQUAL,
-                                        PWD_nominal);
-    return mode(control::type::POWER_DRIVER, internal);
-    //return control_power_driver(ramp, internal);
+        PWD_nominal);
+
+    return mode(control::mode_type::POWER_DRIVER, internal);
 }
 
 auto
-control::make_pressure_out_control(double pressure_out_max)
+control::make_pressure_out_mode(double pressure_out_max)
 {
     auto internal = control::constraint(hardness_type::HARD,
                 constraint_type::LOWER_EQUAL, pressure_out_max);
 
-    return mode(control::type::PRESSURE_OUT, internal);
+    return mode(control::mode_type::PRESSURE_OUT, internal);
 }
 
 auto
-control::make_pressure_in_control(double pressure_in_min)
+control::make_pressure_in_mode(double pressure_in_min)
 {
     auto internal = control::constraint(control::hardness_type::HARD,
                                         constraint_type::GREATER_EQUAL,
                                         pressure_in_min);
 
-    return mode(control::type::PRESSURE_IN, internal);
+    return mode(control::mode_type::PRESSURE_IN, internal);
 }
 
 auto
-control::make_by_pass_control(const constraint_type& ctype)
+control::make_by_pass_mode(const constraint_type& ctype)
 {
     auto internal = control::constraint(control::hardness_type::HARD,
                                     ctype, 0);
 
-    return mode(control::type::BY_PASS, internal);
+    return mode(control::mode_type::BY_PASS, internal);
 }
 
 auto
-control::make_shutoff_control(const constraint_type& ctype)
+control::make_shutoff_mode(const constraint_type& ctype)
 {
     auto internal = control::constraint(control::hardness_type::HARD,
                                     ctype, 1);
 
-    return  mode(control::type::SHUT_OFF, internal);
+    return  mode(control::mode_type::SHUT_OFF, internal);
 }
 
 auto
-control::make_beta_min_control(double beta_min)
+control::make_beta_min_mode(double beta_min)
 {
     auto internal = control::constraint(control::hardness_type::HARD,
                                     constraint_type::LOWER_EQUAL, beta_min);
 
-    return  mode(control::type::BETA, internal);
+    return  mode(control::mode_type::BETA, internal);
 }
 
 auto
-control::make_beta_max_control(double beta_max)
+control::make_beta_max_mode(double beta_max)
 {
     auto internal = control::constraint(control::hardness_type::HARD,
                                     constraint_type::GREATER_EQUAL, beta_max);
 
-    return  mode(control::type::BETA, internal);
+    return  mode(control::mode_type::BETA, internal);
 }
 
 auto
-control::make_flux_control(double flux_max)
+control::make_flux_mode(double flux_max)
 {
     auto internal = control::constraint(control::hardness_type::HARD,
                                     constraint_type::GREATER_EQUAL, flux_max);
 
-    return  mode(control::type::FLUX, internal);
+    return  mode(control::mode_type::FLUX, internal);
 }
 //==========================================================
 
@@ -223,8 +223,14 @@ bool
 station::check_soft(double p, double l, size_t step)
 {
     bool success = true;
-    for(auto& e : externals_)
+
+
+    for(auto& e : control_on)
+    for(size_t i = 0; i < control.size(); i++)
     {
+        size_t idx = count % controls.size();
+
+
         if(!e.check(p, l, step))
         {
             success = false;
@@ -327,7 +333,7 @@ compressor::control_hard(size_t step)
         return false;
     }
 
-    if(mode_.type_ == control::type::POWER_DRIVER)
+    if(mode_.type_ == control::mode_type::POWER_DRIVER)
     {
         auto pwd = mode_.model_.control_coefficient();
         auto pwd_nominal = mode_.internal_.value();
@@ -370,12 +376,12 @@ compressor::activate(size_t step,
 
     if (p_out > p_in)
     {
-        assert(controls_off[1].type_ == control::type::BY_PASS);
+        assert(controls_off[0].type_ == control::mode_type::BY_PASS);
         mode_ = controls_off[0];
     }
     else
     {
-        assert(controls_off[1].type_ == control::type::SHUT_OFF);
+        assert(controls_off[1].type_ == control::mode_type::SHUT_OFF);
         mode_ = controls_off[1];
     }
 
@@ -460,11 +466,11 @@ make_regulator(double velocity_limit,
 
     station regulator("REGULATOR", activate_history, internal, externals);
 
-    auto c_by_pass = make_by_pass_control(control::constraint_type::GREATER_EQUAL);
-    auto c_shutoff = make_shutoff_control(control::constraint_type::LOWER);
+    auto c_by_pass = make_by_pass_mode(control::constraint_type::GREATER_EQUAL);
+    auto c_shutoff = make_shutoff_mode(control::constraint_type::LOWER);
 
-    regulator.add_control_on(c_by_pass);
-    regulator.add_control_off(c_shutoff);
+    regulator.add_mode_on(c_by_pass);
+    regulator.add_mode_off(c_shutoff);
 
     return;
 }
@@ -485,11 +491,11 @@ make_valve(const std::vector<bool>& activate_history,
 
     station valve("VALVE", activate_history, internal, externals);
 
-    auto c_by_pass = make_by_pass_control(control::constraint_type::NONE);
-    auto c_shutoff = make_shutoff_control(control::constraint_type::NONE);
+    auto c_by_pass = make_by_pass_mode(control::constraint_type::NONE);
+    auto c_shutoff = make_shutoff_mode(control::constraint_type::NONE);
 
-    valve.add_control_on(c_by_pass);
-    valve.add_control_off(c_shutoff);
+    valve.add_mode_on(c_by_pass);
+    valve.add_mode_off(c_shutoff);
 
     return;
 }
@@ -515,25 +521,25 @@ make_compressor(double ramp,
 
     compressor cmp("COMPRESSOR", ramp, efficiency, activate_history, internals, externals);
 
-    auto c_by_pass = control::make_by_pass_control(control::constraint_type::EQUAL);
-    auto c_shutoff = control::make_shutoff_control(control::constraint_type::EQUAL);
+    auto c_by_pass = control::make_by_pass_mode(control::constraint_type::EQUAL);
+    auto c_shutoff = control::make_shutoff_mode(control::constraint_type::EQUAL);
 
-    cmp.add_control_off(c_by_pass);
-    cmp.add_control_off(c_shutoff);
+    cmp.add_mode_off(c_by_pass);
+    cmp.add_mode_off(c_shutoff);
 
-    auto c_power_driver = control::make_power_driver_control(user_limits[PWD_NOMINAL].second, ramp);
-    auto c_press_in  = control::make_pressure_in_control(user_limits[P_IN_MIN].second);
-    auto c_press_out = control::make_pressure_out_control(user_limits[P_OUT_MAX].second);
-    auto c_beta_min  = control::make_beta_min_control(user_limits[BETA_MIN].second);
-    auto c_beta_max  = control::make_beta_max_control(user_limits[BETA_MAX].second);
-    auto c_flux = control::make_flux_control(user_limits[FLUX_MAX].second);
+    auto c_power_driver = control::make_power_driver_mode(user_limits[PWD_NOMINAL].second, ramp);
+    auto c_press_in  = control::make_pressure_in_mode(user_limits[P_IN_MIN].second);
+    auto c_press_out = control::make_pressure_out_mode(user_limits[P_OUT_MAX].second);
+    auto c_beta_min  = control::make_beta_min_mode(user_limits[BETA_MIN].second);
+    auto c_beta_max  = control::make_beta_max_mode(user_limits[BETA_MAX].second);
+    auto c_flux = control::make_flux_mode(user_limits[FLUX_MAX].second);
 
-    cmp.add_control_on(c_power_driver);
-    cmp.add_control_on(c_press_in);
-    cmp.add_control_on(c_press_out);
-    cmp.add_control_on(c_beta_min);
-    cmp.add_control_on(c_beta_max);
-    cmp.add_control_on(c_flux);
+    cmp.add_mode_on(c_power_driver);
+    cmp.add_mode_on(c_press_in);
+    cmp.add_mode_on(c_press_out);
+    cmp.add_mode_on(c_beta_min);
+    cmp.add_mode_on(c_beta_max);
+    cmp.add_mode_on(c_flux);
 
     return cmp;
 }

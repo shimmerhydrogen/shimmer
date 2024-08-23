@@ -23,6 +23,11 @@ namespace GERG
 
       static std::string matlab_shimmer_directory_path()
       {
+        char *gerg_path = getenv("SHIMMER_GERG_PATH");
+        if (gerg_path)
+            return std::string(gerg_path);
+
+        /* this is not robust: must find another way */
         std::string matlab_shimmer_dir(__FILE__);
         matlab_shimmer_dir = matlab_shimmer_dir.substr(0, matlab_shimmer_dir.find("GERG"));
         matlab_shimmer_dir = matlab_shimmer_dir + "matlab/Mod_SHIMM_v01";

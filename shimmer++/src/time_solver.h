@@ -108,7 +108,7 @@ public:
             auto source_node = graph_[s].node_num;
             auto target_node = graph_[t].node_num;
 
-            st->activate(step, source_node, target_node, var_);
+            st.activate(step, source_node, target_node, var_);
         }
     }
 

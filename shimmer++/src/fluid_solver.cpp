@@ -139,10 +139,10 @@ linearized_fluid_solver::impose_edge_station_model(
             {
                 auto gamma = 1.4; // Or read from GERG
                 auto ck = gamma - 1.0 / gamma;
-                //auto beta = p_out /p_in;
-                auto beta = st.compute_beta(p_in, p_out);
+                auto beta = p_out /p_in;
+                //auto beta = st.compute_beta(p_in, p_out);
                 auto ZTR = c2_nodes[source_node];
-                auto K = ZTR / st.efficiency();
+                auto K = ZTR / 1.;  //st.efficiency();
                 auto G = flux[pipe_idx];
                 auto KGB = K * G * beta;
 
@@ -472,7 +472,7 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
 {
     press_pipes_.resize(num_pipes_);
 
-    // Initialization of varibales with solution in time n;
+    // Initialization of variables with solution in time n;
     var_.pressure = var_guess.pressure;
     var_.flux  = var_guess.flux;
     var_.L_rate = vector_t::Zero(num_nodes_);//flux_ext;
@@ -682,7 +682,7 @@ linearized_fluid_solver::check_controls(size_t step)
 {
     if (check_hard_controls(step))
     {
-        check_soft_controls(step);
+        //check_soft_controls(step);
         return true;
 
     }

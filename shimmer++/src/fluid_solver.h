@@ -108,7 +108,7 @@ public:
     void check_soft_constraints(size_t step);
     bool check_constraints(size_t step);
     bool check_hard_controls(size_t step);
-    bool check_soft_controls(size_t step);
+    //bool check_soft_controls(size_t step);
     bool check_controls(size_t step);
 
     double temperature();

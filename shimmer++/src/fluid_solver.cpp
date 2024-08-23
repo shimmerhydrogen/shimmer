@@ -161,7 +161,7 @@ linearized_fluid_solver::impose_edge_station_model(
             case edge_station::control::type::PRESSURE_OUT:
                 st.set_rhs(p_out);
                 break;
-            case control::type::FLUX:
+            case edge_station::control::type::FLUX:
                 st.set_rhs(flux[pipe_idx]);
                 break;
             default:

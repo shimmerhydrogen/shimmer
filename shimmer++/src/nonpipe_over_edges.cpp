@@ -6,7 +6,7 @@ namespace edge_station
 {
 
 bool
-control::constraint::check(double variable)
+control::constraint::check(double variable) const
 {
     switch (type_)
     {
@@ -99,12 +99,17 @@ control::model::set_control_coefficient(double value)
 }
 
 double
+control::model::coefficient(size_t index)
+{
+    assert(index >= 0 || index <= 3);
+
+    return coeffs[index];
+}
+
+double
 control::model::control_coefficient()
 {
-    if(control_index_ < 0)
-       throw std::exception();
-
-    return coeffs[control_index_];
+    return coefficient(control_index_);
 }
 
 bool
@@ -199,10 +204,10 @@ control::make_flux_control(double flux_max)
 //==========================================================
 
 bool
-station::control_hard(size_t step, double dummy_value)
+station::control_hard(size_t step)
 {
-    size_t idx = count % controls.size();
-    bool pass = controls[idx].control_hard(step);
+    //size_t idx = count % controls[idx].size();
+    bool pass = mode_.control_hard(step);
 
     if (!pass)
     {
@@ -213,6 +218,7 @@ station::control_hard(size_t step, double dummy_value)
     return true;
 }
 
+/*
 bool
 station::check_soft(double p, double l, size_t step)
 {
@@ -230,34 +236,37 @@ station::check_soft(double p, double l, size_t step)
 
     return success;
 }
+*/
 
 void
 station::set_c1(double value)
 {
-    size_t idx = count % controls.size();
-    controls[idx].set_coefficient(0, value);
+    //size_t idx = count % mode_.size();
+    mode_.model_.set_coefficient(0, value);
 }
 
 void
 station::set_c2(double value)
 {
-    size_t idx = count % controls.size();
-    controls[idx].set_coefficient(1, value);
+    //size_t idx = count % mode_.size();
+    mode_.model_.set_coefficient(1, value);
 }
 
 void
 station::set_c3(double value)
 {
-    size_t idx = count % controls.size();
-    controls[idx].set_coefficient(2, value);
+    //size_t idx = count % controls.size();
+    mode_.model_.set_coefficient(2, value);
 }
 
 void
 station::set_rhs(double value)
 {
-    size_t idx = count % controls.size();
-    controls[idx].set_coefficient(3, value);
+    //size_t idx = count % controls.size();
+    mode_.model_.set_coefficient(3, value);
 };
+
+
 
 void
 station::activate(size_t step, double target_pressure)
@@ -306,8 +315,8 @@ bool
 compressor::control_hard(size_t step)
 {
 
-    size_t idx = count % controls.size();
-    bool pass = controls[idx].control_hard(step);
+    //size_t idx = count % controls.size();
+    bool pass = mode_.control_hard(step);
 
     if (!pass)
     {
@@ -315,12 +324,12 @@ compressor::control_hard(size_t step)
         return false;
     }
 
-    if(controls[idx].type() == control::type::POWER_DRIVER)
+    if(mode_.type_ == control::type::POWER_DRIVER)
     {
-        auto pwd = controls[idx].model_.control_coefficient();
-        auto pwd_nominal = controls[idx].internal_value();
+        auto pwd = mode_.model_.control_coefficient();
+        auto pwd_nominal = mode_.internal_.value();
         auto pwd_control = pwd * (step - 1.0) + ramp_coeff_ * pwd_nominal;
-        model_.set_control_coefficient(pwd_control);
+        mode_.model_.set_control_coefficient(pwd_control);
     }
 
     return true;
@@ -373,10 +382,10 @@ compressor::compute_beta(double p_in,
     size_t beta_min_ind = 3;
     size_t beta_max_ind = 4;
 
-    assert(controls_on[p_out_max_ind].type() == external_type::P_OUT_MAX
-        || controls_on[beta_max_ind].type() == external_type::BETA_MAX
-        || controls_on[beta_min_ind].type() == external_type::BETA_MIN
-        || externals_[p_out_min_ind].type()  == external_type::P_OUT_MIN
+    assert(controls_on[p_out_max_ind].type_== external_type::P_OUT_MAX
+        || controls_on[beta_max_ind].type_ == external_type::BETA_MAX
+        || controls_on[beta_min_ind].type_ == external_type::BETA_MIN
+        || externals_[p_out_min_ind].type() == external_type::P_OUT_MIN
     );
 
     double press_rate = p_out / p_in;
@@ -436,7 +445,7 @@ make_regulator(double velocity_limit,
     auto internal = control::constraint(control::hardness_type::HARD,
                                         control::constraint_type::GREATER_EQUAL,
                                         velocity_limit);
-    auto externals = build_multiple_constraints<control::constraint>(user_limits);
+    auto externals = build_multiple_constraints(user_limits, control::hardness_type::SOFT);
 
     station regulator("REGULATOR", activate_history, internal, externals);
 
@@ -459,7 +468,7 @@ make_valve(const std::vector<bool>& activate_history,
     auto internal = control::constraint(control::hardness_type::HARD,
                                         control::constraint_type::GREATER_EQUAL,
                                         velocity_limit);
-    auto externals = build_multiple_constraints<control::constraint>(user_limits);
+    auto externals = build_multiple_constraints(user_limits, control::hardness_type::SOFT);
 
     station valve("VALVE", activate_history, internal, externals);
 
@@ -487,7 +496,7 @@ make_compressor(double ramp,
 
     std::vector<control::constraint> internals = { flux_hard };
 
-    auto externals = build_multiple_constraints<control::constraint>(
+    auto externals = build_multiple_constraints(
                                       { user_limits[P_THRESHOLD_MIN],
                                         user_limits[P_THRESHOLD_MAX],
                                         user_limits[P_OUT_MIN]

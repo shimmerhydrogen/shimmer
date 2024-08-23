@@ -442,9 +442,11 @@ make_regulator(double velocity_limit,
                                     control::constraint_type,
                                     double>> & user_limits)
 {
-    auto internal = control::constraint(control::hardness_type::HARD,
-                                        control::constraint_type::GREATER_EQUAL,
-                                        velocity_limit);
+    auto hard_limit = control::constraint(  control::hardness_type::HARD,
+                                            control::constraint_type::GREATER_EQUAL,
+                                            velocity_limit);
+
+    auto internal = std::vector<control::constraint>{ hard_limit };
     auto externals = build_multiple_constraints(user_limits, control::hardness_type::SOFT);
 
     station regulator("REGULATOR", activate_history, internal, externals);
@@ -464,10 +466,12 @@ make_valve(const std::vector<bool>& activate_history,
             const std::vector<  std::tuple<external_type,
                                 control::constraint_type,
                                 double>> & user_limits)
-    {
-    auto internal = control::constraint(control::hardness_type::HARD,
-                                        control::constraint_type::GREATER_EQUAL,
-                                        velocity_limit);
+{
+    auto hard_limit = control::constraint(  control::hardness_type::HARD,
+                                            control::constraint_type::GREATER_EQUAL,
+                                            velocity_limit);
+
+    auto internal = std::vector<control::constraint>{ hard_limit };
     auto externals = build_multiple_constraints(user_limits, control::hardness_type::SOFT);
 
     station valve("VALVE", activate_history, internal, externals);
@@ -485,24 +489,22 @@ make_valve(const std::vector<bool>& activate_history,
 auto
 make_compressor(double ramp,
                 double efficiency,
-                const std::vector<double>& activate_history,
-                const std::unordered_map<external_type,
+                const std::vector<bool>& activate_history,
+                std::unordered_map<external_type,
                                         std::pair<control::constraint_type,
                                         double>> & user_limits)
 {
-    auto flux_hard = control::constraint(control::hardness_type::HARD,
+    auto flux_limit = control::constraint(control::hardness_type::HARD,
                                          control::constraint_type::GREATER_EQUAL,
                                          0.0);
 
-    std::vector<control::constraint> internals = { flux_hard };
+    auto internals = std::vector<control::constraint>({ flux_limit });
+    auto externals = build_multiple_constraints({user_limits[P_THRESHOLD_MIN],
+                                                 user_limits[P_THRESHOLD_MAX],
+                                                 user_limits[P_OUT_MIN]},
+                                                 control::hardness_type::SOFT);
 
-    auto externals = build_multiple_constraints(
-                                      { user_limits[P_THRESHOLD_MIN],
-                                        user_limits[P_THRESHOLD_MAX],
-                                        user_limits[P_OUT_MIN]
-                                       }, control::hardness_type::SOFT);
-
-    compressor cmp("COMPRESSOR", activate_history, internals, externals);
+    compressor cmp("COMPRESSOR", ramp, efficiency, activate_history, internals, externals);
 
     auto c_by_pass = control::make_by_pass_control(control::constraint_type::EQUAL);
     auto c_shutoff = control::make_shutoff_control(control::constraint_type::EQUAL);
@@ -526,8 +528,6 @@ make_compressor(double ramp,
 
     return cmp;
 }
-
-
 
 
 } //end namespace control

@@ -201,7 +201,7 @@ public:
     {
         // size_t idx = count % mode_.size();
         // return mode_[idx].type;
-        return control::type::SHUT_OFF;
+        return mode_.type_;
     };
 
     bool control_hard(size_t step);
@@ -229,6 +229,7 @@ class compressor : public station
     double efficiency;
     int control_node;
 
+public:
     compressor(const std::string& name,
         double efficiency,
         double ramp_coeff,
@@ -244,16 +245,18 @@ class compressor : public station
 
 
 template<typename KEY>
-std::unordered_map<KEY,control::constraint>
-build_multiple_constraints(const std::vector<std::tuple<KEY, control::constraint_type, double>>& limits,
+std::vector<control::constraint>
+build_multiple_constraints( const std::vector<std::tuple<KEY,
+                                                control::constraint_type,
+                                                double>> & limits,
                             control::hardness_type ht)
 {
-    std::unordered_map<KEY, control::constraint> constr_vector(limits.size());
+    std::vector<control::constraint> constr_vector(limits.size());
     size_t i = 0;
     for(const auto&  l : limits)
-        constr_vector[std::get<0>(l)] = control::constraint(ht,
-                                                        std::get<1>(l),
-                                                        std::get<2>(l));
+        constr_vector.push_back(control::constraint(ht,
+                                                    std::get<1>(l),
+                                                    std::get<2>(l)));
     return constr_vector;
 }
 
@@ -282,7 +285,7 @@ auto
 make_compressor(double ramp,
                 double efficiency,
                 const std::vector<double>& activate_history,
-                const std::unordered_map<external_type,
+                 std::unordered_map<external_type,
                                         std::pair<control::constraint_type,
                                         double>> & user_limits);
 

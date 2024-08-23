@@ -6,6 +6,7 @@
 #include <cassert>
 #include <algorithm>
 #include <tuple>
+#include "../src/temporal.h"
 
 namespace shimmer
 {
@@ -53,7 +54,7 @@ namespace control
         constraint(const hardness_type& h, const constraint_type& t, double v)
         {};
 
-        bool  check(double variable) const;
+        bool  check(double value) const;
         inline double value() const {return value_;};
         inline const constraint_type& type() {return type_;};
     };
@@ -73,18 +74,18 @@ namespace control
         double control_coefficient();
     };
 
-    class state
+    class mode
     {
     public:
         model model_;
         control::constraint internal_;
         control::type type_;
 
-        state() = default;
-        state(const model& m, const control::constraint& internal):
+        mode() = default;
+        mode(const model& m, const control::constraint& internal):
             model_(m), internal_(internal)
             {};
-        state(const control::type& type, const control::constraint& internal):
+        mode(const control::type& type, const control::constraint& internal):
             model_(model(type)), internal_(internal)
             {};
 
@@ -99,7 +100,7 @@ namespace control
     };
 
 /*
-    class control_power_driver: public state
+    class control_power_driver: public mode
     {
         double ramp_coeff_;
 
@@ -107,7 +108,7 @@ namespace control
 
         power_driver(double ramp, const constraint& hard):
             type_(control::type::POWER_DRIVER),
-            state(type_, hard),
+            mode(type_, hard),
             ramp_coeff_(ramp)
         {};
 
@@ -120,7 +121,7 @@ namespace control
             // 1. Check constraint
             bool pass = internal_.check(pwd);
 
-            // 2. Control variable with hard limit
+            // 2. Control value with hard limit
 
             // 2.1 Hard limit
             auto pw_nominal = internal_.value();
@@ -173,13 +174,13 @@ class station
 
 public:
     std::string name_;
-    control::state mode_;
+    control::mode mode_;
 
     std::vector<control::constraint> internals_;
     std::vector<control::constraint> externals_;
 
-    std::vector<control::state> controls_off;
-    std::vector<control::state> controls_on;
+    std::vector<control::mode> controls_off;
+    std::vector<control::mode> controls_on;
 
     std::vector<bool> active_history_;
     size_t count;
@@ -195,7 +196,10 @@ public:
         count = 0;
         };
 
-    virtual void activate(size_t step, double target_pressure);
+    virtual void activate(size_t step,
+                          int source_num,
+                          int target_num,
+                          const variable& var);
 
     inline auto which_control_type()
     {
@@ -218,8 +222,8 @@ public:
     inline double model_c3() { return mode_.coefficient(2);};
     inline double model_rhs(){ return mode_.coefficient(3);};
 
-    inline void add_control_on(const control::state& md) { controls_on.push_back(md);};
-    inline void add_control_off(const control::state& md){ controls_off.push_back(md);};
+    inline void add_control_on(const control::mode& md) { controls_on.push_back(md);};
+    inline void add_control_off(const control::mode& md){ controls_off.push_back(md);};
 };
 
 
@@ -237,8 +241,13 @@ public:
         const std::vector<control::constraint>& internals,
         const std::vector<control::constraint>& externals);
 
-    void activate(size_t step, double target_pressure);
+    void activate(  size_t step,
+                    int source_num,
+                    int target_num,
+                    const variable& var);
+
     bool control_hard(size_t step);
+
     double compute_beta(double pressure_in,
                         double pressure_out);
 };

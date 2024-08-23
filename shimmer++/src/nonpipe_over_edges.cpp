@@ -6,20 +6,20 @@ namespace edge_station
 {
 
 bool
-control::constraint::check(double variable) const
+control::constraint::check(double v) const
 {
     switch (type_)
     {
         case LOWER_EQUAL:
-            return (variable < (value_ + 1.e-14));
+            return (v < (value_ + 1.e-14));
         case GREATER_EQUAL:
-            return (variable > (value_ - 1.e-14));
+            return (v > (value_ - 1.e-14));
         case EQUAL:
-            return (std::abs(variable - value_) < 1.e-14);
+            return (std::abs(v - value_) < 1.e-14);
         case LOWER:
-            return (variable < value_);
+            return (v < value_);
         case GREATER:
-            return (variable > value_);
+            return (v > value_);
         case NONE:
             return true;
         default:
@@ -113,15 +113,15 @@ control::model::control_coefficient()
 }
 
 bool
-control::state::control_hard(size_t step_)
+control::mode::control_hard(size_t step_)
 {
-    // Get stored variable in model
-    auto variable = model_.control_coefficient();
+    // Get stored value in model
+    auto value = model_.control_coefficient();
 
     // 1. Check constraint
-    bool pass = internal_.check(variable);
+    bool pass = internal_.check(value);
 
-    // 2. Control variable with hard limit
+    // 2. Control value with hard limit
     if (!pass)
         model_.set_control_coefficient(internal_.value());
 
@@ -134,7 +134,7 @@ control::make_power_driver_control(double PWD_nominal, double ramp)
     auto internal = control::constraint(control::hardness_type::HARD,
                                         control::constraint_type::GREATER_EQUAL,
                                         PWD_nominal);
-    return state(control::type::POWER_DRIVER, internal);
+    return mode(control::type::POWER_DRIVER, internal);
     //return control_power_driver(ramp, internal);
 }
 
@@ -144,7 +144,7 @@ control::make_pressure_out_control(double pressure_out_max)
     auto internal = control::constraint(hardness_type::HARD,
                 constraint_type::LOWER_EQUAL, pressure_out_max);
 
-    return state(control::type::PRESSURE_OUT, internal);
+    return mode(control::type::PRESSURE_OUT, internal);
 }
 
 auto
@@ -154,7 +154,7 @@ control::make_pressure_in_control(double pressure_in_min)
                                         constraint_type::GREATER_EQUAL,
                                         pressure_in_min);
 
-    return state(control::type::PRESSURE_IN, internal);
+    return mode(control::type::PRESSURE_IN, internal);
 }
 
 auto
@@ -163,7 +163,7 @@ control::make_by_pass_control(const constraint_type& ctype)
     auto internal = control::constraint(control::hardness_type::HARD,
                                     ctype, 0);
 
-    return state(control::type::BY_PASS, internal);
+    return mode(control::type::BY_PASS, internal);
 }
 
 auto
@@ -172,7 +172,7 @@ control::make_shutoff_control(const constraint_type& ctype)
     auto internal = control::constraint(control::hardness_type::HARD,
                                     ctype, 1);
 
-    return  state(control::type::SHUT_OFF, internal);
+    return  mode(control::type::SHUT_OFF, internal);
 }
 
 auto
@@ -181,7 +181,7 @@ control::make_beta_min_control(double beta_min)
     auto internal = control::constraint(control::hardness_type::HARD,
                                     constraint_type::LOWER_EQUAL, beta_min);
 
-    return  state(control::type::BETA, internal);
+    return  mode(control::type::BETA, internal);
 }
 
 auto
@@ -190,7 +190,7 @@ control::make_beta_max_control(double beta_max)
     auto internal = control::constraint(control::hardness_type::HARD,
                                     constraint_type::GREATER_EQUAL, beta_max);
 
-    return  state(control::type::BETA, internal);
+    return  mode(control::type::BETA, internal);
 }
 
 auto
@@ -199,7 +199,7 @@ control::make_flux_control(double flux_max)
     auto internal = control::constraint(control::hardness_type::HARD,
                                     constraint_type::GREATER_EQUAL, flux_max);
 
-    return  state(control::type::FLUX, internal);
+    return  mode(control::type::FLUX, internal);
 }
 //==========================================================
 
@@ -269,26 +269,29 @@ station::set_rhs(double value)
 
 
 void
-station::activate(size_t step, double target_pressure)
+station::activate( size_t step,
+                    int source_num,
+                    int target_num,
+                    const variable& var)
 {
     bool on   = active_history_[step];
 
     if (on)
-        itor = controls_on.begin();
+        mode_ = controls_on[0];
     else
-        itor = controls_off.begin();
+        mode_ = controls_off[0];
 
     return;
 }
 
 
 compressor::compressor(const std::string& name,
-        double efficiency,
-        double ramp_coeff,
-        const std::vector<bool>& activate_history,
-        const std::vector<control::constraint>& internals,
-        const std::vector<control::constraint>& externals):
-        station(name, activate_history, internals, externals)
+                        double efficiency,
+                        double ramp_coeff,
+                        const std::vector<bool>& activate_history,
+                        const std::vector<control::constraint>& internals,
+                        const std::vector<control::constraint>& externals):
+                        station(name, activate_history, internals, externals)
 {
     /*
     std::vector<external_type> mandatory_exts = { BETA_MIN,
@@ -335,40 +338,46 @@ compressor::control_hard(size_t step)
     return true;
 }
 
-void
-compressor::activate(size_t step, double target_pressure)
-{
-    /* Warning: control node is not set for the moment.
-    It is provided instead the pressure at the target node.
-    The graph is not passed to the station, since the graph
-    need station to be defined. Maybe improve by saving the
-    control node and pass var.
 
-    auto t = target(*itor, g);
-    auto control_node = g[s].node_num;
-    auto pn = var_.pressure[control_node];
-    */
+void
+compressor::activate(size_t step,
+                     int source_num,
+                     int target_num,
+                     const shimmer::variable& var)
+    {
+    // WARNING: control_node set as default as target node
+    auto control_num = target_num;
+
+    const auto& nodes_pressure = var.pressure;
+    double p_control = nodes_pressure[control_num];
+    double p_in  = nodes_pressure[source_num];
+    double p_out = nodes_pressure[target_num];
 
     size_t p_threshold_min_ind = 0;
     size_t p_threshold_max_ind = 1;
 
-    double pn = target_pressure;
-    bool pass_down = externals_[p_threshold_min_ind].check(pn);
-    bool pass_up   = externals_[p_threshold_max_ind].check(pn);
+    bool pass_down = externals_[p_threshold_min_ind].check(p_control);
+    bool pass_up   = externals_[p_threshold_max_ind].check(p_control);
 
     bool on   = (!active_history_[step] & pass_up)
                 || (active_history_[step] & !pass_down);
 
     if (on)
     {
-        itor_ = controls_on.begin();
+        mode_ = controls_on[0];
         return;
     }
 
     if (p_out > p_in)
-        itor_ = controls_off.begin() + 1;
+    {
+        assert(controls_off[1].type_ == control::type::BY_PASS);
+        mode_ = controls_off[0];
+    }
     else
-        itor_ = controls_off.begin() ;
+    {
+        assert(controls_off[1].type_ == control::type::SHUT_OFF);
+        mode_ = controls_off[1];
+    }
 
     return;
 }
@@ -530,5 +539,6 @@ make_compressor(double ramp,
 }
 
 
-} //end namespace control
+
+    } //end namespace control
 }//end namespace shimmer

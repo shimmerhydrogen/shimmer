@@ -13,7 +13,7 @@
 #include "../src/incidence_matrix.h"
 #include "../src/conservation_matrices.h"
 #include "../src/gas_law.h"
-#include "../src/temporal.h"
+#include "../src/variable.h"
 
 
 namespace shimmer

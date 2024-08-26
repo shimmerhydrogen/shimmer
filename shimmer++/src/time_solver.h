@@ -14,7 +14,7 @@
 #include <Eigen/Sparse>
 #include <iomanip>
 
-#include "../src/temporal.h"
+#include "../src/variable.h"
 #include "../src/gas_law.h"
 #include "../src/fluid_solver.h"
 #include "../src/incidence_matrix.h"

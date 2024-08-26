@@ -60,7 +60,7 @@ set(SHIMMER_SOURCES
     src/conservation_matrices.cpp src/incidence_matrix.cpp
     src/matrix_manipulations.cpp src/pipe_calculator.cpp src/matlab_manip.cpp
     src/fluid_solver.cpp  ../src/boundary.cpp ../src/nonpipe_over_edges.cpp
-    src/temporal.cpp src/sqlite.cpp)
+    src/variable.cpp src/sqlite.cpp)
 
 #add_executable(shimmer src/main.cpp ${SHIMMER_SOURCES})
 #target_link_libraries(shimmer ${LINK_LIBS})

@@ -6,7 +6,7 @@
 #include <cassert>
 #include <algorithm>
 #include <tuple>
-#include "../src/temporal.h"
+#include "../src/variable.h"
 
 namespace shimmer
 {

@@ -102,175 +102,35 @@ linearized_fluid_solver::impose_edge_station_model(
     auto end = edge_range.second;
 
     for (auto itor = begin; itor != end; itor++, idx++)
-    {
+        {
         auto pipe = graph_[*itor];
         if (pipe.type == edge_type::pipe) continue;
 
         auto& st = pipe.pipe_station;
 
-        auto pipe_idx = pipe.branch_num;
+        auto pipe_num = pipe.branch_num;
 
         auto s = boost::source(*itor, graph_);
         auto t = boost::target(*itor, graph_);
 
-        auto source_node = graph_[s].node_num;
-        auto target_node = graph_[t].node_num;
+        auto source_num = graph_[s].node_num;
+        auto target_num = graph_[t].node_num;
 
-        auto p_in = nodes_pressure[source_node];
-        auto p_out = nodes_pressure[target_node];
+        st.fill_model(st.mode_, pipe_num, source_num, target_num, var_, c2_nodes);
 
-        using mode_type = edge_station::control::mode_type;
-        // Set variables
-        switch (st.which_mode_type())
-        {
-            case mode_type::SHUT_OFF:
-            case mode_type::BY_PASS:
-                st.set_c3(p_in < p_out);
-                break;
-            case mode_type::BETA:
-            {
-                auto beta = p_out /p_in;
-                st.set_c1(beta);
-                break;
-            }
-            case mode_type::POWER_DRIVER:
-            {
-
-                auto gamma = 1.4; // Or read from GERG
-                auto ck = gamma - 1.0 / gamma;
-                auto beta = p_out /p_in;
-                //auto beta = st.compute_beta(p_in, p_out);
-                auto ZTR = c2_nodes[source_node];
-                auto K = ZTR / 1.;  //st.efficiency();
-                auto G = flux[pipe_idx];
-                auto KGB = K * G * beta;
-
-                auto c3 = (K / ck) * (std::pow(beta, ck) - 1.0);
-                auto pwd = c3 * G;
-
-                st.set_c1(-KGB / p_in);
-                st.set_c2(KGB / p_out);
-                st.set_c3(c3);
-                st.set_rhs(pwd);
-                break;
-            }
-            case mode_type::PRESSURE_IN:
-                st.set_rhs(p_in);
-                break;
-            case mode_type::PRESSURE_OUT:
-                st.set_rhs(p_out);
-                break;
-            case mode_type::FLUX:
-                st.set_rhs(flux[pipe_idx]);
-                break;
-            default:
-                std::cout << "ERROR: Fluid solver does not know this control type.\n";
-                throw std::exception();
-        }
-
-        // Check values to be imposed respect limits, otherwise it is modified
+        // Check if values respect limits, otherwise they are modified
         st.control_hard();
 
-        size_t row = pipe_idx + offset;
+        size_t row = pipe_num + offset;
 
-        triplets_mom.push_back(triplet_t(row, source_node, st.model_c1()));
-        triplets_mom.push_back(triplet_t(row, target_node, st.model_c2()));
+        triplets_mom.push_back(triplet_t(row, source_num, st.model_c1()));
+        triplets_mom.push_back(triplet_t(row, target_num, st.model_c2()));
         triplets_mom.push_back(triplet_t(row, row, st.model_c3()));
         rhs_mom(row) = st.model_rhs();
     }
 
     return;
 }
-
-
-#if 0
-void
-linearized_fluid_solver::control_stations(
-            const vector_t& c2_nodes,
-            const vector_t& nodes_pressure,
-            const vector_t& pipes_pressure,
-            const vector_t& flux)
-{
-    size_t offset = num_nodes_;
-
-    int idx = 0;
-    auto edge_range = boost::edges(g);
-    auto begin = edge_range.first;
-    auto end = edge_range.second;
-
-    for (auto itor = begin; itor != end; itor++, idx++)
-        {
-        auto pipe = g[*itor];
-        if (pipe.type == edge_type::pipe) continue;
-
-        auto& st = pipe.pipe_station;
-
-        auto pipe_idx = pipe.branch_num;
-
-        size_t row = pipe_idx + offset;
-        auto s = source(*itor, g);
-        auto t = target(*itor, g);
-
-        auto source_node = g[s].node_num;
-        auto target_node = g[t].node_num;
-
-        auto p_in = nodes_pressure[source_node];
-        auto p_out = nodes_pressure[target_node];
-
-        // Set variable
-        switch (st->which_control_type(at_step_))
-        {
-            case control::mode_type::SHUT_OFF:
-            case control::mode_type::BY_PASS:
-                set.set_c3(p_in < p_out);
-                break;
-            case control::mode_type::BETA:
-                auto beta = p_out /p_in;
-                st.set_c1(beta);
-                break;
-            case control::mode_type::POWER_DRIVER:
-            {
-                auto gamma = 1.4; // Or read from GERG
-                auto ck = gamma - 1.0 / gamma;
-                auto beta = p_out /p_in;
-                //beta = edge_stations::compressor_beta(p_in, p_out, st.internals());
-                auto ZTR = c2_nodes[source_node];
-                auto K = ZTR / st.efficiency();
-                auto G = flux[pipe_idx];
-                auto KGB = K * G * beta;
-
-                auto c3 = (K / ck) * (std::pow(beta, ck) - 1.0);
-                auto pwd = c3 * G;
-
-                st.set_c1(-KGB / p_in);
-                st.set_c2( KGB / p_out);
-                st.set_c3(c3);
-                st.set_rhs(pwd);
-                break;
-            }
-            case control::mode_type::PRESSURE_IN:
-                st.set_rhs(p_in);
-                break;
-            case control::mode_type::PRESSURE_OUT:
-                st.set_rhs(p_out);
-                break;
-            case control::mode_type::FLUX:
-                st.set_rhs(flux[pipe_idx]);
-                break;
-            default:
-                std::cout << "ERROR: Fluid solver does not know this control type.\n";
-                throw std::exception;
-        }
-
-        // Control variable
-        st.control_hard( at_step_* dt_);
-
-//      }
-    }
-
-    return;
-}
-#endif
 
 
 pair_trip_vec_t
@@ -574,25 +434,22 @@ linearized_fluid_solver::check_hard_controls(size_t step)
 
         if (!st.is_on()) continue;
 
-        auto pipe_idx = pipe.branch_num;
+        auto pipe_num = pipe.branch_num;
 
         auto s = boost::source(*itor, graph_);
         auto t = boost::target(*itor, graph_);
 
-        auto source_node = graph_[s].node_num;
-        auto target_node = graph_[t].node_num;
+        auto source_num = graph_[s].node_num;
+        auto target_num = graph_[t].node_num;
 
-        auto p_in = var_.pressure[source_node];
-        auto p_out = var_.pressure[target_node];
-
-        using mode_type = edge_station::control::mode_type;
 
         // =================================================================
         // fill all controls for verification:
         for (auto& m : st.controls_on)
         {
+            #if 0
             switch (m.type_)
-            {
+                {
                 case mode_type::SHUT_OFF:
                 case mode_type::BY_PASS:
                     m.set_c3(p_in < p_out);
@@ -636,6 +493,9 @@ linearized_fluid_solver::check_hard_controls(size_t step)
                     std::cout << "ERROR: Fluid solver does not know this control type.\n";
                     throw std::exception();
             }
+            #endif
+
+            st.fill_model(m, pipe_num, source_num, target_num, var_, c2_nodes_);
         }
         // =================================================================
 
@@ -660,7 +520,7 @@ linearized_fluid_solver::check_hard_controls(size_t step)
             idx++;
         }
         // =================================================================
-        std::cout << " * Hard (" << pipe_idx << ") : " << pass << std::endl;
+        std::cout << " * Hard (" << pipe_num << ") : " << pass << std::endl;
 
         pass_all = pass_all && pass;
     }

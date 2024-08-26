@@ -210,7 +210,7 @@ control::make_flux_mode(double flux_max)
 
     return  mode(control::mode_type::FLUX, internal);
 }
-//==========================================================
+//-----------------------------------------------------------------------------
 
 bool
 station::control_hard()
@@ -286,6 +286,38 @@ station::activate( size_t step,
 }
 
 
+void
+station::fill_model(control::mode& m,
+                    int pipe_num,
+                    int source_num,
+                    int target_num,
+                    const variable& var,
+                    const vector_t& c2_nodes)
+{
+    auto p_in = var.pressure[source_num];
+    auto p_out = var.pressure[target_num];
+
+    switch (m.type_)
+    {
+        case control::mode_type::SHUT_OFF:
+        case control::mode_type::BY_PASS:
+            m.set_c3(p_in < p_out);
+            break;
+        case control::mode_type::PRESSURE_IN:
+            m.set_rhs(p_in);
+            break;
+        case control::mode_type::PRESSURE_OUT:
+            m.set_rhs(p_out);
+            break;
+        case control::mode_type::FLUX:
+            m.set_rhs(var.flux[pipe_num]);
+            break;
+        default:
+            std::cout << "ERROR: Fluid solver does not know this control type.\n";
+            throw std::exception();
+    }
+}
+//-----------------------------------------------------------------------------
 compressor::compressor(const std::string& name,
                         double efficiency,
                         double ramp_coeff,
@@ -426,6 +458,67 @@ compressor::compute_beta(double p_in,
 
     return p_out / p_in;
 }
+
+
+void
+compressor::fill_model( control::mode& m,
+                        int pipe_num,
+                        int source_num,
+                        int target_num,
+                        const variable& var,
+                        const vector_t& c2_nodes)
+{
+
+    auto p_in = var.pressure[source_num];
+    auto p_out = var.pressure[target_num];
+
+    switch (m.type_)
+    {
+        case control::mode_type::SHUT_OFF:
+        case control::mode_type::BY_PASS:
+            m.set_c3(p_in < p_out);
+            break;
+        case control::mode_type::BETA:
+        {
+            auto beta = p_out / p_in;
+            m.set_c1(beta);
+            break;
+        }
+        case control::mode_type::POWER_DRIVER:
+        {
+            auto gamma = 1.4; // Or read from GERG
+            auto ck = gamma - 1.0 / gamma;
+            auto beta = compute_beta(p_in, p_out);
+            auto ZTR = c2_nodes[source_num];
+            auto K = ZTR / efficiency_;
+            auto G = var.flux[pipe_num];
+            auto KGB = K * G * beta;
+
+            auto c3 = (K / ck) * (std::pow(beta, ck) - 1.0);
+            auto pwd = c3 * G;
+
+            m.set_c1(-KGB / p_in);
+            m.set_c2(KGB / p_out);
+            m.set_c3(c3);
+            m.set_rhs(pwd);
+            break;
+        }
+        case control::mode_type::PRESSURE_IN:
+            m.set_rhs(p_in);
+            break;
+        case control::mode_type::PRESSURE_OUT:
+            m.set_rhs(p_out);
+            break;
+        case control::mode_type::FLUX:
+            m.set_rhs(var.flux[pipe_num]);
+            break;
+        default:
+            std::cout << "ERROR: Fluid solver does not know this control type.\n";
+            throw std::exception();
+    }
+}
+
+
 
 
 std::vector<control::constraint>

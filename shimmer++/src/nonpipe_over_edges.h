@@ -229,14 +229,21 @@ public:
 
     inline void add_mode_on(const control::mode& md) { controls_on.push_back(md);};
     inline void add_mode_off(const control::mode& md){ controls_off.push_back(md);};
+
+
+    virtual void fill_model(control::mode& m,
+                            int pipe_num,
+                            int source_num,
+                            int target_num,
+                            const variable& var,
+                            const vector_t& c2_nodes);
 };
 
 
 class compressor : public station
 {
     double ramp_coeff_;
-    double efficiency;
-    int control_node;
+    double efficiency_;
 
 public:
     compressor(const std::string& name,
@@ -255,6 +262,20 @@ public:
 
     double compute_beta(double pressure_in,
                         double pressure_out);
+
+    void fill_current_model(int pipe_num,
+                    int source_num,
+                    int target_num,
+                    const variable& var,
+                    const vector_t& c2_nodes);
+
+    void fill_model(control::mode& m,
+                    int pipe_num,
+                    int source_num,
+                    int target_num,
+                    const variable& var,
+                    const vector_t& c2_nodes);
+
 };
 
 

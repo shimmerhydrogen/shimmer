@@ -53,11 +53,36 @@ public:
 
 
     void
+    pipe_stations_activation(size_t step, const variable& v)
+    {
+        auto edge_range = boost::edges(graph_);
+        auto begin = edge_range.first;
+        auto end = edge_range.second;
+
+        for (auto itor = begin; itor != end; itor++)
+        {
+            auto pipe = graph_[*itor];
+
+            if (pipe.type == edge_type::pipe) continue;
+
+            auto& st = pipe.pipe_station;
+
+            auto s = boost::source(*itor, graph_);
+            auto t = boost::target(*itor, graph_);
+
+            auto source_node = graph_[s].node_num;
+            auto target_node = graph_[t].node_num;
+
+            st.activate(step, source_node, target_node, v);
+        }
+    }
+
+
+    void
     set_initialization( const variable& var)
     {
         var_guess_ = var;
     }
-
 
 
     void
@@ -81,35 +106,12 @@ public:
         auto var_time = variable(vector_t::Zero(num_vertices(graph_)),
                                  vector_t::Zero(num_edges(graph_)),
                                  vector_t::Zero(num_vertices(graph_)));
+
+        pipe_stations_activation(iter, var_time);
+
         linearized_fluid_solver lfs(iter, unsteady, tolerance, dt, temperature_, mu, inc_, graph_);
         lfs.run(area_pipes_, var_guess, var_time, &eos);
         var_guess_ = lfs.get_variable();
-    }
-
-
-    void
-    activate_controls(size_t step)
-    {
-        auto edge_range = boost::edges(graph_);
-        auto begin = edge_range.first;
-        auto end = edge_range.second;
-
-        for (auto itor = begin; itor != end; itor++)
-        {
-            auto pipe = graph_[*itor];
-
-            if (pipe.type == edge_type::pipe) continue;
-
-            auto& st = pipe.pipe_station;
-
-            auto s = boost::source(*itor, graph_);
-            auto t = boost::target(*itor, graph_);
-
-            auto source_node = graph_[s].node_num;
-            auto target_node = graph_[t].node_num;
-
-            st.activate(step, source_node, target_node, var_);
-        }
     }
 
 
@@ -145,7 +147,7 @@ public:
             std::cout << "Solving at time ...."<< it <<std::endl;
             std::cout<<"========================================================"<< std::endl;
 
-            activate_controls(it);
+            pipe_stations_activation(it, var_);
 
             size_t ic;
             for(ic = 0; ic <= MAX_CONSTRAINT_ITER; ic++)
@@ -167,7 +169,7 @@ public:
 
                 linearized_fluid_solver lfs(it, unsteady, tol, dt, temperature_, mu, inc_, graph_);
                 lfs.run(area_pipes_, var_guess_, var_, &eos);
-                if(lfs.check_constraints(it)) //& lfs.check_controls(it))
+                if(lfs.check_constraints(it) & lfs.check_controls(it))
                 {
                     std::cout<< "++++++++++++++++++**** MODIFIED VARIABLE ****++++++++++++++++++++++ " << std::endl;
                     var_ =  lfs.get_variable();

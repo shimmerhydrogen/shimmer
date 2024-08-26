@@ -70,8 +70,8 @@ namespace control
         model(control::mode_type ctype);
         void set_coefficient(size_t index, double value);
         void set_control_coefficient(double value);
-        double coefficient(size_t index);
-        double control_coefficient();
+        double get_coefficient(size_t index) const;
+        double get_control_coefficient() const;
     };
 
     class mode
@@ -89,13 +89,13 @@ namespace control
             model_(model(type)), internal_(internal)
             {};
 
-        virtual bool control_hard(size_t step = 0);
-
+        bool check_hard() const;
+        virtual bool control_hard();
         inline void set_c1(double value){ model_.set_coefficient(0, value);};
         inline void set_c2(double value){ model_.set_coefficient(1, value);};
         inline void set_c3(double value){ model_.set_coefficient(2, value);};
         inline void set_rhs(double value){model_.set_coefficient(3, value);};
-        inline double coefficient(size_t index) { return model_.coefficient(index);}
+        inline double get_coefficient(size_t index) const { return model_.get_coefficient(index);}
         inline auto control_value() {return internal_.value();};
     };
 
@@ -171,6 +171,8 @@ class station
 {
 
 public:
+    bool on_;
+
     std::string name_;
     control::mode mode_;
 
@@ -181,7 +183,6 @@ public:
     std::vector<control::mode> controls_on;
 
     std::vector<bool> active_history_;
-    size_t count;
 
     station() = default;
     station(const std::string& name,
@@ -190,23 +191,29 @@ public:
             const std::vector<control::constraint>& externals):
                     name_(name), active_history_(active_history),
                     internals_(internals), externals_(externals)
-        {
-        count = 0;
-        };
+    {
+        on_ = false;
+    };
 
-    virtual void activate(size_t step,
-                          int source_num,
-                          int target_num,
-                          const variable& var);
+    inline bool is_on(){return on_;};
+
+    virtual void activate(  size_t step,
+                            int source_num,
+                            int target_num,
+                            const variable& var);
 
     inline auto which_mode_type()
     {
-        // size_t idx = count % mode_.size();
-        // return mode_[idx].type;
         return mode_.type_;
     };
 
-    bool control_hard(size_t step);
+    void change_mode_on(size_t idx)
+    {
+        mode_ = controls_on.at(idx);
+        return;
+    }
+
+    virtual bool control_hard();
     //bool check_soft(double p, double l, size_t step);
 
     //set coefficients of the current control model
@@ -215,10 +222,10 @@ public:
     void set_c3(double value);
     void set_rhs(double value);
 
-    inline double model_c1() { return mode_.coefficient(0);};
-    inline double model_c2() { return mode_.coefficient(1);};
-    inline double model_c3() { return mode_.coefficient(2);};
-    inline double model_rhs(){ return mode_.coefficient(3);};
+    inline double model_c1() const { return mode_.get_coefficient(0);}
+    inline double model_c2() const { return mode_.get_coefficient(1);}
+    inline double model_c3() const { return mode_.get_coefficient(2);}
+    inline double model_rhs()const { return mode_.get_coefficient(3);}
 
     inline void add_mode_on(const control::mode& md) { controls_on.push_back(md);};
     inline void add_mode_off(const control::mode& md){ controls_off.push_back(md);};
@@ -239,12 +246,12 @@ public:
         const std::vector<control::constraint>& internals,
         const std::vector<control::constraint>& externals);
 
+    bool control_hard();
+
     void activate(  size_t step,
                     int source_num,
                     int target_num,
                     const variable& var);
-
-    bool control_hard(size_t step);
 
     double compute_beta(double pressure_in,
                         double pressure_out);

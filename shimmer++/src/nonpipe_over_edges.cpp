@@ -99,7 +99,7 @@ control::model::set_control_coefficient(double value)
 }
 
 double
-control::model::coefficient(size_t index)
+control::model::get_coefficient(size_t index) const
 {
     assert(index >= 0 || index <= 3);
 
@@ -107,19 +107,28 @@ control::model::coefficient(size_t index)
 }
 
 double
-control::model::control_coefficient()
+control::model::get_control_coefficient() const
 {
-    return coefficient(control_index_);
+    return get_coefficient(control_index_);
 }
 
 bool
-control::mode::control_hard(size_t step_)
+control::mode::check_hard() const
 {
-    // Get stored value in model
-    auto value = model_.control_coefficient();
+    // 1. Get stored value in model
+    auto value = model_.get_control_coefficient();
 
-    // 1. Check constraint
+    // 2. Check constraint
     bool pass = internal_.check(value);
+
+    return pass;
+}
+
+bool
+control::mode::control_hard()
+{
+    // 1. Check constraint
+    auto pass = check_hard();
 
     // 2. Control value with hard limit
     if (!pass)
@@ -204,18 +213,9 @@ control::make_flux_mode(double flux_max)
 //==========================================================
 
 bool
-station::control_hard(size_t step)
+station::control_hard()
 {
-    //size_t idx = count % controls[idx].size();
-    bool pass = mode_.control_hard(step);
-
-    if (!pass)
-    {
-        count++;
-        return false;
-    }
-
-    return true;
+    return mode_.control_hard();
 }
 
 /*
@@ -247,31 +247,26 @@ station::check_soft(double p, double l, size_t step)
 void
 station::set_c1(double value)
 {
-    //size_t idx = count % mode_.size();
     mode_.model_.set_coefficient(0, value);
 }
 
 void
 station::set_c2(double value)
 {
-    //size_t idx = count % mode_.size();
     mode_.model_.set_coefficient(1, value);
 }
 
 void
 station::set_c3(double value)
 {
-    //size_t idx = count % controls.size();
     mode_.model_.set_coefficient(2, value);
 }
 
 void
 station::set_rhs(double value)
 {
-    //size_t idx = count % controls.size();
     mode_.model_.set_coefficient(3, value);
 };
-
 
 
 void
@@ -280,9 +275,9 @@ station::activate( size_t step,
                     int target_num,
                     const variable& var)
 {
-    bool on   = active_history_[step];
+    on_   = active_history_[step];
 
-    if (on)
+    if (on_)
         mode_ = controls_on[0];
     else
         mode_ = controls_off[0];
@@ -321,24 +316,21 @@ compressor::compressor(const std::string& name,
 
 
 bool
-compressor::control_hard(size_t step)
+compressor::control_hard()
 {
-
-    //size_t idx = count % controls.size();
-    bool pass = mode_.control_hard(step);
+    bool pass = mode_.control_hard();
 
     if (!pass)
-    {
-        count++;
         return false;
-    }
 
     if(mode_.type_ == control::mode_type::POWER_DRIVER)
     {
-        auto pwd = mode_.model_.control_coefficient();
+        auto pwd = mode_.model_.get_control_coefficient();
         auto pwd_nominal = mode_.internal_.value();
-        auto pwd_control = pwd * (step - 1.0) + ramp_coeff_ * pwd_nominal;
-        mode_.model_.set_control_coefficient(pwd_control);
+
+        // TODO: This needs to be finished by adding pwd(t^{n-1})
+        // auto pwd_control = pwd_old_ + ramp_coeff_ * pwd_nominal;
+        // mode_.model_.set_control_coefficient(pwd_control);
     }
 
     return true;
@@ -350,7 +342,7 @@ compressor::activate(size_t step,
                      int source_num,
                      int target_num,
                      const shimmer::variable& var)
-    {
+{
     // WARNING: control_node set as default as target node
     auto control_num = target_num;
 
@@ -365,10 +357,10 @@ compressor::activate(size_t step,
     bool pass_down = externals_[p_threshold_min_ind].check(p_control);
     bool pass_up   = externals_[p_threshold_max_ind].check(p_control);
 
-    bool on   = (!active_history_[step] & pass_up)
+    on_   = (!active_history_[step] & pass_up)
                 || (active_history_[step] & !pass_down);
 
-    if (on)
+    if (on_)
     {
         mode_ = controls_on[0];
         return;

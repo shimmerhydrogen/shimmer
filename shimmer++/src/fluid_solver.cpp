@@ -108,11 +108,8 @@ linearized_fluid_solver::impose_edge_station_model(
 
         auto& st = pipe.pipe_station;
 
-        //if (!st->active(at_step_))  continue;
-
         auto pipe_idx = pipe.branch_num;
 
-        size_t row = pipe_idx + offset;
         auto s = boost::source(*itor, graph_);
         auto t = boost::target(*itor, graph_);
 
@@ -138,6 +135,7 @@ linearized_fluid_solver::impose_edge_station_model(
             }
             case mode_type::POWER_DRIVER:
             {
+
                 auto gamma = 1.4; // Or read from GERG
                 auto ck = gamma - 1.0 / gamma;
                 auto beta = p_out /p_in;
@@ -151,7 +149,7 @@ linearized_fluid_solver::impose_edge_station_model(
                 auto pwd = c3 * G;
 
                 st.set_c1(-KGB / p_in);
-                st.set_c2( KGB / p_out);
+                st.set_c2(KGB / p_out);
                 st.set_c3(c3);
                 st.set_rhs(pwd);
                 break;
@@ -169,6 +167,11 @@ linearized_fluid_solver::impose_edge_station_model(
                 std::cout << "ERROR: Fluid solver does not know this control type.\n";
                 throw std::exception();
         }
+
+        // Check values to be imposed respect limits, otherwise it is modified
+        st.control_hard();
+
+        size_t row = pipe_idx + offset;
 
         triplets_mom.push_back(triplet_t(row, source_node, st.model_c1()));
         triplets_mom.push_back(triplet_t(row, target_node, st.model_c2()));
@@ -295,13 +298,6 @@ linearized_fluid_solver::momentum(
         vector_t ri = resistance_inertia(dt_, pipes_pressure, inc_, graph_);
         r -= ri;
         rhs -= ri.cwiseProduct(flux_old);
-
-        /*
-        std::cout << "* ri: " <<  std::endl;
-        for (int k = 0; k < ri.size(); ++k)
-            std::cout << std::setprecision(16) <<ri(k)<< std::endl;
-        std::cout <<  std::endl ;
-        */
     }
 
     vector_t r_scale = r.cwiseQuotient(ADP_p);
@@ -314,39 +310,6 @@ linearized_fluid_solver::momentum(
     vector_t rhs_scale = rhs.cwiseQuotient(ADP_p);
 
     impose_edge_station_model(c2_nodes, nodes_pressure, flux, triplets,rhs_scale);
-    /*
-    std::cout << "* nodes_pressure: " <<  std::endl;
-    for (int k = 0; k < nodes_pressure.size(); ++k)
-        std::cout << std::setprecision(16) <<nodes_pressure(k)<< std::endl;
-    std::cout <<  std::endl ;
-
-    std::cout << "* rf: " <<  std::endl;
-    for (int k = 0; k < rf.size(); ++k)
-        std::cout << std::setprecision(16) <<rf(k)<< std::endl;
-    std::cout <<  std::endl ;
-
-
-    std::cout << "* c2_pipes: " <<  std::endl;
-    for (int k = 0; k < c2.size(); ++k)
-        std::cout << std::setprecision(16) <<c2(k)<< std::endl;
-    std::cout <<  std::endl ;
-
-
-    std::cout << "* ADP_p: " <<  std::endl;
-    for (int k = 0; k < ADP_p.size(); ++k)
-        std::cout << std::setprecision(16) <<ADP_p(k)<< std::endl;
-    std::cout <<  std::endl ;
-
-    std::cout << "* r_scale: " <<  std::endl;
-    for (int k = 0; k < r_scale.size(); ++k)
-        std::cout << std::setprecision(16) <<r_scale(k)<< std::endl;
-    std::cout <<  std::endl ;
-
-    std::cout << "* rhs_scale: " <<  std::endl;
-    for (int k = 0; k < rhs_scale.size(); ++k)
-        std::cout << std::setprecision(16) <<rhs_scale(k)<< std::endl;
-    std::cout <<  std::endl ;
-    */
 
     return std::make_pair(triplets, rhs_scale);
 }
@@ -530,8 +493,6 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
             exit(1);
         }
 
-
-
         vector_t sol = solver.solve(rhs);
         if(solver.info() != Eigen::Success) {
             std::cout << "Error solving system" <<std::endl;
@@ -564,6 +525,9 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
 
         if (convergence(sol))
         {
+            c2_nodes_ = c2_nodes;
+            c2_pipes_ = c2_pipes;
+
             return true;
         }
 
@@ -608,27 +572,94 @@ linearized_fluid_solver::check_hard_controls(size_t step)
 
         auto& st = pipe.pipe_station;
 
+        if (!st.is_on()) continue;
+
         auto pipe_idx = pipe.branch_num;
 
-        /*
-        auto s_node_idx = g[source(*itor, g)].node_num;
-        auto t_node_idx = g[target(*itor, g)].node_num;
+        auto s = boost::source(*itor, graph_);
+        auto t = boost::target(*itor, graph_);
 
-        double p_in  = var_.pressure[s_node_idx];
-        double p_out = var_.pressure[t_node_idx];
-        double flow  = var_.flux[pipe_idx];
-        bool pin_greater_pout = p_in < p_out;
+        auto source_node = graph_[s].node_num;
+        auto target_node = graph_[t].node_num;
 
-        using cvar_t = control::variable_to_control;
+        auto p_in = var_.pressure[source_node];
+        auto p_out = var_.pressure[target_node];
 
-        auto control_vars = std::unordered_map<double>{ {cvar_t::PRESSURE_IN, pin },
-                                                        {cvar_t::PRESSURE_OUT, p_out},
-                                                        {cvar_t::FLOW, flow},
-                                                        {cvar_t::PIN_LOWER_POUT, pin < pout} };
+        using mode_type = edge_station::control::mode_type;
+
+        // =================================================================
+        // fill all controls for verification:
+        for (auto& m : st.controls_on)
+        {
+            switch (m.type_)
+            {
+                case mode_type::SHUT_OFF:
+                case mode_type::BY_PASS:
+                    m.set_c3(p_in < p_out);
+                    break;
+                case mode_type::BETA:
+                {
+                    auto beta = p_out /p_in;
+                    m.set_c1(beta);
+                    break;
+                }
+                case mode_type::POWER_DRIVER:
+                {
+                    auto gamma = 1.4; // Or read from GERG
+                    auto ck = gamma - 1.0 / gamma;
+                    auto beta = p_out /p_in;
+                    //auto beta = st.compute_beta(p_in, p_out);
+                    auto ZTR = c2_nodes_[source_node];
+                    auto K = ZTR / 1.;  //st.efficiency();
+                    auto G = var_.flux[pipe_idx];
+                    auto KGB = K * G * beta;
+
+                    auto c3 = (K / ck) * (std::pow(beta, ck) - 1.0);
+                    auto pwd = c3 * G;
+
+                    m.set_c1(-KGB / p_in);
+                    m.set_c2(KGB / p_out);
+                    m.set_c3(c3);
+                    m.set_rhs(pwd);
+                    break;
+                }
+                case mode_type::PRESSURE_IN:
+                    m.set_rhs(p_in);
+                    break;
+                case mode_type::PRESSURE_OUT:
+                    m.set_rhs(p_out);
+                    break;
+                case mode_type::FLUX:
+                    m.set_rhs(var_.flux[pipe_idx]);
+                    break;
+                default:
+                    std::cout << "ERROR: Fluid solver does not know this control type.\n";
+                    throw std::exception();
+            }
+        }
+        // =================================================================
+
+        /* Check other controls mode:
+
+        Once the modes are filled with the current values, the constraints
+        are checked.
+        If one mode constraint is not verified then run simulation again using
+        the new control mode
         */
+        size_t idx = 0;
+        bool pass;
 
-        auto pass = pipe.pipe_station.control_hard(step);
-
+        for (const auto& m : st.controls_on)
+            {
+            pass = m.check_hard();
+            if (!pass)
+            {
+                st.change_mode_on(idx);
+                break;
+            }
+            idx++;
+        }
+        // =================================================================
         std::cout << " * Hard (" << pipe_idx << ") : " << pass << std::endl;
 
         pass_all = pass_all && pass;

@@ -139,7 +139,7 @@ namespace control
     auto make_power_driver_mode(double PWD_nominal, double ramp);
     auto make_pressure_out_mode(double pressure_out_max);
     auto make_pressure_in_mode(double pressure_in_min);
-    auto make_by_pass_mode(const constraint_type& ctype);
+    auto make_bypass_mode(const constraint_type& ctype);
     auto make_shutoff_mode(const constraint_type& ctype);
     auto make_beta_min_mode(double beta_min);
     auto make_beta_max_mode(double beta_max);
@@ -262,12 +262,6 @@ public:
 
     double compute_beta(double pressure_in,
                         double pressure_out);
-
-    void fill_current_model(int pipe_num,
-                    int source_num,
-                    int target_num,
-                    const variable& var,
-                    const vector_t& c2_nodes);
 
     void fill_model(control::mode& m,
                     int pipe_num,

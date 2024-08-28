@@ -102,7 +102,7 @@ linearized_fluid_solver::impose_edge_station_model(
     auto end = edge_range.second;
 
     for (auto itor = begin; itor != end; itor++, idx++)
-        {
+    {
         auto pipe = graph_[*itor];
         if (pipe.type == edge_type::pipe) continue;
 
@@ -254,7 +254,6 @@ linearized_fluid_solver::assemble(
 }
 
 
-
 bool linearized_fluid_solver::convergence(
                 const vector_t& sol)
 {
@@ -284,7 +283,6 @@ bool linearized_fluid_solver::convergence(
         return true;
     return false;
 }
-
 
 
 bool
@@ -446,57 +444,8 @@ linearized_fluid_solver::check_hard_controls(size_t step)
         // =================================================================
         // fill all controls for verification:
         for (auto& m : st.controls_on)
-        {
-            #if 0
-            switch (m.type_)
-                {
-                case mode_type::SHUT_OFF:
-                case mode_type::BY_PASS:
-                    m.set_c3(p_in < p_out);
-                    break;
-                case mode_type::BETA:
-                {
-                    auto beta = p_out /p_in;
-                    m.set_c1(beta);
-                    break;
-                }
-                case mode_type::POWER_DRIVER:
-                {
-                    auto gamma = 1.4; // Or read from GERG
-                    auto ck = gamma - 1.0 / gamma;
-                    auto beta = p_out /p_in;
-                    //auto beta = st.compute_beta(p_in, p_out);
-                    auto ZTR = c2_nodes_[source_node];
-                    auto K = ZTR / 1.;  //st.efficiency();
-                    auto G = var_.flux[pipe_idx];
-                    auto KGB = K * G * beta;
-
-                    auto c3 = (K / ck) * (std::pow(beta, ck) - 1.0);
-                    auto pwd = c3 * G;
-
-                    m.set_c1(-KGB / p_in);
-                    m.set_c2(KGB / p_out);
-                    m.set_c3(c3);
-                    m.set_rhs(pwd);
-                    break;
-                }
-                case mode_type::PRESSURE_IN:
-                    m.set_rhs(p_in);
-                    break;
-                case mode_type::PRESSURE_OUT:
-                    m.set_rhs(p_out);
-                    break;
-                case mode_type::FLUX:
-                    m.set_rhs(var_.flux[pipe_idx]);
-                    break;
-                default:
-                    std::cout << "ERROR: Fluid solver does not know this control type.\n";
-                    throw std::exception();
-            }
-            #endif
-
             st.fill_model(m, pipe_num, source_num, target_num, var_, c2_nodes_);
-        }
+
         // =================================================================
 
         /* Check other controls mode:
@@ -510,7 +459,7 @@ linearized_fluid_solver::check_hard_controls(size_t step)
         bool pass;
 
         for (const auto& m : st.controls_on)
-            {
+        {
             pass = m.check_hard();
             if (!pass)
             {

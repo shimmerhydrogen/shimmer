@@ -127,10 +127,13 @@ control::mode::check_hard() const
 bool
 control::mode::control_hard()
 {
-    // 1. Check constraint
-    auto pass = check_hard();
+    // 1. Get stored value in model
+    auto value = model_.get_control_coefficient();
 
-    // 2. Control value with hard limit
+    // 2. Check constraint
+    bool pass = internal_.check(value);
+
+    // 3. Control value with hard limit
     if (!pass)
         model_.set_control_coefficient(internal_.value());
 
@@ -167,7 +170,7 @@ control::make_pressure_in_mode(double pressure_in_min)
 }
 
 auto
-control::make_by_pass_mode(const constraint_type& ctype)
+control::make_bypass_mode(const constraint_type& ctype)
 {
     auto internal = control::constraint(control::hardness_type::HARD,
                                     ctype, 0);
@@ -313,7 +316,7 @@ station::fill_model(control::mode& m,
             m.set_rhs(var.flux[pipe_num]);
             break;
         default:
-            std::cout << "ERROR: Fluid solver does not know this control type.\n";
+            std::cout << "ERROR: station does not know this control type.\n";
             throw std::exception();
     }
 }
@@ -360,7 +363,7 @@ compressor::control_hard()
         auto pwd = mode_.model_.get_control_coefficient();
         auto pwd_nominal = mode_.internal_.value();
 
-        // TODO: This needs to be finished by adding pwd(t^{n-1})
+        // TODO: This needs to be finished by adding pwd_old_ = pwd(t^{n-1})
         // auto pwd_control = pwd_old_ + ramp_coeff_ * pwd_nominal;
         // mode_.model_.set_control_coefficient(pwd_control);
     }
@@ -513,7 +516,7 @@ compressor::fill_model( control::mode& m,
             m.set_rhs(var.flux[pipe_num]);
             break;
         default:
-            std::cout << "ERROR: Fluid solver does not know this control type.\n";
+            std::cout << "ERROR: compressor does not know this control type.\n";
             throw std::exception();
     }
 }
@@ -559,6 +562,7 @@ make_regulator(double velocity_limit,
 
     return;
 }
+
 
 auto
 make_valve(const std::vector<bool>& activate_history,

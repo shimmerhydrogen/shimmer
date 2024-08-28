@@ -56,7 +56,7 @@ namespace control
 
         bool  check(double value) const;
         inline double value() const {return value_;};
-        inline const constraint_type& type() {return type_;};
+        inline const constraint_type& type() const {return type_;};
     };
 
     class model

@@ -320,33 +320,40 @@ station::fill_model(control::mode& m,
             throw std::exception();
     }
 }
+
 //-----------------------------------------------------------------------------
+
 compressor::compressor(const std::string& name,
-                        double efficiency,
+    double efficiency,
                         double ramp_coeff,
                         const std::vector<bool>& activate_history,
                         const std::vector<control::constraint>& internals,
                         const std::vector<control::constraint>& externals):
                         station(name, activate_history, internals, externals)
 {
-    /*
+    #if 0
     std::vector<external_type> mandatory_exts = { BETA_MIN,
-    BETA_MAX,
-    P_OUT_MAX,
-    P_OUT_MIN,
-    P_IN_MIN,
-    P_THRESHOLD_MIN,
-    P_THRESHOLD_MAX};
+                                                BETA_MAX,
+                                                P_OUT_MAX,
+                                                P_OUT_MIN,
+                                                P_IN_MIN,
+                                                P_THRESHOLD_MIN,
+                                                P_THRESHOLD_MAX};
 
-    for(const auto& e : mandatory_exts)
+    for (const auto& e : mandatory_exts)
     {
-        if (externals.find(e) == externals.end())
-        {
-            auto messsage = "Mandatory limit was not goven for" + e.key();
-            throw std::exception(messsage);
-        }
+        auto has_ext = [&](const control::constraint& c)
+                        {
+                            return c.type() == e;
+                        };
+
+        auto it = std::find(externals.begin(), externals.end(), has_ext);
+
+        if (it == externals.end())
+            throw std::invalid_argument("Mandatory limit was not given");
     }
-    */
+
+    #endif
 };
 
 
@@ -417,47 +424,56 @@ compressor::activate(size_t step,
 
 double
 compressor::compute_beta(double p_in,
-                double p_out)
+                         double p_out)
 {
-    size_t p_out_min_ind = 2;
-    size_t p_out_max_ind = 2;
-    size_t beta_min_ind = 3;
-    size_t beta_max_ind = 4;
+    size_t beta_min_ind = 4;
+    size_t beta_max_ind = 5;
 
-    assert(controls_on[p_out_max_ind].type_== external_type::P_OUT_MAX
-        || controls_on[beta_max_ind].type_ == external_type::BETA_MAX
-        || controls_on[beta_min_ind].type_ == external_type::BETA_MIN
-        || externals_[p_out_min_ind].type() == external_type::P_OUT_MIN
-    );
+    assert(externals_[beta_max_ind].type() == external_type::BETA_MAX
+        || externals_[beta_min_ind].type() == external_type::BETA_MIN);
 
-    double press_rate = p_out / p_in;
+    const auto& beta_min_constr = externals_[beta_min_ind];
+    const auto& beta_max_constr = externals_[beta_max_ind];
 
-    const auto& beta_min_constr  = controls_on[beta_min_ind].internal_;
-    const auto& beta_max_constr  = controls_on[beta_max_ind].internal_;
-    const auto& p_out_max_constr = controls_on[p_out_max_ind].internal_;
-    const auto& p_out_min_constr = controls_on[p_out_min_ind].internal_;
+    double beta = p_out / p_in;
 
-    bool pass_min = beta_min_constr.check(press_rate);
-    bool pass_max = beta_max_constr.check(press_rate);
-
-    if (pass_min & pass_max)
-        return press_rate;
+    bool pass_beta_min = beta_min_constr.check(beta);
+    bool pass_beta_max = beta_max_constr.check(beta);
 
     double beta_min = beta_min_constr.value();
     double beta_max = beta_max_constr.value();
 
-    double beta;
-    if (!pass_min)
+    if (!pass_beta_min)
         beta = beta_min;
-    else if (!pass_max)
+    else if (!pass_beta_max)
         beta = beta_max;
+    else
+        return beta;
+
+    size_t pout_min_ind = 2;
+    size_t pout_max_ind = 3;
+
+    assert(externals_[pout_max_ind].type() == external_type::P_OUT_MAX
+        || externals_[pout_min_ind].type() == external_type::P_OUT_MIN);
+
+    const auto& pout_max_constr = externals_[pout_max_ind];
+    const auto& pout_min_constr = externals_[pout_min_ind];
 
     p_out = beta * p_in;
 
-    if (!p_out_min_constr.check(p_out))
-        p_out = p_out_min_constr.value();
-    else if (!p_out_max_constr.check(p_out))
-        p_out = p_out_max_constr.value();
+    bool pass_pout_min = pout_min_constr.check(p_out);
+    bool pass_pout_max = pout_max_constr.check(p_out);
+
+    bool pout_min = pout_min_constr.value();
+    bool pout_max = pout_max_constr.value();
+
+    if (!pass_pout_min)
+        p_out = pout_min;
+    else if (!pass_pout_max)
+        p_out = pout_max;
+
+    if ((!pass_pout_min && !pass_beta_min) || (!pass_pout_max && !pass_beta_max))
+        std::cout << "WARNING: This condition shouldn't happend.";
 
     return p_out / p_in;
 }
@@ -554,7 +570,7 @@ make_regulator(double velocity_limit,
 
     station regulator("REGULATOR", activate_history, internal, externals);
 
-    auto c_by_pass = make_by_pass_mode(control::constraint_type::GREATER_EQUAL);
+    auto c_by_pass = make_bypass_mode(control::constraint_type::GREATER_EQUAL);
     auto c_shutoff = make_shutoff_mode(control::constraint_type::LOWER);
 
     regulator.add_mode_on(c_by_pass);
@@ -580,7 +596,7 @@ make_valve(const std::vector<bool>& activate_history,
 
     station valve("VALVE", activate_history, internal, externals);
 
-    auto c_by_pass = make_by_pass_mode(control::constraint_type::NONE);
+    auto c_by_pass = make_bypass_mode(control::constraint_type::NONE);
     auto c_shutoff = make_shutoff_mode(control::constraint_type::NONE);
 
     valve.add_mode_on(c_by_pass);
@@ -605,12 +621,15 @@ make_compressor(double ramp,
     auto internals = std::vector<control::constraint>({ flux_limit });
     auto externals = build_multiple_constraints({user_limits[P_THRESHOLD_MIN],
                                                  user_limits[P_THRESHOLD_MAX],
-                                                 user_limits[P_OUT_MIN]},
-                                                 control::hardness_type::SOFT);
+                                                 user_limits[P_OUT_MIN],
+                                                 user_limits[P_OUT_MAX],
+                                                 user_limits[BETA_MIN],
+                                                 user_limits[BETA_MAX]},
+                                                control::hardness_type::SOFT);
 
     compressor cmp("COMPRESSOR", ramp, efficiency, activate_history, internals, externals);
 
-    auto c_by_pass = control::make_by_pass_mode(control::constraint_type::EQUAL);
+    auto c_by_pass = control::make_bypass_mode(control::constraint_type::EQUAL);
     auto c_shutoff = control::make_shutoff_mode(control::constraint_type::EQUAL);
 
     cmp.add_mode_off(c_by_pass);

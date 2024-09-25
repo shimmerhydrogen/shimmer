@@ -85,8 +85,9 @@ struct vertex_properties {
 
     friend std::ostream& operator<<(std::ostream& ofs, const vertex_properties& vp)
     {
-        ofs << " name : \"" << vp.name << "\", ";
-        ofs << " node_num : " << vp.node_num << ",";
+        ofs << "name: \"" << vp.name << "\", ";
+        ofs << "user node num: " << vp.u_snum << ", ";
+        ofs << "internal node num: " << vp.i_snum << ", ";
         //ofs << " pressure : " << vp.pressure << ", ";
         //ofs << " mass_flow: " << vp.mass_flow << "\n";
         if (vp.node_station) {

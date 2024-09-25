@@ -35,7 +35,7 @@ class network_database {
     sqlite3 *db_;
     bool verbose_;
 
-    /* I have the impression that this stuff does not belong here BEGIN */
+    /* BEGIN I have the impression that this stuff does not belong here */
     std::vector<std::optional<int>>                 s_u2i;
     std::vector<int>                                s_i2u;
     std::vector<std::optional<vertex_descriptor>>   s_u2vd;
@@ -44,6 +44,7 @@ class network_database {
     std::vector<setting_remi_wo>        settings_remi_wo;
     std::vector<setting_injection_w>    settings_injection_w;
     std::vector<setting_conspoint_wo>   settings_conspoint_wo;
+    /* END I have the impression that this stuff does not belong here */
 
     int import_stations(infrastructure_graph& g);
     int import_station_parameters(infrastructure_graph& g);

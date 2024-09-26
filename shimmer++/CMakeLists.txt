@@ -59,9 +59,8 @@ set(SHIMMER_SOURCES
     src/infrastructure_graph.cpp src/geometry_properties.cpp src/gas_law.cpp
     src/conservation_matrices.cpp src/incidence_matrix.cpp
     src/matrix_manipulations.cpp src/pipe_calculator.cpp src/matlab_manip.cpp
-    src/fluid_solver.cpp  ../src/boundary.cpp ../src/nonpipe_over_edges.cpp
-    src/variable.cpp src/boundary.cpp
-    src/temporal.cpp src/sqlite.cpp src/sqlite_remi_wo.cpp
+    src/fluid_solver.cpp src/nonpipe_over_edges.cpp
+    src/variable.cpp src/boundary.cpp  src/sqlite.cpp src/sqlite_remi_wo.cpp
     src/sqlite_injection_w.cpp src/sqlite_conspoint_wo.cpp
 )
 

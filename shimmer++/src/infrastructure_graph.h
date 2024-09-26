@@ -42,7 +42,6 @@ enum GAS_TYPE
     Ar,
 };
 
-[[deprecated("This must be unified with station_type.")]]
 enum station_type_x
 {
     REMI_WO_BACKFLOW,

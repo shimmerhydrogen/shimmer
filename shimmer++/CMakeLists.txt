@@ -22,6 +22,11 @@ find_package(SQLite3 REQUIRED)
 set(LINK_LIBS ${LINK_LIBS} SQLite::SQLite3)
 
 #######################################################################
+# Threads library
+find_package(Threads REQUIRED)
+set(LINK_LIBS ${LINK_LIBS} Threads::Threads)
+
+#######################################################################
 # Qt stuff
 #set(CMAKE_AUTOMOC ON)
 #set(CMAKE_AUTORCC ON)
@@ -54,8 +59,8 @@ set(SHIMMER_SOURCES
     src/infrastructure_graph.cpp src/geometry_properties.cpp src/gas_law.cpp
     src/conservation_matrices.cpp src/incidence_matrix.cpp
     src/matrix_manipulations.cpp src/pipe_calculator.cpp src/matlab_manip.cpp
-    src/fluid_solver.cpp  src/boundary.cpp
-    src/temporal.cpp src/sqlite.cpp)
+    src/fluid_solver.cpp  ../src/boundary.cpp ../src/nonpipe_over_edges.cpp
+    src/variable.cpp src/sqlite.cpp)
 
 #add_executable(shimmer src/main.cpp ${SHIMMER_SOURCES})
 #target_link_libraries(shimmer ${LINK_LIBS})

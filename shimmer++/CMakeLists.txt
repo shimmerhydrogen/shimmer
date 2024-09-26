@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.29)
 project(shimmer++)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
@@ -59,8 +59,11 @@ set(SHIMMER_SOURCES
     src/infrastructure_graph.cpp src/geometry_properties.cpp src/gas_law.cpp
     src/conservation_matrices.cpp src/incidence_matrix.cpp
     src/matrix_manipulations.cpp src/pipe_calculator.cpp src/matlab_manip.cpp
-    src/fluid_solver.cpp  ../src/boundary.cpp ../src/nonpipe_over_edges.cpp
-    src/variable.cpp src/sqlite.cpp)
+    src/fluid_solver.cpp src/nonpipe_over_edges.cpp
+    src/variable.cpp src/boundary.cpp  src/sqlite.cpp src/sqlite_remi_wo.cpp
+    src/sqlite_injection_w.cpp src/sqlite_conspoint_wo.cpp
+)
+
 
 #add_executable(shimmer src/main.cpp ${SHIMMER_SOURCES})
 #target_link_libraries(shimmer ${LINK_LIBS})

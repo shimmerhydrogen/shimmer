@@ -42,6 +42,7 @@ enum GAS_TYPE
     Ar,
 };
 
+[[deprecated("This must be unified with station_type.")]]
 enum station_type_x
 {
     REMI_WO_BACKFLOW,
@@ -49,11 +50,6 @@ enum station_type_x
     OUTLET,
     JUNCTION,
     CONSUMPTION_WO_PRESS,
-};
-
-struct gas_descriptor {
-    std::string     name;
-    double          percentage;
 };
 
 struct vertex_properties {
@@ -64,8 +60,6 @@ struct vertex_properties {
     int             u_snum;
     int             i_snum;
     station_type_x  type;
-    //double          pressure;
-    //double          mass_flow;
     double          height;
     vector_t        gas_mixture;
     std::unique_ptr<station> node_station;   
@@ -73,12 +67,12 @@ struct vertex_properties {
 
     vertex_properties(){}
 
-    [[deprecated("xxx")]]
+    [[deprecated("This constructor requires unneeded parameters")]]
     vertex_properties(std::string     iname,
-    int             inode_num,
-    double          ipressure,
-    double          imass_flow,
-    double          iheight): name(iname), node_num(inode_num), 
+        int             inode_num,
+        double          ipressure,
+        double          imass_flow,
+        double          iheight) : name(iname), node_num(inode_num), 
                             //pressure(ipressure),mass_flow(imass_flow),
                             height(iheight)   {} 
 

@@ -7,6 +7,8 @@
 #include "teqp/models/GERG/GERG.hpp"
 #include "test_utilities.hpp"
 
+#include "test_gerg_mock.hpp"
+
 namespace shimmer_teqp
 {
   namespace test
@@ -16,28 +18,26 @@ namespace shimmer_teqp
     {
       using namespace shimmer_teqp::utilities;
 
-      const std::vector<unsigned int> filter = { 0, 2 };
+      const auto x = gerg_mock::x();
+      const auto filter = shimmer_teqp::utilities::filter_components(x,
+                                                                     gerg_mock::tolerance());
 
-      Eigen::ArrayXd x(21);
-      x<< 0.8, 0, 0.2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+      ASSERT_EQ(gerg_mock::filter(),
+                filter);
 
       const auto& names = teqp::GERG2008::component_names;
 
       const auto comps = shimmer_teqp::utilities::filter_collection(filter,
                                                                     names);
 
-      const std::vector<std::string> expected_comps = { "methane", "carbondioxide" };
-      ASSERT_EQ(expected_comps,
+      ASSERT_EQ(gerg_mock::comps(),
                 comps);
 
       const auto mol_frac = shimmer_teqp::utilities::filter_collection(filter,
                                                                        x);
 
-
-      Eigen::ArrayXd expected_mol_frac(2);
-      expected_mol_frac<< 0.8, 0.2;
-      ASSERT_VECTOR_DOUBLE_EQ(expected_mol_frac,
-                              expected_mol_frac);
+      ASSERT_VECTOR_DOUBLE_EQ(gerg_mock::mol_frac(),
+                              mol_frac);
 
       return EXIT_SUCCESS;
     }

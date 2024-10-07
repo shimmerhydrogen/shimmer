@@ -5,9 +5,8 @@
 #include "shimmer_teqp_utilities.hpp"
 
 #include "teqp/models/GERG/GERG.hpp"
+#include "test_gerg_mock.hpp"
 #include "test_utilities.hpp"
-
-#include <iostream>
 
 namespace shimmer_teqp
 {
@@ -18,25 +17,18 @@ namespace shimmer_teqp
     {
       using namespace shimmer_teqp::utilities;
 
-      constexpr double tolerance = 1.0e-14;
-      Eigen::ArrayXd x(21);
-      x<< 0.8, 0, 0.2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
-
-      const auto filter = shimmer_teqp::utilities::filter_components(x,
-                                                                     tolerance);
-
-      const auto& names = teqp::GERG2008::component_names;
-      const auto comps = shimmer_teqp::utilities::filter_collection(filter,
-                                                                    names);
-      const auto mol_frac = shimmer_teqp::utilities::filter_collection(filter,
-                                                                       x);
+      const auto tolerance = gerg_mock::tolerance();
+      const auto comps = gerg_mock::comps();
+      const auto mol_frac = gerg_mock::mol_frac();
 
       auto model = teqp::GERG2008::GERG2008ResidualModel(comps);
 
-      ASSERT_DOUBLE_EQ_TOL(2.082743529542123e+02,
+      const auto expected_reducing_parameters = gerg_mock::reducing_parameters();
+
+      ASSERT_DOUBLE_EQ_TOL(expected_reducing_parameters.Tr,
                            model.red.get_Tr(mol_frac),
                            tolerance);
-      ASSERT_DOUBLE_EQ_TOL(1.022348540995680e+04,
+      ASSERT_DOUBLE_EQ_TOL(expected_reducing_parameters.Dr,
                            model.red.get_rhor(mol_frac),
                            tolerance);
 

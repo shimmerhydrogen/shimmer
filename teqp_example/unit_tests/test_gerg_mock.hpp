@@ -48,7 +48,7 @@ namespace shimmer_teqp
         gerg_data::Reducing_parameters<double> reducing_parameters;
 
         reducing_parameters.Tr = 2.082743529542123e+02;
-        reducing_parameters.Dr = 1.022348540995680e+04;
+        reducing_parameters.Dr = 1.022348540995680e+01 * 1.0e+3;
 
         return reducing_parameters;
       }
@@ -58,8 +58,8 @@ namespace shimmer_teqp
         gerg_data::Pseudo_critical_point<double> pseudo_critical_point;
 
         pseudo_critical_point.Tcx = 2.132768400000000e+02;
-        pseudo_critical_point.Vcx = 9.772414504557397e-05;
-        pseudo_critical_point.Dcx = 1.023288563469802e+04;
+        pseudo_critical_point.Vcx = 9.772414504557397e-02 * 1.0e-3;
+        pseudo_critical_point.Dcx = 1.023288563469802e+01 * 1.0e+3;
 
         return pseudo_critical_point;
       }

@@ -74,6 +74,11 @@ namespace shimmer_teqp
         return 5.101325000000000e+06;
       }
       // *********************************************************
+      auto alpha_r()
+      {
+        return 4.212568035613069e+01;
+      }
+      // *********************************************************
       auto thermodynamic_properties_parameters()
       {
         gerg_data::Thermodynamic_properties_parameters parameters;

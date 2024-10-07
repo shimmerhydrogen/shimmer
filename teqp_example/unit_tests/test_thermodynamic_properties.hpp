@@ -25,6 +25,14 @@ namespace shimmer_teqp
       auto model = teqp::GERG2008::GERG2008ResidualModel(comps);
       const auto R = model.R(mol_frac);
 
+      const auto alpha_r = model.alphar(gerg_mock::T(),
+                                        gerg_mock::thermodynamic_properties().D,
+                                        mol_frac);
+
+      ASSERT_DOUBLE_EQ_TOL(gerg_mock::alpha_r(),
+                           alpha_r,
+                           tolerance);
+
       const auto expected_thermodynamic_properties = gerg_mock::thermodynamic_properties();
 
       const auto thermodynamic_properties = gerg_functions::thermodynamic_properties(mol_frac,

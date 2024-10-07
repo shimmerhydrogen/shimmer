@@ -1,6 +1,7 @@
 list(APPEND src_headers ${CMAKE_CURRENT_SOURCE_DIR}/shimmer_teqp_utilities.hpp)
 list(APPEND src_headers ${CMAKE_CURRENT_SOURCE_DIR}/shimmer_teqp_concepts.hpp)
 list(APPEND src_headers ${CMAKE_CURRENT_SOURCE_DIR}/shimmer_gerg_data.hpp)
+list(APPEND src_headers ${CMAKE_CURRENT_SOURCE_DIR}/shimmer_gerg_functions.hpp)
 
 list(APPEND src_includes ${CMAKE_CURRENT_SOURCE_DIR})
 

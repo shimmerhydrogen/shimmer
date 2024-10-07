@@ -2,6 +2,7 @@
 #define __test_thermodynamic_properties_H
 
 #include "Eigen/Eigen"
+#include "shimmer_gerg_functions.hpp"
 #include "shimmer_teqp_utilities.hpp"
 
 #include "teqp/models/GERG/GERG.hpp"
@@ -24,6 +25,14 @@ namespace shimmer_teqp
       auto model = teqp::GERG2008::GERG2008ResidualModel(comps);
       const auto R = model.R(mol_frac);
 
+      const auto expected_thermodynamic_properties = gerg_mock::thermodynamic_properties();
+
+      const auto thermodynamic_properties = gerg_functions::thermodynamic_properties(mol_frac,
+                                                                                     gerg_mock::tolerance());
+
+      ASSERT_DOUBLE_EQ_TOL(expected_thermodynamic_properties.D,
+                           thermodynamic_properties.D,
+                           tolerance);
 
       return EXIT_SUCCESS;
     }

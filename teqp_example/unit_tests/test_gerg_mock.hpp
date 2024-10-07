@@ -64,6 +64,35 @@ namespace shimmer_teqp
         return pseudo_critical_point;
       }
       // *********************************************************
+      auto T()
+      {
+        return 2.931500000000000e+02;
+      }
+      // *********************************************************
+      auto P()
+      {
+        return 5.101325000000000e+06;
+      }
+      // *********************************************************
+      auto thermodynamic_properties_parameters()
+      {
+        gerg_data::Thermodynamic_properties_parameters parameters;
+        parameters.Type = gerg_data::Thermodynamic_properties_parameters::Types::Gas_phase;
+
+        return parameters;
+      }
+      // *********************************************************
+      auto thermodynamic_properties()
+      {
+        gerg_data::Thermodynamic_properties<double> thermodynamic_properties;
+        thermodynamic_properties.D = 4.853135975758211e+01;
+        thermodynamic_properties.Z = 4.312568035613069e+01;
+        thermodynamic_properties.P1 = 5.101324999999521e+06;
+        thermodynamic_properties.gamma = 3.571899838350778e+00;
+
+        return thermodynamic_properties;
+      }
+      // *********************************************************
     }
   }
 }

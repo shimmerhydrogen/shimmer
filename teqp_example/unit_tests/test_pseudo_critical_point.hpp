@@ -2,6 +2,7 @@
 #define __test_pseudo_critical_point_H
 
 #include "Eigen/Eigen"
+#include "shimmer_gerg_functions.hpp"
 #include "shimmer_teqp_utilities.hpp"
 
 #include "teqp/models/GERG/GERG.hpp"
@@ -25,10 +26,10 @@ namespace shimmer_teqp
 
       const auto expected_pseudo_critical_point = gerg_mock::pseudo_critical_point();
 
-      const auto pseudo_critical_point = shimmer_teqp::utilities::pseudo_critical_point(mol_frac,
-                                                                                        model.red.get_Tcvec(),
-                                                                                        model.red.get_vcvec(),
-                                                                                        gerg_mock::tolerance());
+      const auto pseudo_critical_point = gerg_functions::pseudo_critical_point(mol_frac,
+                                                                               model.red.get_Tcvec(),
+                                                                               model.red.get_vcvec(),
+                                                                               gerg_mock::tolerance());
 
       ASSERT_DOUBLE_EQ_TOL(expected_pseudo_critical_point.Tcx,
                            pseudo_critical_point.Tcx,

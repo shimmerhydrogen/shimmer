@@ -1,9 +1,9 @@
 /* This code is part of the SHIMMER project
 *
 * Politecnico di Torino, Dipartimento di Matematica (DISMA)
-* 
+*
 * Karol Cascavita (C) 2023
-* karol.cascavita@polito.it  
+* karol.cascavita@polito.it
 */
 
 #pragma once
@@ -13,11 +13,13 @@
 #include "../src/incidence_matrix.h"
 #include "../src/conservation_matrices.h"
 #include "../src/gas_law.h"
-#include "../src/temporal.h"
+#include "../src/variable.h"
 
-namespace shimmer{
 
-using sparse_matrix_t = Eigen::SparseMatrix<double>; 
+namespace shimmer
+    {
+
+using sparse_matrix_t = Eigen::SparseMatrix<double>;
 using triplet_t = Eigen::Triplet<double>;
 using pair_trip_vec_t = std::pair<std::vector<triplet_t>, vector_t>;
 
@@ -35,22 +37,25 @@ class linearized_fluid_solver
     double tolerance_;
     double a_G_;
     double a_p_;
-    double dt_; 
+    double dt_;
     double Tm_;
+
+    vector_t c2_nodes_;
+    vector_t c2_pipes_;
 
     matrix_t x_nodes_;
     matrix_t x_pipes_;
     vector_t press_pipes_;
-    vector_t mu_; 
+    vector_t mu_;
 
     variable var_;
-    const incidence& inc_; 
+    const incidence& inc_;
     const infrastructure_graph& graph_;
 
 public:
 
     linearized_fluid_solver(size_t at_step, const bool& is_unsteady,
-                        double tolerance, 
+                        double tolerance,
                         double dt,
                         double Tm,
                         const vector_t& mu,
@@ -63,13 +68,20 @@ public:
             const vector_t& c2);
 
 
+    void
+    impose_edge_station_model(  const vector_t& c2_nodes,
+                                const vector_t& pressure_nodes,
+                                const vector_t& flux,
+                                std::vector<triplet_t>& triplets_mom,
+                                vector_t& rhs_mom);
+
     pair_trip_vec_t
-    momentum(
-             const vector_t& pressure_nodes,
+    momentum(const vector_t& pressure_nodes,
              const vector_t& pressure_pipes,
              const vector_t& flux,
              const vector_t& flux_old,
-             const vector_t& c2);
+             const vector_t& c2_nodes,
+             const vector_t& c2_pipes);
 
 
     pair_trip_vec_t
@@ -79,16 +91,16 @@ public:
 
 
     std::pair<sparse_matrix_t, vector_t>
-    assemble(const pair_trip_vec_t& lhs_rhs_mass, 
+    assemble(const pair_trip_vec_t& lhs_rhs_mass,
              const pair_trip_vec_t& lhs_rhs_mom,
              const pair_trip_vec_t& lhs_rhs_bnd);
 
 
-    bool 
+    bool
     convergence(const vector_t& sol);
 
 
-    bool 
+    bool
     run(const vector_t& area_pipes,
         //const vector_t& flux_ext,
         const variable& var_guess,
@@ -98,13 +110,16 @@ public:
     bool check_hard_constraints(size_t step);
     void check_soft_constraints(size_t step);
     bool check_constraints(size_t step);
-               
-    double temperature();         
+    bool check_hard_controls(size_t step);
+    //bool check_soft_controls(size_t step);
+    bool check_controls(size_t step);
+
+    double temperature();
     vector_t pressure_nodes();
     vector_t pressure_pipes();
     matrix_t x_nodes();
     matrix_t x_pipes();
-    const incidence& get_incidence(); 
+    const incidence& get_incidence();
     inline const variable& get_variable(){return var_;}
 };
 

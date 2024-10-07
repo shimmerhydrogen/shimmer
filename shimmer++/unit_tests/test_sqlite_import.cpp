@@ -12,9 +12,9 @@ int main(int argc, char ** argv) {
         return 1;
     }
   
-    network_db db(argv[1]);
+    network_database db(argv[1]);
     infrastructure_graph g;
-    db.populate(g);
+    db.populate_graph(g);
 
     return 0;
 }

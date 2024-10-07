@@ -1,9 +1,9 @@
 /* This code is part of the SHIMMER project
  *
  * Politecnico di Torino, Dipartimento di Matematica (DISMA)
- * 
+ *
  * Karol Cascavita (C) 2023
- * karol.cascavita@polito.it  
+ * karol.cascavita@polito.it
  */
 
 #include <iostream>
@@ -33,7 +33,7 @@ make_rr_mm(size_t size)
     vector_t molar_mass(size);
     molar_mass.setConstant(16.04246);
 
-    return std::make_pair(rrb, molar_mass); 
+    return std::make_pair(rrb, molar_mass);
 }
 
 
@@ -53,11 +53,11 @@ make_gerg(size_t size)
     psc_point.Tcx.setConstant(1.905640000000000e+02);
     psc_point.Dcx.setConstant(1.013934271900000e+01);
     psc_point.Vcx.setConstant(9.862572236818776e-02);
-    
+
     gerg_thermo_params_t parameters;
     parameters.Type = gerg_thermo_params_t::Types::Gas_phase;
-    
-    gerg_params gerg(reducing_parameters, psc_point, parameters); 
+
+    gerg_params gerg(reducing_parameters, psc_point, parameters);
 
     return gerg;
 }
@@ -70,7 +70,7 @@ make_init_graph(infrastructure_graph& g)
 
     std::vector<vertex_descriptor> vds;
 
-    auto add_vertex = [&](vertex_properties&& vp, const vector_t& x_in) 
+    auto add_vertex = [&](vertex_properties&& vp, const vector_t& x_in)
     {
         vp.gas_mixture = x_in;
         auto v = boost::add_vertex(g);
@@ -90,13 +90,13 @@ make_init_graph(infrastructure_graph& g)
     edge_properties ep1  = {edge_type::pipe, 1,    90000, 0.6, 0.000012};
     edge_properties ep2  = {edge_type::pipe, 2,   100000, 0.6, 0.000012};
 
-    /*                                            
-    //           0                        *0  *1  *2              
-    //         / |                     --------------         
-    //        /  |                     0|  1   1                        
-    //     *1/   |*0                   1| -1      -1          
-    //      /____|                     2|     -1   1        
-    //    1   *2   2                                         
+    /*
+    //           0                        *0  *1  *2
+    //         / |                     --------------
+    //        /  |                     0|  1   1
+    //     *1/   |*0                   1| -1      -1
+    //      /____|                     2|     -1   1
+    //    1   *2   2
     */
 
     boost::add_edge( vds[0], vds[1], ep0, g);
@@ -110,24 +110,24 @@ int main()
 {
 
     std::vector<triple_t> ref_lhs_mass =
-                          {{{0 , 0 , 0.0009656491051934202}, 
-                            {1 , 1 , 0.001020154052634392}, 
-                            {2 , 2 , 0.001077080804942649}, 
-                            {0 , 3 , 1}, 
-                            {1 , 3 ,-1}, 
+                          {{{0 , 0 , 0.0009656491051934202},
+                            {1 , 1 , 0.001020154052634392},
+                            {2 , 2 , 0.001077080804942649},
+                            {0 , 3 , 1},
+                            {1 , 3 ,-1},
                             {0 , 4 , 1},
                             {2 , 4 ,-1},
-                            {1 , 5 ,-1}, 
-                            {2 , 5 , 1}}}; 
+                            {1 , 5 ,-1},
+                            {2 , 5 , 1}}};
     std::vector<triple_t> ref_lhs_mom =
                           {{{3 , 0 , 1.0},
-                            {4 , 0 , 1.0}, 
-                            {3 , 1 ,-1.0}, 
-                            {5 , 1 ,-1.0}, 
-                            {4 , 2 ,-1.0},                             
-                            {5 , 2 , 1.0}, 
-                            {3 , 3 ,-11710.07601043195}, 
-                            {4 , 4 ,-12014.55083082719}, 
+                            {4 , 0 , 1.0},
+                            {3 , 1 ,-1.0},
+                            {5 , 1 ,-1.0},
+                            {4 , 2 ,-1.0},
+                            {5 , 2 , 1.0},
+                            {3 , 3 ,-11710.07601043195},
+                            {4 , 4 ,-12014.55083082719},
                             {5 , 5 ,-6040.332315032241}}};
 
     std::vector<double> ref_rhs_mass = {4926.0899215508240,
@@ -148,12 +148,12 @@ int main()
 
     vector_t flux (num_pipes), flux_old(num_pipes);
     vector_t pressure (num_nodes), pressure_old(num_nodes);
-    vector_t c2_nodes (num_nodes), c2_pipes(num_pipes);  
- 
-    flux << 2.448496272217528e+01,2.171503727782473e+01, 6.315037277824726e+00; 
+    vector_t c2_nodes (num_nodes), c2_pipes(num_pipes);
+
+    flux << 2.448496272217528e+01,2.171503727782473e+01, 6.315037277824726e+00;
     c2_nodes << 138267.2930151191,138578.7460692530,138546.3842273756;
     c2_pipes << 138422.1905008311,138406.1731482413,138562.5561693802;
-    pressure << 5101325.0, 4977209.550248852, 4990077.876609823;   
+    pressure << 5101325.0, 4977209.550248852, 4990077.876609823;
     pressure_old = pressure;
     flux_old = flux;
     //flux_ext = flux;
@@ -162,14 +162,14 @@ int main()
     infrastructure_graph graph;
     make_init_graph(graph);
 
-    auto mu = viscosity<viscosity_type::Kukurugya>(temperature, graph); 
+    auto mu = viscosity<viscosity_type::Kukurugya>(temperature, graph);
 
     incidence inc(graph);
     linearized_fluid_solver lfs(0, unsteady, 0, dt, temperature,mu, inc, graph);
 
     vector_t pressure_pipes = average(pressure, inc);
     auto mass = lfs.continuity(pressure_old, c2_nodes);
-    auto mom  = lfs.momentum(pressure, pressure_pipes, flux, flux_old, c2_pipes);
+    auto mom  = lfs.momentum(pressure, pressure_pipes, flux, flux_old, c2_nodes, c2_pipes);
 
     sparse_matrix_t LHS_mass(num_nodes, system_size);
     sparse_matrix_t LHS_mom(system_size, system_size);
@@ -183,5 +183,5 @@ int main()
     bool rhs_mass_pass = verify_test("rhs continuity", mass.second, ref_rhs_mass);
     bool rhs_mom_pass  = verify_test("rhs momentum", mom.second, ref_rhs_mom);
 
-    return !(lhs_mass_pass && lhs_mom_pass && rhs_mass_pass && rhs_mom_pass); 
+    return !(lhs_mass_pass && lhs_mom_pass && rhs_mass_pass && rhs_mom_pass);
 }

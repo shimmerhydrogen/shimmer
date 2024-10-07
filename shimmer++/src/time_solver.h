@@ -2,9 +2,9 @@
 /* This code is part of the SHIMMER project
  *
  * Politecnico di Torino, Dipartimento di Matematica (DISMA)
- * 
+ *
  * Karol Cascavita (C) 2023
- * karol.cascavita@polito.it  
+ * karol.cascavita@polito.it
  */
 
 #pragma once
@@ -14,7 +14,7 @@
 #include <Eigen/Sparse>
 #include <iomanip>
 
-#include "../src/temporal.h"
+#include "../src/variable.h"
 #include "../src/gas_law.h"
 #include "../src/fluid_solver.h"
 #include "../src/incidence_matrix.h"
@@ -23,8 +23,8 @@
 
 namespace shimmer{
 
-using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1>; 
-using matrix_t = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>; 
+using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+using matrix_t = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>;
 
 
 template<typename EQ_OF_STATE, int viscosity_type>
@@ -38,79 +38,105 @@ class time_solver
     vector_t area_pipes_;
 
     incidence inc_;
-    const infrastructure_graph& graph_; 
+    const infrastructure_graph& graph_;
 
 public:
     time_solver(const  infrastructure_graph& g,
                 double Tm,
-                const  matrix_t& flux_ext): 
-                graph_(g), temperature_(Tm), 
+                const  matrix_t& flux_ext):
+                graph_(g), temperature_(Tm),
                 flux_ext_(flux_ext)
     {
         inc_ = incidence(g);
-        area_pipes_ = area(g);    
+        area_pipes_ = area(g);
+    }
+
+
+    void
+    pipe_stations_activation(size_t step, const variable& v)
+    {
+        auto edge_range = boost::edges(graph_);
+        auto begin = edge_range.first;
+        auto end = edge_range.second;
+
+        for (auto itor = begin; itor != end; itor++)
+        {
+            auto pipe = graph_[*itor];
+
+            if (pipe.type == edge_type::pipe) continue;
+
+            auto& st = pipe.pipe_station;
+
+            auto s = boost::source(*itor, graph_);
+            auto t = boost::target(*itor, graph_);
+
+            auto source_node = graph_[s].node_num;
+            auto target_node = graph_[t].node_num;
+
+            st.activate(step, source_node, target_node, v);
+        }
     }
 
 
     void
     set_initialization( const variable& var)
     {
-        var_guess_ = var; 
+        var_guess_ = var;
     }
-
 
 
     void
     initialization( const variable& var_guess,
-                    double dt, 
-                    double tolerance, 
-                    const matrix_t& y_nodes, 
+                    double dt,
+                    double tolerance,
+                    const matrix_t& y_nodes,
                     const matrix_t& y_pipes)
     {
 
         bool unsteady = false;
 
-    
-        EQ_OF_STATE eos; 
+
+        EQ_OF_STATE eos;
         eos.compute_molar_mass(y_nodes, y_pipes);
 
-        // To be finish when it is clear how x changes and modifies mu. 
-        auto mu = viscosity<viscosity_type>(temperature_, graph_); 
+        // To be finish when it is clear how x changes and modifies mu.
+        auto mu = viscosity<viscosity_type>(temperature_, graph_);
 
         size_t iter = 0;
         auto var_time = variable(vector_t::Zero(num_vertices(graph_)),
                                  vector_t::Zero(num_edges(graph_)),
                                  vector_t::Zero(num_vertices(graph_)));
+
+        pipe_stations_activation(iter, var_time);
+
         linearized_fluid_solver lfs(iter, unsteady, tolerance, dt, temperature_, mu, inc_, graph_);
         lfs.run(area_pipes_, var_guess, var_time, &eos);
-        var_guess_ = lfs.get_variable(); 
+        var_guess_ = lfs.get_variable();
     }
 
 
-
-
     void
-    advance(double dt, 
-            size_t num_steps, 
-            double tol, 
-            const matrix_t& y_nodes, 
+    advance(double dt,
+            size_t num_steps,
+            double tol,
+            const matrix_t& y_nodes,
             const matrix_t& y_pipes)
     {
         //matrix_t y_nodes = make_mass_fraction(num_nodes);
-        //matrix_t y_pipes = inc_.matrix_in().transpose() * y_nodes;    
+        //matrix_t y_pipes = inc_.matrix_in().transpose() * y_nodes;
 
         size_t MAX_CONSTRAINT_ITER = 10;
 
         bool unsteady = true;
 
         matrix_t var_in_time(num_steps +1, num_edges(graph_) + 2 * num_vertices(graph_));
- 
+
         var_ = var_guess_;
         var_in_time.row(0) =  var_.make_vector();
 
         double t = 0;
         for(size_t it = 1; it < num_steps; it++, t+=dt)
-        {  
+        {
             std::ofstream ofs;
             ofs.open("warnings.txt", std::ios::app);
             ofs<<"========================================================"<< std::endl;
@@ -121,7 +147,9 @@ public:
             std::cout << "Solving at time ...."<< it <<std::endl;
             std::cout<<"========================================================"<< std::endl;
 
-            size_t ic; 
+            pipe_stations_activation(it, var_);
+
+            size_t ic;
             for(ic = 0; ic <= MAX_CONSTRAINT_ITER; ic++)
             {
                 std::ofstream ofs;
@@ -133,22 +161,22 @@ public:
                 std::cout << " Iteration it ..."<<ic<< " ... at time "<< it << std::endl;
                 std::cout<<"***************************************************"<< std::endl;
 
-                EQ_OF_STATE eos; 
+                EQ_OF_STATE eos;
                 eos.compute_molar_mass(y_nodes, y_pipes);
 
-                // To be finish when it is clear how x changes and modifies mu. 
-                auto mu = viscosity<viscosity_type>(temperature_, graph_); 
+                // To be finish when it is clear how x changes and modifies mu.
+                auto mu = viscosity<viscosity_type>(temperature_, graph_);
 
                 linearized_fluid_solver lfs(it, unsteady, tol, dt, temperature_, mu, inc_, graph_);
-                lfs.run(area_pipes_, var_guess_, var_, &eos);  
-                if(lfs.check_constraints(it))
+                lfs.run(area_pipes_, var_guess_, var_, &eos);
+                if(lfs.check_constraints(it) & lfs.check_controls(it))
                 {
                     std::cout<< "++++++++++++++++++**** MODIFIED VARIABLE ****++++++++++++++++++++++ " << std::endl;
                     var_ =  lfs.get_variable();
                     break;
                 }
             }
-            
+
             if(ic == MAX_CONSTRAINT_ITER)
                 std::cout << "ERROR: FAILURE to apply HARD constraints. Max number of iterations has been reached.";
 
@@ -165,7 +193,7 @@ public:
         {
             for(size_t j = 0; j < var_in_time.cols(); j++)
                 ofs << std::setprecision(16) << var_in_time(i,j) << " ";
-            ofs << std::endl; 
+            ofs << std::endl;
         }
         ofs.close();
 
@@ -185,7 +213,7 @@ public:
             std::cout << var_.L_rate[k] << ", " <<  std::endl ;
         std::cout << "]; "<<std::endl;
 */
-        return;    
+        return;
     }
 
     vector_t solution(){return var_.make_vector();}

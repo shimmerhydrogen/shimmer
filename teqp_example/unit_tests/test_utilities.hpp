@@ -26,19 +26,19 @@
 #define ASSERT_LE_MSG(expected, actual, msg) \
   ASSERT_MSG(expected < actual || expected == actual, msg)
 
-#define ASSERT_LE(expected, actual) \
+#define ASSERT_LE(expected, actual) { \
   std::stringstream msg; \
   msg<< "Expected "<< expected<< " lower or equal to "<< actual<< std::endl; \
-  ASSERT_LE_MSG(expected, actual, msg.str())
+  ASSERT_LE_MSG(expected, actual, msg.str()) }
 
 #define ASSERT_DOUBLE_EQ_TOL_MSG(expected, actual, tolerance, msg) \
   ASSERT_LE_MSG(std::abs(expected - actual), tolerance * (std::abs(expected) <= tolerance ? 1.0 : std::abs(expected)), msg)
 
-#define ASSERT_DOUBLE_EQ_TOL(expected, actual, tolerance) \
+#define ASSERT_DOUBLE_EQ_TOL(expected, actual, tolerance) { \
   std::stringstream msg; \
   msg.precision(16); \
   msg<< std::scientific<< "Expected "<< expected<< " equal to "<< actual<< " respect tol "<< tolerance<< std::endl; \
-  ASSERT_DOUBLE_EQ_TOL_MSG(expected, actual, tolerance, msg.str())
+  ASSERT_DOUBLE_EQ_TOL_MSG(expected, actual, tolerance, msg.str()) }
 
 #define ASSERT_DOUBLE_EQ(expected, actual) \
   ASSERT_DOUBLE_EQ_TOL(expected, actual, MIN_DOUBLE_TOL)

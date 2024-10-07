@@ -24,7 +24,8 @@ namespace shimmer_teqp
 
 
       const std::vector<unsigned int> expected_filter = { 0, 2 };
-      ASSERT_EQ(expected_filter, filter);
+      ASSERT_EQ(expected_filter,
+                filter);
 
       return EXIT_SUCCESS;
     }

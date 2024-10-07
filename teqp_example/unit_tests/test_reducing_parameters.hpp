@@ -1,5 +1,5 @@
-#ifndef __test_filter_collection_H
-#define __test_filter_collection_H
+#ifndef __test_reducing_parameters_H
+#define __test_reducing_parameters_H
 
 #include "Eigen/Eigen"
 #include "shimmer_teqp_utilities.hpp"
@@ -7,37 +7,38 @@
 #include "teqp/models/GERG/GERG.hpp"
 #include "test_utilities.hpp"
 
+#include <iostream>
+
 namespace shimmer_teqp
 {
   namespace test
   {
     // *********************************************************
-    int test_filter_collection(int , char **)
+    int test_reducing_parameters(int , char **)
     {
       using namespace shimmer_teqp::utilities;
 
-      const std::vector<unsigned int> filter = { 0, 2 };
-
+      constexpr double tolerance = 1.0e-14;
       Eigen::ArrayXd x(21);
       x<< 0.8, 0, 0.2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
 
-      const auto& names = teqp::GERG2008::component_names;
+      const auto filter = shimmer_teqp::utilities::filter_components(x,
+                                                                     tolerance);
 
+      const auto& names = teqp::GERG2008::component_names;
       const auto comps = shimmer_teqp::utilities::filter_collection(filter,
                                                                     names);
-
-      const std::vector<std::string> expected_comps = { "methane", "carbondioxide" };
-      ASSERT_EQ(expected_comps,
-                comps);
-
       const auto mol_frac = shimmer_teqp::utilities::filter_collection(filter,
                                                                        x);
 
+      auto model = teqp::GERG2008::GERG2008ResidualModel(comps);
 
-      Eigen::ArrayXd expected_mol_frac(2);
-      expected_mol_frac<< 0.8, 0.2;
-      ASSERT_VECTOR_DOUBLE_EQ(expected_mol_frac,
-                              expected_mol_frac);
+      ASSERT_DOUBLE_EQ_TOL(2.082743529542123e+02,
+                           model.red.get_Tr(mol_frac),
+                           tolerance);
+      ASSERT_DOUBLE_EQ_TOL(1.022348540995680e+04,
+                           model.red.get_rhor(mol_frac),
+                           tolerance);
 
       return EXIT_SUCCESS;
     }

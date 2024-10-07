@@ -2,6 +2,7 @@
 
 #include "test_filter_components.hpp"
 #include "test_filter_collection.hpp"
+#include "test_reducing_parameters.hpp"
 #include "test_temp_2.hpp"
 
 int main(int argc, char ** argv)
@@ -10,6 +11,7 @@ int main(int argc, char ** argv)
   {
   { "test_filter_collection", shimmer_teqp::test::test_filter_collection },
   { "test_filter_components", shimmer_teqp::test::test_filter_components },
+  { "test_reducing_parameters", shimmer_teqp::test::test_reducing_parameters },
   { "test_temp_2", shimmer_teqp::test::test_temp_2 },
 };
 

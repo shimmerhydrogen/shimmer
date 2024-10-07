@@ -4,7 +4,7 @@
 #include "test_filter_collection.hpp"
 #include "test_reducing_parameters.hpp"
 #include "test_pseudo_critical_point.hpp"
-#include "test_temp_2.hpp"
+#include "test_thermodynamic_properties.hpp"
 
 int main(int argc, char ** argv)
 {
@@ -14,7 +14,7 @@ int main(int argc, char ** argv)
   { "test_filter_components", shimmer_teqp::test::test_filter_components },
   { "test_reducing_parameters", shimmer_teqp::test::test_reducing_parameters },
   { "test_pseudo_critical_point", shimmer_teqp::test::test_pseudo_critical_point },
-  { "test_temp_2", shimmer_teqp::test::test_temp_2 },
+  { "test_thermodynamic_properties", shimmer_teqp::test::test_thermodynamic_properties }
 };
 
   std::list<std::string> tests_to_run;

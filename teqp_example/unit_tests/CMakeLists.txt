@@ -42,7 +42,7 @@ list(APPEND SHMTEQP_LIBRARY_TEST_TESTS ${CMAKE_CURRENT_SOURCE_DIR}/test_filter_c
 list(APPEND SHMTEQP_LIBRARY_TEST_TESTS ${CMAKE_CURRENT_SOURCE_DIR}/test_reducing_parameters.hpp)
 list(APPEND SHMTEQP_LIBRARY_TEST_TESTS ${CMAKE_CURRENT_SOURCE_DIR}/test_pseudo_critical_point.hpp)
 list(APPEND SHMTEQP_LIBRARY_TEST_TESTS ${CMAKE_CURRENT_SOURCE_DIR}/test_gerg_mock.hpp)
-list(APPEND SHMTEQP_LIBRARY_TEST_TESTS ${CMAKE_CURRENT_SOURCE_DIR}/test_temp_2.hpp)
+list(APPEND SHMTEQP_LIBRARY_TEST_TESTS ${CMAKE_CURRENT_SOURCE_DIR}/test_thermodynamic_properties.hpp)
 
 # Create library test executable
 ###############################################################################################

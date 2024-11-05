@@ -48,7 +48,7 @@ namespace shimmer_teqp
         gerg_data::Reducing_parameters<double> reducing_parameters;
 
         reducing_parameters.Tr = 2.082743529542123e+02;
-        reducing_parameters.Dr = 1.022348540995680e+01 * 1.0e+3;
+        reducing_parameters.Dr = 1.022348540995680e+01 * 1.0e+3; // mol/L * 1e3 1/m^3 = mol/m^3
 
         return reducing_parameters;
       }
@@ -76,7 +76,7 @@ namespace shimmer_teqp
       // *********************************************************
       auto alpha_r()
       {
-        return 4.212568035613069e+01;
+        return -1.146681132712004e-01;
       }
       // *********************************************************
       auto thermodynamic_properties_parameters()
@@ -90,10 +90,10 @@ namespace shimmer_teqp
       auto thermodynamic_properties()
       {
         gerg_data::Thermodynamic_properties<double> thermodynamic_properties;
-        thermodynamic_properties.D = 4.853135975758211e+01;
-        thermodynamic_properties.Z = 4.312568035613069e+01;
-        thermodynamic_properties.P1 = 5.101324999999521e+06;
-        thermodynamic_properties.gamma = 3.571899838350778e+00;
+        thermodynamic_properties.D = 2.364026349358396e+00 * 1.0e3;
+        thermodynamic_properties.Z = 8.853318867287996e-01;
+        thermodynamic_properties.P1 = 5.101324999999994e+03 * 1.0e3;
+        thermodynamic_properties.gamma = 1.301524045899356e+00;
 
         return thermodynamic_properties;
       }

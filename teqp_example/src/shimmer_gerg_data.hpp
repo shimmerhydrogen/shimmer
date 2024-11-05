@@ -37,7 +37,7 @@ namespace shimmer_teqp
     {
         matrix_type P1; ///< a pressure (?)
         matrix_type Z; ///< compressibility factor
-        matrix_type D; ///< density (mol/l)
+        matrix_type D; ///< density (mol/m^3)
         matrix_type gamma; ///< a constant (?)
     };
   }

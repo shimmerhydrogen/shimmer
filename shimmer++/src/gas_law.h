@@ -27,7 +27,7 @@ using matrix_t = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>;
 class equation_of_state
 {
 
-public:
+protected:
     vector_t density_;
     vector_t R_nodes_;
     vector_t R_pipes_;
@@ -38,6 +38,7 @@ public:
     double Runiversal_ = 8314.4598;  
     vector_t Rspecific_;
 
+public:
     equation_of_state(){};
     void compute_density(linearized_fluid_solver *, const vector_t&);
 

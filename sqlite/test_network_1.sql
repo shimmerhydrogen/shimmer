@@ -1,19 +1,20 @@
 -- Insert graph nodes
 -- (name, number, height, type) 
 -- the type must match the values in station_types
-insert into stations values ('station 0',   0,  0,  0);
-insert into stations values ('station 1',   1,  0,  2);
-insert into stations values ('station 2',   2,  0,  3);
-insert into stations values ('station 3',   3,  0,  3);
-insert into stations values ('station 4',   4,  0,  3);
-insert into stations values ('station 5',   5,  0,  4);
-insert into stations values ('station 6',   6,  0,  3);
-insert into stations values ('station 7',   7,  0,  3);
-insert into stations values ('station 8',   8,  0,  4);
-insert into stations values ('station 9',   9,  0,  3);
-insert into stations values ('station 10', 10,  0,  4);
-insert into stations values ('station 11', 11,  0,  1);
-insert into stations values ('station 12', 12,  0,  2);
+insert into stations(s_number, s_name, t_type) values
+    ( 0, 'station 0', 0),
+    ( 1, 'station 1', 2),
+    ( 2, 'station 2', 3),
+    ( 3, 'station 3', 3),
+    ( 4, 'station 4', 3),
+    ( 5, 'station 5', 4),
+    ( 6, 'station 6', 3),
+    ( 7, 'station 7', 3),
+    ( 8, 'station 8', 4),
+    ( 9, 'station 9', 3),
+    (10, 'station 10', 4),
+    (11, 'station 11', 1),
+    (12, 'station 12', 2);
 
 --select s_name, s_number, t_descr
 --    from stations inner join station_types

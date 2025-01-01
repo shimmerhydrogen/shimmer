@@ -30,10 +30,14 @@ insert into station_types values (4, 'Consumption point w/o pressure control');
 --  t_type:     type of the station
 
 create table stations (
-    s_name      TEXT,
     s_number    INTEGER,
-    s_height    REAL,
+    s_name      TEXT NOT NULL,
     t_type      INTEGER,
+
+    s_height    REAL DEFAULT 0.0 NOT NULL,
+    s_latitude  REAL DEFAULT 0.0 NOT NULL,
+    s_longitude REAL DEFAULT 0.0 NOT NULL,
+
     PRIMARY KEY(s_number),
     
     -- The type of the station must be well-defined

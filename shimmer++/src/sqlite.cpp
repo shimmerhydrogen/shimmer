@@ -236,7 +236,7 @@ network_database::renumber_stations()
 
     int i_num = 0;
     while (sqlite3_step(stmt) != SQLITE_DONE) {
-        int u_num = sqlite3_column_int(stmt, 1);
+        int u_num = sqlite3_column_int(stmt, 0);
         s_u2i.at(u_num) = i_num;
         s_i2u.at(i_num) = u_num;
         i_num++;
@@ -268,20 +268,22 @@ network_database::import_stations(infrastructure_graph& g)
         //int num_cols = sqlite3_column_count(stmt);
         vertex_properties vp;
         
-        /* Station name */
-        vp.name = (char *) sqlite3_column_text(stmt, 0);
-        
         /* Station number, convert from user to internal */
-        int s_un = sqlite3_column_int(stmt, 1);
+        int s_un = sqlite3_column_int(stmt, 0);
         int s_in = s_u2i.at(s_un).value();
         vp.node_num = s_in;
         vp.u_snum = s_un;
         vp.i_snum = s_in;
+
+        /* Station name */
+        vp.name = (char *) sqlite3_column_text(stmt, 1);
         
-        /* Station height */
-        vp.height = sqlite3_column_double(stmt, 2);
-        
-        vp.type = static_cast<station_type_x>(sqlite3_column_int(stmt,3));
+        vp.type = static_cast<station_type_x>(sqlite3_column_int(stmt,2));
+
+        /* Station location */
+        vp.height = sqlite3_column_double(stmt, 3);
+        vp.latitude = sqlite3_column_double(stmt, 4);
+        vp.longitude = sqlite3_column_double(stmt, 5);
         
         populate_type_dependent_station_data(vp);
         

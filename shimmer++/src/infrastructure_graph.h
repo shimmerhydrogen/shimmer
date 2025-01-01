@@ -60,6 +60,8 @@ struct vertex_properties {
     int             i_snum;
     station_type_x  type;
     double          height;
+    double          latitude;
+    double          longitude;
     vector_t        gas_mixture;
     std::unique_ptr<station> node_station;   
 

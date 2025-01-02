@@ -2,9 +2,9 @@
 #define __test_reducing_parameters_H
 
 #include "Eigen/Eigen"
+#include "shimmer_gerg_functions.hpp"
 #include "shimmer_teqp_utilities.hpp"
 
-#include "teqp/models/GERG/GERG.hpp"
 #include "test_gerg_mock.hpp"
 #include "test_utilities.hpp"
 
@@ -20,16 +20,19 @@ namespace shimmer_teqp
       const auto tolerance = gerg_mock::tolerance();
       const auto comps = gerg_mock::comps();
       const auto mol_frac = gerg_mock::mol_frac();
+      const auto x = gerg_mock::x();
 
-      auto model = teqp::GERG2008::GERG2008ResidualModel(comps);
+      shimmer_teqp::gerg_functions::setup_GERG();
 
+      const auto reducing_parameters = shimmer_teqp::gerg_functions::reducing_parameters(x,
+                                                                                         tolerance);
       const auto expected_reducing_parameters = gerg_mock::reducing_parameters();
 
       ASSERT_DOUBLE_EQ_TOL(expected_reducing_parameters.Tr,
-                           model.red.get_Tr(mol_frac),
+                           reducing_parameters.Tr,
                            tolerance);
       ASSERT_DOUBLE_EQ_TOL(expected_reducing_parameters.Dr,
-                           model.red.get_rhor(mol_frac),
+                           reducing_parameters.Dr,
                            tolerance);
 
       return EXIT_SUCCESS;

@@ -1,25 +1,68 @@
 #ifndef __SHIMMER_TEQP_FUNCTIONS_HPP__
 #define __SHIMMER_TEQP_FUNCTIONS_HPP__
 
+#include "GERG2008.h"
 #include "shimmer_gerg_data.hpp"
 
 namespace shimmer_teqp
 {
   namespace gerg_functions
   {
+    static const unsigned int GERG_num_componets = 21;
     // *********************************************************
-    template<typename mol_fracs_type,
-             typename c_vec_type,
+    template<typename x_type,
              typename value_type>
-    auto pseudo_critical_point(const mol_fracs_type& mol_fracs,
-                               const c_vec_type& Tc_vec,
-                               const c_vec_type& vc_vec,
+    auto create_x_GERG(const x_type& x,
+                       const value_type& tolerance)
+    {
+      using size_type = typename x_type::size_type;
+
+      assert(static_cast<size_type>(x.size()) == GERG_num_componets);
+
+      std::vector<double> x_GERG(GERG_num_componets + 1);
+
+      x_GERG[0] = 0.0;
+      for (unsigned int i = 0; i < GERG_num_componets; ++i)
+        x_GERG[i + 1] = abs(x[i]) > tolerance ? x[i] : 0.0;
+
+      return x_GERG;
+    }
+    // *********************************************************
+    inline void setup_GERG() noexcept
+    {
+      SetupGERG();
+    }
+    // *********************************************************
+    template<typename x_type,
+             typename value_type>
+    auto reducing_parameters(const x_type& x,
+                             const value_type& tolerance)
+    {
+      using size_type = typename x_type::size_type;
+
+      assert(static_cast<size_type>(x.size()) == GERG_num_componets);
+
+      const auto x_GERG = create_x_GERG(x, tolerance);
+      gerg_data::Reducing_parameters<value_type> reducing_parameters;
+
+      reducing_parameters.Tr = value_type();
+      reducing_parameters.Dr = value_type();
+
+      ReducingParametersGERG(x_GERG,
+                             reducing_parameters.Tr,
+                             reducing_parameters.Dr);
+
+      return reducing_parameters;
+    }
+    // *********************************************************
+    template<typename x_type,
+             typename value_type>
+    auto pseudo_critical_point(const x_type& x,
                                const value_type& tolerance)
     {
-      using size_type = typename c_vec_type::size_type;
+      using size_type = typename x_type::size_type;
 
-      assert(static_cast<size_type>(mol_fracs.size()) == Tc_vec.size() &&
-             vc_vec.size() == Tc_vec.size());
+      assert(static_cast<size_type>(x.size()) == GERG_num_componets);
 
       gerg_data::Pseudo_critical_point<value_type> pseudo_critical_point;
 
@@ -27,16 +70,13 @@ namespace shimmer_teqp
       pseudo_critical_point.Vcx = value_type();
       pseudo_critical_point.Dcx = value_type();
 
-      for (size_type i = 0; i < Tc_vec.size(); ++i)
-      {
-        pseudo_critical_point.Tcx += mol_fracs[i] *
-                                     Tc_vec[i];
-        pseudo_critical_point.Vcx += mol_fracs[i] *
-                                     vc_vec[i];
-      }
+      const auto x_GERG = create_x_GERG(x, tolerance);
+      PseudoCriticalPointGERG(x_GERG,
+                              pseudo_critical_point.Tcx,
+                              pseudo_critical_point.Dcx);
 
-      if (pseudo_critical_point.Vcx > tolerance)
-        pseudo_critical_point.Dcx = 1.0 / pseudo_critical_point.Vcx;
+      if (pseudo_critical_point.Dcx > tolerance)
+        pseudo_critical_point.Vcx = 1.0 / pseudo_critical_point.Dcx;
 
       return pseudo_critical_point;
     }
@@ -52,7 +92,6 @@ namespace shimmer_teqp
 
       return thermodynamic_properties;
     }
-    // *********************************************************
     // *********************************************************
   }
 }

@@ -42,6 +42,8 @@ list(APPEND SHMGERG_LIBRARY_SOURCES ${src_sources})
 list(APPEND SHMGERG_LIBRARY_HEADERS ${src_headers})
 list(APPEND SHMGERG_LIBRARY_INCLUDE ${src_includes})
 
+MESSAGE(WARNING ${SHMGERG_LIBRARY_SOURCES})
+
 # Create public headers
 ###############################################################################################
 set(SHMGERG_LIBRARY_ADDITIONAL_INCLUDE_PATH ${CMAKE_CURRENT_BINARY_DIR}/SHMGERG_additional_include)

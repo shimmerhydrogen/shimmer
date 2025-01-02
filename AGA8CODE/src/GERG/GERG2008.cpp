@@ -78,12 +78,6 @@
 // For example, a mixture (in moles) of 94% methane, 5% CO2, and 1% helium would be (in mole fractions):
 // x(1)=0.94, x(3)=0.05, x(20)=0.01
 
-// Function prototypes (not exported)
-static void Alpha0GERG(const double T, const double D, const std::vector<double> &x, double a0[3]);
-static void AlpharGERG(const int itau, const int idelta, const double T, const double D, const std::vector<double> &x, double ar[4][4]);
-static void PseudoCriticalPointGERG(const std::vector<double> &x, double &Tcx, double &Dcx);
-static void tTermsGERG(const double lntau, const std::vector<double> &x);
-
 // Variables containing the common parameters in the GERG-2008 equations
 static double RGERG;
 static const int NcGERG = 21, MaxFlds = 21, MaxMdl = 10, MaxTrmM = 12, MaxTrmP = 24;
@@ -348,7 +342,7 @@ void PropertiesGERG(const double T, const double D, const std::vector<double> &x
 
 
 // The following routines are low-level routines that should not be called outside of this code.
-static void ReducingParametersGERG(const std::vector<double> &x, double &Tr, double &Dr)
+void ReducingParametersGERG(const std::vector<double> &x, double &Tr, double &Dr)
 {
     // Private Sub ReducingParametersGERG(x, Tr, Dr)
 
@@ -400,7 +394,7 @@ static void ReducingParametersGERG(const std::vector<double> &x, double &Tr, dou
   Trold = Tr;
 }
 
-static void Alpha0GERG(const double T, const double D, const std::vector<double> &x, double a0[3])
+void Alpha0GERG(const double T, const double D, const std::vector<double> &x, double a0[3])
 {
     // Private Sub Alpha0GERG(T, D, x, a0)
 
@@ -458,7 +452,7 @@ static void Alpha0GERG(const double T, const double D, const std::vector<double>
   }
 }
 
-static void AlpharGERG(const int itau, const int idelta, const double T, const double D, const std::vector<double> &x, double ar[4][4])
+void AlpharGERG(const int itau, const int idelta, const double T, const double D, const std::vector<double> &x, double ar[4][4])
 {
     // Private Sub AlpharGERG(itau, idelta, T, D, x, ar)
 
@@ -592,7 +586,7 @@ static void AlpharGERG(const int itau, const int idelta, const double T, const d
     }
 }
 
-static void tTermsGERG(const double lntau, const std::vector<double> &x)
+void tTermsGERG(const double lntau, const std::vector<double> &x)
 {
     // Private Sub tTermsGERG(lntau, x)
 
@@ -637,7 +631,7 @@ static void tTermsGERG(const double lntau, const std::vector<double> &x)
 }
 
 
-static void PseudoCriticalPointGERG(const std::vector<double> &x, double &Tcx, double &Dcx)
+void PseudoCriticalPointGERG(const std::vector<double> &x, double &Tcx, double &Dcx)
 {
     // PseudoCriticalPointGERG(x, Tcx, Dcx)
 

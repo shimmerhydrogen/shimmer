@@ -15,8 +15,9 @@ namespace shimmer_teqp
       // *********************************************************
       auto x()
       {
-        Eigen::ArrayXd x(21);
-        x<< 0.8, 0, 0.2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+        std::vector<double> x(21, 0.0);
+        x[0] = 0.8;
+        x[2] = 0.2;
 
         return x;
       }
@@ -30,15 +31,16 @@ namespace shimmer_teqp
       // *********************************************************
       auto mol_frac()
       {
-        Eigen::ArrayXd mol_frac(2);
-        mol_frac<< 0.8, 0.2;
+        std::vector<double> mol_frac(2);
+        mol_frac[0] = 0.8;
+        mol_frac[1] = 0.2;
 
         return mol_frac;
       }
       // *********************************************************
       auto comps()
       {
-        std::vector<std::string> comps = { "methane", "carbondioxide" };
+        std::vector<std::string> comps = { "Methane", "Carbon dioxide" };
 
         return comps;
       }
@@ -48,7 +50,7 @@ namespace shimmer_teqp
         gerg_data::Reducing_parameters<double> reducing_parameters;
 
         reducing_parameters.Tr = 2.082743529542123e+02;
-        reducing_parameters.Dr = 1.022348540995680e+01 * 1.0e+3; // mol/L * 1e3 1/m^3 = mol/m^3
+        reducing_parameters.Dr = 1.022348540995680e+01; // mol/L * 1e3 1/m^3 = mol/m^3
 
         return reducing_parameters;
       }
@@ -58,8 +60,8 @@ namespace shimmer_teqp
         gerg_data::Pseudo_critical_point<double> pseudo_critical_point;
 
         pseudo_critical_point.Tcx = 2.132768400000000e+02;
-        pseudo_critical_point.Vcx = 9.772414504557397e-02 * 1.0e-3;
-        pseudo_critical_point.Dcx = 1.023288563469802e+01 * 1.0e+3;
+        pseudo_critical_point.Vcx = 9.772414504557397e-02;
+        pseudo_critical_point.Dcx = 1.023288563469802e+01;
 
         return pseudo_critical_point;
       }
@@ -105,9 +107,9 @@ namespace shimmer_teqp
       auto thermodynamic_properties()
       {
         gerg_data::Thermodynamic_properties<double> thermodynamic_properties;
-        thermodynamic_properties.D = 2.364026349358396e+00 * 1.0e3;
+        thermodynamic_properties.D = 2.364026349358396e+00;
         thermodynamic_properties.Z = 8.853318867287996e-01;
-        thermodynamic_properties.P1 = 5.101324999999994e+03 * 1.0e3;
+        thermodynamic_properties.P1 = 5.101324999999994e+03;
         thermodynamic_properties.gamma = 1.301524045899356e+00;
 
         return thermodynamic_properties;

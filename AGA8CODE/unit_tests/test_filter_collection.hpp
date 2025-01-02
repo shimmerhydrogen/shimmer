@@ -4,7 +4,6 @@
 #include "Eigen/Eigen"
 #include "shimmer_teqp_utilities.hpp"
 
-#include "teqp/models/GERG/GERG.hpp"
 #include "test_utilities.hpp"
 
 #include "test_gerg_mock.hpp"
@@ -25,7 +24,7 @@ namespace shimmer_teqp
       ASSERT_EQ(gerg_mock::filter(),
                 filter);
 
-      const auto& names = teqp::GERG2008::component_names;
+      const auto& names = shimmer_teqp::utilities::component_names;
 
       const auto comps = shimmer_teqp::utilities::filter_collection(filter,
                                                                     names);

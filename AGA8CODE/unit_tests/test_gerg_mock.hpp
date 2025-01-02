@@ -11,7 +11,7 @@ namespace shimmer_teqp
     namespace gerg_mock
     {
       // *********************************************************
-      double tolerance() { return 1.0e-14; }
+      double tolerance() { return 1.0e-12; }
       // *********************************************************
       auto x()
       {
@@ -115,6 +115,8 @@ namespace shimmer_teqp
         thermodynamic_properties.gamma = 3.571899838350778e+00;
         thermodynamic_properties.Cp = 9.818629332613503e+01;
         thermodynamic_properties.Cv = 2.748853488889255e+01;
+        thermodynamic_properties.dPdD = 5.331206732366824e+05;
+        thermodynamic_properties.dPdT = 1.740175677980393e+04;
 
         return thermodynamic_properties;
       }

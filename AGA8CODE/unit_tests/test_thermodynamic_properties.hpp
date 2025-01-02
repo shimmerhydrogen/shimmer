@@ -33,11 +33,18 @@ namespace shimmer_teqp
 
       std::cout.precision(16);
       std::cout<< std::scientific<< "D "<< thermodynamic_properties.D<< std::endl;
-      std::cout<< std::scientific<< "T "<< input_properties.T<< std::endl;
-      std::cout<< std::scientific<< "P "<< input_properties.P<< std::endl;
       std::cout<< std::scientific<< "Z "<< thermodynamic_properties.Z<< std::endl;
       std::cout<< std::scientific<< "gamma "<< thermodynamic_properties.gamma<< std::endl;
       std::cout<< std::scientific<< "P1 "<< thermodynamic_properties.P<< std::endl;
+      std::cout<< std::scientific<< "Cp "<< thermodynamic_properties.Cp<< std::endl;
+      std::cout<< std::scientific<< "Cv "<< thermodynamic_properties.Cv<< std::endl;
+
+      std::cout<< std::scientific<< "D "<< expected_thermodynamic_properties.D<< std::endl;
+      std::cout<< std::scientific<< "Z "<< expected_thermodynamic_properties.Z<< std::endl;
+      std::cout<< std::scientific<< "gamma "<< expected_thermodynamic_properties.gamma<< std::endl;
+      std::cout<< std::scientific<< "P1 "<< expected_thermodynamic_properties.P<< std::endl;
+      std::cout<< std::scientific<< "Cp "<< expected_thermodynamic_properties.Cp<< std::endl;
+      std::cout<< std::scientific<< "Cv "<< expected_thermodynamic_properties.Cv<< std::endl;
 
       ASSERT_DOUBLE_EQ_TOL(expected_thermodynamic_properties.D,
                            thermodynamic_properties.D,

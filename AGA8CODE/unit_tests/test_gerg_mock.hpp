@@ -113,6 +113,8 @@ namespace shimmer_teqp
         thermodynamic_properties.Z = 4.312568035613069e+01;
         thermodynamic_properties.P = 5.101324999999521e+06;
         thermodynamic_properties.gamma = 3.571899838350778e+00;
+        thermodynamic_properties.Cp = 9.818629332613503e+01;
+        thermodynamic_properties.Cv = 2.748853488889255e+01;
 
         return thermodynamic_properties;
       }

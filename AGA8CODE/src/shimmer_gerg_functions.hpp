@@ -114,7 +114,7 @@ namespace shimmer_teqp
 
       PropertiesGERG(input_properties.T,
                      thermodynamic_properties.D,
-                     x,
+                     x_GERG,
                      thermodynamic_properties.P,
                      thermodynamic_properties.Z,
                      thermodynamic_properties.dPdD,

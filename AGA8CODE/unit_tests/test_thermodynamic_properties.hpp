@@ -37,7 +37,7 @@ namespace shimmer_teqp
       std::cout<< std::scientific<< "P "<< input_properties.P<< std::endl;
       std::cout<< std::scientific<< "Z "<< thermodynamic_properties.Z<< std::endl;
       std::cout<< std::scientific<< "gamma "<< thermodynamic_properties.gamma<< std::endl;
-      std::cout<< std::scientific<< "P1 "<< thermodynamic_properties.P1<< std::endl;
+      std::cout<< std::scientific<< "P1 "<< thermodynamic_properties.P<< std::endl;
 
       ASSERT_DOUBLE_EQ_TOL(expected_thermodynamic_properties.D,
                            thermodynamic_properties.D,
@@ -48,8 +48,8 @@ namespace shimmer_teqp
       ASSERT_DOUBLE_EQ_TOL(expected_thermodynamic_properties.gamma,
                            thermodynamic_properties.gamma,
                            tolerance);
-      ASSERT_DOUBLE_EQ_TOL(expected_thermodynamic_properties.P1,
-                           thermodynamic_properties.P1,
+      ASSERT_DOUBLE_EQ_TOL(expected_thermodynamic_properties.P,
+                           thermodynamic_properties.P,
                            tolerance);
 
       return EXIT_SUCCESS;

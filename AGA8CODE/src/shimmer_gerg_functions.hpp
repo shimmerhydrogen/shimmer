@@ -95,7 +95,7 @@ namespace shimmer_teqp
 
       gerg_data::Thermodynamic_properties<value_type> thermodynamic_properties;
       thermodynamic_properties.D = value_type();
-      thermodynamic_properties.P1 = value_type();
+      thermodynamic_properties.P = value_type();
       thermodynamic_properties.Z = value_type();
       thermodynamic_properties.gamma = value_type();
 
@@ -111,6 +111,28 @@ namespace shimmer_teqp
 
       if (ierr != 0)
         throw std::runtime_error(herr);
+
+      PropertiesGERG(input_properties.T,
+                     thermodynamic_properties.D,
+                     x,
+                     thermodynamic_properties.P,
+                     thermodynamic_properties.Z,
+                     thermodynamic_properties.dPdD,
+                     thermodynamic_properties.dPdD2,
+                     thermodynamic_properties.d2PdTD,
+                     thermodynamic_properties.dPdT,
+                     thermodynamic_properties.U,
+                     thermodynamic_properties.H,
+                     thermodynamic_properties.S,
+                     thermodynamic_properties.Cv,
+                     thermodynamic_properties.Cp,
+                     thermodynamic_properties.W,
+                     thermodynamic_properties.G,
+                     thermodynamic_properties.JT,
+                     thermodynamic_properties.Kappa,
+                     thermodynamic_properties.A);
+
+      thermodynamic_properties.gamma = thermodynamic_properties.Cp / thermodynamic_properties.Cv;
 
       return thermodynamic_properties;
     }

@@ -30,18 +30,32 @@ namespace shimmer_teqp
           Liquid_phase = 2 ///< to search for liquid phase (and make the same checks when iFlag=1)
         };
 
-        Types Type;
-        matrix_type P;
-        matrix_type T;
+        Types Type; ///< solver type
+        matrix_type P; ///< pressure (kPa)
+        matrix_type T; ///< temperature (K)
     };
 
     template <class matrix_type>
     struct Thermodynamic_properties final
     {
-        matrix_type P1; ///< a pressure (?)
+        matrix_type P; ///< the resulting pressure (kPa)
         matrix_type Z; ///< compressibility factor
         matrix_type D; ///< density (mol/m^3)
-        matrix_type gamma; ///< a constant (?)
+        matrix_type gamma; ///< Cp/Cv
+        matrix_type dPdD; ///< First derivative of pressure with respect to density at constant temperature [kPa/(mol/l)]
+        matrix_type dPdD2; ///< Second derivative of pressure with respect to density at constant temperature [kPa/(mol/l)^2]
+        matrix_type d2PdTD; ///< Second derivative of pressure with respect to temperature and density [kPa/(mol/l)/K]
+        matrix_type dPdT; ///< First derivative of pressure with respect to temperature at constant density (kPa/K)
+        matrix_type U; ///< Internal energy (J/mol)
+        matrix_type H; ///< Enthalpy (J/mol)
+        matrix_type S; ///< Entropy [J/(mol-K)]
+        matrix_type Cv; ///< Isochoric heat capacity [J/(mol-K)]
+        matrix_type Cp; ///< Isobaric heat capacity [J/(mol-K)]
+        matrix_type W; ///< Speed of sound (m/s)
+        matrix_type G; ///< Gibbs energy (J/mol)
+        matrix_type JT; ///< Joule-Thomson coefficient (K/kPa)
+        matrix_type Kappa; ///< Isentropic Exponent
+        matrix_type A; ///< Helmholtz energy (J/mol)
     };
   }
 }

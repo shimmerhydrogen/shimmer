@@ -98,8 +98,10 @@ namespace shimmer_teqp
       // *********************************************************
       auto thermodynamic_properties_parameters()
       {
-        gerg_data::Thermodynamic_properties_parameters parameters;
-        parameters.Type = gerg_data::Thermodynamic_properties_parameters::Types::Gas_phase;
+        gerg_data::Thermodynamic_properties_parameters<double> parameters;
+        parameters.Type = gerg_data::Thermodynamic_properties_parameters<double>::Types::Gas_phase;
+        parameters.T = T();
+        parameters.P = P();
 
         return parameters;
       }
@@ -107,10 +109,10 @@ namespace shimmer_teqp
       auto thermodynamic_properties()
       {
         gerg_data::Thermodynamic_properties<double> thermodynamic_properties;
-        thermodynamic_properties.D = 2.364026349358396e+00;
-        thermodynamic_properties.Z = 8.853318867287996e-01;
-        thermodynamic_properties.P1 = 5.101324999999994e+03;
-        thermodynamic_properties.gamma = 1.301524045899356e+00;
+        thermodynamic_properties.D = 4.853135975758211e+01;
+        thermodynamic_properties.Z = 4.312568035613069e+01;
+        thermodynamic_properties.P1 = 5.101324999999521e+06;
+        thermodynamic_properties.gamma = 3.571899838350778e+00;
 
         return thermodynamic_properties;
       }

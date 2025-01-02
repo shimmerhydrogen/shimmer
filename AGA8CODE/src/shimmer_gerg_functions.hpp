@@ -3,6 +3,7 @@
 
 #include "GERG2008.h"
 #include "shimmer_gerg_data.hpp"
+#include <stdexcept>
 
 namespace shimmer_teqp
 {
@@ -81,14 +82,35 @@ namespace shimmer_teqp
       return pseudo_critical_point;
     }
     // *********************************************************
-    template<typename mol_fracs_type,
+    template<typename x_type,
              typename value_type>
-    auto thermodynamic_properties(const mol_fracs_type& mol_fracs,
+    auto thermodynamic_properties(const x_type& x,
+                                  const gerg_data::Thermodynamic_properties_parameters<value_type>& input_properties,
                                   const value_type& tolerance)
     {
-      gerg_data::Thermodynamic_properties<value_type> thermodynamic_properties;
+      using size_type = typename x_type::size_type;
 
-      thermodynamic_properties.D = 4.853135975758211e+01;
+      assert(static_cast<size_type>(x.size()) == GERG_num_componets);
+      const auto x_GERG = create_x_GERG(x, tolerance);
+
+      gerg_data::Thermodynamic_properties<value_type> thermodynamic_properties;
+      thermodynamic_properties.D = value_type();
+      thermodynamic_properties.P1 = value_type();
+      thermodynamic_properties.Z = value_type();
+      thermodynamic_properties.gamma = value_type();
+
+      int ierr = 0;
+      std::string herr;
+      DensityGERG(static_cast<int>(input_properties.Type),
+                  input_properties.T,
+                  input_properties.P,
+                  x_GERG,
+                  thermodynamic_properties.D,
+                  ierr,
+                  herr);
+
+      if (ierr != 0)
+        throw std::runtime_error(herr);
 
       return thermodynamic_properties;
     }

@@ -21,61 +21,36 @@ namespace shimmer_teqp
       const auto comps = gerg_mock::comps();
       const auto mol_frac = gerg_mock::mol_frac();
 
-//      auto model = teqp::GERG2008::GERG2008ResidualModel(comps);
-//      const auto R = model.R(mol_frac);
+      const auto x = gerg_mock::x();
 
-//      const auto T = gerg_mock::T();
-//      const auto D = gerg_mock::thermodynamic_properties().D;
-//      // const auto alpha_r = model.alphar(T,
-//      //                                   D,
-//      //                                   mol_frac);
+      shimmer_teqp::gerg_functions::setup_GERG();
 
-//      const auto Tred = teqp::forceeval(model.red.get_Tr(mol_frac));
-//      const auto rhored = teqp::forceeval(model.red.get_rhor(mol_frac));
-//      const auto delta = teqp::forceeval(D / rhored);
-//      const auto tau = teqp::forceeval(Tred / T);
-//      const auto alpha_corr = teqp::forceeval(model.corr.alphar(tau, delta, mol_frac));
-//      const auto alpha_dep = teqp::forceeval(model.dep.alphar(tau, delta, mol_frac));
-//      const auto alpha_r = alpha_corr + alpha_dep;
-//      const auto Z = 1 + alpha_r;
-//      const auto P = D * R * T * Z;
+      const auto input_properties = gerg_mock::thermodynamic_properties_parameters();
+      const auto thermodynamic_properties = shimmer_teqp::gerg_functions::thermodynamic_properties(x,
+                                                                                                   input_properties,
+                                                                                                   tolerance);
+      const auto expected_thermodynamic_properties = gerg_mock::thermodynamic_properties();
 
-//      auto model_ideal = teqp::GERG2008::GERG2008IdealGasModel(comps);
-//      const auto alpha_0 = model_ideal.alphar(T,
-//                                              D,
-//                                              mol_frac);
+      std::cout.precision(16);
+      std::cout<< std::scientific<< "D "<< thermodynamic_properties.D<< std::endl;
+      std::cout<< std::scientific<< "T "<< input_properties.T<< std::endl;
+      std::cout<< std::scientific<< "P "<< input_properties.P<< std::endl;
+      std::cout<< std::scientific<< "Z "<< thermodynamic_properties.Z<< std::endl;
+      std::cout<< std::scientific<< "gamma "<< thermodynamic_properties.gamma<< std::endl;
+      std::cout<< std::scientific<< "P1 "<< thermodynamic_properties.P1<< std::endl;
 
-//      std::cout.precision(16);
-//      std::cout<< std::scientific<< "D "<< D<< std::endl;
-//      std::cout<< std::scientific<< "T "<< T<< std::endl;
-//      std::cout<< std::scientific<< "P "<< P<< std::endl;
-//      std::cout<< std::scientific<< "Z "<< Z<< std::endl;
-//      std::cout<< std::scientific<< "a "<< alpha_r<< std::endl;
-
-//      ASSERT_DOUBLE_EQ_TOL(gerg_mock::tau(),
-//                           tau,
-//                           tolerance);
-
-//      ASSERT_DOUBLE_EQ_TOL(gerg_mock::delta(),
-//                           delta,
-//                           tolerance);
-
-//      ASSERT_DOUBLE_EQ_TOL(gerg_mock::alpha_0(),
-//                           alpha_0,
-//                           tolerance);
-
-//      ASSERT_DOUBLE_EQ_TOL(gerg_mock::alpha_r(),
-//                           alpha_r,
-//                           tolerance);
-
-//      const auto expected_thermodynamic_properties = gerg_mock::thermodynamic_properties();
-
-//      const auto thermodynamic_properties = gerg_functions::thermodynamic_properties(mol_frac,
-//                                                                                     gerg_mock::tolerance());
-
-//      ASSERT_DOUBLE_EQ_TOL(expected_thermodynamic_properties.D,
-//                           thermodynamic_properties.D,
-//                           tolerance);
+      ASSERT_DOUBLE_EQ_TOL(expected_thermodynamic_properties.D,
+                           thermodynamic_properties.D,
+                           tolerance);
+      ASSERT_DOUBLE_EQ_TOL(expected_thermodynamic_properties.Z,
+                           thermodynamic_properties.Z,
+                           tolerance);
+      ASSERT_DOUBLE_EQ_TOL(expected_thermodynamic_properties.gamma,
+                           thermodynamic_properties.gamma,
+                           tolerance);
+      ASSERT_DOUBLE_EQ_TOL(expected_thermodynamic_properties.P1,
+                           thermodynamic_properties.P1,
+                           tolerance);
 
       return EXIT_SUCCESS;
     }

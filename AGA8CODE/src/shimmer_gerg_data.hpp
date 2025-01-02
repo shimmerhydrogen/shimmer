@@ -20,6 +20,7 @@ namespace shimmer_teqp
         matrix_type Vcx; ///< pseudo critical point volume (l)
     };
 
+    template <class matrix_type>
     struct Thermodynamic_properties_parameters final
     {
         enum struct Types
@@ -30,6 +31,8 @@ namespace shimmer_teqp
         };
 
         Types Type;
+        matrix_type P;
+        matrix_type T;
     };
 
     template <class matrix_type>

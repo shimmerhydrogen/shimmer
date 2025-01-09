@@ -1,11 +1,11 @@
-#ifndef __SHIMMER_TEQP_FUNCTIONS_HPP__
-#define __SHIMMER_TEQP_FUNCTIONS_HPP__
+#ifndef __SHIMMER_GERG_FUNCTIONS_HPP__
+#define __SHIMMER_GERG_FUNCTIONS_HPP__
 
 #include "GERG2008.h"
 #include "shimmer_gerg_data.hpp"
 #include <stdexcept>
 
-namespace shimmer_teqp
+namespace shimmer_gerg
 {
   namespace gerg_functions
   {

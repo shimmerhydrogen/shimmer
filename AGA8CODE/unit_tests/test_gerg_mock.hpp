@@ -4,7 +4,7 @@
 #include "Eigen/Eigen"
 #include "shimmer_gerg_data.hpp"
 
-namespace shimmer_teqp
+namespace shimmer_gerg
 {
   namespace test
   {
@@ -112,11 +112,11 @@ namespace shimmer_teqp
         thermodynamic_properties.D = 4.853135975758211e+01;
         thermodynamic_properties.Z = 4.312568035613069e+01;
         thermodynamic_properties.P = 5.101324999999521e+06;
-        thermodynamic_properties.gamma = 3.571899838350778e+00;
-        thermodynamic_properties.Cp = 9.818629332613503e+01;
-        thermodynamic_properties.Cv = 2.748853488889255e+01;
-        thermodynamic_properties.dPdD = 5.331206732366824e+05;
-        thermodynamic_properties.dPdT = 1.740175677980393e+04;
+        thermodynamic_properties.gamma = 1.1714382285678768e+00;
+        thermodynamic_properties.Cp = 5.2298638227860138e+01;
+        thermodynamic_properties.Cv = 4.4644810927672225e+01;
+        thermodynamic_properties.dPdD = 5.3312067323673121e+05;
+        thermodynamic_properties.dPdT = 5.7257133461214125e+03;
 
         return thermodynamic_properties;
       }

@@ -10,11 +10,11 @@ int main(int argc, char ** argv)
 {
   const std::map<std::string, std::function<int(int , char **)>> tests =
   {
-  { "test_filter_collection", shimmer_teqp::test::test_filter_collection },
-  { "test_filter_components", shimmer_teqp::test::test_filter_components },
-  { "test_reducing_parameters", shimmer_teqp::test::test_reducing_parameters },
-  { "test_pseudo_critical_point", shimmer_teqp::test::test_pseudo_critical_point },
-  { "test_thermodynamic_properties", shimmer_teqp::test::test_thermodynamic_properties }
+  { "test_filter_collection", shimmer_gerg::test::test_filter_collection },
+  { "test_filter_components", shimmer_gerg::test::test_filter_components },
+  { "test_reducing_parameters", shimmer_gerg::test::test_reducing_parameters },
+  { "test_pseudo_critical_point", shimmer_gerg::test::test_pseudo_critical_point },
+  { "test_thermodynamic_properties", shimmer_gerg::test::test_thermodynamic_properties }
 };
 
   std::list<std::string> tests_to_run;

@@ -1,20 +1,20 @@
-#ifndef __SHIMMER_TEQP_UTILITIES_HPP__
-#define __SHIMMER_TEQP_UTILITIES_HPP__
+#ifndef __SHIMMER_GERG_UTILITIES_HPP__
+#define __SHIMMER_GERG_UTILITIES_HPP__
 
 #include <list>
 #include <ostream>
 #include <span>
 #include <vector>
 
-#include "shimmer_teqp_concepts.hpp"
+#include "shimmer_gerg_concepts.hpp"
 #include "shimmer_gerg_data.hpp"
 
-namespace shimmer_teqp
+namespace shimmer_gerg
 {
   namespace utilities
   {
     // *********************************************************
-    static std::vector<std::string> component_names = {
+    std::vector<std::string> component_names = {
       "Methane",
       "Nitrogen",
       "Carbon dioxide",

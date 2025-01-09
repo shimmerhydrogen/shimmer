@@ -1,12 +1,12 @@
-#ifndef __SHIMMER_TEQP_CONCEPTS_HPP__
-#define __SHIMMER_TEQP_CONCEPTS_HPP__
+#ifndef __SHIMMER_GERG_CONCEPTS_HPP__
+#define __SHIMMER_GERG_CONCEPTS_HPP__
 
 #include <cassert>
 #include <string_view>
 #include <utility>
 #include <span>
 
-namespace shimmer_teqp
+namespace shimmer_gerg
 {
   namespace concepts
   {

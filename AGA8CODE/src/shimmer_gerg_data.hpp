@@ -1,7 +1,7 @@
 #ifndef __SHIMMER_GERG_DATA_H
 #define __SHIMMER_GERG_DATA_H
 
-namespace shimmer_teqp
+namespace shimmer_gerg
 {
   namespace gerg_data
   {

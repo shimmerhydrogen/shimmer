@@ -1,6 +1,3 @@
 [submodule "shimmer++/deps/sol2"]
 	path = shimmer++/deps/sol2
 	url = git@github.com:ThePhD/sol2.git
-[submodule "teqp"]
-	path = teqp
-	url = https://github.com/usnistgov/teqp.git

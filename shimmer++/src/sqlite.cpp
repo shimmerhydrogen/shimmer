@@ -141,12 +141,12 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
 
             auto limits = convert_limits(setting);
             auto Pset = convert_Pprof(setting);
+            auto Lset = convert_Lprof(setting);
             auto f = setting.f;
-
-            //auto inj_station = make_inj_w_pressure(1.0, 7500000.0, 1.0,
-            //                                  user_constraints,
-            //                                  user_constraints);
-            //vp.node_station = std::make_unique<multiple_states_station>(inj_station);
+            auto inj_station = make_inj_w_pressure(f, Pset, Lset,
+                                              limits,
+                                              limits);
+            vp.node_station = std::make_unique<multiple_states_station>(inj_station);
             break;
         }
 
@@ -163,16 +163,15 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
 
             auto limits = convert_limits(setting);
             auto Lset = convert_Lprof(setting);
-            /* cosa sono i parametri? da dove li prendo? */
-            //auto consumption = make_consumption_wo_press(1.0, user_constraints);
-            //vp.node_station = std::make_unique<one_state_station>(consumption);
+            auto consumption = make_consumption_wo_press(Lset, limits);
+            vp.node_station = std::make_unique<one_state_station>(consumption);
             break;
         }
 
         case(station_type_x::OUTLET):
         {
-            /* cosa sono i parametri? da dove li prendo? */
-            auto exit_station = make_outlet(1.0);
+            auto Lset = convert_Lprof(setting);
+            auto exit_station = make_outlet(Lset);
             vp.node_station = std::make_unique<one_state_station>(exit_station);
             break;
         }

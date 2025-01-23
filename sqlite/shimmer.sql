@@ -211,14 +211,25 @@ create table pipelines (
         REFERENCES pipeline_types(p_type)
 );
 
--- Pipeline parameters as length, diameter and so on.
-create table pipeline_parameters (
+-- Pipe parameters as length, diameter and so on.
+create table pipe_parameters (
     p_name      TEXT NOT NULL,
     s_from      INTEGER,
     s_to        INTEGER,
-    length      REAL NOT NULL,
-    diameter    REAL NOT NULL,
-    epsi        REAL NOT NULL,
+    diameter    REAL DEFAULT 0.0 NOT NULL,
+    length      REAL DEFAULT 0.0 NOT NULL,
+    roughness   REAL DEFAULT 0.0 NOT NULL,
+
+    -- The referenced pipeline must exist
+    FOREIGN KEY (p_name, s_from, s_to)
+        REFERENCES pipelines(p_name, s_from, s_to)
+);
+
+-- Compressor parameters as length, diameter and so on.
+create table compressor_parameters (
+    p_name      TEXT NOT NULL,
+    s_from      INTEGER,
+    s_to        INTEGER,
 
     -- The referenced pipeline must exist
     FOREIGN KEY (p_name, s_from, s_to)

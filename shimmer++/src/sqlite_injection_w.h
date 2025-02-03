@@ -16,6 +16,7 @@ struct setting_injection_w {
     double  f;          // scaling parameter in [0,1]
 
     std::vector<sample> Pprofile;
+    std::vector<sample> Lprofile;
 
     bool operator<(const setting_injection_w& other) {
         return i_snum < other.i_snum;

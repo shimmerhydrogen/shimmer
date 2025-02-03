@@ -167,9 +167,17 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
             vp.node_station = std::make_unique<one_state_station>(consumption);
             break;
         }
-
         case(station_type_x::OUTLET):
         {
+            auto itor = lookup_station_setting(settings_outlet, vp.i_snum);
+            if ( itor == settings_outlet.end() ) {
+                std::cout << "Warning: No data for station " << vp.u_snum;
+                std::cout << " (Outlet)" << std::endl;
+                return 1;
+            }
+            const setting_outlet &setting = *itor;
+            assert((setting.u_snum == vp.u_snum) and (setting.i_snum == vp.i_snum));
+
             auto Lset = convert_Lprof(setting);
             auto exit_station = make_outlet(Lset);
             vp.node_station = std::make_unique<one_state_station>(exit_station);
@@ -345,8 +353,10 @@ network_database::populate_graph(infrastructure_graph& g)
     renumber_stations();
 
     /* Import the data for all the stations */
+    //import_outlet(settings_outlet);
     import_remi_wo(settings_remi_wo);
     import_injection_w(settings_injection_w);
+
 
     /* Import the graph */
     import_stations(g);

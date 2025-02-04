@@ -25,23 +25,24 @@ select s_name, s_number, t_descr
 -- Insert graph edges
 -- (name, station_from, station_to, type)
 -- the type must match the values in pipeline_types
-insert into pipelines values ('pipe01', 1, 4, 0);
-insert into pipelines values ('pipe02', 2, 3, 0);
-insert into pipelines values ('pipe03', 3, 4, 0);
-insert into pipelines values ('pipe04', 3, 5, 0);
-insert into pipelines values ('pipe05', 4, 5, 0);
-insert into pipelines values ('pipe06', 5, 6, 0);
-insert into pipelines values ('pipe07', 5, 14, 0);
-insert into pipelines values ('pipe08', 7, 5, 0);
-insert into pipelines values ('pipe09', 8, 7, 0);
-insert into pipelines values ('pipe10', 12, 7, 0);
-insert into pipelines values ('pipe11', 13, 8, 0);
-insert into pipelines values ('pipe12', 9, 8, 0);
-insert into pipelines values ('pipe13', 8, 10, 0);
-insert into pipelines values ('pipe14', 10, 11, 0);
-insert into pipelines values ('pipe15', 4, 10, 0);
-insert into pipelines values ('pipe16', 14, 15, 2);
-insert into pipelines values ('pipe17', 15, 18, 0);
+insert into pipelines values
+    ('pipe01',  1,  4, 0),
+    ('pipe02',  2,  3, 0),
+    ('pipe03',  3,  4, 0),
+    ('pipe05',  4,  5, 0),
+    ('pipe04',  3,  5, 0),
+    ('pipe06',  5,  6, 0),
+    ('pipe07',  5, 14, 0),
+    ('pipe09',  8,  7, 0),
+    ('pipe08',  7,  5, 0),
+    ('pipe10', 12,  7, 0),
+    ('pipe11', 13,  8, 0),
+    ('pipe12',  9,  8, 0),
+    ('pipe13',  8, 10, 0),
+    ('pipe14', 10, 11, 0),
+    ('pipe15',  4, 10, 0),
+    ('pipe16', 14, 15, 2),
+    ('pipe17', 15, 18, 0);
 
 select p_name, s_from, s_to, t_name
     from pipelines inner join pipeline_types

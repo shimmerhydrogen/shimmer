@@ -4,9 +4,7 @@
 #include <sqlite3.h>
 #include "infrastructure_graph.h"
 
-
 namespace shimmer {
-
 struct sample {
     double  time;
     double  value;
@@ -22,7 +20,15 @@ operator<<(std::ostream& os, const sample& s) {
     return os;
 }
 
+using table_name_pair_t = std::pair<std::string, std::string>;
+
 } // namespace shimmer
+
+template<typename T>
+    requires std::is_enum_v<T>
+constexpr auto operator+(T e) {
+    return std::underlying_type_t<T>(e);
+}
 
 #include "sqlite_outlet.h"
 #include "sqlite_remi_wo.h"
@@ -61,6 +67,8 @@ class network_database {
     int import_conspoint_wo(std::vector<setting_conspoint_wo>&);
 
     int populate_type_dependent_station_data(vertex_properties&);
+
+    std::optional<table_name_pair_t> limits_and_profile_table_names(int stat_type);
 
 public:
     network_database();

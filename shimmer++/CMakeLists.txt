@@ -11,6 +11,8 @@ set(CMAKE_CXX_FLAGS_RELEASENATIVE "-O3 -DNDEBUG -march=native")
 
 option(BUILD_SHIMMER_UNIT_TESTS "Build SHIMMER++ unitary tests" ON)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 #######################################################################
 # GERG
 add_subdirectory(deps/gerg)

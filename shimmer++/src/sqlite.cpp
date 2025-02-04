@@ -190,11 +190,63 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
     return 0;
 }
 
+std::optional<table_name_pair_t>
+network_database::limits_and_profile_table_names(int stat_type)
+{
+    char *zErrMsg = nullptr;
+    sqlite3_stmt *stmt = nullptr;
+
+    enum class col : int {
+        t_limits_table = 0,
+        t_profile_table = 1
+    };
+
+    std::string q =
+        "SELECT t_limits_table, t_profile_table "
+        "FROM station_types "
+        "WHERE t_type = ?";
+
+    int rc = sqlite3_prepare_v2(db_, q.c_str(), q.length(), &stmt, nullptr);
+    if (rc) {
+        fprintf(stderr, "%s:%d SQL error: %s\n", __FILE__, __LINE__, zErrMsg);
+        sqlite3_free(zErrMsg);
+        return {};
+    }
+
+    rc = sqlite3_bind_int(stmt, 1, stat_type);
+
+    if ( sqlite3_step(stmt) != SQLITE_ROW ) {
+        std::cout << "Invalid station type" << std::endl;
+        return {};
+    }
+    
+    std::string limits_table_name;
+    if ( sqlite3_column_type(stmt, 0) == SQLITE3_TEXT ) {
+        limits_table_name = (const char *) sqlite3_column_text(stmt, +col::t_limits_table);
+    }
+
+    std::string profile_table_name;
+    if ( sqlite3_column_type(stmt, 1) == SQLITE3_TEXT ) {
+        profile_table_name = (const char *) sqlite3_column_text(stmt, +col::t_profile_table);
+    }
+
+    if ( (limits_table_name == "") or (profile_table_name == "") ) {
+        fprintf(stderr, "DB: Invalid table name in 'station_types'\n");
+        return {};
+    }
+
+    rc = sqlite3_clear_bindings(stmt);
+    rc = sqlite3_reset(stmt);
+    rc = sqlite3_finalize(stmt);
+
+    return std::pair(limits_table_name, profile_table_name);
+}
+
 /* Callback for aggregate functions COUNT() and MAX() */
 static int
 af_callback( void *result_vp, int count, char **data, char **columns) {
     int *result_p = (int *)result_vp;
-    *result_p = atoi(data[0]);
+    *result_p = (data[0] != nullptr) ? atoi(data[0]) : 0;
     return 0;
 }
 
@@ -225,6 +277,10 @@ network_database::renumber_stations()
         fprintf(stderr, "%s:%d SQL error: %s\n", __FILE__, __LINE__, zErrMsg);
         sqlite3_free(zErrMsg);
         return 1;
+    }
+
+    if (station_count == 0) {
+        return 0;
     }
 
     /* Resize the mapping arrays */

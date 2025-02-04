@@ -24,6 +24,7 @@ operator<<(std::ostream& os, const sample& s) {
 
 } // namespace shimmer
 
+#include "sqlite_outlet.h"
 #include "sqlite_remi_wo.h"
 #include "sqlite_injection_w.h"
 #include "sqlite_conspoint_wo.h"
@@ -41,9 +42,11 @@ class network_database {
     std::vector<std::optional<vertex_descriptor>>   s_u2vd;
     std::vector<vertex_descriptor>                  s_i2vd;
 
+    std::vector<setting_outlet>         settings_outlet;
     std::vector<setting_remi_wo>        settings_remi_wo;
     std::vector<setting_injection_w>    settings_injection_w;
     std::vector<setting_conspoint_wo>   settings_conspoint_wo;
+
     /* END I have the impression that this stuff does not belong here */
 
     int import_stations(infrastructure_graph& g);
@@ -51,6 +54,8 @@ class network_database {
     int import_pipelines(infrastructure_graph& g);
     int renumber_stations();
 
+
+    int import_outlet(std::vector<setting_outlet>&);
     int import_remi_wo(std::vector<setting_remi_wo>&);
     int import_injection_w(std::vector<setting_injection_w>&);
     int import_conspoint_wo(std::vector<setting_conspoint_wo>&);

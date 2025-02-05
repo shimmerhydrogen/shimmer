@@ -48,26 +48,23 @@ select p_name, s_from, s_to, t_name
     from pipelines inner join pipeline_types
     where pipelines.p_type = pipeline_types.p_type;
 
-insert into pipe_parameters values ('pipe01',  1,  4, 1.2,  80000, 1.20e-5);
-insert into pipe_parameters values ('pipe02',  2,  3, 0.6,  16000, 1.20e-5);
-insert into pipe_parameters values ('pipe03',  3,  4, 0.8,  40000, 1.20e-5);
-insert into pipe_parameters values ('pipe04',  3,  5, 0.7, 160000, 1.20e-5);
-insert into pipe_parameters values ('pipe05',  4,  5, 0.8, 200000, 1.20e-5);
-insert into pipe_parameters values ('pipe06',  5,  6, 0.6,  24000, 1.20e-5);
-insert into pipe_parameters values ('pipe07',  5, 14, 0.2,  60000, 1.20e-5);
-insert into pipe_parameters values ('pipe08',  7,  5, 0.9,  80000, 1.20e-5);
-insert into pipe_parameters values ('pipe09',  8,  7, 0.7,  64000, 1.20e-5);
-insert into pipe_parameters values ('pipe10', 12,  7, 0.6, 240000, 1.20e-5);
-insert into pipe_parameters values ('pipe11', 13,  8, 0.2,  28000, 1.20e-5);
-insert into pipe_parameters values ('pipe12',  9,  8, 0.9,  80000, 1.20e-5);
-insert into pipe_parameters values ('pipe13',  8, 10, 0.7, 160000, 1.20e-5);
-insert into pipe_parameters values ('pipe14', 10, 11, 0.3,  40000, 1.20e-5);
-insert into pipe_parameters values ('pipe15',  4, 10, 0.9, 320000, 1.20e-5);
-insert into pipe_parameters values ('pipe17', 15, 18, 0.2,  60000, 1.20e-5);
-
-
-
-
+insert into pipe_parameters values
+    ('pipe01',  1,  4, 1.2,  80000, 1.20e-5),
+    ('pipe02',  2,  3, 0.6,  16000, 1.20e-5),
+    ('pipe03',  3,  4, 0.8,  40000, 1.20e-5),
+    ('pipe04',  3,  5, 0.7, 160000, 1.20e-5),
+    ('pipe05',  4,  5, 0.8, 200000, 1.20e-5),
+    ('pipe06',  5,  6, 0.6,  24000, 1.20e-5),
+    ('pipe07',  5, 14, 0.2,  60000, 1.20e-5),
+    ('pipe08',  7,  5, 0.9,  80000, 1.20e-5),
+    ('pipe09',  8,  7, 0.7,  64000, 1.20e-5),
+    ('pipe10', 12,  7, 0.6, 240000, 1.20e-5),
+    ('pipe11', 13,  8, 0.2,  28000, 1.20e-5),
+    ('pipe12',  9,  8, 0.9,  80000, 1.20e-5),
+    ('pipe13',  8, 10, 0.7, 160000, 1.20e-5),
+    ('pipe14', 10, 11, 0.3,  40000, 1.20e-5),
+    ('pipe15',  4, 10, 0.9, 320000, 1.20e-5),
+    ('pipe17', 15, 18, 0.2,  60000, 1.20e-5);
 
 -- Profile station 1
 insert into STATTYPE1 values ( 1,     0, 7000000 );

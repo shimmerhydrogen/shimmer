@@ -126,7 +126,7 @@ linearized_fluid_solver::impose_edge_station_model(
         triplets_mom.push_back(triplet_t(row, source_num, st.model_c1()));
         triplets_mom.push_back(triplet_t(row, target_num, st.model_c2()));
         triplets_mom.push_back(triplet_t(row, row, st.model_c3()));
-        rhs_mom(row) = st.model_rhs();
+        rhs_mom(pipe_num) = st.model_rhs();
     }
 
     return;

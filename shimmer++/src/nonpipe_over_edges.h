@@ -51,7 +51,8 @@ namespace control
     public:
 
         constraint(){};
-        constraint(const hardness_type& h, const constraint_type& t, double v)
+        constraint(const hardness_type& h, const constraint_type& t, double v):
+            hardness_(h), type_(t), value_(v)
         {};
 
         bool  check(double value) const;

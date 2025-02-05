@@ -644,26 +644,71 @@ make_compressor(double ramp,
 
     compressor cmp("COMPRESSOR", ramp, efficiency, activate_history, internals, externals);
 
-    auto c_by_pass = control::make_bypass_mode(control::constraint_type::EQUAL);
-    auto c_shutoff = control::make_shutoff_mode(control::constraint_type::EQUAL);
+    for(const auto & m : modes_type_vec)
+    {
+        switch (m)
+        {
+            case control::mode_type::SHUT_OFF:
+            {
+                std::cout << "Adding mode OFF................ SHUT_OFF \n";
+                auto c_shutoff = control::make_shutoff_mode(control::constraint_type::EQUAL);
+                cmp.add_mode_off(c_shutoff);
+                break;
+            }    
+            case control::mode_type::BY_PASS:
+            {
+                std::cout << "Adding mode OFF................ BY_PASS \n";
+                auto c_by_pass = control::make_bypass_mode(control::constraint_type::EQUAL);
+                cmp.add_mode_off(c_by_pass);
+                break;
+            }
+            case control::mode_type::PRESSURE_IN:
+            {
+                std::cout << "Adding mode ON ................ PRESS_IN \n";
+                auto c_press_in  = control::make_pressure_in_mode(user_limits[P_IN_MIN].second);
+                cmp.add_mode_on(c_press_in);
+                break;
+            }
+            case control::mode_type::PRESSURE_OUT:
+            {
+                std::cout << "Adding mode ON ................ PRESS_OUT \n";
+                auto c_press_out = control::make_pressure_out_mode(user_limits[P_OUT_MAX].second);
+                cmp.add_mode_on(c_press_out);
+                break;
+            }
+            case control::mode_type::FLUX:
+            {
+                std::cout << "Adding mode ON ................ FLUX \n";
+                auto c_flux = control::make_flux_mode(user_limits[FLUX_MAX].second);
+                cmp.add_mode_on(c_flux);
+                break;
+            }
+            case control::mode_type::POWER_DRIVER:
+            {
+                std::cout << "Adding mode ON ................ POWER_DRIVER \n";
+                auto c_power_driver = control::make_power_driver_mode(user_limits[PWD_NOMINAL].second, ramp);
+                cmp.add_mode_on(c_power_driver);
+                break;
+            }
+            default:
+                std::cout << "ERROR: station does not know this control type.\n";
+                throw std::exception();
+        }
 
-    cmp.add_mode_off(c_by_pass);
-    cmp.add_mode_off(c_shutoff);
+        // Init current mode with the first mode in the list of modes ON (bypass and shutoff does not count)
+        cmp.change_mode_on(0);
 
-    auto c_power_driver = control::make_power_driver_mode(user_limits[PWD_NOMINAL].second, ramp);
-    auto c_press_in  = control::make_pressure_in_mode(user_limits[P_IN_MIN].second);
-    auto c_press_out = control::make_pressure_out_mode(user_limits[P_OUT_MAX].second);
+        return cmp;
+    }
+
+    // Check these ones! It is seems there are not well defined. For example there ir also a control mode for BETA
+    /*
     auto c_beta_min  = control::make_beta_min_mode(user_limits[BETA_MIN].second);
-    auto c_beta_max  = control::make_beta_max_mode(user_limits[BETA_MAX].second);
-    auto c_flux = control::make_flux_mode(user_limits[FLUX_MAX].second);
-
-    cmp.add_mode_on(c_power_driver);
-    cmp.add_mode_on(c_press_in);
-    cmp.add_mode_on(c_press_out);
     cmp.add_mode_on(c_beta_min);
-    cmp.add_mode_on(c_beta_max);
-    cmp.add_mode_on(c_flux);
 
+    auto c_beta_max  = control::make_beta_max_mode(user_limits[BETA_MAX].second);
+    cmp.add_mode_on(c_beta_max);
+    */
     return cmp;
 }
 

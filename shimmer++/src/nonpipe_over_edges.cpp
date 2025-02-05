@@ -80,7 +80,8 @@ control::model::model(control::mode_type ctype)
         control_index_ = 1;
         break;
     default:
-        break;
+        std::cout << "ERROR: station does not know this control type => "<< ctype << "\n";
+        throw std::exception();
     }
 }
 

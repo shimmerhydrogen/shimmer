@@ -5,6 +5,19 @@ clear;
 dbfile = fullfile(pwd, "../../sqlite/shimmer.db");
 conn = sqlite(dbfile);
 
+clear_database = 1; % Set to zero to NOT clear database on start
+if (clear_database == 1)
+    execute(conn, "delete from stations");
+    execute(conn, "delete from limits_remi_wo");
+    execute(conn, "delete from profiles_remi_wo");
+    execute(conn, "delete from limits_injection_w");
+    execute(conn, "delete from profiles_injection_w");
+    execute(conn, "delete from limits_conspoint_wo");
+    execute(conn, "delete from profiles_conspoint_wo");
+    execute(conn, "delete from pipelines");
+    execute(conn, "delete from pipe_parameters");
+end
+
 station_types_tab = sqlread(conn, "station_types");
 
 %station_types_tab{station_types_tab.t_type == 1, ["t_limits_table", "t_profile_table"] }

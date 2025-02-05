@@ -608,10 +608,11 @@ make_valve(const std::vector<bool>& activate_history,
 }
 
 
-auto
+compressor
 make_compressor(double ramp,
                 double efficiency,
                 const std::vector<bool>& activate_history,
+                const std::vector<control::mode_type>& modes_type_vec,
                 std::unordered_map<external_type,
                                         std::pair<control::constraint_type,
                                         double>> & user_limits)

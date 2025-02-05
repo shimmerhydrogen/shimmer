@@ -323,16 +323,28 @@ station::fill_model(control::mode& m,
     }
 }
 
+
+std::ostream& operator<<(std::ostream& ofs, const station& st)
+{
+    ofs << " name : " << st.name_ << "\n";
+    ofs << " current mode_type  : " << st.which_mode_type() << "\n";
+
+    return ofs;
+}
+
+
 //-----------------------------------------------------------------------------
 
 compressor::compressor(const std::string& name,
-    double efficiency,
+                        double efficiency,
                         double ramp_coeff,
                         const std::vector<bool>& activate_history,
                         const std::vector<control::constraint>& internals,
                         const std::vector<control::constraint>& externals):
-                        station(name, activate_history, internals, externals)
+                        station(name, activate_history, internals, externals),
+                        efficiency_(efficiency), ramp_coeff_(ramp_coeff)
 {
+
     #if 0
     std::vector<external_type> mandatory_exts = { BETA_MIN,
                                                 BETA_MAX,

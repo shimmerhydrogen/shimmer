@@ -186,7 +186,7 @@ public:
 
     station() = default;
     station(const std::string& name,
-    const std::vector<bool>& active_history,
+            const std::vector<bool>& active_history,
             const std::vector<control::constraint>& internals,
             const std::vector<control::constraint>& externals):
                     name_(name), active_history_(active_history),
@@ -202,12 +202,12 @@ public:
                             int target_num,
                             const variable& var);
 
-    inline auto which_mode_type()
+    inline auto which_mode_type() const 
     {
         return mode_.type_;
     };
 
-    void change_mode_on(size_t idx)
+    void change_mode_on(int idx)
     {
         mode_ = controls_on.at(idx);
         return;

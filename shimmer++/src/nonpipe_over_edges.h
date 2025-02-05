@@ -86,7 +86,7 @@ namespace control
             model_(m), internal_(internal)
             {};
         mode(const control::mode_type& type, const control::constraint& internal):
-            type_(type), model_(model(type_)), internal_(internal)
+            type_(type), model_(model(type)), internal_(internal)
             {};
 
         bool check_hard() const;

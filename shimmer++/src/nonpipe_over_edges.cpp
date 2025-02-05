@@ -29,6 +29,8 @@ control::constraint::check(double v) const
 
 control::model::model(control::mode_type ctype)
 {
+    coeffs = std::vector<double>{1.e20,1.e20,1.e20,1.e20};
+
     switch (ctype)
     {
     case control::mode_type::BY_PASS:

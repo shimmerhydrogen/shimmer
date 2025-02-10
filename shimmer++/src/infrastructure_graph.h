@@ -118,6 +118,7 @@ struct edge_properties {
         ofs << " length     : " << ep.length << "\n";
         ofs << " diameter   : " << ep.diameter << "\n";
         ofs << " friction factor : " << ep.friction_factor << "\n";
+        ofs << " Station : " << ep.pipe_station << "\n";
 
         return ofs;
     }

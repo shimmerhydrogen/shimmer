@@ -21,6 +21,7 @@
 #include <fstream>
 #include <string>
 #include <iomanip>
+#include <utility>
 
 #include "../src/infrastructure_graph.h"
 #include "../src/incidence_matrix.h"
@@ -30,6 +31,8 @@
 #include "../src/fluid_solver.h"
 #include "../src/time_solver.h"
 #include "../src/viscosity.h"
+#include "../src/nonpipe_over_edges.h"
+
 
 using triple_t = std::array<double, 3>;
 using namespace shimmer;
@@ -48,9 +51,31 @@ enum station_type
     CONSUMPTION_WO_PRESS,
 };
 
+std::vector<station_type>
+make_stations_type_vector()
+{
+    return std::vector<station_type>{
+        station_type::REMI_WO_BACKFLOW,
+        station_type::OUTLET,
+        station_type::JUNCTION,
+        station_type::JUNCTION,
+        station_type::JUNCTION,
+        station_type::CONSUMPTION_WO_PRESS,
+        station_type::JUNCTION,
+        station_type::JUNCTION,
+        station_type::CONSUMPTION_WO_PRESS,
+        station_type::JUNCTION,
+        station_type::CONSUMPTION_WO_PRESS,
+        station_type::INJ_W_PRESS_CONTROL,
+        station_type::OUTLET,
+        station_type::JUNCTION,
+        station_type::JUNCTION
+    };
+}
 
 
-std::pair<vector_t, vector_t>
+
+std::pair<vector_t, matrix_t>
 read_boundary_conditions()
 {
     vector_t Pset = vector_t::Zero(num_steps);
@@ -84,22 +109,22 @@ make_guess_steady(const matrix_t& Gsnam )
 
     Gguess.setConstant(50);
 
-    Pguess <<   70.000000000000000,
-                70.000000000000000,
-                69.299999999999997,
-                69.299999999999997,
-                68.606999999999999,
-                67.920929999999998,
-                67.241720700000002,
-                67.920929999999998,
-                67.241720700000002,
-                67.241720700000002,
-                66.569303493000007,
-                70.000000000000000,
-                67.241720700000002,
-                67.000000000000000,
-                67.000000000000000;
-    Pguess *= 1E5;
+    Pguess <<      7.000000000000000,
+                    7.000000000000000,
+                    6.930000000000000,
+                    6.930000000000000,
+                    6.860700000000000,
+                    6.792093000000000,
+                    6.724172070000000,
+                    6.792093000000000,
+                    6.724172070000000,
+                    6.724172070000000,
+                    6.656930349300000,
+                    7.000000000000000,
+                    6.724172070000000,
+                    6.700000000000000,
+                    6.700000000000000;
+    Pguess *= 1E6;
 
     vector_t Lguess = Gsnam.col(0);
 
@@ -121,6 +146,271 @@ make_mass_fraction(size_t size, const infrastructure_graph& graph)
 }
 
 
+void
+make_init_graph(infrastructure_graph& g, const vector_t& Pset, const matrix_t& Gsnam)
+{
+    //---------------------------------------------------------------
+    double factor = 1.0;//0.85;
+    //---------------------------------------------------------------
+    std::vector<pair_input_t> user_constraints = {
+                        std::make_pair(P_GREATER_EQUAL, 60E5),
+                        std::make_pair(P_LOWER_EQUAL,   80E5),
+                        std::make_pair(L_GREATER_EQUAL, -300),
+                        std::make_pair(L_LOWER_EQUAL,    -10)};
+    //---------------------------------------------------------------
+    auto station_type_vec = make_stations_type_vector();
+    //---------------------------------------------------------------
+    std::vector<std::unique_ptr<station>> stations(num_nodes);
+
+    for(size_t i = 0 ; i < num_nodes; i++)
+    {   
+        assert(i < station_type_vec.size());
+        assert(i < stations.size());
+
+        switch(station_type_vec[i])
+        {
+            case(station_type::JUNCTION):
+                stations[i] = std::make_unique<junction>();
+                break;
+            case(station_type::REMI_WO_BACKFLOW):
+            {
+                auto remi = make_remi_wo_backflow(Pset, user_constraints,
+                                                     user_constraints);
+                stations[i] = std::make_unique<multiple_states_station>(remi);                
+                break;
+            }
+            case(station_type::INJ_W_PRESS_CONTROL):
+            {
+                std::cout<< " INJ_W_PRESS: Lset"<< std::endl;
+                for(size_t j = 0; j < Gsnam.rows(); j++)
+                    std::cout << Gsnam(j,i) << std::endl;     
+
+                auto inj_station = make_inj_w_pressure(factor, 7500000.0, Gsnam.col(i),
+                                              user_constraints,
+                                              user_constraints);
+                stations[i] = std::make_unique<multiple_states_station>(inj_station);
+                break;
+            }
+            case(station_type::CONSUMPTION_WO_PRESS):
+            {
+                auto consumption = make_consumption_wo_press(Gsnam.col(i), user_constraints);
+                stations[i] = std::make_unique<one_state_station>(consumption);
+                break;
+
+            }
+            case(station_type::OUTLET):
+            {
+                auto exit_station = make_outlet(Gsnam.col(i));
+                stations[i] = std::make_unique<one_state_station>(exit_station);
+                break;
+            }
+            default:
+                throw std::invalid_argument("Station type not found");    
+        }
+    }
+    //---------------------------------------------------------------
+
+    std::vector<vertex_descriptor> vds;
+
+    auto add_vertex = [&](vertex_properties&& vp, const vector_t& x_in, size_t i ) 
+    {
+        vp.gas_mixture = x_in;
+        vp.node_station = std::move(stations[i]);
+
+        auto v = boost::add_vertex(g);
+        g[v] = std::move(vp);
+
+        return v;
+    };
+
+    vector_t  x = vector_t::Zero(21);
+    x(GAS_TYPE::CH4) = 1.0;
+
+    // Read in topology.xlsx, sheet: Nodes
+    //                                           NAME        ID   Pguess       Qset  ? (Maybe Consumption?)  but not store anymore in graph    
+    vds.push_back( add_vertex( vertex_properties("station 0",  0, 70.000000000, -75 ,0.),x , 0));
+    vds.push_back( add_vertex( vertex_properties("station 1",  1, 70.000000000,  20 ,0.),x , 1) );
+    vds.push_back( add_vertex( vertex_properties("station 2",  2, 69.300000000,   0 ,0.),x , 2) );
+    vds.push_back( add_vertex( vertex_properties("station 3",  3, 69.300000000,   0 ,0.),x , 3) );
+    vds.push_back( add_vertex( vertex_properties("station 4",  4, 68.607000000,   0 ,0.),x , 4) );
+    vds.push_back( add_vertex( vertex_properties("station 5",  5, 67.920930000,  20 ,0.),x , 5) );
+    vds.push_back( add_vertex( vertex_properties("station 6",  6, 67.241720700,   0 ,0.),x , 6) );
+    vds.push_back( add_vertex( vertex_properties("station 7",  7, 67.920930000,   0 ,0.),x , 7) );
+    vds.push_back( add_vertex( vertex_properties("station 8",  8, 67.241720700,  50 ,0.),x , 8) );
+    vds.push_back( add_vertex( vertex_properties("station 9",  9, 67.241720700,   0 ,0.),x , 9) );
+    vds.push_back( add_vertex( vertex_properties("station 10",10, 66.569303493,  15 ,0.),x , 10) );
+    vds.push_back( add_vertex( vertex_properties("station 11",11, 70.000000000, -40 ,0.),x , 11) );
+    vds.push_back( add_vertex( vertex_properties("station 12",12, 67.241720700,  10 ,0.),x , 12) );
+    vds.push_back( add_vertex( vertex_properties("station 13",13, 66.569303493, 0.0, 0.),x , 13) );
+    vds.push_back( add_vertex( vertex_properties("station 14",14, 66.569303493, 0.0, 0.),x , 14) );
+
+    using eprop_t = edge_properties;
+
+    // Parameters have to be given: small_network_disma_branches_nonpipe.xlxs
+    std::vector<bool> activate_history ( num_steps, true); 
+    
+    using edge_constraint_t = edge_station::control::constraint_type;
+    using external_t = edge_station::external_type; 
+
+    std::unordered_map<external_t, std::pair<edge_constraint_t, double>>  user_limits; 
+
+    user_limits[external_t::P_OUT_MAX] = std::make_pair(edge_constraint_t::LOWER_EQUAL,   80.E+5);
+    user_limits[external_t::P_IN_MIN]  = std::make_pair(edge_constraint_t::GREATER_EQUAL, 50.E+5);
+    user_limits[external_t::BETA_MAX]  = std::make_pair(edge_constraint_t::LOWER_EQUAL,   2.0);
+    user_limits[external_t::BETA_MIN]  = std::make_pair(edge_constraint_t::GREATER_EQUAL, 1.2);
+    user_limits[external_t::FLUX_MAX]  = std::make_pair(edge_constraint_t::LOWER_EQUAL,   80.0);
+    user_limits[external_t::PWD_NOMINAL] = std::make_pair(edge_constraint_t::LOWER_EQUAL, 10.0);
+    
+    //What should I do if this limits are not given? Should I put this as default? Or deactivate option 
+    user_limits[external_t::P_THRESHOLD_MIN] = std::make_pair(edge_constraint_t::GREATER, -1.E+20);
+    user_limits[external_t::P_THRESHOLD_MAX] = std::make_pair(edge_constraint_t::LOWER, 1.E+20);
+
+    auto efficiency = 0.9;
+    auto ramp_coeff = 0.0;
+    using mode_t = edge_station::control::mode_type;
+    std::vector<mode_t> mode_type_vec = {mode_t::PRESSURE_IN};
+
+    auto comp = edge_station::make_compressor(ramp_coeff,
+                                                    efficiency, 
+                                                    activate_history,
+                                                    mode_type_vec,
+                                                    user_limits);
+
+    std::cout << comp <<std::endl;
+
+    // Read in topology.xlsx, sheet: PIPEs
+    edge_properties ep0  = {edge_type::pipe, 0,  80000,	1.2,	1.20E-05};
+    edge_properties ep1  = {edge_type::pipe, 1,  16000,	0.6,	1.20E-05};
+    edge_properties ep2  = {edge_type::pipe, 2,  40000,	0.8,	1.20E-05};
+    edge_properties ep3  = {edge_type::pipe, 3, 160000,	0.7,	1.20E-05};
+    edge_properties ep4  = {edge_type::pipe, 4, 200000,	0.8,	1.20E-05};
+    edge_properties ep5  = {edge_type::pipe, 5,  24000,	0.6,	1.20E-05};
+    edge_properties ep6  = {edge_type::pipe, 6,  60000,	0.2,	1.20E-05};
+    edge_properties ep7  = {edge_type::pipe, 7,  80000,	0.9,	1.20E-05};
+    edge_properties ep8  = {edge_type::pipe, 8,  64000,	0.7,	1.20E-05};
+    edge_properties ep9  = {edge_type::pipe, 9, 240000,	0.6,	1.20E-05};
+    edge_properties ep10 = {edge_type::pipe,10,  28000,	0.2,	1.20E-05};
+    edge_properties ep11 = {edge_type::pipe,11,  80000,	0.9,	1.20E-05};
+    edge_properties ep12 = {edge_type::pipe,12, 160000,	0.7,	1.20E-05};
+    edge_properties ep13 = {edge_type::pipe,13,  40000,	0.3,	1.20E-05};
+    edge_properties ep14 = {edge_type::pipe,14, 320000,	0.9,	1.20E-05};
+    edge_properties ep15 = {edge_type::compressor,15, 1, 0.2 ,	1.20E-05, comp};
+    edge_properties ep16 = {edge_type::pipe,16,  60000, 0.2,	1.20E-05};
+
+
+    // Read in topology.xlsx, sheet: PIPEs
+    boost::add_edge( vds[	0	], vds[	3	], ep0, g);
+    boost::add_edge( vds[	1	], vds[	2	], ep1, g);
+    boost::add_edge( vds[	2	], vds[	3	], ep2, g);
+    boost::add_edge( vds[	2	], vds[	4	], ep3, g);
+    boost::add_edge( vds[	3	], vds[	4	], ep4, g);
+    boost::add_edge( vds[	4	], vds[	5	], ep5, g);
+    boost::add_edge( vds[	4	], vds[	13	], ep6, g);
+    boost::add_edge( vds[	6	], vds[	4	], ep7, g);
+    boost::add_edge( vds[	7	], vds[	6	], ep8, g);
+    boost::add_edge( vds[	11	], vds[	6	], ep9, g);
+    boost::add_edge( vds[	12	], vds[	7	], ep10, g);
+    boost::add_edge( vds[	8	], vds[	7	], ep11, g);
+    boost::add_edge( vds[	7	], vds[	9	], ep12, g);
+    boost::add_edge( vds[	9	], vds[	10	], ep13, g);
+    boost::add_edge( vds[	3	], vds[	9	], ep14, g);
+    boost::add_edge( vds[	13	], vds[	14	], ep15, g);
+    boost::add_edge( vds[	14	], vds[	7	], ep16, g);
+}
+
+variable
+make_guess_unsteady(const matrix_t& Gsnam)
+{
+    vector_t Gguess(num_pipes), Pguess(num_nodes);
+
+    Pguess <</* 7.000000000000000,   6.952086053520747,   6.963715087477524,
+              6.976886223836662,   6.953982373265999,   6.936503561559128,
+              6.953818900684214,   6.862710129421968,   6.817393691883836,
+              6.901609063012971,   6.314666242105152,   7.583706514628937,
+              5.197436151747834;*/
+            /* Temporal solution until understanding why there are small 
+            differences in the code results => check test_non-pipe_at_nodes
+            */
+                7000000.0,
+                6952086.053520754,
+                6963715.087477531,
+                6976886.223836662,
+                6953982.373266011,
+                6936503.561559141,
+                6953818.900684228,
+                6862710.129421845,
+                6817393.691883702,
+                6901609.063012904,
+                6314666.242104897,
+                7583706.514628936,
+                5197436.151733323;
+                
+    Pguess *= 1e6;
+
+    Gguess <<  75.000000000000000, -20.000000000000000, -27.811646427934370,
+                7.811646427934369,  15.684394159687432,  20.000000000000000,
+                1.135918148126126,  -2.360122439495675, -42.360122439495676,
+               40.000000000000000, -10.000000000000000, -50.000000000000000,
+              -16.503959412378201,  15.000000000000000,  31.503959412378201;
+    vector_t Lguess = Gsnam.row(1);
+
+    return variable(Pguess, Gguess, Lguess); 
+}
+
+
+std::pair<std::vector<double>, std::vector<double>>
+make_reference(variable& guess_unsteady)
+{
+    std::vector<double> ref_sol_unsteady = {6689825.904715838,
+                                            6681553.365209631,
+                                            6688466.308533575,
+                                            6689698.724947638,
+                                            6690387.967752758,
+                                            6678818.878093707,
+                                            6693392.727712549,
+                                            6607500.072127393,
+                                            6541462.432020029,
+                                            6659051.37492536,
+                                            6175980.946977876,
+                                            7500000,
+                                            5549672.589500213,
+                                            4.339917747620353,
+                                            -14.78723050483148,
+                                            -7.528609364865357,
+                                            -3.142642224954374,
+                                            -2.179240479202206,
+                                            15.68166036749584,
+                                            1.052436381983676,
+                                            11.37359735961809,
+                                            -40.18692744914854,
+                                            44.70630625247412,
+                                            -8.036112103250305,
+                                            -59.53594638078679,
+                                            -18.78889725554646,
+                                            13.40415996798448,
+                                            18.88014903025844,
+                                            0,
+                                            15,
+                                            0,
+                                            0,
+                                            0,
+                                            16,
+                                            0,
+                                            0,
+                                            62.5,
+                                            0,
+                                            13.5,
+                                            -44.70630625247412,
+                                            8};
+
+    vector_t vec = guess_unsteady.make_vector();
+
+    std::vector<double> ref_sol_steady(num_nodes*2 + num_pipes);
+    for(size_t i = 0; i< vec.size(); i++)
+        ref_sol_steady[i] = vec(i);
+
+    return std::make_pair(ref_sol_steady, ref_sol_unsteady);
+}
 
 int main()
 {
@@ -152,10 +442,9 @@ int main()
     auto [Pset, Gsnam] = read_boundary_conditions();
     variable guess_std   = make_guess_steady(Gsnam);
     //variable guess_unstd = make_guess_unsteady(Gsnam);
-
+    vector_t dummyZero = vector_t::Zero(num_nodes);
     //---------------------------------------------------------------
 
-    /*
     infrastructure_graph graph;
     make_init_graph(graph, Pset, Gsnam);
 
@@ -163,18 +452,18 @@ int main()
 
     using time_solver_t = time_solver<papay, viscosity_type::Constant>; 
 
-
     time_solver_t ts1(graph, temperature, dummyZero);
     ts1.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);  
-    */
     //ts1.advance(dt, num_steps, tol, y_nodes, y_pipes);
-    //auto sol_unstd  = ts1.solution();
+    vector_t sol_std  = ts1.guess();
 
     //---------------------------------------------------------------
     //auto [ref_std, ref_unstd] = make_reference(guess_unstd);
-    //bool pass =  verify_test("time solver with computed init", sol_unstd, ref_unstd); 
+    //bool pass =  verify_test("time solver with computed init", sol_std, ref_std); 
+
     //std::cout << pass << std::endl; 
 
-    bool pass = true;    
+    bool pass = true;
+
     return !(pass);
 }

@@ -238,6 +238,8 @@ public:
                             int target_num,
                             const variable& var,
                             const vector_t& c2_nodes);
+
+    friend std::ostream& operator<<(std::ostream& ofs, const station& cmp);
 };
 
 
@@ -271,6 +273,7 @@ public:
                     const variable& var,
                     const vector_t& c2_nodes);
 
+    friend std::ostream& operator<<(std::ostream& ofs, const compressor& cmp);
 };
 
 

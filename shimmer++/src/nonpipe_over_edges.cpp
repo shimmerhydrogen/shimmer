@@ -553,6 +553,17 @@ compressor::fill_model( control::mode& m,
 }
 
 
+std::ostream& operator<<(std::ostream& ofs, const compressor& cmp)
+{
+    ofs << " name : " << cmp.name_ << "\n";
+    ofs << " ramp_coeff : " << cmp.ramp_coeff_ << "\n";
+    ofs << " efficiency : " << cmp.efficiency_ << "\n";
+    ofs << " current mode_type : " << cmp.which_mode_type() << "\n";
+
+    return ofs;
+}
+
+
 
 
 std::vector<control::constraint>

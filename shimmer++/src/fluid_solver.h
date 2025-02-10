@@ -72,7 +72,8 @@ public:
     impose_edge_station_model(  const vector_t& c2_nodes,
                                 const vector_t& pressure_nodes,
                                 const vector_t& flux,
-                                std::vector<triplet_t>& triplets_mom,
+                                sparse_matrix_t& sADP,
+                                vector_t& r_scale,
                                 vector_t& rhs_mom);
 
     pair_trip_vec_t

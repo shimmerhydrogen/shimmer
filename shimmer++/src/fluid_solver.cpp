@@ -90,9 +90,11 @@ void
 linearized_fluid_solver::impose_edge_station_model(
                         const vector_t& c2_nodes,
                         const vector_t& nodes_pressure,
-                        const vector_t& flux,
-                        std::vector<triplet_t>& triplets_mom,
+                        const vector_t& flux,                         
+                        sparse_matrix_t& sADP,
+                        vector_t& r_scale,
                         vector_t& rhs_mom)
+
 {
     size_t offset = num_nodes_;
 
@@ -123,9 +125,15 @@ linearized_fluid_solver::impose_edge_station_model(
 
         size_t row = pipe_num + offset;
 
-        triplets_mom.push_back(triplet_t(row, source_num, st.model_c1()));
-        triplets_mom.push_back(triplet_t(row, target_num, st.model_c2()));
-        triplets_mom.push_back(triplet_t(row, row, st.model_c3()));
+        //triplets_mom.push_back(triplet_t(row, source_num, st.model_c1()));
+        //triplets_mom.push_back(triplet_t(row, target_num, st.model_c2()));
+
+        //WARNING: THIS MUST BE DONE IN ANOTHER WAY!!! TEMPORALLY MODIFYING THE SPARSE MATRIX
+        // See Issue #25
+        sADP.coeffRef(pipe_num, source_num) = st.model_c1();
+        sADP.coeffRef(pipe_num, target_num) = st.model_c2();
+
+        r_scale(pipe_num) = st.model_c3();
         rhs_mom(pipe_num) = st.model_rhs();
     }
 
@@ -161,15 +169,16 @@ linearized_fluid_solver::momentum(
     }
 
     vector_t r_scale = r.cwiseQuotient(ADP_p);
+    vector_t rhs_scale = rhs.cwiseQuotient(ADP_p);
+
+    impose_edge_station_model(c2_nodes, nodes_pressure, flux,
+                              sADP,r_scale, rhs_scale);
+
     auto t_sR   = build_triplets( r_scale , num_nodes_, num_nodes_);
     auto t_sADP = build_triplets( sADP,  num_nodes_, 0);
 
     std::vector<triplet_t> triplets =  t_sADP;
     triplets.insert(triplets.begin(), t_sR.begin(), t_sR.end());
-
-    vector_t rhs_scale = rhs.cwiseQuotient(ADP_p);
-
-    impose_edge_station_model(c2_nodes, nodes_pressure, flux, triplets,rhs_scale);
 
     return std::make_pair(triplets, rhs_scale);
 }

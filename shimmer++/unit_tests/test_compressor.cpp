@@ -85,7 +85,7 @@ read_boundary_conditions()
     Pset  *=1E5;
 
     //---------------------------------------------------------------
-    matrix_t Gsnam(num_steps, num_nodes);
+    matrix_t Gsnam(num_nodes, num_steps);
     std::ifstream ifs("../unit_tests/gsnam_compressor.txt");
     if (!ifs.is_open()) 
     {
@@ -93,8 +93,8 @@ read_boundary_conditions()
         exit(1);
     }
 
-    for (size_t icol = 0; icol < num_nodes; icol++)
-        for (size_t irow = 0; irow < num_steps; irow++)
+    for (size_t irow = 0; irow < num_nodes; irow++)
+        for (size_t icol = 0; icol < num_steps; icol++)
             ifs >>  Gsnam(irow, icol);
     ifs.close();
     //---------------------------------------------------------------
@@ -182,10 +182,7 @@ make_init_graph(infrastructure_graph& g, const vector_t& Pset, const matrix_t& G
             case(station_type::INJ_W_PRESS_CONTROL):
             {
                 std::cout<< " INJ_W_PRESS: Lset"<< std::endl;
-                for(size_t j = 0; j < Gsnam.rows(); j++)
-                    std::cout << Gsnam(j,i) << std::endl;     
-
-                auto inj_station = make_inj_w_pressure(factor, 7500000.0, Gsnam.col(i),
+                auto inj_station = make_inj_w_pressure(factor, 7500000.0, Gsnam.row(i),
                                               user_constraints,
                                               user_constraints);
                 stations[i] = std::make_unique<multiple_states_station>(inj_station);
@@ -193,14 +190,14 @@ make_init_graph(infrastructure_graph& g, const vector_t& Pset, const matrix_t& G
             }
             case(station_type::CONSUMPTION_WO_PRESS):
             {
-                auto consumption = make_consumption_wo_press(Gsnam.col(i), user_constraints);
+                auto consumption = make_consumption_wo_press(Gsnam.row(i), user_constraints);
                 stations[i] = std::make_unique<one_state_station>(consumption);
                 break;
 
             }
             case(station_type::OUTLET):
             {
-                auto exit_station = make_outlet(Gsnam.col(i));
+                auto exit_station = make_outlet(Gsnam.row(i));
                 stations[i] = std::make_unique<one_state_station>(exit_station);
                 break;
             }
@@ -352,7 +349,7 @@ make_guess_unsteady(const matrix_t& Gsnam)
                 1.135918148126126,  -2.360122439495675, -42.360122439495676,
                40.000000000000000, -10.000000000000000, -50.000000000000000,
               -16.503959412378201,  15.000000000000000,  31.503959412378201;
-    vector_t Lguess = Gsnam.row(1);
+    vector_t Lguess = Gsnam.col(1);
 
     return variable(Pguess, Gguess, Lguess); 
 }

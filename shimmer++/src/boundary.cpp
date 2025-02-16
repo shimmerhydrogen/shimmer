@@ -109,11 +109,8 @@ bool
 multiple_states_station::check_hard(double p, double l, size_t step)
 {
 
-    if(states_[index_].internal.check(p, l, step)){
-
+    if(states_[index_].internal.check(p, l, step))
         return true;
-    } 
-    switch_state();
 
     std::cout << "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"<< std::endl;
     std::cout << "WARNING HARD: In "<< name_ <<" constraint violated. SWITCH done." << std::endl;
@@ -121,6 +118,8 @@ multiple_states_station::check_hard(double p, double l, size_t step)
                                     << states_[index_].internal.value(step) << std::endl;
     std::cout << " * (press, lrate) : ( " << p <<" , "<< l<< " ) " << std::endl;
     std::cout << "||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||"<< std::endl;
+
+    switch_state();
 
     return false;
 }

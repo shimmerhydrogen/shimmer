@@ -63,18 +63,18 @@ constraint::check(double p, double l, size_t step)
 {
     switch(type_)
     {
-        case L_LOWER_EQUAL:             
-            return (l < (value(step) + 1.e-14));  
-        case L_GREATER_EQUAL:             
-            return (l > (value(step) - 1.e-14));  
+        case L_LOWER_EQUAL:   
+            return (l <= value(step));  
+        case L_GREATER_EQUAL: 
+            return (l >= value(step) );  
         case L_EQUAL:
-            return  (std::abs(l - value(step)) < 1.e-14);
+            return ((std::abs(l - value(step))/value(step)) < 1.e-15);
         case P_LOWER_EQUAL:             
-            return (p < (value(step) + 1.e-14));  
+            return (p < value(step));  
         case P_GREATER_EQUAL:             
-            return (p > (value(step) - 1.e-14));  
+            return (p >= value(step));  
         case P_EQUAL:
-            return (std::abs(p - value(step)) < 1.e-14);
+            return ((std::abs(p - value(step))/value(step)) < 1.e-15);
         default:
             throw std::invalid_argument("Boundary conditions not specified");
     }           
@@ -146,8 +146,8 @@ multiple_states_station::check_soft(double p, double l, size_t step)
 
 
 const constraint & multiple_states_station::boundary(){ 
-    std::cout<< " * index :" << index_ << std::endl;
-    std::cout<< " * states.size :" << states_.size() << std::endl;
+    //std::cout<< " * index :" << index_ << std::endl;
+    //std::cout<< " * states.size :" << states_.size() << std::endl;
 
     return states_[index_].boundary;}
 

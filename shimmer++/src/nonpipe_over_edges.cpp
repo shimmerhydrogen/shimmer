@@ -393,13 +393,14 @@ compressor::control_hard()
     return true;
 }
 
-
+/*
 void
 compressor::activate(size_t step,
                      int source_num,
                      int target_num,
                      const shimmer::variable& var)
 {
+
     // WARNING: control_node set as default as target node
     auto control_num = target_num;
 
@@ -436,6 +437,7 @@ compressor::activate(size_t step,
 
     return;
 }
+*/
 
 double
 compressor::compute_beta(double p_in,

@@ -76,21 +76,54 @@ make_stations_type_vector()
 
 
 
-std::pair<vector_t, matrix_t>
-read_boundary_conditions()
+std::pair<vector_t, vector_t>
+read_pressure_inlet_node_stations()
 {
-    vector_t Pset = vector_t::Zero(num_steps);
+    vector_t Pset_INJ = vector_t::Zero(num_steps);
+    vector_t Pset_REMI = vector_t::Zero(num_steps);
 
-    Pset(0)  = 70.0;
-    Pset(11) = 70.0;
-    Pset  *=1E5;
+    Pset_INJ<<  
+    7.000000000000000e+06,     6.766666666666667e+06,
+    6.533333333333333e+06,     6.300000000000000e+06,
+    6.066666666666667e+06,     5.833333333333334e+06,     
+    5.600000000000000e+06,     5.833333333333334e+06,
+    6.066666666666667e+06,     6.300000000000000e+06,
+    6.533333333333333e+06,     6.766666666666667e+06,
+    7.000000000000000e+06,     7.233333333333333e+06,
+    7.466666666666666e+06,     7.699999999999997e+06,
+    7.933333333333330e+06,     8.166666666666663e+06,
+    8.400000000000000e+06,     8.458333333333332e+06,
+    8.516666666666666e+06,     8.574999999999998e+06,
+    8.633333333333332e+06,     8.691666666666666e+06,
+    8.750000000000000e+06;
 
+    Pset_REMI<< 
+     7.000000000000000e+06,     6.941666666666667e+06,     
+     6.883333333333334e+06,     6.825000000000000e+06,
+     6.766666666666667e+06,     6.708333333333334e+06,
+     6.650000000000000e+06,     6.708333333333333e+06,
+     6.766666666666666e+06,     6.824999999999998e+06,
+     6.883333333333333e+06,     6.941666666666666e+06,
+     7.000000000000000e+06,     7.233333333333333e+06,
+     7.466666666666666e+06,     7.699999999999997e+06,
+     7.933333333333330e+06,     8.166666666666663e+06,
+     8.400000000000000e+06,     8.166666666666666e+06,
+     7.933333333333333e+06,     7.700000000000000e+06,
+     7.466666666666669e+06,     7.233333333333336e+06,
+     7.000000000000000e+06;
+
+     return std::make_pair(Pset_INJ, Pset_REMI);
+}
+
+matrix_t
+read_flux_node_stations()
+{
     //---------------------------------------------------------------
     matrix_t Gsnam(num_nodes, num_steps);
     std::ifstream ifs("../unit_tests/gsnam_compressor.txt");
     if (!ifs.is_open()) 
     {
-        std::cout<< "ERROR: gsnam_non_pipe.txt not open" << std::endl;
+        std::cout<< "ERROR: gsnam_compressor.txt not open" << std::endl;
         exit(1);
     }
 
@@ -100,7 +133,7 @@ read_boundary_conditions()
     ifs.close();
     //---------------------------------------------------------------
 
-    return std::make_pair(Pset, Gsnam);
+    return Gsnam;
 }
 
 variable
@@ -148,7 +181,10 @@ make_mass_fraction(size_t size, const infrastructure_graph& graph)
 
 
 void
-make_init_graph(infrastructure_graph& g, const vector_t& Pset, const matrix_t& Gsnam)
+make_init_graph(infrastructure_graph& g,
+                 const vector_t& Pset_REMI,
+                 const vector_t& Pset_INJ,
+                 const matrix_t& Gsnam)
 {
     //---------------------------------------------------------------
     double factor = 1.0;//0.85;
@@ -175,7 +211,7 @@ make_init_graph(infrastructure_graph& g, const vector_t& Pset, const matrix_t& G
                 break;
             case(station_type::REMI_WO_BACKFLOW):
             {
-                auto remi = make_remi_wo_backflow(Pset, user_constraints,
+                auto remi = make_remi_wo_backflow(Pset_REMI, user_constraints,
                                                      user_constraints);
                 stations[i] = std::make_unique<multiple_states_station>(remi);                
                 break;
@@ -183,7 +219,9 @@ make_init_graph(infrastructure_graph& g, const vector_t& Pset, const matrix_t& G
             case(station_type::INJ_W_PRESS_CONTROL):
             {
                 std::cout<< " INJ_W_PRESS: Lset"<< std::endl;
-                auto inj_station = make_inj_w_pressure(factor, 7500000.0, Gsnam.row(i),
+                // Here Pset_Inj should be given, but in the code Pset=75E5, instead of
+                // the data provided by the files
+                auto inj_station = make_inj_w_pressure(factor, 75.E5, Gsnam.row(i),
                                               user_constraints,
                                               user_constraints);
                 stations[i] = std::make_unique<multiple_states_station>(inj_station);
@@ -329,27 +367,41 @@ make_guess_unsteady(const matrix_t& Gsnam)
             /* Temporal solution until understanding why there are small 
             differences in the code results => check test_non-pipe_at_nodes
             */
-                7000000.0,
-                6952086.053520754,
-                6963715.087477531,
-                6976886.223836662,
-                6953982.373266011,
-                6936503.561559141,
-                6953818.900684228,
-                6862710.129421845,
-                6817393.691883702,
-                6901609.063012904,
-                6314666.242104897,
-                7583706.514628936,
-                5197436.151733323;
-                
-    Pguess *= 1e6;
+     7.000000000000000e+06,
+     6.951352260042983e+06,
+     6.962982653112382e+06,
+     6.976886223836661e+06,
+     6.951292322506930e+06,
+     6.933805989233891e+06,
+     6.951425410985802e+06,
+     6.877996691005643e+06,
+     6.832792658281552e+06,
+     6.909399665140901e+06,
+     6.323261067613857e+06,
+     7.581532847685807e+06,
+     5.218177823376325e+06,
+     5.000000000000000e+06,
+     8.368800804804965e+06;
+    
+    Gguess <<
+     7.500000000000000e+01,
+    -2.000000000000000e+01,
+    -2.863255760560140e+01,
+     8.632557605601399e+00,
+     1.665929687486727e+01,
+     2.000000000000000e+01,
+     7.398478500926114e+00,
+     2.106624020457450e+00,
+    -3.789337597954255e+01,
+     4.000000000000000e+01,
+    -1.000000000000000e+01,
+    -5.000000000000000e+01,
+    -1.470814551953134e+01,
+     1.500000000000000e+01,
+     2.970814551953134e+01,
+     7.398478500926114e+00,
+     7.398478500926114e+00;
 
-    Gguess <<  75.000000000000000, -20.000000000000000, -27.811646427934370,
-                7.811646427934369,  15.684394159687432,  20.000000000000000,
-                1.135918148126126,  -2.360122439495675, -42.360122439495676,
-               40.000000000000000, -10.000000000000000, -50.000000000000000,
-              -16.503959412378201,  15.000000000000000,  31.503959412378201;
     vector_t Lguess = Gsnam.col(1);
 
     return variable(Pguess, Gguess, Lguess); 
@@ -430,30 +482,39 @@ int main()
     size_t num_steps = std::ceil(tfinal/dt);
 
     double temperature = 293.15;
-    double tol = 1e-4;
+    double tol = 1e-6;
 
     double tol_std = 1e-14; 
     double dt_std = 1;
     size_t MAX_ITER=1500;
   
     //---------------------------------------------------------------
-    auto [Pset, Gsnam] = read_boundary_conditions();
+    auto [Pset_INJ, Pset_REMI] = read_pressure_inlet_node_stations();
+    matrix_t Gsnam = read_flux_node_stations();
     variable guess_std   = make_guess_steady(Gsnam);
-    //variable guess_unstd = make_guess_unsteady(Gsnam);
+    variable guess_unstd = make_guess_unsteady(Gsnam);
     vector_t dummyZero = vector_t::Zero(num_nodes);
     //---------------------------------------------------------------
 
     infrastructure_graph graph;
-    make_init_graph(graph, Pset, Gsnam);
+    make_init_graph(graph, Pset_REMI, Pset_INJ, Gsnam);
 
     auto [y_nodes, y_pipes] = make_mass_fraction(num_nodes, graph);
 
     using time_solver_t = time_solver<papay, viscosity_type::Constant>; 
 
     time_solver_t ts1(graph, temperature, dummyZero);
-    ts1.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);  
-    //ts1.advance(dt, num_steps, tol, y_nodes, y_pipes);
+
+    std::cout << std::setprecision(16) << guess_std.make_vector() << std::endl; 
+
+    //ts1.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);  
+    ts1.set_initialization(guess_unstd);   
     vector_t sol_std  = ts1.guess();
+    std::cout << std::setprecision(16)<< sol_std << std::endl; 
+
+    ts1.advance(dt, num_steps, tol, y_nodes, y_pipes);
+    vector_t sol_unstd  = ts1.solution();   
+    std::cout << std::setprecision(16)<< sol_unstd << std::endl; 
 
     //---------------------------------------------------------------
     //auto [ref_std, ref_unstd] = make_reference(guess_unstd);

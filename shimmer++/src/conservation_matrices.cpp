@@ -58,7 +58,6 @@ compute_expS(const vector_t & c2, const infrastructure_graph& g)
     auto edge_range = edges(g);
     for(auto itor = edge_range.first; itor != edge_range.second;itor++,i++)
     {
-        auto pipe = g[*itor];   
         auto node_in  = source(*itor, g);
         auto node_out = target(*itor, g);
         auto s = g[node_out].height - g[node_in].height;
@@ -96,7 +95,7 @@ resistance_inertia( const double & dt, const vector_t & pipes_pressure,
     auto begin = edge_range.first;
     auto end = edge_range.second;
     for(auto itor = begin; itor != end; itor++,i++ ){
-        auto pipe = g[*itor];   
+        const auto& pipe = g[*itor];   
         auto pm = pipes_pressure(i);
         Omega(i) = inertia_resistance(pipe, dt, pm); 
     }
@@ -119,7 +118,7 @@ resistance_friction(const double& temperature,
 
     size_t i = 0;
     for(auto itor = begin; itor != end; itor++,i++ ){
-        auto pipe = g[*itor]; 
+        const auto& pipe = g[*itor]; 
         auto rf = friction_resistance(pipe, temperature, mu(i),c2(i), flux(i));       
         Omega(i) = 2.0 * rf * std::abs(flux(i)); 
     }

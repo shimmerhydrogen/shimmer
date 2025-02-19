@@ -293,7 +293,7 @@ station::activate( size_t step,
 
 
 void
-station::fill_model(control::mode& m,
+edge_station::station::fill_model(control::mode& m,
                     int pipe_num,
                     int source_num,
                     int target_num,
@@ -538,7 +538,8 @@ compressor::fill_model( control::mode& m,
             break;
         }
         case control::mode_type::PRESSURE_IN:
-            m.set_rhs(p_in);
+            //m.set_rhs(p_in);
+            m.set_rhs(m.internal_.value());
             break;
         case control::mode_type::PRESSURE_OUT:
             m.set_rhs(p_out);

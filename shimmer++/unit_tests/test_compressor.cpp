@@ -26,6 +26,7 @@
 #include "../src/infrastructure_graph.h"
 #include "../src/incidence_matrix.h"
 #include "../src/conservation_matrices.h"
+#include "boundary.h"
 #include "verify_test.h"
 #include "MATLAB_GERG_functions.hpp"
 #include "../src/fluid_solver.h"
@@ -291,7 +292,7 @@ make_init_graph(infrastructure_graph& g, const vector_t& Pset, const matrix_t& G
     edge_properties ep12 = {edge_type::pipe,12, 160000,	0.7,	1.20E-05};
     edge_properties ep13 = {edge_type::pipe,13,  40000,	0.3,	1.20E-05};
     edge_properties ep14 = {edge_type::pipe,14, 320000,	0.9,	1.20E-05};
-    edge_properties ep15 = {edge_type::compressor,15, 1, 0.2 ,	1.20E-05, comp};
+    edge_properties ep15 = {edge_type::compressor,15, 1, 0.2 ,	1.20E-05, std::make_shared<edge_station::compressor>(comp)};
     edge_properties ep16 = {edge_type::pipe,16,  60000, 0.2,	1.20E-05};
 
 

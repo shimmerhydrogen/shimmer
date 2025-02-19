@@ -105,10 +105,10 @@ linearized_fluid_solver::impose_edge_station_model(
 
     for (auto itor = begin; itor != end; itor++, idx++)
     {
-        auto pipe = graph_[*itor];
+        auto& pipe = graph_[*itor];
         if (pipe.type == edge_type::pipe) continue;
 
-        auto& st = pipe.pipe_station;
+        const auto& st = pipe.pipe_station;
 
         auto pipe_num = pipe.branch_num;
 
@@ -118,10 +118,15 @@ linearized_fluid_solver::impose_edge_station_model(
         auto source_num = graph_[s].node_num;
         auto target_num = graph_[t].node_num;
 
-        st.fill_model(st.mode_, pipe_num, source_num, target_num, var_, c2_nodes);
-
+        st->fill_model(st->mode_,
+                                      pipe_num,
+                                      source_num,
+                                      target_num,
+                                      var_,
+                                      c2_nodes);
+    
         // Check if values respect limits, otherwise they are modified
-        st.control_hard();
+        st->control_hard();
 
         size_t row = pipe_num + offset;
 
@@ -130,11 +135,11 @@ linearized_fluid_solver::impose_edge_station_model(
 
         //WARNING: THIS MUST BE DONE IN ANOTHER WAY!!! TEMPORALLY MODIFYING THE SPARSE MATRIX
         // See Issue #25
-        sADP.coeffRef(pipe_num, source_num) = st.model_c1();
-        sADP.coeffRef(pipe_num, target_num) = st.model_c2();
+        sADP.coeffRef(pipe_num, source_num) = st->model_c1();
+        sADP.coeffRef(pipe_num, target_num) = st->model_c2();
 
-        r_scale(pipe_num) = st.model_c3();
-        rhs_mom(pipe_num) = st.model_rhs();
+        r_scale(pipe_num) = st->model_c3();
+        rhs_mom(pipe_num) = st->model_rhs();
     }
 
     return;
@@ -283,8 +288,7 @@ bool linearized_fluid_solver::convergence(
     var_.L_rate = sol.tail(num_nodes_);
 /*
     std::cout << "sol: ("<< norm_mass<< " , " << norm_mom << ")" <<  std::endl ;
-    for (int k = 0; k < sol.size(); ++k)
-        std::cout << std::setprecision(16) << sol(k)<< std::endl ;
+    std::cout << std::setprecision(16) << sol<< std::endl ;
     std::cout <<  std::endl ;
 */
 
@@ -433,27 +437,27 @@ linearized_fluid_solver::check_hard_controls(size_t step)
 
     for (auto itor = begin; itor != end; itor++)
     {
-        auto pipe = graph_[*itor];
+        const auto& pipe = graph_[*itor];
 
         if (pipe.type == edge_type::pipe) continue;
 
         auto& st = pipe.pipe_station;
 
-        if (!st.is_on()) continue;
+        if (!st->is_on()) continue;
 
-        auto pipe_num = pipe.branch_num;
+        int pipe_num = pipe.branch_num;
 
         auto s = boost::source(*itor, graph_);
         auto t = boost::target(*itor, graph_);
 
-        auto source_num = graph_[s].node_num;
-        auto target_num = graph_[t].node_num;
-
+        int source_num = graph_[s].node_num;
+        int target_num = graph_[t].node_num;
 
         // =================================================================
         // fill all controls for verification:
-        for (auto& m : st.controls_on)
-            st.fill_model(m, pipe_num, source_num, target_num, var_, c2_nodes_);
+        for (edge_station::control::mode& m : st->controls_on)
+            st->fill_model(m, pipe_num, source_num, target_num, var_, c2_nodes_);
+        
 
         // =================================================================
 
@@ -467,12 +471,12 @@ linearized_fluid_solver::check_hard_controls(size_t step)
         size_t idx = 0;
         bool pass;
 
-        for (const auto& m : st.controls_on)
+        for (const auto& m : st->controls_on)
         {
             pass = m.check_hard();
             if (!pass)
             {
-                st.change_mode_on(idx);
+                st->change_mode_on(idx);
                 break;
             }
             idx++;

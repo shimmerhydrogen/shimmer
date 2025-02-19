@@ -303,9 +303,17 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
                             //const vector_t& flux_ext,
                             const variable& var_guess,
                             const variable& var_time,
-                            equation_of_state *eos)
+                            equation_of_state *eos,                        
+                            size_t at_iteration)
 {
     press_pipes_.resize(num_pipes_);
+
+    std::cout << "---------------------------------------------------"<< std::endl;
+    std::cout << " * Guess "<< std::endl;
+    vector_t myguess = var_guess.make_vector();
+    std::cout << std::setprecision(16) << myguess  <<  std::endl;
+    std::cout << "---------------------------------------------------"<< std::endl;
+    
 
     // Initialization of variables with solution in time n;
     var_.pressure = var_guess.pressure;
@@ -323,9 +331,12 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
     eos->initialization(this);
 
     for(size_t iter = 0; iter <= MAX_ITERS_; iter++)
+    //for(size_t iter = 0; iter <= 16; iter++)
     {
-        std::cout<< "---------------------------------" << std::endl;
-        std::cout<< "Solver at iteration k ..."<< iter << std::endl;
+        std::cout << "---------------------------------------------------"<< std::endl;
+        std::cout<< "Fluid solver at iteration k ..............."<< iter << std::endl;
+        std::cout << "---------------------------------------------------"<< std::endl;
+
 
         press_pipes_ = average(var_.pressure, inc_);
         auto [c2_nodes, c2_pipes] = eos->speed_of_sound(this);
@@ -344,7 +355,9 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
                             << " , " << trip.col() << " , " << trip.value()
                             << " ; " << std::endl ;
         }
+        std::cout << "---------------------------------------------------"<< std::endl;
         */
+
 
         Eigen::SparseLU<sparse_matrix_t> solver;
         solver.compute(LHS);
@@ -370,6 +383,7 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
             exit(1);
         }
 
+
         /*
         std::cout << "LHS : " <<std::endl;
         size_t count = 0;
@@ -382,17 +396,22 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
                             << " ; " << std::endl ;
             }
         }
-
-
-        std::cout << "rhs = "<< std::endl;
-        for (int k = 0; k < rhs.size(); ++k)
-            std::cout << "  " << rhs[k]  <<  std::endl;
-
-        std::cout << " * XXX_k at iter ...."<< iter << std::endl;
-        for (int k = 0; k < sol.size(); ++k)
-            std::cout << "  " << sol[k]  <<  std::endl;
         */
-        std::cout<< "Solver at iteration k ..."<< iter << std::endl;
+
+        std::string str_iter =  std::to_string(at_iteration); 
+        std::string str_step =  std::to_string(at_step_); 
+        std::string filename_rhs = "rhs_t" + str_step + "_it" + str_iter + ".txt";
+        std::string filename_sol = "sol_t" + str_step + "_it" + str_iter + ".txt";
+
+        std::ofstream rfs (filename_rhs, std::ios::app); 
+        if(!rfs.is_open())
+            throw  std::runtime_error("ERROR: RHS file not opened");
+        rfs << "  "<< std::setprecision(16) << rhs.transpose()  <<  std::endl;
+
+        std::ofstream sfs (filename_sol, std::ios::app); 
+        if(!sfs.is_open())
+            throw  std::runtime_error("ERROR: SOLUTION file not opened");
+        sfs << "  "<< std::setprecision(16) << sol.transpose()  <<  std::endl;
 
         if (convergence(sol))
         {

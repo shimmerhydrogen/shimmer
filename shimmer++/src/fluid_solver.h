@@ -106,8 +106,9 @@ public:
         //const vector_t& flux_ext,
         const variable& var_guess,
         const variable& var_time,
-        equation_of_state *eos
-        );
+        equation_of_state *eos,
+        size_t at_iteration = 0);
+
     bool check_hard_constraints(size_t step);
     void check_soft_constraints(size_t step);
     bool check_constraints(size_t step);

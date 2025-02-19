@@ -243,7 +243,7 @@ public:
 };
 
 
-class compressor : public station
+class compressor : public edge_station::station
 {
     double ramp_coeff_;
     double efficiency_;
@@ -258,11 +258,12 @@ public:
 
     bool control_hard();
 
-    void activate(  size_t step,
+    /*void activate(  size_t step,
                     int source_num,
                     int target_num,
                     const variable& var);
-
+    */
+    
     double compute_beta(double pressure_in,
                         double pressure_out);
 

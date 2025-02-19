@@ -145,7 +145,11 @@ public:
             ofs.close();
 
             std::cout<<"========================================================"<< std::endl;
+            std::cout<<"========================================================"<< std::endl;
+            std::cout<<"========================================================"<< std::endl;
             std::cout << "Solving at time ...."<< it <<std::endl;
+            std::cout<<"========================================================"<< std::endl;
+            std::cout<<"========================================================"<< std::endl;
             std::cout<<"========================================================"<< std::endl;
 
             pipe_stations_activation(it, var_);
@@ -158,9 +162,11 @@ public:
                 ofs << " * Iteration it ..."<<ic<< std::endl;
                 ofs.close();
 
-                std::cout<<"***************************************************"<< std::endl;
-                std::cout << " Iteration it ..."<<ic<< " ... at time "<< it << std::endl;
-                std::cout<<"***************************************************"<< std::endl;
+                std::cout<<"****************************************************************"<< std::endl;
+                std::cout<<"****************************************************************"<< std::endl;
+                std::cout << " Iteration CONSTRAINTS it ..............."<<ic<< " ... at time "<< it << std::endl;
+                std::cout<<"****************************************************************"<< std::endl;
+                std::cout<<"****************************************************************"<< std::endl;
 
                 EQ_OF_STATE eos;
                 eos.compute_molar_mass(y_nodes, y_pipes);
@@ -169,19 +175,31 @@ public:
                 auto mu = viscosity<viscosity_type>(temperature_, graph_);
 
                 linearized_fluid_solver lfs(it, unsteady, tol, dt, temperature_, mu, inc_, graph_);
-                lfs.run(area_pipes_, var_guess_, var_, &eos);
+                lfs.run(area_pipes_, var_guess_, var_, &eos, ic);
+
                 if(lfs.check_constraints(it) & lfs.check_controls(it))
                 {
                     std::cout<< "++++++++++++++++++**** MODIFIED VARIABLE ****++++++++++++++++++++++ " << std::endl;
                     var_ =  lfs.get_variable();
+
+                    std::cout<< "VARIABLE : \n";
+                    std::cout<<  var_.make_vector() << std::endl;
+                    
                     break;
                 }
+                std::cout<< "VARIABLE : \n";
+                std::cout<<  lfs.get_variable().make_vector() << std::endl;
+                
+               // if( ic == 1)
+               //     exit(1);
             }
 
             if(ic == MAX_CONSTRAINT_ITER)
                 std::cout << "ERROR: FAILURE to apply HARD constraints. Max number of iterations has been reached.";
 
             var_in_time.row(it) =  var_.make_vector();
+            
+            //exit(1);
 
             //var_guess_ = var_;
         }

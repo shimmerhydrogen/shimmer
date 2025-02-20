@@ -68,8 +68,8 @@ set(SHIMMER_SOURCES
     src/conservation_matrices.cpp src/incidence_matrix.cpp
     src/matrix_manipulations.cpp src/pipe_calculator.cpp src/matlab_manip.cpp
     src/fluid_solver.cpp src/nonpipe_over_edges.cpp
-    src/variable.cpp src/boundary.cpp  src/sqlite.cpp src/sqlite_entry_p_reg.cpp
-    src/sqlite_entry_l_reg.cpp src/sqlite_exit_l_reg.cpp
+    src/variable.cpp src/boundary.cpp  src/sqlite/sqlite.cpp src/sqlite/sqlite_entry_p_reg.cpp
+    src/sqlite/sqlite_entry_l_reg.cpp src/sqlite/sqlite_exit_l_reg.cpp
 )
 
 

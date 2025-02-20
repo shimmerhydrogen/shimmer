@@ -9,17 +9,21 @@ PRAGMA foreign_keys = ON;
 --  t_descr:    description for this type of station
 
 create table station_types (
-    t_type      INTEGER,
-    t_descr     TEXT,
+    t_type          INTEGER,
+    t_descr         TEXT NOT NULL,
+    t_limits_table  TEXT,
+    t_profile_table TEXT,
+
     PRIMARY KEY(t_type)
 );
 
 -- Populate with the known station types
-insert into station_types values (0, 'ReMi station w/o backflow');
-insert into station_types values (1, 'Injection station w/ pressure control');
-insert into station_types values (2, 'Outlet station');
-insert into station_types values (3, 'Junction');
-insert into station_types values (4, 'Consumption point w/o pressure control');
+insert into station_types values
+    (0, 'ReMi station w/o backflow', 'limits_remi_wo', 'profiles_remi_wo'),
+    (1, 'Injection station w/ pressure control', 'limits_injection_w', 'profiles_injection_w'),
+    (2, 'Outlet station', NULL, NULL),
+    (3, 'Junction', NULL, NULL),
+    (4, 'Consumption point w/o pressure control', 'limits_conspoint_wo', 'profiles_conspoint_wo');
 
 -----------------------------------------------------------------------
 -----------------------------------------------------------------------
@@ -152,10 +156,10 @@ create table profiles_injection_w (
 
 create table limits_conspoint_wo (
     s_number    INTEGER UNIQUE,
-    prf_Lmin    REAL DEFAULT 0.0 NOT NULL,
-    prf_Lmax    REAL DEFAULT 0.0 NOT NULL,
-    prf_Pmin    REAL DEFAULT 0.0 NOT NULL,
-    prf_Pmax    REAL DEFAULT 0.0 NOT NULL,
+    lim_Lmin    REAL DEFAULT 0.0 NOT NULL,
+    lim_Lmax    REAL DEFAULT 0.0 NOT NULL,
+    lim_Pmin    REAL DEFAULT 0.0 NOT NULL,
+    lim_Pmax    REAL DEFAULT 0.0 NOT NULL,
 
     FOREIGN KEY (s_number)
         REFERENCES stations(s_number)
@@ -211,14 +215,25 @@ create table pipelines (
         REFERENCES pipeline_types(p_type)
 );
 
--- Pipeline parameters as length, diameter and so on.
-create table pipeline_parameters (
+-- Pipe parameters as length, diameter and so on.
+create table pipe_parameters (
     p_name      TEXT NOT NULL,
     s_from      INTEGER,
     s_to        INTEGER,
-    length      REAL NOT NULL,
-    diameter    REAL NOT NULL,
-    epsi        REAL NOT NULL,
+    diameter    REAL DEFAULT 0.0 NOT NULL,
+    length      REAL DEFAULT 0.0 NOT NULL,
+    roughness   REAL DEFAULT 0.0 NOT NULL,
+
+    -- The referenced pipeline must exist
+    FOREIGN KEY (p_name, s_from, s_to)
+        REFERENCES pipelines(p_name, s_from, s_to)
+);
+
+-- Compressor parameters as length, diameter and so on.
+create table compressor_parameters (
+    p_name      TEXT NOT NULL,
+    s_from      INTEGER,
+    s_to        INTEGER,
 
     -- The referenced pipeline must exist
     FOREIGN KEY (p_name, s_from, s_to)

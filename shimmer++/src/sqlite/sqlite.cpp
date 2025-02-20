@@ -113,13 +113,13 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
         }
 
         case(station_type_x::REMI_WO_BACKFLOW): {
-            auto itor = lookup_station_setting(settings_remi_wo, vp.i_snum);
-            if ( itor == settings_remi_wo.end() ) {
+            auto itor = lookup_station_setting(settings_entry_p_reg, vp.i_snum);
+            if ( itor == settings_entry_p_reg.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
                 std::cout << " (ReMi w/o pressure control)" << std::endl;
                 return 1;
             }
-            const setting_remi_wo &setting = *itor;
+            const setting_entry_p_reg &setting = *itor;
             assert((setting.u_snum == vp.u_snum) and (setting.i_snum == vp.i_snum));
 
             auto limits = convert_limits(setting);
@@ -130,49 +130,57 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
         }
             
         case(station_type_x::INJ_W_PRESS_CONTROL): {
-            auto itor = lookup_station_setting(settings_injection_w, vp.i_snum);
-            if ( itor == settings_injection_w.end() ) {
+            auto itor = lookup_station_setting(settings_entry_l_reg, vp.i_snum);
+            if ( itor == settings_entry_l_reg.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
                 std::cout << " (Injection w/ pressure control)" << std::endl;
                 return 1;
             }
-            const setting_injection_w &setting = *itor;
+            const setting_entry_l_reg &setting = *itor;
             assert((setting.u_snum == vp.u_snum) and (setting.i_snum == vp.i_snum));
 
             auto limits = convert_limits(setting);
             auto Pset = convert_Pprof(setting);
+            auto Lset = convert_Lprof(setting);
             auto f = setting.f;
-
-            //auto inj_station = make_inj_w_pressure(1.0, 7500000.0, 1.0,
-            //                                  user_constraints,
-            //                                  user_constraints);
-            //vp.node_station = std::make_unique<multiple_states_station>(inj_station);
+            auto inj_station = make_inj_w_pressure(f, Pset, Lset,
+                                              limits,
+                                              limits);
+            vp.node_station = std::make_unique<multiple_states_station>(inj_station);
             break;
         }
 
         case(station_type_x::CONSUMPTION_WO_PRESS):
         {
-            auto itor = lookup_station_setting(settings_conspoint_wo, vp.i_snum);
-            if ( itor == settings_conspoint_wo.end() ) {
+            auto itor = lookup_station_setting(settings_exit_l_reg, vp.i_snum);
+            if ( itor == settings_exit_l_reg.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
                 std::cout << " (consumption w/o pressure control)" << std::endl;
                 return 1;
             }
-            const setting_conspoint_wo &setting = *itor;
+            const setting_exit_l_reg &setting = *itor;
             assert((setting.u_snum == vp.u_snum) and (setting.i_snum == vp.i_snum));
 
             auto limits = convert_limits(setting);
             auto Lset = convert_Lprof(setting);
-            /* cosa sono i parametri? da dove li prendo? */
-            //auto consumption = make_consumption_wo_press(1.0, user_constraints);
-            //vp.node_station = std::make_unique<one_state_station>(consumption);
+            auto consumption = make_consumption_wo_press(Lset, limits);
+            vp.node_station = std::make_unique<one_state_station>(consumption);
             break;
         }
-
+        
         case(station_type_x::OUTLET):
         {
-            /* cosa sono i parametri? da dove li prendo? */
-            auto exit_station = make_outlet(1.0);
+            auto itor = lookup_station_setting(settings_outlet, vp.i_snum);
+            if ( itor == settings_outlet.end() ) {
+                std::cout << "Warning: No data for station " << vp.u_snum;
+                std::cout << " (Outlet)" << std::endl;
+                return 1;
+            }
+            const setting_outlet &setting = *itor;
+            assert((setting.u_snum == vp.u_snum) and (setting.i_snum == vp.i_snum));
+
+            auto Lset = convert_Lprof(setting);
+            auto exit_station = make_outlet(Lset);
             vp.node_station = std::make_unique<one_state_station>(exit_station);
             break;
         }
@@ -183,11 +191,63 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
     return 0;
 }
 
+std::optional<table_name_pair_t>
+network_database::limits_and_profile_table_names(int stat_type)
+{
+    char *zErrMsg = nullptr;
+    sqlite3_stmt *stmt = nullptr;
+
+    enum class col : int {
+        t_limits_table = 0,
+        t_profile_table = 1
+    };
+
+    std::string q =
+        "SELECT t_limits_table, t_profile_table "
+        "FROM station_types "
+        "WHERE t_type = ?";
+
+    int rc = sqlite3_prepare_v2(db_, q.c_str(), q.length(), &stmt, nullptr);
+    if (rc) {
+        fprintf(stderr, "%s:%d SQL error: %s\n", __FILE__, __LINE__, zErrMsg);
+        sqlite3_free(zErrMsg);
+        return {};
+    }
+
+    rc = sqlite3_bind_int(stmt, 1, stat_type);
+
+    if ( sqlite3_step(stmt) != SQLITE_ROW ) {
+        std::cout << "Invalid station type" << std::endl;
+        return {};
+    }
+    
+    std::string limits_table_name;
+    if ( sqlite3_column_type(stmt, 0) == SQLITE3_TEXT ) {
+        limits_table_name = (const char *) sqlite3_column_text(stmt, +col::t_limits_table);
+    }
+
+    std::string profile_table_name;
+    if ( sqlite3_column_type(stmt, 1) == SQLITE3_TEXT ) {
+        profile_table_name = (const char *) sqlite3_column_text(stmt, +col::t_profile_table);
+    }
+
+    if ( (limits_table_name == "") or (profile_table_name == "") ) {
+        fprintf(stderr, "DB: Invalid table name in 'station_types'\n");
+        return {};
+    }
+
+    rc = sqlite3_clear_bindings(stmt);
+    rc = sqlite3_reset(stmt);
+    rc = sqlite3_finalize(stmt);
+
+    return std::pair(limits_table_name, profile_table_name);
+}
+
 /* Callback for aggregate functions COUNT() and MAX() */
 static int
 af_callback( void *result_vp, int count, char **data, char **columns) {
     int *result_p = (int *)result_vp;
-    *result_p = atoi(data[0]);
+    *result_p = (data[0] != nullptr) ? atoi(data[0]) : 0;
     return 0;
 }
 
@@ -218,6 +278,10 @@ network_database::renumber_stations()
         fprintf(stderr, "%s:%d SQL error: %s\n", __FILE__, __LINE__, zErrMsg);
         sqlite3_free(zErrMsg);
         return 1;
+    }
+
+    if (station_count == 0) {
+        return 0;
     }
 
     /* Resize the mapping arrays */
@@ -346,8 +410,10 @@ network_database::populate_graph(infrastructure_graph& g)
     renumber_stations();
 
     /* Import the data for all the stations */
-    import_remi_wo(settings_remi_wo);
-    import_injection_w(settings_injection_w);
+    //import_outlet(settings_outlet);
+    import_entry_p_reg(settings_entry_p_reg);
+    import_entry_l_reg(settings_entry_l_reg);
+
 
     /* Import the graph */
     import_stations(g);

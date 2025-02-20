@@ -12,6 +12,7 @@
 #include <Eigen/Dense>
 #include "../src/boundary.h"
 #include "../src/nonpipe_over_edges.h"
+#include "network_elements.h"
 
 namespace shimmer
     {
@@ -93,13 +94,6 @@ struct vertex_properties {
         return ofs;
     }
 
-};
-
-enum class edge_type {
-    pipe,
-    compressor,
-    regulator,
-    valve,
 };
 
 struct edge_properties {

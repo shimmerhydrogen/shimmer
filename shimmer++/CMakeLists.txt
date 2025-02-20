@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.29)
+cmake_minimum_required(VERSION 3.25)
 project(shimmer++)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -11,6 +11,14 @@ set(CMAKE_CXX_FLAGS_RELEASENATIVE "-O3 -DNDEBUG -march=native")
 
 option(BUILD_SHIMMER_UNIT_TESTS "Build SHIMMER++ unitary tests" ON)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+######################################################################
+## Compiler reporting: disable deprecation warnings
+option(OPT_DISABLE_DEPRECATION_WARNINGS "Disable deprecation warnings" OFF)
+if(OPT_DISABLE_DEPRECATION_WARNINGS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+endif()
 #######################################################################
 # GERG
 add_subdirectory(deps/gerg)
@@ -60,8 +68,8 @@ set(SHIMMER_SOURCES
     src/conservation_matrices.cpp src/incidence_matrix.cpp
     src/matrix_manipulations.cpp src/pipe_calculator.cpp src/matlab_manip.cpp
     src/fluid_solver.cpp src/nonpipe_over_edges.cpp
-    src/variable.cpp src/boundary.cpp  src/sqlite.cpp src/sqlite_remi_wo.cpp
-    src/sqlite_injection_w.cpp src/sqlite_conspoint_wo.cpp
+    src/variable.cpp src/boundary.cpp  src/sqlite/sqlite.cpp src/sqlite/sqlite_entry_p_reg.cpp
+    src/sqlite/sqlite_entry_l_reg.cpp src/sqlite/sqlite_exit_l_reg.cpp
 )
 
 

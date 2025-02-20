@@ -4,17 +4,45 @@
 
 #include "sqlite.hpp"
 
-/* Database I/O functions for station type 'consumption point w/o pressure control' */
+/* Database I/O functions for station type 'ReMi station w/o backflow' */
 
 namespace shimmer {
+namespace entry_p_reg_priv {
+
+/* Define indices of columns in limits table */
+enum class limits_col : int {
+    s_number = 0,
+    lim_Lmin = 1,
+    lim_Lmax = 2,
+    lim_Pmin = 3,
+    lim_Pmax = 4,
+};
+
+/* Define indices of columns in profile table */
+enum class profile_col : int {
+    s_number = 0,
+    prf_time = 1,
+    prf_Pset = 2
+};
+
+} // namespace entry_p_reg_priv
 
 int
-network_database::import_conspoint_wo(std::vector<setting_conspoint_wo>& settings)
+network_database::import_entry_p_reg(std::vector<setting_entry_p_reg>& settings)
 {
+    using namespace entry_p_reg_priv;
+
+    auto tabnames_opt = limits_and_profile_table_names(0);
+    if ( not tabnames_opt ) {
+        return -1;
+    }
+
+    auto [limits_tab, profile_tab] = tabnames_opt.value();
+
     char *zErrMsg = nullptr;
     sqlite3_stmt *stmt = nullptr;
 
-    std::string qlim = "SELECT * FROM limits_conspoint_wo";
+    std::string qlim = "SELECT * FROM " + limits_tab;
     int rc = sqlite3_prepare_v2(db_, qlim.c_str(), qlim.length(), &stmt, nullptr);
     if (rc) {
         fprintf(stderr, "%s:%d SQL error: %s\n", __FILE__, __LINE__, zErrMsg);
@@ -26,22 +54,22 @@ network_database::import_conspoint_wo(std::vector<setting_conspoint_wo>& setting
 
     /* Import limits for all the stations */
     while (sqlite3_step(stmt) == SQLITE_ROW) {
-        setting_conspoint_wo setting;
-        setting.u_snum = sqlite3_column_int(stmt, 0);
+        setting_entry_p_reg setting;
+        setting.u_snum = sqlite3_column_int(stmt, +limits_col::s_number);
         
         auto i_snum_opt = s_u2i.at(setting.u_snum);
         assert(i_snum_opt && "s_u2i: invalid station number. Inconsistent data in DB?");
         setting.i_snum = i_snum_opt.value();
 
-        setting.Lmin = sqlite3_column_double(stmt, 1);
-        setting.Lmax = sqlite3_column_double(stmt, 2);
-        setting.Pmin = sqlite3_column_double(stmt, 3);
-        setting.Pmax = sqlite3_column_double(stmt, 4);
+        setting.Lmin = sqlite3_column_double(stmt, +limits_col::lim_Lmin);
+        setting.Lmax = sqlite3_column_double(stmt, +limits_col::lim_Lmax);
+        setting.Pmin = sqlite3_column_double(stmt, +limits_col::lim_Pmin);
+        setting.Pmax = sqlite3_column_double(stmt, +limits_col::lim_Pmax);
         settings.push_back( std::move(setting) );
     }
     rc = sqlite3_finalize(stmt);
 
-    std::string qprof = "SELECT * FROM profiles_conspoint_wo WHERE s_number = ?";
+    std::string qprof = "SELECT * FROM " + profile_tab + " WHERE s_number = ?";
     rc = sqlite3_prepare_v2(db_, qlim.c_str(), qlim.length(), &stmt, nullptr);
     if (rc) {
         fprintf(stderr, "%s:%d SQL error: %s\n", __FILE__, __LINE__, zErrMsg);
@@ -55,20 +83,20 @@ network_database::import_conspoint_wo(std::vector<setting_conspoint_wo>& setting
         std::vector<sample> profile;
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             sample s;
-            s.time  = sqlite3_column_double(stmt, 1);
-            s.value = sqlite3_column_double(stmt, 2);
+            s.time  = sqlite3_column_double(stmt, +profile_col::prf_time);
+            s.value = sqlite3_column_double(stmt, +profile_col::prf_Pset);
             profile.push_back(s);
         }
 
         if (profile.size() == 0) {
             std::cout << "Warning: node " << setting.u_snum << " has ";
-            std::cout << "no mass flow profile data defined." << std::endl;
+            std::cout << "no pressure profile data defined." << std::endl;
         }
 
         rc = sqlite3_clear_bindings(stmt);
         rc = sqlite3_reset(stmt);
         std::sort(profile.begin(), profile.end());
-        setting.Lprofile = std::move(profile);
+        setting.Pprofile = std::move(profile);
     }
     
     sqlite3_finalize(stmt);

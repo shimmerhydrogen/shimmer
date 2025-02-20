@@ -1,6 +1,6 @@
 #include <iostream>
 #include "infrastructure_graph.h"
-#include "sqlite.hpp"
+#include "sqlite/sqlite.hpp"
 
 using namespace shimmer;
 

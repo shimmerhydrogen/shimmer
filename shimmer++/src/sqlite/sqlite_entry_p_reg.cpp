@@ -1,7 +1,7 @@
 #include <optional>
 #include <cassert>
 #include <sqlite3.h>
-
+#include "errors.h"
 #include "sqlite.hpp"
 
 /* Database I/O functions for station type 'ReMi station w/o backflow' */
@@ -34,7 +34,8 @@ network_database::import_entry_p_reg(std::vector<setting_entry_p_reg>& settings)
 
     auto tabnames_opt = limits_and_profile_table_names(0);
     if ( not tabnames_opt ) {
-        return -1;
+        std::cerr << "Shimmer DB: cannot retrieve table names for 'entry_l_reg' station" << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
     }
 
     auto [limits_tab, profile_tab] = tabnames_opt.value();
@@ -45,9 +46,9 @@ network_database::import_entry_p_reg(std::vector<setting_entry_p_reg>& settings)
     std::string qlim = "SELECT * FROM " + limits_tab;
     int rc = sqlite3_prepare_v2(db_, qlim.c_str(), qlim.length(), &stmt, nullptr);
     if (rc) {
-        fprintf(stderr, "%s:%d SQL error: %s\n", __FILE__, __LINE__, zErrMsg);
+        std::cerr << "SQL error on query '" << qlim << "': " << zErrMsg << std::endl;
         sqlite3_free(zErrMsg);
-        return 1;
+        return SHIMMER_DATABASE_PROBLEM;
     }
 
     settings.clear();
@@ -58,9 +59,12 @@ network_database::import_entry_p_reg(std::vector<setting_entry_p_reg>& settings)
         setting.u_snum = sqlite3_column_int(stmt, +limits_col::s_number);
         
         auto i_snum_opt = s_u2i.at(setting.u_snum);
-        assert(i_snum_opt && "s_u2i: invalid station number. Inconsistent data in DB?");
-        setting.i_snum = i_snum_opt.value();
+        if (not i_snum_opt) {
+            std::cerr << "s_u2i: invalid station number. Inconsistent data in DB?" << std::endl;
+            return SHIMMER_DATABASE_PROBLEM;
+        }
 
+        setting.i_snum = i_snum_opt.value();
         setting.Lmin = sqlite3_column_double(stmt, +limits_col::lim_Lmin);
         setting.Lmax = sqlite3_column_double(stmt, +limits_col::lim_Lmax);
         setting.Pmin = sqlite3_column_double(stmt, +limits_col::lim_Pmin);
@@ -72,9 +76,9 @@ network_database::import_entry_p_reg(std::vector<setting_entry_p_reg>& settings)
     std::string qprof = "SELECT * FROM " + profile_tab + " WHERE s_number = ?";
     rc = sqlite3_prepare_v2(db_, qlim.c_str(), qlim.length(), &stmt, nullptr);
     if (rc) {
-        fprintf(stderr, "%s:%d SQL error: %s\n", __FILE__, __LINE__, zErrMsg);
+        std::cerr << "SQL error on query '" << qprof << "': " << zErrMsg << std::endl;
         sqlite3_free(zErrMsg);
-        return 1;
+        return SHIMMER_DATABASE_PROBLEM;
     }
 
     /* Import profiles for all the stations */
@@ -101,7 +105,7 @@ network_database::import_entry_p_reg(std::vector<setting_entry_p_reg>& settings)
     
     sqlite3_finalize(stmt);
     std::sort(settings.begin(), settings.end());
-    return 0;
+    return SHIMMER_SUCCESS;
 }
 
 } // namespace shimmer

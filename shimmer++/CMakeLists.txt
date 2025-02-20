@@ -13,6 +13,12 @@ option(BUILD_SHIMMER_UNIT_TESTS "Build SHIMMER++ unitary tests" ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+######################################################################
+## Compiler reporting: disable deprecation warnings
+option(OPT_DISABLE_DEPRECATION_WARNINGS "Disable deprecation warnings" OFF)
+if(OPT_DISABLE_DEPRECATION_WARNINGS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+endif()
 #######################################################################
 # GERG
 add_subdirectory(deps/gerg)
@@ -62,7 +68,7 @@ set(SHIMMER_SOURCES
     src/conservation_matrices.cpp src/incidence_matrix.cpp
     src/matrix_manipulations.cpp src/pipe_calculator.cpp src/matlab_manip.cpp
     src/fluid_solver.cpp src/nonpipe_over_edges.cpp
-    src/variable.cpp src/boundary.cpp  src/sqlite.cpp src/sqlite_remi_wo.cpp
+    src/variable.cpp src/boundary.cpp  src/sqlite.cpp src/sqlite_entry_p_reg.cpp
     src/sqlite_injection_w.cpp src/sqlite_conspoint_wo.cpp
 )
 

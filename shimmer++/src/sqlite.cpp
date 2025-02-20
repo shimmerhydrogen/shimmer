@@ -113,13 +113,13 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
         }
 
         case(station_type_x::REMI_WO_BACKFLOW): {
-            auto itor = lookup_station_setting(settings_remi_wo, vp.i_snum);
-            if ( itor == settings_remi_wo.end() ) {
+            auto itor = lookup_station_setting(settings_entry_p_reg, vp.i_snum);
+            if ( itor == settings_entry_p_reg.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
                 std::cout << " (ReMi w/o pressure control)" << std::endl;
                 return 1;
             }
-            const setting_remi_wo &setting = *itor;
+            const setting_entry_p_reg &setting = *itor;
             assert((setting.u_snum == vp.u_snum) and (setting.i_snum == vp.i_snum));
 
             auto limits = convert_limits(setting);
@@ -410,7 +410,7 @@ network_database::populate_graph(infrastructure_graph& g)
 
     /* Import the data for all the stations */
     //import_outlet(settings_outlet);
-    import_remi_wo(settings_remi_wo);
+    import_entry_p_reg(settings_entry_p_reg);
     import_injection_w(settings_injection_w);
 
 

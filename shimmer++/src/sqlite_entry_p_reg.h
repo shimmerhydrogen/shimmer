@@ -5,7 +5,7 @@
 
 namespace shimmer {
 
-struct setting_remi_wo {
+struct setting_entry_p_reg {
     int     u_snum;     // User number of the station
     int     i_snum;     // Internal number of the station
     double  Lmin;       // Minimum mass flow rate
@@ -15,13 +15,13 @@ struct setting_remi_wo {
 
     std::vector<sample> Pprofile;
 
-    bool operator<(const setting_remi_wo& other) {
+    bool operator<(const setting_entry_p_reg& other) {
         return i_snum < other.i_snum;
     }
 };
 
 inline std::ostream&
-operator<<(std::ostream& os, const setting_remi_wo& s) {
+operator<<(std::ostream& os, const setting_entry_p_reg& s) {
     os << "ReMi w/o backflow - unum: " << s.u_snum << ", inum: " << s.i_snum << " - ";
     os << "Lmin = " << s.Lmin << ", Lmax = " << s.Lmax << ", Pmin = " << s.Pmin;
     os << ", Pmax = " << s.Pmax << ", profile samples: " << s.Pprofile.size();

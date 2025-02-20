@@ -6,7 +6,7 @@
 
 namespace shimmer {
 
-struct setting_injection_w {
+struct setting_entry_l_reg {
     int     u_snum;     // User number of the station
     int     i_snum;     // Internal number of the station
     double  Lmin;       // Minimum mass flow rate
@@ -18,14 +18,14 @@ struct setting_injection_w {
     std::vector<sample> Pprofile;
     std::vector<sample> Lprofile;
 
-    bool operator<(const setting_injection_w& other) {
+    bool operator<(const setting_entry_l_reg& other) {
         return i_snum < other.i_snum;
     }
 };
 
 inline std::ostream&
-operator<<(std::ostream& os, const setting_injection_w& s) {
-    os << "ReMi w/o backflow - unum: " << s.u_snum << ", inum: " << s.i_snum << " - ";
+operator<<(std::ostream& os, const setting_entry_l_reg& s) {
+    os << "Injection w/ press. control - unum: " << s.u_snum << ", inum: " << s.i_snum << " - ";
     os << "Lmin = " << s.Lmin << ", Lmax = " << s.Lmax << ", Pmin = " << s.Pmin;
     os << ", Pmax = " << s.Pmax << ", scale = " << s.f << ", profile samples: ";
     os << s.Pprofile.size();

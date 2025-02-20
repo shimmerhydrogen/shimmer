@@ -8,7 +8,7 @@
 
 namespace shimmer {
 
-namespace injection_w {
+namespace entry_l_reg {
 
 /* Define indices of columns in limits table */
 enum class limits_col : int {
@@ -27,12 +27,12 @@ enum class profile_col : int {
     prf_Pset = 2
 };
 
-} // namespace injection_w
+} // namespace entry_l_reg
 
 int
-network_database::import_injection_w(std::vector<setting_injection_w>& settings)
+network_database::import_entry_l_reg(std::vector<setting_entry_l_reg>& settings)
 {
-    using namespace injection_w;
+    using namespace entry_l_reg;
 
     auto tabnames_opt = limits_and_profile_table_names(0);
     if ( not tabnames_opt ) {
@@ -54,7 +54,7 @@ network_database::import_injection_w(std::vector<setting_injection_w>& settings)
 
     /* Import limits for all the stations */
     while (sqlite3_step(stmt) == SQLITE_ROW) {
-        setting_injection_w setting;
+        setting_entry_l_reg setting;
         setting.u_snum = sqlite3_column_int(stmt, +limits_col::s_number);
         
         auto i_snum_opt = s_u2i.at(setting.u_snum);

@@ -9,9 +9,9 @@
 
 #if 0
 enum station_type {
-    entry_p_reg = 1,    /* ReMi w/o backflow */
-    entry_l_reg = 2,    /* Injection w/ pressure control */
-    exit_l_reg = 3      /* Consumption point w/o pressure control */
+    ENTRY_P_REG = 1,    /* ReMi w/o backflow */
+    ENTRY_L_REG = 2,    /* Injection w/ pressure control */
+    EXIT_L_REG  = 3     /* Consumption point w/o pressure control */
 };
 #endif
 
@@ -19,6 +19,7 @@ enum pipe_type {
 
 };
 
+/* this must become pipe_type */
 enum class edge_type {
     pipe,
     compressor,

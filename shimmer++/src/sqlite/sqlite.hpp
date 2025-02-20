@@ -54,9 +54,9 @@ class network_database {
     std::vector<setting_exit_l_reg>     settings_exit_l_reg;
     /* END I have the impression that this stuff does not belong here */
 
-    int import_stations(infrastructure_graph& g);
-    int import_station_parameters(infrastructure_graph& g);
-    int import_pipelines(infrastructure_graph& g);
+    int import_stations(infrastructure_graph&);
+    int import_station_parameters(infrastructure_graph&);
+    int import_pipelines(infrastructure_graph&);
     int renumber_stations();
 
     int import_outlet(std::vector<setting_outlet>&);

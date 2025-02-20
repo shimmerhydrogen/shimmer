@@ -5,7 +5,7 @@
 
 namespace shimmer {
 
-struct setting_conspoint_wo {
+struct setting_exit_l_reg {
     int     u_snum;     // User number of the station
     int     i_snum;     // Internal number of the station
     double  Lmin;       // Minimum mass flow rate
@@ -15,13 +15,13 @@ struct setting_conspoint_wo {
 
     std::vector<sample> Lprofile;
 
-    bool operator<(const setting_conspoint_wo& other) {
+    bool operator<(const setting_exit_l_reg& other) {
         return i_snum < other.i_snum;
     }
 };
 
 inline std::ostream&
-operator<<(std::ostream& os, const setting_conspoint_wo& s) {
+operator<<(std::ostream& os, const setting_exit_l_reg& s) {
     os << "Consumption point w/o P control - unum: " << s.u_snum << ", inum: " << s.i_snum << " - ";
     os << "Lmin = " << s.Lmin << ", Lmax = " << s.Lmax << ", Pmin = " << s.Pmin;
     os << ", Pmax = " << s.Pmax << ", profile samples: " << s.Lprofile.size();

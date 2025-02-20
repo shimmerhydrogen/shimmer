@@ -130,13 +130,13 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
         }
             
         case(station_type_x::INJ_W_PRESS_CONTROL): {
-            auto itor = lookup_station_setting(settings_injection_w, vp.i_snum);
-            if ( itor == settings_injection_w.end() ) {
+            auto itor = lookup_station_setting(settings_entry_l_reg, vp.i_snum);
+            if ( itor == settings_entry_l_reg.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
                 std::cout << " (Injection w/ pressure control)" << std::endl;
                 return 1;
             }
-            const setting_injection_w &setting = *itor;
+            const setting_entry_l_reg &setting = *itor;
             assert((setting.u_snum == vp.u_snum) and (setting.i_snum == vp.i_snum));
 
             auto limits = convert_limits(setting);
@@ -411,7 +411,7 @@ network_database::populate_graph(infrastructure_graph& g)
     /* Import the data for all the stations */
     //import_outlet(settings_outlet);
     import_entry_p_reg(settings_entry_p_reg);
-    import_injection_w(settings_injection_w);
+    import_entry_l_reg(settings_entry_l_reg);
 
 
     /* Import the graph */

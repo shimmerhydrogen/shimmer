@@ -33,7 +33,7 @@ constexpr auto operator+(T e) {
 #include "sqlite_outlet.h"
 #include "sqlite_entry_p_reg.h"
 #include "sqlite_entry_l_reg.h"
-#include "sqlite_conspoint_wo.h"
+#include "sqlite_exit_l_reg.h"
 
 namespace shimmer {
 
@@ -49,10 +49,9 @@ class network_database {
     std::vector<vertex_descriptor>                  s_i2vd;
 
     std::vector<setting_outlet>         settings_outlet;
-    std::vector<setting_entry_p_reg>        settings_entry_p_reg;
+    std::vector<setting_entry_p_reg>    settings_entry_p_reg;
     std::vector<setting_entry_l_reg>    settings_entry_l_reg;
-    std::vector<setting_conspoint_wo>   settings_conspoint_wo;
-
+    std::vector<setting_exit_l_reg>     settings_exit_l_reg;
     /* END I have the impression that this stuff does not belong here */
 
     int import_stations(infrastructure_graph& g);
@@ -60,11 +59,10 @@ class network_database {
     int import_pipelines(infrastructure_graph& g);
     int renumber_stations();
 
-
     int import_outlet(std::vector<setting_outlet>&);
     int import_entry_p_reg(std::vector<setting_entry_p_reg>&);
     int import_entry_l_reg(std::vector<setting_entry_l_reg>&);
-    int import_conspoint_wo(std::vector<setting_conspoint_wo>&);
+    int import_exit_l_reg(std::vector<setting_exit_l_reg>&);
 
     int populate_type_dependent_station_data(vertex_properties&);
 

@@ -152,13 +152,13 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
 
         case(station_type_x::CONSUMPTION_WO_PRESS):
         {
-            auto itor = lookup_station_setting(settings_conspoint_wo, vp.i_snum);
-            if ( itor == settings_conspoint_wo.end() ) {
+            auto itor = lookup_station_setting(settings_exit_l_reg, vp.i_snum);
+            if ( itor == settings_exit_l_reg.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
                 std::cout << " (consumption w/o pressure control)" << std::endl;
                 return 1;
             }
-            const setting_conspoint_wo &setting = *itor;
+            const setting_exit_l_reg &setting = *itor;
             assert((setting.u_snum == vp.u_snum) and (setting.i_snum == vp.i_snum));
 
             auto limits = convert_limits(setting);
@@ -167,6 +167,7 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
             vp.node_station = std::make_unique<one_state_station>(consumption);
             break;
         }
+        
         case(station_type_x::OUTLET):
         {
             auto itor = lookup_station_setting(settings_outlet, vp.i_snum);

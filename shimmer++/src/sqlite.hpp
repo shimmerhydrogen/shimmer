@@ -31,7 +31,7 @@ constexpr auto operator+(T e) {
 }
 
 #include "sqlite_outlet.h"
-#include "sqlite_remi_wo.h"
+#include "sqlite_entry_p_reg.h"
 #include "sqlite_injection_w.h"
 #include "sqlite_conspoint_wo.h"
 
@@ -49,7 +49,7 @@ class network_database {
     std::vector<vertex_descriptor>                  s_i2vd;
 
     std::vector<setting_outlet>         settings_outlet;
-    std::vector<setting_remi_wo>        settings_remi_wo;
+    std::vector<setting_entry_p_reg>        settings_entry_p_reg;
     std::vector<setting_injection_w>    settings_injection_w;
     std::vector<setting_conspoint_wo>   settings_conspoint_wo;
 
@@ -62,7 +62,7 @@ class network_database {
 
 
     int import_outlet(std::vector<setting_outlet>&);
-    int import_remi_wo(std::vector<setting_remi_wo>&);
+    int import_entry_p_reg(std::vector<setting_entry_p_reg>&);
     int import_injection_w(std::vector<setting_injection_w>&);
     int import_conspoint_wo(std::vector<setting_conspoint_wo>&);
 

@@ -7,7 +7,7 @@
 /* Database I/O functions for station type 'ReMi station w/o backflow' */
 
 namespace shimmer {
-namespace remi_wo_priv {
+namespace entry_p_reg_priv {
 
 /* Define indices of columns in limits table */
 enum class limits_col : int {
@@ -25,12 +25,12 @@ enum class profile_col : int {
     prf_Pset = 2
 };
 
-} // namespace remi_wo_priv
+} // namespace entry_p_reg_priv
 
 int
-network_database::import_remi_wo(std::vector<setting_remi_wo>& settings)
+network_database::import_entry_p_reg(std::vector<setting_entry_p_reg>& settings)
 {
-    using namespace remi_wo_priv;
+    using namespace entry_p_reg_priv;
 
     auto tabnames_opt = limits_and_profile_table_names(0);
     if ( not tabnames_opt ) {
@@ -54,7 +54,7 @@ network_database::import_remi_wo(std::vector<setting_remi_wo>& settings)
 
     /* Import limits for all the stations */
     while (sqlite3_step(stmt) == SQLITE_ROW) {
-        setting_remi_wo setting;
+        setting_entry_p_reg setting;
         setting.u_snum = sqlite3_column_int(stmt, +limits_col::s_number);
         
         auto i_snum_opt = s_u2i.at(setting.u_snum);

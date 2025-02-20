@@ -1,12 +1,8 @@
 #include <iostream>
 #include <cstdio>
 #include "boundary.h"
-
+#include "errors.h"
 #include "sqlite.hpp"
-
-
-
-
 
 namespace shimmer {
 
@@ -25,12 +21,12 @@ network_database::open(const std::string& filename)
     int rc;
     rc = sqlite3_open(filename.c_str(), &db_);
     if(rc) {
-        fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db_));
+        std::cerr << "Can't open database: " << sqlite3_errmsg(db_) << std::endl;
         sqlite3_close(db_);
-        return 1;
+        return SHIMMER_DATABASE_PROBLEM;
     }
 
-    return 0;
+    return SHIMMER_SUCCESS;
 }
 
 network_database::~network_database()
@@ -186,7 +182,8 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
         }
             
         default:
-            throw std::invalid_argument("Invalid station type");  
+            std::cout << "Unhandled station type" << std::endl;
+            return 1;
     }
     return 0;
 }
@@ -209,7 +206,7 @@ network_database::limits_and_profile_table_names(int stat_type)
 
     int rc = sqlite3_prepare_v2(db_, q.c_str(), q.length(), &stmt, nullptr);
     if (rc) {
-        fprintf(stderr, "%s:%d SQL error: %s\n", __FILE__, __LINE__, zErrMsg);
+        std::cerr << "SQL error on query '" << q << "': " << zErrMsg << std::endl;
         sqlite3_free(zErrMsg);
         return {};
     }
@@ -217,7 +214,7 @@ network_database::limits_and_profile_table_names(int stat_type)
     rc = sqlite3_bind_int(stmt, 1, stat_type);
 
     if ( sqlite3_step(stmt) != SQLITE_ROW ) {
-        std::cout << "Invalid station type" << std::endl;
+        std::cerr << "Shimmer DB: Invalid station type " << stat_type << std::endl;
         return {};
     }
     
@@ -232,7 +229,7 @@ network_database::limits_and_profile_table_names(int stat_type)
     }
 
     if ( (limits_table_name == "") or (profile_table_name == "") ) {
-        fprintf(stderr, "DB: Invalid table name in 'station_types'\n");
+        std::cerr << "Shimmer DB: Invalid table name in 'station_types'" << std::endl;
         return {};
     }
 
@@ -265,9 +262,9 @@ network_database::renumber_stations()
     std::string q = "SELECT MAX(s_number) FROM stations";
     int rc = sqlite3_exec(db_, q.c_str(), af_callback, &max_station_number, &zErrMsg);
     if (rc) {
-        fprintf(stderr, "%s:%d SQL error: %s\n", __FILE__, __LINE__, zErrMsg);
+        std::cerr << "SQL error on query '" << q << "': " << zErrMsg << std::endl;
         sqlite3_free(zErrMsg);
-        return 1;
+        return SHIMMER_DATABASE_PROBLEM;
     }
     
     /* Get the number of stations in the database */
@@ -275,13 +272,13 @@ network_database::renumber_stations()
     q = "SELECT COUNT(s_number) FROM stations";
     rc = sqlite3_exec(db_, q.c_str(), af_callback, &station_count, &zErrMsg);
     if (rc) {
-        fprintf(stderr, "%s:%d SQL error: %s\n", __FILE__, __LINE__, zErrMsg);
+        std::cerr << "SQL error on query '" << q << "': " << zErrMsg << std::endl;
         sqlite3_free(zErrMsg);
-        return 1;
+        return SHIMMER_DATABASE_PROBLEM;
     }
 
     if (station_count == 0) {
-        return 0;
+        return SHIMMER_SUCCESS;
     }
 
     /* Resize the mapping arrays */
@@ -293,9 +290,9 @@ network_database::renumber_stations()
     sqlite3_stmt *stmt;
     rc = sqlite3_prepare_v2(db_, q.c_str(), q.length(), &stmt, nullptr);
     if (rc) {
-        fprintf(stderr, "%s:%d SQL error: %s\n", __FILE__, __LINE__, zErrMsg);
+        std::cerr << "SQL error on query '" << q << "': " << zErrMsg << std::endl;
         sqlite3_free(zErrMsg);
-        return 1;
+        return SHIMMER_DATABASE_PROBLEM;
     }
 
     int i_num = 0;
@@ -307,7 +304,7 @@ network_database::renumber_stations()
     }
     
     sqlite3_finalize(stmt);
-    return 0;
+    return SHIMMER_SUCCESS;
 }
 
 int
@@ -320,9 +317,9 @@ network_database::import_stations(infrastructure_graph& g)
     sqlite3_stmt *stmt;
     rc = sqlite3_prepare_v2(db_, zSql.c_str(), zSql.length(), &stmt, nullptr);
     if (rc) {
-        fprintf(stderr, "%s:%d SQL error: %s\n", __FILE__, __LINE__, zErrMsg);
+        std::cerr << "SQL error on query '" << zSql << "': " << zErrMsg << std::endl;
         sqlite3_free(zErrMsg);
-        return 1;
+        return SHIMMER_DATABASE_PROBLEM;
     }
 
     s_u2vd.resize( s_u2i.size() );
@@ -364,7 +361,7 @@ network_database::import_stations(infrastructure_graph& g)
 
     sqlite3_finalize(stmt);
 
-    return 0;
+    return SHIMMER_SUCCESS;
 }
 
 int
@@ -377,9 +374,9 @@ network_database::import_pipelines(infrastructure_graph& g)
     sqlite3_stmt *stmt;
     rc = sqlite3_prepare_v2(db_, zSql.c_str(), zSql.length(), &stmt, nullptr);
     if (rc) {
-        fprintf(stderr, "%s:%d SQL error: %s\n", __FILE__, __LINE__, zErrMsg);
+        std::cerr << "SQL error on query '" << zSql << "': " << zErrMsg << std::endl;
         sqlite3_free(zErrMsg);
-        return 1;
+        return SHIMMER_DATABASE_PROBLEM;
     }
 
     while (sqlite3_step(stmt) != SQLITE_DONE) {
@@ -397,14 +394,16 @@ network_database::import_pipelines(infrastructure_graph& g)
 
     sqlite3_finalize(stmt);
 
-    return 0;
+    return SHIMMER_SUCCESS;
 }
 
 int
 network_database::populate_graph(infrastructure_graph& g)
 {
-    if (!db_)
-        return 1;
+    if (!db_) {
+        std::cerr << "Shimmer DB: database not opened" << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
 
     /* Make the mappings from user numbering to internal numbering */
     renumber_stations();
@@ -419,7 +418,7 @@ network_database::populate_graph(infrastructure_graph& g)
     import_stations(g);
     import_pipelines(g);
 
-    return 0;
+    return SHIMMER_SUCCESS;
 }
 
 } // namespace shimmer

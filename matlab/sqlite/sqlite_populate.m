@@ -7,11 +7,13 @@ dbfile = fullfile(pwd, "../../sqlite/shimmer.db");
 clear_database = 1; % Set to zero to NOT clear database on start
 
 %% create db from schema
-if ~exist(dbfile, 'file')
+[db_exists, is_empty] = sql_exists(dbfile);
+
+if is_empty
     clear_database = 0;
     db_schema = fullfile(pwd, "../../sqlite/shimmer.sql");
 
-    sqlcreate(dbfile, db_schema);
+    sql_create(dbfile, db_schema);
 end
 
 

@@ -1,5 +1,5 @@
 function [] = sql_create(db_path, db_schema)
-% sql_create  Create a db from schema
+% sql_create  Create or fill a db from schema
 %   [] = sql_create(db_path, db_schema) 
 %
 % Arguments:
@@ -7,7 +7,9 @@ function [] = sql_create(db_path, db_schema)
 % - db_schema: the db file schema
 %
 % Note:
-%   if the db in db_path is not empty this function has no effect
+%   if the db does not exists the function creates it and fill it
+%   if the db already exists and is empty the function fill it
+%   if the db already exists and is not empty the function has no effect
 
 [db_exists, is_empty] = sql_exists(db_path);
 

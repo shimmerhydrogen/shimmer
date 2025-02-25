@@ -3,10 +3,24 @@ clear;
 % Open SQLite DB connection. This code assumes that the database is
 % freshly created and empty (sqlite3 shimmer.db < shimmer.sql)
 dbfile = fullfile(pwd, "../../sqlite/shimmer.db");
-conn = sqlite(dbfile);
 
 clear_database = 1; % Set to zero to NOT clear database on start
+
+%% create db from schema
+[db_exists, is_empty] = sql_exists(dbfile);
+
+if is_empty
+    clear_database = 0;
+    db_schema = fullfile(pwd, "../../sqlite/shimmer.sql");
+
+    sql_create(dbfile, db_schema);
+end
+
+
+%% delete db
 if (clear_database == 1)
+    conn = sqlite(dbfile, "connect");
+
     execute(conn, "delete from stations");
     execute(conn, "delete from limits_remi_wo");
     execute(conn, "delete from profiles_remi_wo");
@@ -16,11 +30,15 @@ if (clear_database == 1)
     execute(conn, "delete from profiles_conspoint_wo");
     execute(conn, "delete from pipelines");
     execute(conn, "delete from pipe_parameters");
+
+    close(conn);
 end
 
-station_types_tab = sqlread(conn, "station_types");
+%% fill db with data
 
-%station_types_tab{station_types_tab.t_type == 1, ["t_limits_table", "t_profile_table"] }
+conn = sqlite(dbfile, "connect");
+
+station_types_tab = sqlread(conn, "station_types");
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Define stations. I am doing this using cells, but it can also be done

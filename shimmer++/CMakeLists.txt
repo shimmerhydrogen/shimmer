@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 project(shimmer++)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_DEBUGSANITIZED "-g -fsanitize=address")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
@@ -80,6 +77,11 @@ add_library(shimmer SHARED ${SHIMMER_SOURCES})
 add_library(shimmer::shimmer ALIAS shimmer)
 target_link_libraries(shimmer ${LINK_LIBS})
 target_include_directories(shimmer PUBLIC src)
+set_target_properties(shimmer PROPERTIES
+    LINKER_LANGUAGE CXX
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF)
 
 if (BUILD_SHIMMER_UNIT_TESTS)
     include(CTest)

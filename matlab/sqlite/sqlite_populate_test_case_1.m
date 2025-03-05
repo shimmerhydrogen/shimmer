@@ -44,12 +44,6 @@ if (clear_database == 1)
     close(conn);
 end
 
-%% Station Types
+%% populate db
 
-conn = sqlite(db_path, "connect");
-station_types_tab = sqlread(conn, "station_types");
-close(conn);
-
-%% Stations
-num_stations_converted = sql_populate_stations(db_path, graph);
-assert(num_stations_converted == size(graph.Nodes.Nodes_ID, 1));
+sql_populate_from_graph(db_path, graph);

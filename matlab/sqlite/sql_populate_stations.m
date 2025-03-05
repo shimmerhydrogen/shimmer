@@ -10,8 +10,8 @@ end
 stations = cell(num_nodes, 3);
 for s = 1:num_nodes
     stations{s, 1} = graph.Nodes.Nodes_ID(s);
-    stations{s, 2} = "s01_entry";
-    stations{s, 3} = 0;
+    stations{s, 2} =  ['Station_', num2str(s)];
+    stations{s, 3} = graph.Nodes.Type(s);
 end
 
 stations_tab = cell2table(stations, ...

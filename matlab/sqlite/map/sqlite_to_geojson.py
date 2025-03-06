@@ -13,7 +13,7 @@ from pyproj import Transformer
 transformer = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True) # EU standard
 
 def generate_geojson():
-    conn = sqlite3.connect("/home/geoscore/Desktop/GEO++/shimmer/matlab/sqlite/graphs/test_inrete/test_inrete.db")
+    conn = sqlite3.connect("../graphs/test_inrete/test_inrete.db")
     cur = conn.cursor()
     cur.execute("SELECT s_number, s_name, s_latitude, s_longitude FROM stations")
 

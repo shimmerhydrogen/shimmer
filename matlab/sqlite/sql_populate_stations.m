@@ -13,13 +13,13 @@ altitude_index = 0;
 latitude_index = 0;
 longitude_index = 0;
 
-if isfield(graph.Nodes, 'altitude')
+if isfield(graph.Nodes, 'altitude') && size(graph.Nodes.altitude, 1) == num_nodes
     num_variables = num_variables + 1;
     altitude_index = num_variables;
     stations_tab_variables_name(altitude_index) = 's_height';
 end
 
-if isfield(graph.Nodes, 'coordinates_XY')
+if isfield(graph.Nodes, 'coordinates_XY') && size(graph.Nodes.coordinates_XY, 1) == num_nodes
     num_variables = num_variables + 2;
     latitude_index = num_variables - 1;
     longitude_index = num_variables;

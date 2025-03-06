@@ -77,7 +77,8 @@
 
     
         const osmLayer = new ol.layer.Tile({
-            source: new ol.source.OSM()
+            source: new ol.source.OSM(),
+            layer_name: 'osm'
         });
         
         const nodes_source = new ol.source.Vector({
@@ -86,7 +87,8 @@
         });
         const nodes_layer = new ol.layer.Vector({
             source: nodes_source,
-            style: point_styleFunction
+            style: point_styleFunction,
+            layer_name: 'nodes'
         });
         
         const pipes_source = new ol.source.Vector({
@@ -95,10 +97,10 @@
         });
         const pipes_layer = new ol.layer.Vector({
             source: pipes_source,
-            style: line_styleFunction
+            style: line_styleFunction,
+            layer_name: 'pipes'
         });
 
-        // Map initialization
         const map = new ol.Map({
             target: 'map',
             layers: [osmLayer, pipes_layer, nodes_layer],
@@ -107,6 +109,30 @@
                 zoom: 13
             })
         });
+        
+        map.on('pointermove', function(e) {
+			if (e.dragging) return;
+			var pixel = e.map.getEventPixel(e.originalEvent);
+			var hit = map.hasFeatureAtPixel(e.pixel, {
+				layerFilter: function(layer) {
+				    return layer.get('layer_name') === 'pipes' || layer.get('layer_name') === 'nodes';
+				}
+			});
+			e.map.getTargetElement().style.cursor = hit ? 'pointer' : '';
+		});
+		
+		
+		map.on('click', function(e) {
+			var pixel = e.map.getEventPixel(e.originalEvent);
+
+			var feature = map.forEachFeatureAtPixel(pixel, function(feature) {
+				return feature;
+			});
+		
+			  if (feature) {
+				alert(feature.get('name'));
+			  }
+		});
     </script>
 </body>
 </html>

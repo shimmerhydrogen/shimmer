@@ -19,6 +19,63 @@
     <div id="map"></div>
 
     <script>
+    	var point_style = new ol.style.Style({
+			  image: new ol.style.Circle({
+				  radius: 7,
+				  stroke: new ol.style.Stroke({
+				    color: 'rgba(0,0,0,1.0)',
+				    width: 3,
+				  }),
+				  fill: new ol.style.Fill({
+				    color: 'rgba(255, 51, 51,1.0)'
+				  })
+			  }),
+			  text: new ol.style.Text({
+				  font: 'bold 11px "Open Sans", "Arial Unicode MS", "sans-serif"',
+				  placement: 'point',
+				  overflow: true,
+				  fill: new ol.style.Fill({color: '#fff'}),
+				  stroke: new ol.style.Stroke({color: '#000', width: 2}),
+				  textBaseline: 'top',
+				  textAlign: 'left',
+				  offsetX: 12
+			  }),
+		  });
+
+		var point_styleFunction = function(feature, resolution) {
+		  var text = resolution < 4 ? feature.get('name') : '';
+		  point_style.getText().setText(text);
+		  return point_style;
+		}
+		
+		var line_style = [
+			new ol.style.Style({
+				  stroke: new ol.style.Stroke({
+					color: 'rgba(0,0,0,1.0)',
+					width: 5,
+				  })
+			  }),
+			new ol.style.Style({
+				  stroke: new ol.style.Stroke({
+					color: 'rgba(0,0,250,1.0)',
+					width: 2,
+				  }),
+				  text: new ol.style.Text({
+					  font: 'bold 11px "Open Sans", "Arial Unicode MS", "sans-serif"',
+					  placement: 'line',
+					  fill: new ol.style.Fill({color: '#fff'}),
+					  stroke: new ol.style.Stroke({color: '#000', width: 2}),
+				  }),
+			  })
+			  ];
+
+		var line_styleFunction = function(feature, resolution) {
+		  var text = resolution < 5 ? feature.get('name') : '';
+		  line_style[1].getText().setText(text);
+		  return line_style;
+		}
+
+    
         const osmLayer = new ol.layer.Tile({
             source: new ol.source.OSM()
         });
@@ -29,14 +86,7 @@
         });
         const nodes_layer = new ol.layer.Vector({
             source: nodes_source,
-            style: new ol.style.Style({
-                fill: new ol.style.Fill({ color: 'rgba(255, 51, 51, 0.3)' }),
-                stroke: new ol.style.Stroke({ color: '#ff3333', width: 2 }),
-                image: new ol.style.Circle({
-                    radius: 5,
-                    fill: new ol.style.Fill({ color: '#ff3333' })
-                })
-            })
+            style: point_styleFunction
         });
         
         const pipes_source = new ol.source.Vector({
@@ -45,10 +95,7 @@
         });
         const pipes_layer = new ol.layer.Vector({
             source: pipes_source,
-            style: new ol.style.Style({
-                fill: new ol.style.Fill({ color: 'rgba(0, 102, 204, 0.3)' }),
-                stroke: new ol.style.Stroke({ color: '#0096ff', width: 2 })
-            })
+            style: line_styleFunction
         });
 
         // Map initialization
@@ -56,8 +103,8 @@
             target: 'map',
             layers: [osmLayer, pipes_layer, nodes_layer],
             view: new ol.View({
-                center: ol.proj.fromLonLat([14.305573, 40.853294]), // Change coordinates if needed
-                zoom: 2
+                center: ol.proj.fromLonLat([7.15, 40.075]), // Change coordinates if needed
+                zoom: 13
             })
         });
     </script>

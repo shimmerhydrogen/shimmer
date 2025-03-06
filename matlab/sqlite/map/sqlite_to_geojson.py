@@ -12,15 +12,13 @@ from pyproj import Transformer
 
 transformer = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True) # EU standard
 
-def generate_geojson():
-    conn = sqlite3.connect("../graphs/test_inrete/test_inrete.db")
+def convert_nodes(db_path, features):
+    conn = sqlite3.connect(db_path)
     cur = conn.cursor()
     cur.execute("SELECT s_number, s_name, s_latitude, s_longitude FROM stations")
 
-    features = []
     for row in cur.fetchall():
-        easting, northing = row[2], row[3]  # UTM coordinates
-        lon, lat = transformer.transform(easting, northing)  # Convert to WGS84
+        lon, lat = transformer.transform(row[2], row[3])
         features.append({
             "type": "Feature",
             "properties": {"id": row[0], "name": row[1]},
@@ -29,13 +27,40 @@ def generate_geojson():
 
     conn.close()
 
+def convert_pipes(db_path, features):
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+    cur.execute("SELECT ROW_NUMBER() OVER() AS NoId, P.p_name, S1.s_latitude, S1.s_longitude, S2.s_latitude, S2.s_longitude FROM pipelines AS P LEFT JOIN stations as S1 ON P.s_from = S1.s_number LEFT JOIN stations as S2 ON P.s_to = S2.s_number")
+
+    for row in cur.fetchall():
+        origin_lon, origin_lat = transformer.transform(row[2], row[3])
+        dest_lon, dest_lat = transformer.transform(row[4], row[5])
+        features.append({
+            "type": "Feature",
+            "properties": {"id": row[0], "name": row[1]},
+            "geometry": {"type": "LineString", "coordinates": [[origin_lon, origin_lat],[dest_lon, dest_lat]]}
+        })
+
+    conn.close()
+
+def write_geojson(json_path, features):
     geojson_data = {"type": "FeatureCollection", "features": features}
 
-    with open("./geojson_data.json", "w") as f:
+    with open(json_path, "w") as f:
         json.dump(geojson_data, f)
+    print(json_path + " file generated")
 
-    print("GeoJSON file generated: geojson_data.json")
+def generate_geojson(db_path, json_folder_path):
+    nodes = []
+    convert_nodes(db_path, nodes)
+    write_geojson(json_folder_path + "/nodes.json", nodes)
+
+    pipes = []
+    convert_pipes(db_path, pipes)
+    write_geojson(json_folder_path + "/pipes.json", pipes)
 
 if __name__ == "__main__":
-    generate_geojson()
+    db_path = "../graphs/test_inrete/test_inrete.db"
+    json_path = "."
+    generate_geojson(db_path, json_path)
 

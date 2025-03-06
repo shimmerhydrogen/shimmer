@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenLayers with Local GeoJSON</title>
+    <link rel="stylesheet" href="https://unpkg.com/ol@latest/ol.css">
+    <script src="https://unpkg.com/ol@latest/dist/ol.js"></script>
+    <style>
+        #map {
+            width: 100%;
+            height: 500px;
+        }
+    </style>
+    <link rel="shortcut icon" href="#">
+</head>
+<body>
+    <h2>OpenLayers with OpenStreetMap and Local GeoJSON</h2>
+    <div id="map"></div>
+
+    <script>
+        // OpenStreetMap layer
+        const osmLayer = new ol.layer.Tile({
+            source: new ol.source.OSM()
+        });
+
+        // Vector source for GeoJSON
+        const vectorSource = new ol.source.Vector({
+            format: new ol.format.GeoJSON(),
+            url: './geojson_data.json' // Replace with your local GeoJSON file
+        });
+
+        // Vector layer for GeoJSON
+        const vectorLayer = new ol.layer.Vector({
+            source: vectorSource,
+            style: new ol.style.Style({
+                fill: new ol.style.Fill({ color: 'rgba(0, 150, 255, 0.3)' }),
+                stroke: new ol.style.Stroke({ color: '#0096ff', width: 2 }),
+                image: new ol.style.Circle({
+                    radius: 5,
+                    fill: new ol.style.Fill({ color: '#0096ff' })
+                })
+            })
+        });
+
+        // Map initialization
+        const map = new ol.Map({
+            target: 'map',
+            layers: [osmLayer, vectorLayer],
+            view: new ol.View({
+                center: ol.proj.fromLonLat([0, 0]), // Change coordinates if needed
+                zoom: 2
+            })
+        });
+    </script>
+</body>
+</html>
+

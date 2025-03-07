@@ -39,12 +39,17 @@ end
 pipes_tab = cell2table(pipes, ...
     "VariableNames", pipes_tab_variables_name );
 
+conn = sqlite(db_path, 'connect');
+sqlwrite(conn, "pipelines", pipes_tab);
+close(conn);
+
 
 pipes_parameters_tab_num_variables = 3;
 pipes_parameters_tab_variables_name = ["p_name", "s_from", "s_to"];
 
 length_index = 0;
 diameter_index = 0;
+roug = 0; % EPSI
 
 if isfield(graph.Edges, 'Length') && size(graph.Edges.Length, 1) == num_pipes
     pipes_parameters_tab_num_variables = pipes_parameters_tab_num_variables + 1;

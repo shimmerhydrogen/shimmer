@@ -12,17 +12,18 @@ pipes_tab_variables_name = ["p_name", "s_from", "s_to", "p_type"];
 
 pipes_type = zeros(num_pipes);
 
+% pipes_type(p) = 1; Not implemented - No, resistor not supported yet
+
 for p = 1:num_pipes
     if isfield(graph.Edges, 'PIPE') && size(graph.Edges.PIPE, 1) == num_pipes && graph.Edges.PIPE(p)
         pipes_type(p) = 0;
-    elseif isfield(graph.Edges, 'COMP') && size(graph.Edges.COMP, 1) == num_pipes && graph.Edges.COMP(p)
+    elseif isfield(graph.Edges, 'COMP') && size(graph.Edges.COMP, 1) == num_pipes && graph.Edges.COMP(p) % compressor
         pipes_type(p) = 2;
-    elseif isfield(graph.Edges, 'REDST') && size(graph.Edges.REDST, 1) == num_pipes && graph.Edges.REDST(p)
-        pipes_type(p) = 1;
-    elseif isfield(graph.Edges, 'VALV') && size(graph.Edges.VALV, 1) == num_pipes && graph.Edges.VALV(p)
+    elseif isfield(graph.Edges, 'VALV') && size(graph.Edges.VALV, 1) == num_pipes && graph.Edges.VALV(p) % valve
         pipes_type(p) = 4;
-    elseif isfield(graph.Edges, 'REG') && size(graph.Edges.REG, 1) == num_pipes && graph.Edges.REG(p)
-        pipes_type(p) = 3; % TO ASK
+    elseif isfield(graph.Edges, 'REDST') && size(graph.Edges.REDST, 1) == num_pipes && graph.Edges.REDST(p) % reduction station
+    elseif isfield(graph.Edges, 'REG') && size(graph.Edges.REG, 1) == num_pipes && graph.Edges.REG(p) % regulation station
+        pipes_type(p) = 3;
     else
         pipes_type(p) = 0; % DEFAULT is 0
     end
@@ -49,7 +50,7 @@ pipes_parameters_tab_variables_name = ["p_name", "s_from", "s_to"];
 
 length_index = 0;
 diameter_index = 0;
-roug = 0; % EPSI
+roughness_index = 0; % EPSI
 
 if isfield(graph.Edges, 'Length') && size(graph.Edges.Length, 1) == num_pipes
     pipes_parameters_tab_num_variables = pipes_parameters_tab_num_variables + 1;
@@ -61,6 +62,12 @@ if isfield(graph.Edges, 'Diameter') && size(graph.Edges.Diameter, 1) == num_pipe
     pipes_parameters_tab_num_variables = pipes_parameters_tab_num_variables + 1;
     diameter_index = pipes_parameters_tab_num_variables;
     pipes_parameters_tab_variables_name(diameter_index) = 'diameter';
+end
+
+if isfield(graph.Edges, 'Epsi') && size(graph.Edges.Epsi, 1) == num_pipes
+    pipes_parameters_tab_num_variables = pipes_parameters_tab_num_variables + 1;
+    roughness_index = pipes_parameters_tab_num_variables;
+    pipes_parameters_tab_variables_name(roughness_index) = 'roughness';
 end
 
 pipes_parameters = cell(num_pipes, pipes_parameters_tab_num_variables);
@@ -79,6 +86,12 @@ end
 if diameter_index > 0
     for p = 1:num_pipes
         pipes_parameters{p, diameter_index} = graph.Edges.Diameter(p);
+    end
+end
+
+if roughness_index > 0
+    for p = 1:num_pipes
+        pipes_parameters{p, roughness_index} = graph.Edges.Epsi(p);
     end
 end
 

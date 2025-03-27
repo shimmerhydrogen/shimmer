@@ -27,11 +27,37 @@ if isfield(graph.Nodes, 'coordinates_XY') && size(graph.Nodes.coordinates_XY, 1)
     stations_tab_variables_name(longitude_index) = 's_longitude';
 end
 
+%% Check Station type
+% MATLAB 1 is SQL ReMi station w/o backflow (set pressure)
+% MATLAB 2 is SQL Injection station w/ pressure control (set flow)
+% MATLAB 3 is SQL Outlet station / Consumption point w/o pressure control
+% MATLAB 0 is SQL Junction
+
+%% Boundary conditions
+% MATLAB 1 trovi il valore in graph.Nodes.PRESSURES
+% MATLAB 2/3 trovi il valore in graph.Nodes.G_EXE (G is flow exchanged)
+
+stations_type = zeros(num_nodes);
+for s = 1:num_nodes
+    if graph.Nodes.Type(s) == 1 % ReMi station w/o backflow (set pressure)
+        stations_type(s) = 0;
+    elseif graph.Nodes.Type(s) == 2 % Injection station w/ pressure control (set flow)
+        stations_type(s) = 1;
+    elseif graph.Nodes.Type(s) == 3 % Outlet station / Consumption point w/o pressure control
+        stations_type(s) = 4; % Outlet station not used
+    elseif graph.Nodes.Type(s) == 0 % Junction
+        stations_type(s) = 3;
+    else
+        stations_type(s) = 3; % DEFAULT is Junction
+    end
+end
+
+
 stations = cell(num_nodes, num_variables);
 for s = 1:num_nodes
     stations{s, 1} = graph.Nodes.Nodes_ID(s);
     stations{s, 2} =  ['Station_', num2str(s)];
-    stations{s, 3} = graph.Nodes.Type(s);
+    stations{s, 3} = stations_type(s);
 end
 
 if altitude_index > 0

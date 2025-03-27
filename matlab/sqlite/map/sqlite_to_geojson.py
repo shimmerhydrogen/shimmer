@@ -15,13 +15,13 @@ transformer = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True) # E
 def convert_nodes(db_path, features):
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
-    cur.execute("SELECT s_number, s_name, s_latitude, s_longitude FROM stations")
+    cur.execute("SELECT s_number, s_name, s_latitude, s_longitude, s_height FROM stations")
 
     for row in cur.fetchall():
         lon, lat = transformer.transform(row[2], row[3])
         features.append({
             "type": "Feature",
-            "properties": {"id": row[0], "name": row[1]},
+            "properties": {"id": row[0], "name": row[1], "height": row[4]},
             "geometry": {"type": "Point", "coordinates": [lon, lat]}
         })
 

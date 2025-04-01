@@ -129,12 +129,12 @@ create table limits_injection_w (
 -- Profiles
 --  s_number:   number of the station
 --  prf_time:   relative time of the sample
---  prf_Pset:   pressure setpoint at the specified time
+--  prf_Lset:   mass flow rate setpoint at the specified time
 
 create table profiles_injection_w (
     s_number    INTEGER,
     prf_time    REAL DEFAULT 0.0 NOT NULL,
-    prf_Pset    REAL DEFAULT 0.0 NOT NULL,
+    prf_Lset    REAL DEFAULT 0.0 NOT NULL,
 
     FOREIGN KEY (s_number)
         REFERENCES stations(s_number)
@@ -168,7 +168,7 @@ create table limits_conspoint_wo (
 -- Profiles
 --  s_number:   number of the station
 --  prf_time:   relative time of the sample
---  prf_Pset:   mass flow rate setpoint at the specified time
+--  prf_Pset:   pressure setpoint at the specified time
 
 create table profiles_conspoint_wo (
     s_number    INTEGER,
@@ -239,6 +239,28 @@ create table compressor_parameters (
     FOREIGN KEY (p_name, s_from, s_to)
         REFERENCES pipelines(p_name, s_from, s_to)
 );
+
+-----------------------------------------------------------------------
+-----------------------------------------------------------------------
+create table station_initial_conditions (
+    s_number    INTEGER UNIQUE NOT NULL,
+    init_P      REAL DEFAULT 0.0 NOT NULL,
+    init_L      REAL DEFAULT 0.0 NOT NULL,
+
+    FOREIGN KEY (s_number)
+        REFERENCES stations(s_number),
+);
+
+create table pipe_initial_conditions (
+    p_name      TEXT NOT NULL,
+    s_from      INTEGER,
+    s_to        INTEGER,
+    init_G      REAL DEFAULT 0.0 NOT NULL,
+    
+    FOREIGN KEY (p_name, s_from, s_to)
+        REFERENCES pipelines(p_name, s_from, s_to)
+);
+
 
 -- The gases. Which are the parameters associated to each gas?
 create table gases (

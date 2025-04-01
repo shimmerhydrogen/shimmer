@@ -14,6 +14,33 @@ struct sample {
     }
 };
 
+inline double
+interp(const std::vector<sample>& samples, double time) {
+    if (samples.size() == 0)
+        return 0.0;
+
+    const auto& first = samples.front();
+    if (time < first.time)
+        return first.value;
+
+    const auto& last = samples.back();
+    if (time >= last.time)
+        return last.value;
+
+    for (size_t i = 1; i < samples.size(); i++) {
+        const auto& t0 = samples[i-1].time;
+        const auto& v0 = samples[i-1].value;
+        const auto& t1 = samples[i].time;
+        const auto& v1 = samples[i].value;
+
+        if ( (time >= t0) and (time < t1) ) {
+            return v0 + (time - t0)*(v1-v0)/(t1 - t0);
+        }
+    }
+    
+    __builtin_unreachable();
+}
+
 inline std::ostream&
 operator<<(std::ostream& os, const sample& s) {
     os << "(" << s.time << ", " << s.value << ")";

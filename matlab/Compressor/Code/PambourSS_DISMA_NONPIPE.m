@@ -196,19 +196,20 @@ while res(k)>toll && iter_max<MAX_ITER
           
             if gasNet.Edges.COMP_ctrl.RegType{ccc}==1
                 %PowerControl
-                eta_comp=0.9;
-                kappa=1.4;
-                ck=(kappa-1)/kappa;
-                Ki=ZZb(COMP(ccc))*Tb(COMP(ccc))*RRb(COMP(ccc))/eta_comp;
-                pin=p_k(gasNet.Edges.EndNodes(COMP(ccc),1),k);
-                pout=p_k(gasNet.Edges.EndNodes(COMP(ccc),2),k);
-                beta=pout/pin;
+                eta_comp = 0.9;
+                kappa = 1.4;
+                ck  = (kappa-1)/kappa;
+                Ki  = ZZb(COMP(ccc))*Tb(COMP(ccc))*RRb(COMP(ccc))/eta_comp;
+                pin  = p_k(gasNet.Edges.EndNodes(COMP(ccc),1),k);
+                pout = p_k(gasNet.Edges.EndNodes(COMP(ccc),2),k);
+                beta = pout/pin;
                 % beta=(gasNet.Edges.COMP_ctrl.PWR/G_k(COMP(ccc),k)*ck/Ki+1)^(1/ck)
                 % beta=1.1;
                 c1 = -Ki*G_k(COMP(ccc),k)/pin*beta^ck;
                 c2 =  Ki*G_k(COMP(ccc),k)/pout*beta^ck;
                 c3 = -Ki/ck*(beta^ck-1);
                 d  = gasNet.Edges.COMP_ctrl.PWR{1}; %kW
+
             elseif gasNet.Edges.COMP_ctrl.RegType{ccc}==2
                 %Pout
                 c1=0; c2=1; c3=0; d=gasNet.Edges.COMP_ctrl.p_out{1};
@@ -267,11 +268,13 @@ while res(k)>toll && iter_max<MAX_ITER
 
 
    TN_k=[TN_P; TN_M_k; TN_L];        % full vector of KNOWN TERMs composition  
+   TN_iter(:,iter_max) = TN_k;  
 
     %% LINEAR SOLUTION OF THE LINEARIZED FLUID-DYNAMIC PROBLEM
 
      XXX_k=MATRIX_k\TN_k;
-
+     
+     XXX_iter(:, iter_max) = XXX_k;
     %%     
      p_k(:,k+1)=XXX_k(1:dimn);           % extraction results for nodal pressures
      G_k(:,k+1)=XXX_k(dimn+1:dimn+dimb); % extraction results for pipeline mass flows
@@ -328,15 +331,19 @@ while res(k)>toll && iter_max<MAX_ITER
 
             if gasNet.Edges.COMP_ctrl.RegType{ccc}==1
                 %PowerControl
-                eta_comp=0.9;
-                kappa=1.4;
-                ck=(kappa-1)/kappa;
-                Ki=ZZb(COMP(ccc))*Tb(COMP(ccc))*RRb(COMP(ccc))/eta_comp;COMP_ctrl.p_out{1};
-                pin=p_k(gasNet.Edges.EndNodes(COMP(ccc),1),k);
-                pout=p_k(gasNet.Edges.EndNodes(COMP(ccc),2),k);
-                beta=pout/pin;
+                eta_comp = 0.9;
+                kappa = 1.4;
+                ck    = (kappa-1)/kappa;
+                ZTR  = ZZb(COMP(ccc))*Tb(COMP(ccc))*RRb(COMP(ccc));
+                Ki   = ZTR/eta_comp;
+                pin  = p_k(gasNet.Edges.EndNodes(COMP(ccc),1),k);
+                pout = p_k(gasNet.Edges.EndNodes(COMP(ccc),2),k);
+                beta = pout/pin;
                 % beta=(gasNet.Edges.COMP_ctrl.PWR/G_k(COMP(ccc),k)*ck/Ki+1)^(1/ck);
-                c1=-Ki*G_k(COMP(ccc),k)/pin*beta^ck; c2=Ki*G_k(COMP(ccc),k)/pout*beta^ck; c3=-Ki/ck*(beta^ck-1); d=gasNet.Edges.COMP_ctrl.PWR; %W
+                c1 = -Ki*G_k(COMP(ccc),k)/pin*beta^ck; 
+                c2 =  Ki*G_k(COMP(ccc),k)/pout*beta^ck;
+                c3 = -Ki/ck*(beta^ck-1); 
+                d = gasNet.Edges.COMP_ctrl.PWR{1}; %W
             elseif gasNet.Edges.COMP_ctrl.RegType{ccc}==2
                 %Pout
                 c1=0; c2=1; c3=0; d=gasNet.Edges.COMP_ctrl.p_out{1};
@@ -360,7 +367,7 @@ while res(k)>toll && iter_max<MAX_ITER
       end
     end
 
-    RES_P0(k) = norm([ADP,-R_k,zeros(dimb,dimn)]*XXX_k-TN_M_k)
+    RES_P0(k) = norm([ADP,-R_k,zeros(dimb,dimn)]*XXX_k-TN_M_k);
     % RES_P(k) = norm(ADP(PIPE,:)*p_k(:,k) - (Rf(PIPE).*(abs(G_k(PIPE,k)).*G_k(PIPE,k))+Ri(PIPE).*(G_k(PIPE,k)-G_n(PIPE))));
     %      norm(ADP(:,:)*p_k(:,k) - (Rf(:).*(abs(G_k(:,k)).*G_k(:,k))+Ri(:).*(G_k(:,k)-G_n(:))));
     %      norm(ADP(PIPE,:)*p_k(:,k) - (Rf(PIPE).*(abs(G_k(PIPE,k)).*G_k(PIPE,k))+Ri(PIPE).*(G_k(PIPE,k)-G_n(PIPE))));
@@ -392,7 +399,7 @@ while res(k)>toll && iter_max<MAX_ITER
     RES_M(k)=norm(G_k(:,k)-G_k(:,k-1));
     RES_C(k)=0;   
     k
-    res(k)=max([RES_P(k),RES_M(k),RES_C(k)])
+    res(k)=max([RES_P(k),RES_M(k),RES_C(k)]);
     
     p_kf=p_k(:,k);
     G_kf=G_k(:,k);

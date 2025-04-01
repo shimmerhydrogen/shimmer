@@ -1,5 +1,7 @@
 function [gasNet_Res, pos, BC_change_rec] = PambourTS_DISMA_NONPIPE_revMC(gasNet,Gsnam,P_set,Gguess,Pguess,dt)
-disp('helo')
+disp("===================================================");
+disp('                  TIME SOLVER                     ')
+disp("===================================================");
 time0=cputime;
 toll=1e-4; % 1e-6 iniziale
 %dt=1;
@@ -92,7 +94,9 @@ k=1;
 p_k(:,k)=Pguess;
 G_k(:,k)=Gguess;
 L_k(:,k)=G_ext(:,ii+1);
-
+system_size = 2 * size(Pguess,2) +  size(Gguess,2); 
+XXX_time = zeros(system_size, dimt); 
+XXX_time(:,1) = [Pguess'; Gguess'; G_ext(:,ii+1)]; 
 % G_n=zeros(size(G_k));
 % p_n=zeros(size(p_k));
 G_n=G_k(:,k);
@@ -126,11 +130,14 @@ III(entry_p,entry_p)=zeros(length(entry_p));
 TN_L=G_ext; %default condition (there is already also the one of injection)
 TN_L(entry_p,:)=P_set(entry_p,:);
 
+
 %==================================================================
 % START TIME
 %==================================================================
 for ii=2:dimt
-
+    disp("========================================================");
+    disp(strcat(" Solving at time ..........",int2str(ii-1)));
+    disp("========================================================");
     res(1)=1;
     iter_max=0;
     k=1;
@@ -141,11 +148,18 @@ for ii=2:dimt
     %==================================================================
 
     while FLAG_BC~=0 
+
+
+        disp("****************************************************************");
+        disp(strcat(" Iteration CONSTRAINTS it ...............",int2str(iter_max)," ... at time ", int2str(ii-1)));
+        disp("****************************************************************");
+
+
         res(1)=1;
         iter_max=0;
         k=1;
         XXX_iter = [];
-
+        TN_iter = [];
         %==================================================================
         % START FLUID SOLVER
         %==================================================================
@@ -237,7 +251,7 @@ for ii=2:dimt
                     c1=1; c2=0; c3=0; d=gasNet.Edges.COMP_ctrl.p_in{1};
                 elseif gasNet.Edges.COMP_ctrl.RegType{ccc}==4
                     %beta
-                    c1=-gasNet.Edges.COMP_ctrl.beta; c2=1; c3=0; d=0;
+                    c1=-gasNet.Edges.COMP_ctrl.beta{1}; c2=1; c3=0; d=0;
                 elseif gasNet.Edges.COMP_ctrl.RegType{ccc}==5
                     %Q
                     c1=0; c2=0; c3=-1; d=gasNet.Edges.COMP_ctrl.Q{1};
@@ -264,7 +278,7 @@ for ii=2:dimt
             
             XXX_k = MATRIX_k\TN_k;
             XXX_iter(:,iter_max) = XXX_k;
-
+            TN_iter(:,iter_max) = TN_k;
             %%     
             p_k(:,k+1)=XXX_k(1:dimn);           % extraction results for nodal pressures
             G_k(:,k+1)=XXX_k(dimn+1:dimn+dimb); % extraction results for pipeline mass flows
@@ -310,30 +324,36 @@ for ii=2:dimt
                 
                     if gasNet.Edges.COMP_ctrl.RegType{ccc}==1
                         %PowerControl
-                        eta_comp=0.9;
-                        kappa=1.4;
-                        ck=(kappa-1)/kappa;
-                        Ki=ZZb(COMP(ccc))*Tb(COMP(ccc))*RRb(COMP(ccc))/eta_comp;
-                        pin=p_k(gasNet.Edges.EndNodes(COMP(ccc),1),k);
-                        pout=p_k(gasNet.Edges.EndNodes(COMP(ccc),2),k);
-                        beta=pout/pin;
+                        eta_comp = 0.9;
+                        kappa    = 1.4;
+                        ck  = (kappa-1)/kappa;
+                        Ki  = ZZb(COMP(ccc))*Tb(COMP(ccc))*RRb(COMP(ccc))/eta_comp;
+                        pin = p_k(gasNet.Edges.EndNodes(COMP(ccc),1),k);
+                        pout= p_k(gasNet.Edges.EndNodes(COMP(ccc),2),k);
+                        beta= pout/pin;
                         % beta=(gasNet.Edges.COMP_ctrl.PWR/G_k(COMP(ccc),k)*ck/Ki+1)^(1/ck);
-                        c1=-Ki*G_k(COMP(ccc),k)/pin*beta^ck; 
-                        c2=Ki*G_k(COMP(ccc),k)/pout*beta^ck; 
-                        c3=-Ki/ck*(beta^ck-1); 
-                        d=gasNet.Edges.COMP_ctrl.PWR{1}; %W
+                        c1 = -Ki*G_k(COMP(ccc),k)/pin*beta^ck; 
+                        c2 = Ki*G_k(COMP(ccc),k)/pout*beta^ck; 
+                        c3 = -Ki/ck*(beta^ck-1); 
+                        d  = gasNet.Edges.COMP_ctrl.PWR{1}; %W
+                        
+                        control_name = "pwd";
                     elseif gasNet.Edges.COMP_ctrl.RegType{ccc}==2
                         %Pout
                         c1=0; c2=1; c3=0; d=gasNet.Edges.COMP_ctrl.p_out{1};
+                        control_name = "pout";
                     elseif gasNet.Edges.COMP_ctrl.RegType{ccc}==3
                         %Pin
                         c1=1; c2=0; c3=0; d=gasNet.Edges.COMP_ctrl.p_in{1};
+                        control_name = "pin";
                     elseif gasNet.Edges.COMP_ctrl.RegType{ccc}==4
                         %beta
-                        c1=-gasNet.Edges.COMP_ctrl.beta; c2=1; c3=0; d=0;
+                        c1= -gasNet.Edges.COMP_ctrl.beta{1}; c2=1; c3=0; d=0;
+                        control_name = "beta";
                     elseif gasNet.Edges.COMP_ctrl.RegType{ccc}==5
                         %Q
-                        c1=0; c2=0; c3=-1; d=gasNet.Edges.COMP_ctrl.Q{1};
+                        c1=0; c2=0; c3= -1; d=gasNet.Edges.COMP_ctrl.Q{1};
+                        control_name = "flux";
                     else
             
                     end
@@ -344,7 +364,7 @@ for ii=2:dimt
                 end
             end
             
-            RES_P0(k) = norm([ADP,-R_k,zeros(dimb,dimn)]*XXX_k-TN_M_k)
+            RES_P0(k) = norm([ADP,-R_k,zeros(dimb,dimn)]*XXX_k-TN_M_k);
 
             % CONTINUITY EQUATION
 
@@ -394,6 +414,9 @@ for ii=2:dimt
         
         % check on boundary conditions
         if any(L_k(entry_p,k) > 0 )
+            disp("*******************************************");
+            disp("WARNING: HARD CONSTRAINT violated for REMI");
+            disp("*******************************************");
             FLAG_P(ii) = 1;
             entry_p_change_l = entry_p(find(L_k(entry_p,k)> 0));
             OOnn(entry_p_change_l,entry_p_change_l)= zeros(length(entry_p_change_l));
@@ -405,12 +428,18 @@ for ii=2:dimt
             % entry_p_change_l=zeros(size(entry_p_change_l));
             entry_p_change_l = [];
         else
+            disp("*******************************************");
+            disp(" HARD CONSTRAINT in  REMI............ [PASS]");
+            disp("*******************************************");
+
             FLAG_P(ii) =0;
         end
         
         
-        
         if any(L_k(entry_l,k) > 0) || any(p_kf(entry_l) > 75*1e5) % I assumed 65 as maximum pressure
+            disp("*******************************************");
+            disp("WARNING: HARD CONSTRAINT violated for INJ");
+            disp("*******************************************");
             % p_k(aa,k+1) = gasNet.Nodes.Pset_bc(aa);
             % gasNet.Nodes.Type(aa)==1;
             % ii = ii-1;
@@ -425,6 +454,10 @@ for ii=2:dimt
             % entry_l_change_p=zeros(size(entry_l_change_p));
             entry_l_change_p=[];
         else
+            disp("*******************************************");
+            disp(" HARD CONSTRAINT in  INJ............. [PASS]");
+            disp("*******************************************");
+
             FLAG_L(ii)=0;
         end
         
@@ -460,7 +493,7 @@ for ii=2:dimt
     p_n=p_0(:,ii);
 
 
-
+    XXX_time(:,ii) = XXX_k; 
 end  %% CHIUSURA CICLO TIME
 
 %==================================================================
@@ -488,10 +521,9 @@ end
 % rel_error_Gpipe_perc=max(abs(Gguess_rec(:,end-1)-Gguess_rec(:,end))./Gguess_rec(:,end))*100;%
 % 
 
+save(strcat("../Comparison/var_time_DENERG_", control_name, ".dat"), "XXX_time", "-ascii")
 
-
-
-time=cputime-time0
+time=cputime-time0;
 end
 
 

@@ -257,6 +257,8 @@ create table pipe_initial_conditions (
     s_to        INTEGER,
     init_G      REAL DEFAULT 0.0 NOT NULL,
     
+    PRIMARY KEY (p_name, s_from, s_to),
+
     FOREIGN KEY (p_name, s_from, s_to)
         REFERENCES pipelines(p_name, s_from, s_to)
 );

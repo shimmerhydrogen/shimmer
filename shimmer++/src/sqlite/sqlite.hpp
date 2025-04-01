@@ -5,6 +5,28 @@
 #include "infrastructure_graph.h"
 
 namespace shimmer {
+
+struct station_initial_condition {
+    int     s_number;
+    double  init_P;
+    double  init_L;
+
+    bool operator<(const station_initial_condition& other) const {
+        return s_number < other.s_number;
+    }
+};
+
+struct pipe_initial_condition {
+    int     s_from;
+    int     s_to;
+    double  init_G;
+
+    bool operator<(const pipe_initial_condition& other) const {
+        return (s_from < other.s_from) or
+            (s_from == other.s_from and s_to < other.s_to);
+    }
+};
+
 struct sample {
     double  time;
     double  value;
@@ -79,6 +101,9 @@ class network_database {
     std::vector<setting_entry_p_reg>    settings_entry_p_reg;
     std::vector<setting_entry_l_reg>    settings_entry_l_reg;
     std::vector<setting_exit_l_reg>     settings_exit_l_reg;
+
+    std::vector<station_initial_condition>  sics;
+    std::vector<pipe_initial_condition>     pics;
     /* END I have the impression that this stuff does not belong here */
 
     int import_stations(infrastructure_graph&);
@@ -90,6 +115,9 @@ class network_database {
     int import_entry_p_reg(std::vector<setting_entry_p_reg>&);
     int import_entry_l_reg(std::vector<setting_entry_l_reg>&);
     int import_exit_l_reg(std::vector<setting_exit_l_reg>&);
+
+    int import_station_initial_conditions();
+    int import_pipe_initial_conditions();
 
     int populate_type_dependent_station_data(vertex_properties&);
 

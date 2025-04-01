@@ -365,6 +365,68 @@ network_database::import_stations(infrastructure_graph& g)
 }
 
 int
+network_database::import_station_initial_conditions()
+{
+    int rc;
+    char *zErrMsg = nullptr;
+    std::string zSql = "SELECT * FROM station_initial_conditions";
+
+    sqlite3_stmt *stmt;
+    rc = sqlite3_prepare_v2(db_, zSql.c_str(), zSql.length(), &stmt, nullptr);
+    if (rc) {
+        std::cerr << "SQL error on query '" << zSql << "': " << zErrMsg << std::endl;
+        sqlite3_free(zErrMsg);
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    while (sqlite3_step(stmt) != SQLITE_DONE) {
+        int u_snum = sqlite3_column_int(stmt, 0);
+        int i_snum = s_u2vd.at(u_snum).value();
+        station_initial_condition sic;
+        sic.s_number = i_snum;
+        sic.init_P = sqlite3_column_double(stmt, 1);
+        sic.init_L = sqlite3_column_double(stmt, 2);
+        sics.push_back(sic);
+    }
+
+    sqlite3_finalize(stmt);
+    return SHIMMER_SUCCESS;
+}
+
+int
+network_database::import_pipe_initial_conditions()
+{
+    int rc;
+    char *zErrMsg = nullptr;
+    std::string zSql = "SELECT * FROM pipe_initial_conditions";
+
+    sqlite3_stmt *stmt;
+    rc = sqlite3_prepare_v2(db_, zSql.c_str(), zSql.length(), &stmt, nullptr);
+    if (rc) {
+        std::cerr << "SQL error on query '" << zSql << "': " << zErrMsg << std::endl;
+        sqlite3_free(zErrMsg);
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    while (sqlite3_step(stmt) != SQLITE_DONE) {
+        std::string name = (char *) sqlite3_column_text(stmt, 0);
+        int u_sfrom = sqlite3_column_int(stmt, 1);
+        int i_sfrom = s_u2vd.at(u_sfrom).value();
+        int u_sto = sqlite3_column_int(stmt, 2);
+        int i_sto = s_u2vd.at(u_sto).value();
+
+        pipe_initial_condition pic;
+        pic.s_from = i_sfrom;
+        pic.s_to = i_sto;
+        pic.init_G = sqlite3_column_double(stmt, 3);
+        pics.push_back(pic);
+    }
+
+    sqlite3_finalize(stmt);
+    return SHIMMER_SUCCESS;
+}
+
+int
 network_database::import_pipelines(infrastructure_graph& g)
 {
     int rc;
@@ -386,7 +448,9 @@ network_database::import_pipelines(infrastructure_graph& g)
         auto from_vtx = s_u2vd.at(from_un).value();
         auto to_vtx = s_u2vd.at(to_un).value();
         
-        
+        /* XXX: NAME CURRENTLY NOT USED - CANNOT HAVE
+         *      MULTIPLE PIPES BETWEEN THE SAME TWO NODES
+         */
         int type = sqlite3_column_int(stmt, 3);
         
         boost::add_edge(from_vtx, to_vtx, g);
@@ -417,6 +481,10 @@ network_database::populate_graph(infrastructure_graph& g)
     /* Import the graph */
     import_stations(g);
     import_pipelines(g);
+
+    /* Import initial conditions */
+    import_station_initial_conditions();
+    import_pipe_initial_conditions();
 
     return SHIMMER_SUCCESS;
 }

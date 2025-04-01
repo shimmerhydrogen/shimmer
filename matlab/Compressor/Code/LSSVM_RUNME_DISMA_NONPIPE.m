@@ -1,8 +1,6 @@
 %RUNME
 
-close all
-clear all
-clc
+
 
 % acquisizione dati da excel
 nodei=xlsread('small_network_disma_pipes2.xlsx','B2:B18'); 
@@ -161,42 +159,42 @@ legend(legendLabels, 'Location', 'northeastoutside');
 title('Mass Flows IN-OUT - kg/s');
 grid on;
 
-% % 
-% figure
-% bar(RES_P)
-% title('Nodal Pressures - bar')
 % 
-% figure
-% bar(RES_G)
-% title('Mass Flows - kg/s')
-% 
-% COLOR=jet(size(RES_G_T,1))
-% figure
-% plot([0:size(RES_P_T,2)-1],RES_P_T')%,'color',COLOR)
-% set(gca, 'ColorOrder', COLOR)
-% hold on
-% legend()
-% legend('Location','northeastoutside')
-% plot([0:size(RES_P_T,2)-1],RES_P_T(1,:)','color','k')
-% plot([0:size(RES_P_T,2)-1],RES_P_T(12,:)','color','m')
-% title('Nodal Pressures - bar')
-% grid on
-% 
-% figure
-% plot(RES_G_T')
-% set(gca, 'ColorOrder', COLOR)
-% title('Mass Flows - kg/s')
-% grid on
-% legend()
-% legend('Location','northeastoutside')
-% 
-% figure
-% plot([0:size(RES_P_T,2)-1],RES_G_exe_T')
-% set(gca, 'ColorOrder', COLOR)
-% hold on
-% legend()
-% legend('Location','northeastoutside')
-% plot([0:size(RES_P_T,2)-1],RES_G_exe_T(1,:)','color','k')
-% plot([0:size(RES_P_T,2)-1],RES_G_exe_T(12,:)','color','m')
-% title('Mass Flows IN-OUT - kg/s')
-% grid on
+figure
+bar(RES_P)
+title('Nodal Pressures - bar')
+
+figure
+bar(RES_G)
+title('Mass Flows - kg/s')
+
+COLOR=jet(size(RES_G_T,1))
+figure
+plot([0:size(RES_P_T,2)-1],RES_P_T')%,'color',COLOR)
+set(gca, 'ColorOrder', COLOR)
+hold on
+legend()
+legend('Location','northeastoutside')
+plot([0:size(RES_P_T,2)-1],RES_P_T(1,:)','color','k')
+plot([0:size(RES_P_T,2)-1],RES_P_T(12,:)','color','m')
+title('Nodal Pressures - bar')
+grid on
+
+figure
+plot(RES_G_T')
+set(gca, 'ColorOrder', COLOR)
+title('Mass Flows - kg/s')
+grid on
+legend()
+legend('Location','northeastoutside')
+
+figure
+plot([0:size(RES_P_T,2)-1],RES_G_exe_T')
+set(gca, 'ColorOrder', COLOR)
+hold on
+legend()
+legend('Location','northeastoutside')
+plot([0:size(RES_P_T,2)-1],RES_G_exe_T(1,:)','color','k')
+plot([0:size(RES_P_T,2)-1],RES_G_exe_T(12,:)','color','m')
+title('Mass Flows IN-OUT - kg/s')
+grid on

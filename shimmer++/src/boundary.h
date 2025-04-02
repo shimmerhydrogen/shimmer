@@ -125,25 +125,10 @@ public:
     inline void print(){std::cout << name_ << std::endl;}
 };
 
-
-
+/* Make exit L-regulated station */
 template<typename VALUE>
 one_state_station
-make_inlet(const VALUE& vals)
-{
-    state s0;
-    s0.boundary = constraint(hardness_type::BOUNDARY, constraint_type::P_EQUAL, vals);
-
-    one_state_station inlet("ENTRY");
-    inlet.set_state(s0);
-    return inlet;
-}
-
-
-
-template<typename VALUE>
-one_state_station
-make_consumption_wo_press(const VALUE& vals, const std::vector<pair_input_t>& user_limits)
+make_station_exit_l_reg(const VALUE& vals, const std::vector<pair_input_t>& user_limits)
 {
     auto s0_bnd = constraint(hardness_type::BOUNDARY, constraint_type::L_EQUAL, vals); 
     auto s0_int = constraint(hardness_type::HARD, constraint_type::L_GREATER_EQUAL, 0.0); 
@@ -158,10 +143,23 @@ make_consumption_wo_press(const VALUE& vals, const std::vector<pair_input_t>& us
 }
 
 
+namespace priv {
 
 template<typename VALUE>
 one_state_station
-make_outlet(const VALUE& vals)
+make_station_inlet(const VALUE& vals)
+{
+    state s0;
+    s0.boundary = constraint(hardness_type::BOUNDARY, constraint_type::P_EQUAL, vals);
+
+    one_state_station inlet("ENTRY");
+    inlet.set_state(s0);
+    return inlet;
+}
+
+template<typename VALUE>
+one_state_station
+make_station_outlet(const VALUE& vals)
 {
     state s0;
     s0.boundary = constraint(hardness_type::BOUNDARY, constraint_type::L_EQUAL, vals); 
@@ -171,7 +169,7 @@ make_outlet(const VALUE& vals)
     return out;
 }
 
-
+} // namespace priv
 
 class multiple_states_station: public station
 {
@@ -210,12 +208,12 @@ public:
 };
 
 
-
+/* Make entry L-regulated station */
 template<typename L_TYPE,typename P_TYPE >
 multiple_states_station
-make_inj_w_pressure(double factor, const P_TYPE& Pset, const L_TYPE& Lset,
-                    const std::vector<pair_input_t>& user_limits_s0,
-                    const std::vector<pair_input_t>& user_limits_s1)
+make_station_entry_l_reg(double factor, const P_TYPE& Pset, const L_TYPE& Lset,
+                         const std::vector<pair_input_t>& user_limits_s0,
+                         const std::vector<pair_input_t>& user_limits_s1)
 {
     auto s0_bnd = constraint(hardness_type::BOUNDARY, constraint_type::L_EQUAL, Lset);
     auto s0_int = constraint(hardness_type::HARD,constraint_type::P_LOWER_EQUAL, factor * Pset); 
@@ -236,13 +234,12 @@ make_inj_w_pressure(double factor, const P_TYPE& Pset, const L_TYPE& Lset,
     return inj_station;
 }
 
-
-
+/* Make entry P-regulated station */
 template<typename VALUE_TYPE>
 multiple_states_station
-make_remi_wo_backflow(  const VALUE_TYPE& Pset,
-                        const std::vector<pair_input_t>& user_limits_s0,
-                        const std::vector<pair_input_t>& user_limits_s1)
+make_station_entry_p_reg(const VALUE_TYPE& Pset,
+                         const std::vector<pair_input_t>& user_limits_s0,
+                         const std::vector<pair_input_t>& user_limits_s1)
 {
     auto s0_bnd = constraint(hardness_type::BOUNDARY, constraint_type::P_EQUAL, Pset);
     auto s0_int = constraint(hardness_type::HARD,constraint_type::L_LOWER_EQUAL, 0.0); 
@@ -261,6 +258,5 @@ make_remi_wo_backflow(  const VALUE_TYPE& Pset,
 
     return remi;
 }
-
 
 } //end namespace shimmer

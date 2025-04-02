@@ -14,8 +14,7 @@
 #include "../src/nonpipe_over_edges.h"
 #include "network_elements.h"
 
-namespace shimmer
-    {
+namespace shimmer {
 
 using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1>;
 
@@ -43,6 +42,7 @@ enum GAS_TYPE
     Ar,
 };
 
+/*
 enum station_type_x
 {
     REMI_WO_BACKFLOW,
@@ -51,6 +51,7 @@ enum station_type_x
     JUNCTION,
     CONSUMPTION_WO_PRESS,
 };
+*/
 
 struct vertex_properties {
     std::string     name;
@@ -59,7 +60,7 @@ struct vertex_properties {
     int             node_num;
     int             u_snum;
     int             i_snum;
-    station_type_x  type;
+    station_type    type;
     double          height;
     double          latitude;
     double          longitude;
@@ -97,7 +98,7 @@ struct vertex_properties {
 };
 
 struct edge_properties {
-    edge_type   type;
+    pipe_type   type;
     int         branch_num;
     double      length;
     double      diameter;

@@ -40,10 +40,10 @@ make_init_infrastructure(infrastructure_graph& igraph)
     vds.push_back( add_vertex( vertex_properties(  "station 2", 2, 0., 25 ,0. )) );
     vds.push_back( add_vertex( vertex_properties(  "station 3", 2, 0., 25 ,0. )) );
 
-    edge_properties ep0  = {edge_type::pipe, 0,   5, 0.7, 0.012};
-    edge_properties ep1  = {edge_type::pipe, 1,   9, 0.2, 0.012};
-    edge_properties ep2  = {edge_type::pipe, 2,   7, 0.3, 0.012};
-    edge_properties ep3  = {edge_type::pipe, 3,   2, 0.5, 0.012};
+    edge_properties ep0  = {pipe_type::PIPE, 0,   5, 0.7, 0.012};
+    edge_properties ep1  = {pipe_type::PIPE, 1,   9, 0.2, 0.012};
+    edge_properties ep2  = {pipe_type::PIPE, 2,   7, 0.3, 0.012};
+    edge_properties ep3  = {pipe_type::PIPE, 3,   2, 0.5, 0.012};
 
     /*           0                                *0  *1  *2  *3   
     //           |                              ----------------   

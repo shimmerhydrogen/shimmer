@@ -104,7 +104,8 @@ linearized_fluid_solver::impose_edge_station_model(
     for (auto itor = begin; itor != end; itor++, idx++)
     {
         auto pipe = graph_[*itor];
-        if (pipe.type == edge_type::pipe) continue;
+        if (pipe.type == pipe_type::PIPE)
+            continue;
 
         auto& st = pipe.pipe_station;
 
@@ -426,7 +427,8 @@ linearized_fluid_solver::check_hard_controls(size_t step)
     {
         auto pipe = graph_[*itor];
 
-        if (pipe.type == edge_type::pipe) continue;
+        if (pipe.type == pipe_type::PIPE)
+            continue;
 
         auto& st = pipe.pipe_station;
 

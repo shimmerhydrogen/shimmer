@@ -19,11 +19,12 @@ create table station_types (
 
 -- Populate with the known station types
 insert into station_types values
-    (0, 'ReMi station w/o backflow', 'limits_remi_wo', 'profiles_remi_wo'),
-    (1, 'Injection station w/ pressure control', 'limits_injection_w', 'profiles_injection_w'),
-    (2, 'Outlet station', NULL, NULL),
-    (3, 'Junction', NULL, NULL),
-    (4, 'Consumption point w/o pressure control', 'limits_conspoint_wo', 'profiles_conspoint_wo');
+    (1, 'ReMi station w/o backflow', 'limits_remi_wo', 'profiles_remi_wo'),
+    (2, 'Injection station w/ pressure control', 'limits_injection_w', 'profiles_injection_w'),
+    (3, 'Consumption point w/o pressure control', 'limits_conspoint_wo', 'profiles_conspoint_wo'),
+    (4, 'Junction', NULL, NULL),
+    (10, 'Inlet station', NULL, NULL),
+    (11, 'Outlet station', NULL, NULL);
 
 -----------------------------------------------------------------------
 -----------------------------------------------------------------------
@@ -190,11 +191,11 @@ create table pipeline_types (
     PRIMARY KEY (p_type)
 );
 
-insert into pipeline_types values (0, 'Plain pipe');
-insert into pipeline_types values (1, 'Resistor');
-insert into pipeline_types values (2, 'Compressor');
-insert into pipeline_types values (3, 'Regulator');
-insert into pipeline_types values (4, 'Valve');
+insert into pipeline_types values
+    (0, 'Plain pipe')
+    (1, 'Compressor');
+    (2, 'Reduction station');
+    (3, 'Valve');
 
 -- The pipelines. They are the edges of the graph.
 create table pipelines (
@@ -215,25 +216,56 @@ create table pipelines (
         REFERENCES pipeline_types(p_type)
 );
 
+-----------------------------------------------------------------------
+-----------------------------------------------------------------------
 -- Pipe parameters as length, diameter and so on.
 create table pipe_parameters (
     p_name      TEXT NOT NULL,
     s_from      INTEGER,
     s_to        INTEGER,
-    diameter    REAL DEFAULT 0.0 NOT NULL,
-    length      REAL DEFAULT 0.0 NOT NULL,
-    roughness   REAL DEFAULT 0.0 NOT NULL,
+    diameter    REAL DEFAULT 0.0,
+    length      REAL DEFAULT 0.0,
+    roughness   REAL DEFAULT 0.0,
 
     -- The referenced pipeline must exist
     FOREIGN KEY (p_name, s_from, s_to)
         REFERENCES pipelines(p_name, s_from, s_to)
 );
 
--- Compressor parameters as length, diameter and so on.
-create table compressor_parameters (
+-----------------------------------------------------------------------
+-----------------------------------------------------------------------
+-- Compressor parameters.
+create table compressor_profile (
     p_name      TEXT NOT NULL,
     s_from      INTEGER,
     s_to        INTEGER,
+
+    prf_time    REAL DEFAULT 0.0,
+    controlmode INTEGER DEFAULT 10, -- default OFF BYPASS
+    power       REAL DEFAULT 0.0,
+    outpress    REAL DEFAULT 0.0,
+    inpress     REAL DEFAULT 0.0,
+    ratio       REAL DEFAULT 0.0,
+    massflow    REAL DEFAULT 0.0,
+
+    -- The referenced pipeline must exist
+    FOREIGN KEY (p_name, s_from, s_to)
+        REFERENCES pipelines(p_name, s_from, s_to)
+);
+
+create table compressor_limits (
+    p_name          TEXT NOT NULL,
+    s_from          INTEGER,
+    s_to            INTEGER,
+
+    max_power       REAL DEFAULT 0.0,
+    max_outpress    REAL DEFAULT 0.0,
+    min_inpress     REAL DEFAULT 0.0,
+    max_ratio       REAL DEFAULT 0.0,
+    min_ratio       REAL DEFAULT 0.0,
+    max_massflow    REAL DEFAULT 0.0,
+
+    PRIMARY KEY (p_name, s_from, s_to),
 
     -- The referenced pipeline must exist
     FOREIGN KEY (p_name, s_from, s_to)

@@ -63,7 +63,8 @@ public:
         {
             auto pipe = graph_[*itor];
 
-            if (pipe.type == edge_type::pipe) continue;
+            if (pipe.type == pipe_type::PIPE)
+                continue;
 
             auto& st = pipe.pipe_station;
 

@@ -29,14 +29,6 @@ size_t num_pipes = 15;
 size_t num_nodes = 13;
 
 
-enum station_type
-{
-    INLET,
-    OUTLET,
-    JUNCTION,
-};
-
-
 std::vector<station_type>
 make_stations_type_vector()
 {
@@ -51,9 +43,9 @@ make_stations_type_vector()
 
     std::vector<station_type> vec(num_nodes); 
     for(size_t i = 0; i < outlet_nodes.size(); i++)
-        vec[outlet_nodes[i]] = station_type::OUTLET;            
+        vec[outlet_nodes[i]] = station_type::PRIVATE_OUTLET;            
     for(size_t i = 0; i < inlet_nodes.size(); i++)
-        vec[inlet_nodes[i]] = station_type::INLET;            
+        vec[inlet_nodes[i]] = station_type::PRIVATE_INLET;            
     for(size_t i = 0; i < junction_nodes.size(); i++)
         vec[junction_nodes[i]] = station_type::JUNCTION;            
     
@@ -106,15 +98,15 @@ make_init_graph(infrastructure_graph& g)
     {   
         switch(station_type_vec[i])
         {
-            case(station_type::INLET):
+            case(station_type::PRIVATE_INLET):
             {
-                auto s = make_inlet(Pset);
+                auto s = priv::make_station_inlet(Pset);
                 stations[i] = std::make_unique<one_state_station>(s);
                 break;
             }
-            case(station_type::OUTLET): 
+            case(station_type::PRIVATE_OUTLET): 
             {
-                auto s = make_outlet(Gsnam.col(i));    
+                auto s = priv::make_station_outlet(Gsnam.col(i));    
                 stations[i] = std::make_unique<one_state_station>(s);
                 break;
             }
@@ -157,21 +149,21 @@ make_init_graph(infrastructure_graph& g)
 
     using eprop_t = edge_properties;
 
-    edge_properties ep0  = {edge_type::pipe, 0,  80000,	1.2,	1.20E-05};
-    edge_properties ep1  = {edge_type::pipe, 1,  16000,	0.6,	1.20E-05};
-    edge_properties ep2  = {edge_type::pipe, 2,  40000,	0.8,	1.20E-05};
-    edge_properties ep3  = {edge_type::pipe, 3, 160000,	0.7,	1.20E-05};
-    edge_properties ep4  = {edge_type::pipe, 4, 200000,	0.8,	1.20E-05};
-    edge_properties ep5  = {edge_type::pipe, 5,  24000,	0.6,	1.20E-05};
-    edge_properties ep6  = {edge_type::pipe, 6, 120000,	0.2,	1.20E-05};
-    edge_properties ep7  = {edge_type::pipe, 7,  80000,	0.9,	1.20E-05};
-    edge_properties ep8  = {edge_type::pipe, 8,  64000,	0.7,	1.20E-05};
-    edge_properties ep9  = {edge_type::pipe, 9, 240000,	0.6,	1.20E-05};
-    edge_properties ep10 = {edge_type::pipe,10,  28000,	0.2,	1.20E-05};
-    edge_properties ep11 = {edge_type::pipe,11,  80000,	0.9,	1.20E-05};
-    edge_properties ep12 = {edge_type::pipe,12, 160000,	0.7,	1.20E-05};
-    edge_properties ep13 = {edge_type::pipe,13,  40000,	0.3,	1.20E-05};
-    edge_properties ep14 = {edge_type::pipe,14, 320000,	0.9,	1.20E-05};
+    edge_properties ep0  = {pipe_type::PIPE, 0,  80000,	1.2,	1.20E-05};
+    edge_properties ep1  = {pipe_type::PIPE, 1,  16000,	0.6,	1.20E-05};
+    edge_properties ep2  = {pipe_type::PIPE, 2,  40000,	0.8,	1.20E-05};
+    edge_properties ep3  = {pipe_type::PIPE, 3, 160000,	0.7,	1.20E-05};
+    edge_properties ep4  = {pipe_type::PIPE, 4, 200000,	0.8,	1.20E-05};
+    edge_properties ep5  = {pipe_type::PIPE, 5,  24000,	0.6,	1.20E-05};
+    edge_properties ep6  = {pipe_type::PIPE, 6, 120000,	0.2,	1.20E-05};
+    edge_properties ep7  = {pipe_type::PIPE, 7,  80000,	0.9,	1.20E-05};
+    edge_properties ep8  = {pipe_type::PIPE, 8,  64000,	0.7,	1.20E-05};
+    edge_properties ep9  = {pipe_type::PIPE, 9, 240000,	0.6,	1.20E-05};
+    edge_properties ep10 = {pipe_type::PIPE,10,  28000,	0.2,	1.20E-05};
+    edge_properties ep11 = {pipe_type::PIPE,11,  80000,	0.9,	1.20E-05};
+    edge_properties ep12 = {pipe_type::PIPE,12, 160000,	0.7,	1.20E-05};
+    edge_properties ep13 = {pipe_type::PIPE,13,  40000,	0.3,	1.20E-05};
+    edge_properties ep14 = {pipe_type::PIPE,14, 320000,	0.9,	1.20E-05};
 
 
     boost::add_edge( vds[ 0], vds[ 3], ep0, g);

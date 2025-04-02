@@ -35,66 +35,49 @@ network_database::~network_database()
 }
 
 template<typename T>
-concept station_setting = requires {
-    T::u_snum;
-    T::i_snum;
+concept limits = requires {
     T::Pmin;
     T::Pmax;
     T::Lmin;
     T::Lmax;
 };
 
-template<station_setting S>
-auto
-lookup_station_setting(const std::vector<S>& settings, int i_snum)
-{
-    auto comp = [](const S& s, int i) {
-        return s.i_snum < i;
-    };
-
-    auto sbegin = settings.begin();
-    auto send = settings.end();
-    auto sitor = std::lower_bound(sbegin, send, i_snum, comp);
-    if ( (sitor == send) or ((*sitor).i_snum != i_snum) )
-        return send;
-
-    return sitor;
-}
-
 /* Temporary helper */
-template<station_setting S>
 auto
-convert_limits(const S& s)
+convert_limits(const limits auto& l)
 {
     std::vector<pair_input_t> user_constraints = {
-        std::make_pair(P_GREATER_EQUAL, s.Pmin),
-        std::make_pair(P_LOWER_EQUAL,   s.Pmax),
-        std::make_pair(L_GREATER_EQUAL, s.Lmin),
-        std::make_pair(L_LOWER_EQUAL,   s.Lmax)
+        std::make_pair(P_GREATER_EQUAL, l.Pmin),
+        std::make_pair(P_LOWER_EQUAL,   l.Pmax),
+        std::make_pair(L_GREATER_EQUAL, l.Lmin),
+        std::make_pair(L_LOWER_EQUAL,   l.Lmax)
     };
 
     return user_constraints;
 }
 
+template<typename T>
+concept profile =
+    requires { T::Lprofile; } ||
+    requires { T::Pprofile; };
+
 /* Temporary helper */
-template<station_setting S>
 auto
-convert_Lprof(const S& s)
+convert_Lprof(const profile auto& p)
 {
-    Eigen::VectorXd ret( s.Lprofile.size() );
-    for (size_t i = 0; i < s.Lprofile.size(); i++)
-        ret[i] = s.Lprofile[i].value;
+    Eigen::VectorXd ret( p.Lprofile.size() );
+    for (size_t i = 0; i < p.Lprofile.size(); i++)
+        ret[i] = p.Lprofile[i].value;
     return ret;
 }
 
 /* Temporary helper */
-template<station_setting S>
 auto
-convert_Pprof(const S& s)
+convert_Pprof(const profile auto& p)
 {
-    Eigen::VectorXd ret( s.Pprofile.size() );
-    for (size_t i = 0; i < s.Pprofile.size(); i++)
-        ret[i] = s.Pprofile[i].value;
+    Eigen::VectorXd ret( p.Pprofile.size() );
+    for (size_t i = 0; i < p.Pprofile.size(); i++)
+        ret[i] = p.Pprofile[i].value;
     return ret;
 }
 
@@ -103,13 +86,13 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
 {
     switch (vp.type) {
         
-        case station_type_x::JUNCTION: {
+        case station_type::JUNCTION: {
             vp.node_station = std::make_unique<junction>();
             break;
         }
 
-        case(station_type_x::REMI_WO_BACKFLOW): {
-            auto itor = lookup_station_setting(settings_entry_p_reg, vp.i_snum);
+        case(station_type::ENTRY_P_REG): {
+            auto itor = lookup(settings_entry_p_reg, vp.i_snum);
             if ( itor == settings_entry_p_reg.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
                 std::cout << " (ReMi w/o pressure control)" << std::endl;
@@ -120,13 +103,13 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
 
             auto limits = convert_limits(setting);
             auto Pset = convert_Pprof(setting);
-            auto remi = make_remi_wo_backflow(Pset, limits, limits);
+            auto remi = make_station_entry_p_reg(Pset, limits, limits);
             vp.node_station = std::make_unique<multiple_states_station>(remi);                
             break;
         }
             
-        case(station_type_x::INJ_W_PRESS_CONTROL): {
-            auto itor = lookup_station_setting(settings_entry_l_reg, vp.i_snum);
+        case(station_type::ENTRY_L_REG): {
+            auto itor = lookup(settings_entry_l_reg, vp.i_snum);
             if ( itor == settings_entry_l_reg.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
                 std::cout << " (Injection w/ pressure control)" << std::endl;
@@ -139,16 +122,15 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
             auto Pset = convert_Pprof(setting);
             auto Lset = convert_Lprof(setting);
             auto f = setting.f;
-            auto inj_station = make_inj_w_pressure(f, Pset, Lset,
+            auto inj_station = make_station_entry_l_reg(f, Pset, Lset,
                                               limits,
                                               limits);
             vp.node_station = std::make_unique<multiple_states_station>(inj_station);
             break;
         }
 
-        case(station_type_x::CONSUMPTION_WO_PRESS):
-        {
-            auto itor = lookup_station_setting(settings_exit_l_reg, vp.i_snum);
+        case(station_type::EXIT_L_REG): {
+            auto itor = lookup(settings_exit_l_reg, vp.i_snum);
             if ( itor == settings_exit_l_reg.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
                 std::cout << " (consumption w/o pressure control)" << std::endl;
@@ -159,14 +141,14 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
 
             auto limits = convert_limits(setting);
             auto Lset = convert_Lprof(setting);
-            auto consumption = make_consumption_wo_press(Lset, limits);
+            auto consumption = make_station_exit_l_reg(Lset, limits);
             vp.node_station = std::make_unique<one_state_station>(consumption);
             break;
         }
         
-        case(station_type_x::OUTLET):
-        {
-            auto itor = lookup_station_setting(settings_outlet, vp.i_snum);
+        /*
+        case(station_type_x::OUTLET): {
+            auto itor = lookup(settings_outlet, vp.i_snum);
             if ( itor == settings_outlet.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
                 std::cout << " (Outlet)" << std::endl;
@@ -180,6 +162,7 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
             vp.node_station = std::make_unique<one_state_station>(exit_station);
             break;
         }
+        */
             
         default:
             std::cout << "Unhandled station type" << std::endl;
@@ -189,7 +172,7 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
 }
 
 std::optional<table_name_pair_t>
-network_database::limits_and_profile_table_names(int stat_type)
+network_database::limits_and_profile_table_names(station_type stat_type)
 {
     char *zErrMsg = nullptr;
     sqlite3_stmt *stmt = nullptr;
@@ -211,10 +194,10 @@ network_database::limits_and_profile_table_names(int stat_type)
         return {};
     }
 
-    rc = sqlite3_bind_int(stmt, 1, stat_type);
+    rc = sqlite3_bind_int(stmt, 1, +stat_type);
 
     if ( sqlite3_step(stmt) != SQLITE_ROW ) {
-        std::cerr << "Shimmer DB: Invalid station type " << stat_type << std::endl;
+        std::cerr << "Shimmer DB: Invalid station type " << +stat_type << std::endl;
         return {};
     }
     
@@ -339,7 +322,7 @@ network_database::import_stations(infrastructure_graph& g)
         /* Station name */
         vp.name = (char *) sqlite3_column_text(stmt, 1);
         
-        vp.type = static_cast<station_type_x>(sqlite3_column_int(stmt,2));
+        vp.type = static_cast<station_type>(sqlite3_column_int(stmt,2));
 
         /* Station location */
         vp.height = sqlite3_column_double(stmt, 3);
@@ -361,68 +344,6 @@ network_database::import_stations(infrastructure_graph& g)
 
     sqlite3_finalize(stmt);
 
-    return SHIMMER_SUCCESS;
-}
-
-int
-network_database::import_station_initial_conditions()
-{
-    int rc;
-    char *zErrMsg = nullptr;
-    std::string zSql = "SELECT * FROM station_initial_conditions";
-
-    sqlite3_stmt *stmt;
-    rc = sqlite3_prepare_v2(db_, zSql.c_str(), zSql.length(), &stmt, nullptr);
-    if (rc) {
-        std::cerr << "SQL error on query '" << zSql << "': " << zErrMsg << std::endl;
-        sqlite3_free(zErrMsg);
-        return SHIMMER_DATABASE_PROBLEM;
-    }
-
-    while (sqlite3_step(stmt) != SQLITE_DONE) {
-        int u_snum = sqlite3_column_int(stmt, 0);
-        int i_snum = s_u2vd.at(u_snum).value();
-        station_initial_condition sic;
-        sic.s_number = i_snum;
-        sic.init_P = sqlite3_column_double(stmt, 1);
-        sic.init_L = sqlite3_column_double(stmt, 2);
-        sics.push_back(sic);
-    }
-
-    sqlite3_finalize(stmt);
-    return SHIMMER_SUCCESS;
-}
-
-int
-network_database::import_pipe_initial_conditions()
-{
-    int rc;
-    char *zErrMsg = nullptr;
-    std::string zSql = "SELECT * FROM pipe_initial_conditions";
-
-    sqlite3_stmt *stmt;
-    rc = sqlite3_prepare_v2(db_, zSql.c_str(), zSql.length(), &stmt, nullptr);
-    if (rc) {
-        std::cerr << "SQL error on query '" << zSql << "': " << zErrMsg << std::endl;
-        sqlite3_free(zErrMsg);
-        return SHIMMER_DATABASE_PROBLEM;
-    }
-
-    while (sqlite3_step(stmt) != SQLITE_DONE) {
-        std::string name = (char *) sqlite3_column_text(stmt, 0);
-        int u_sfrom = sqlite3_column_int(stmt, 1);
-        int i_sfrom = s_u2vd.at(u_sfrom).value();
-        int u_sto = sqlite3_column_int(stmt, 2);
-        int i_sto = s_u2vd.at(u_sto).value();
-
-        pipe_initial_condition pic;
-        pic.s_from = i_sfrom;
-        pic.s_to = i_sto;
-        pic.init_G = sqlite3_column_double(stmt, 3);
-        pics.push_back(pic);
-    }
-
-    sqlite3_finalize(stmt);
     return SHIMMER_SUCCESS;
 }
 
@@ -476,15 +397,17 @@ network_database::populate_graph(infrastructure_graph& g)
     //import_outlet(settings_outlet);
     import_entry_p_reg(settings_entry_p_reg);
     import_entry_l_reg(settings_entry_l_reg);
+    import_exit_l_reg(settings_exit_l_reg);
 
-
-    /* Import the graph */
-    import_stations(g);
-    import_pipelines(g);
+    import_compr_stat(settings_compr_stat);
 
     /* Import initial conditions */
     import_station_initial_conditions();
     import_pipe_initial_conditions();
+
+    /* Import the graph */
+    import_stations(g);
+    import_pipelines(g);
 
     return SHIMMER_SUCCESS;
 }

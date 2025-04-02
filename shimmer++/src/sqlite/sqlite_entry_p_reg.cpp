@@ -32,7 +32,7 @@ network_database::import_entry_p_reg(std::vector<setting_entry_p_reg>& settings)
 {
     using namespace entry_p_reg_priv;
 
-    auto tabnames_opt = limits_and_profile_table_names(0);
+    auto tabnames_opt = limits_and_profile_table_names(station_type::ENTRY_P_REG);
     if ( not tabnames_opt ) {
         std::cerr << "Shimmer DB: cannot retrieve table names for 'entry_l_reg' station" << std::endl;
         return SHIMMER_DATABASE_PROBLEM;

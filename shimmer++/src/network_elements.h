@@ -7,6 +7,8 @@
 
 #pragma once
 
+namespace shimmer {
+
 enum class station_type : int {
     ENTRY_P_REG = 1,        /* ReMi w/o backflow */
     ENTRY_L_REG = 2,        /* Injection w/ pressure control */
@@ -33,10 +35,4 @@ enum class compressor_mode : int {
     OFF_CLOSED  = 11    /* Compressor off, closed */
 };
 
-/* this must become pipe_type */
-/*enum class edge_type {
-    pipe,
-    compressor,
-    regulator,
-    valve,
-};*/
+} // namespace shimmer

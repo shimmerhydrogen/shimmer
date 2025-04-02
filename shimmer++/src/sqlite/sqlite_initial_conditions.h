@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+#include <algorithm>
 #include <concepts>
 
 namespace shimmer {
@@ -20,8 +22,7 @@ struct pipe_initial_condition {
     double  init_G;
 
     bool operator<(const pipe_initial_condition& other) const {
-        return (i_sfrom < other.i_sfrom) or
-            (i_sfrom == other.i_sfrom and i_sto < other.i_sto);
+        return std::pair{i_sfrom, i_sto} < std::pair{other.i_sfrom, other.i_sto};
     }
 };
 

@@ -30,6 +30,8 @@ network_database::import_station_initial_conditions()
         sics.push_back(sic);
     }
 
+    std::sort(sics.begin(), sics.end());
+
     sqlite3_finalize(stmt);
     return SHIMMER_SUCCESS;
 }
@@ -62,6 +64,8 @@ network_database::import_pipe_initial_conditions()
         pic.init_G = sqlite3_column_double(stmt, 3);
         pics.push_back(pic);
     }
+
+    std::sort(pics.begin(), pics.end());
 
     sqlite3_finalize(stmt);
     return SHIMMER_SUCCESS;

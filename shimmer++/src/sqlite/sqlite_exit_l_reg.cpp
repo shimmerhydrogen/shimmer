@@ -33,9 +33,9 @@ network_database::import_exit_l_reg(std::vector<setting_exit_l_reg>& settings)
 {
     using namespace exit_l_reg_priv;
 
-    auto tabnames_opt = limits_and_profile_table_names(0);
+    auto tabnames_opt = limits_and_profile_table_names(station_type::EXIT_L_REG);
     if ( not tabnames_opt ) {
-        std::cerr << "Shimmer DB: cannot retrieve table names for 'entry_l_reg' station" << std::endl;
+        std::cerr << "Shimmer DB: cannot retrieve table names for 'exit_l_reg' station" << std::endl;
         return SHIMMER_DATABASE_PROBLEM;
     }
 

@@ -38,9 +38,9 @@ make_init_graph(infrastructure_graph& g)
     vector_t flux_ext(num_nodes);
     flux_ext << 0.0, 30.80, 15.4;
 
-    auto sint0 = make_inlet(pressure_in);
-    auto sout1 = make_outlet(flux_ext(1));
-    auto sout2 = make_outlet(flux_ext(2));
+    auto sint0 = priv::make_station_inlet(pressure_in);
+    auto sout1 = priv::make_station_outlet(flux_ext(1));
+    auto sout2 = priv::make_station_outlet(flux_ext(2));
 
     //---------------------------------------------------------------
     std::vector<std::unique_ptr<station>> stations(num_nodes);

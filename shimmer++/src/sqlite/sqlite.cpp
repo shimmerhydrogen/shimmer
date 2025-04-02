@@ -103,12 +103,12 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
 {
     switch (vp.type) {
         
-        case station_type_x::JUNCTION: {
+        case station_type::JUNCTION: {
             vp.node_station = std::make_unique<junction>();
             break;
         }
 
-        case(station_type_x::REMI_WO_BACKFLOW): {
+        case(station_type::ENTRY_P_REG): {
             auto itor = lookup_station_setting(settings_entry_p_reg, vp.i_snum);
             if ( itor == settings_entry_p_reg.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
@@ -120,12 +120,12 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
 
             auto limits = convert_limits(setting);
             auto Pset = convert_Pprof(setting);
-            auto remi = make_remi_wo_backflow(Pset, limits, limits);
+            auto remi = make_station_entry_p_reg(Pset, limits, limits);
             vp.node_station = std::make_unique<multiple_states_station>(remi);                
             break;
         }
             
-        case(station_type_x::INJ_W_PRESS_CONTROL): {
+        case(station_type::ENTRY_L_REG): {
             auto itor = lookup_station_setting(settings_entry_l_reg, vp.i_snum);
             if ( itor == settings_entry_l_reg.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
@@ -139,15 +139,14 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
             auto Pset = convert_Pprof(setting);
             auto Lset = convert_Lprof(setting);
             auto f = setting.f;
-            auto inj_station = make_inj_w_pressure(f, Pset, Lset,
+            auto inj_station = make_station_entry_l_reg(f, Pset, Lset,
                                               limits,
                                               limits);
             vp.node_station = std::make_unique<multiple_states_station>(inj_station);
             break;
         }
 
-        case(station_type_x::CONSUMPTION_WO_PRESS):
-        {
+        case(station_type::EXIT_L_REG): {
             auto itor = lookup_station_setting(settings_exit_l_reg, vp.i_snum);
             if ( itor == settings_exit_l_reg.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
@@ -159,13 +158,13 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
 
             auto limits = convert_limits(setting);
             auto Lset = convert_Lprof(setting);
-            auto consumption = make_consumption_wo_press(Lset, limits);
+            auto consumption = make_station_exit_l_reg(Lset, limits);
             vp.node_station = std::make_unique<one_state_station>(consumption);
             break;
         }
         
-        case(station_type_x::OUTLET):
-        {
+        /*
+        case(station_type_x::OUTLET): {
             auto itor = lookup_station_setting(settings_outlet, vp.i_snum);
             if ( itor == settings_outlet.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
@@ -180,6 +179,7 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
             vp.node_station = std::make_unique<one_state_station>(exit_station);
             break;
         }
+        */
             
         default:
             std::cout << "Unhandled station type" << std::endl;
@@ -339,7 +339,7 @@ network_database::import_stations(infrastructure_graph& g)
         /* Station name */
         vp.name = (char *) sqlite3_column_text(stmt, 1);
         
-        vp.type = static_cast<station_type_x>(sqlite3_column_int(stmt,2));
+        vp.type = static_cast<station_type>(sqlite3_column_int(stmt,2));
 
         /* Station location */
         vp.height = sqlite3_column_double(stmt, 3);

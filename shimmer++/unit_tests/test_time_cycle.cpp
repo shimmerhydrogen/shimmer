@@ -29,14 +29,6 @@ size_t num_pipes = 15;
 size_t num_nodes = 13;
 
 
-enum station_type
-{
-    INLET,
-    OUTLET,
-    JUNCTION,
-};
-
-
 std::vector<station_type>
 make_stations_type_vector()
 {
@@ -51,9 +43,9 @@ make_stations_type_vector()
 
     std::vector<station_type> vec(num_nodes); 
     for(size_t i = 0; i < outlet_nodes.size(); i++)
-        vec[outlet_nodes[i]] = station_type::OUTLET;            
+        vec[outlet_nodes[i]] = station_type::PRIVATE_OUTLET;            
     for(size_t i = 0; i < inlet_nodes.size(); i++)
-        vec[inlet_nodes[i]] = station_type::INLET;            
+        vec[inlet_nodes[i]] = station_type::PRIVATE_INLET;            
     for(size_t i = 0; i < junction_nodes.size(); i++)
         vec[junction_nodes[i]] = station_type::JUNCTION;            
     
@@ -106,15 +98,15 @@ make_init_graph(infrastructure_graph& g)
     {   
         switch(station_type_vec[i])
         {
-            case(station_type::INLET):
+            case(station_type::PRIVATE_INLET):
             {
-                auto s = make_inlet(Pset);
+                auto s = priv::make_station_inlet(Pset);
                 stations[i] = std::make_unique<one_state_station>(s);
                 break;
             }
-            case(station_type::OUTLET): 
+            case(station_type::PRIVATE_OUTLET): 
             {
-                auto s = make_outlet(Gsnam.col(i));    
+                auto s = priv::make_station_outlet(Gsnam.col(i));    
                 stations[i] = std::make_unique<one_state_station>(s);
                 break;
             }

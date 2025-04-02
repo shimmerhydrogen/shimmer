@@ -29,33 +29,23 @@ size_t num_pipes = 15;
 size_t num_nodes = 13;
 size_t num_outlet = 5;    
 
-enum station_type
-{
-    REMI_WO_BACKFLOW,
-    INJ_W_PRESS_CONTROL,
-    OUTLET,
-    JUNCTION,
-    CONSUMPTION_WO_PRESS,
-};
-
-
 std::vector<station_type>
 make_stations_type_vector()
 {
     return std::vector<station_type>{
-        station_type::REMI_WO_BACKFLOW,
-        station_type::OUTLET,
+        station_type::ENTRY_P_REG,
+        station_type::PRIVATE_OUTLET,
         station_type::JUNCTION,
         station_type::JUNCTION,
         station_type::JUNCTION,
-        station_type::CONSUMPTION_WO_PRESS,
+        station_type::EXIT_L_REG,
         station_type::JUNCTION,
         station_type::JUNCTION,
-        station_type::CONSUMPTION_WO_PRESS,
+        station_type::EXIT_L_REG,
         station_type::JUNCTION,
-        station_type::CONSUMPTION_WO_PRESS,
-        station_type::INJ_W_PRESS_CONTROL,
-        station_type::OUTLET
+        station_type::EXIT_L_REG,
+        station_type::ENTRY_L_REG,
+        station_type::PRIVATE_OUTLET
     };
 }
 
@@ -133,41 +123,43 @@ make_init_graph(infrastructure_graph& g, const vector_t& Pset, const matrix_t& G
 
         switch(station_type_vec[i])
         {
-            case(station_type::JUNCTION):
+            case(station_type::JUNCTION): {
                 stations[i] = std::make_unique<junction>();
                 break;
-            case(station_type::REMI_WO_BACKFLOW):
-            {
-                auto remi = make_remi_wo_backflow(Pset, user_constraints,
+            }
+
+            case(station_type::ENTRY_P_REG): {
+                auto remi = make_station_entry_p_reg(Pset, user_constraints,
                                                      user_constraints);
                 stations[i] = std::make_unique<multiple_states_station>(remi);                
                 break;
             }
-            case(station_type::INJ_W_PRESS_CONTROL):
-            {
+
+            case(station_type::ENTRY_L_REG): {
                 std::cout<< " INJ_W_PRESS: Lset"<< std::endl;
                 for(size_t j = 0; j < Gsnam.rows(); j++)
                     std::cout << Gsnam(j,i) << std::endl;     
 
-                auto inj_station = make_inj_w_pressure(factor, 7500000.0, Gsnam.col(i),
+                auto inj_station = make_station_entry_l_reg(factor, 7500000.0, Gsnam.col(i),
                                               user_constraints,
                                               user_constraints);
                 stations[i] = std::make_unique<multiple_states_station>(inj_station);
                 break;
             }
-            case(station_type::CONSUMPTION_WO_PRESS):
-            {
-                auto consumption = make_consumption_wo_press(Gsnam.col(i), user_constraints);
+            
+            case(station_type::EXIT_L_REG): {
+                auto consumption = make_station_exit_l_reg(Gsnam.col(i), user_constraints);
                 stations[i] = std::make_unique<one_state_station>(consumption);
                 break;
-
             }
-            case(station_type::OUTLET):
-            {
-                auto exit_station = make_outlet(Gsnam.col(i));
+
+            /* INTERNAL USE ONLY */
+            case(station_type::PRIVATE_OUTLET): {
+                auto exit_station = priv::make_station_outlet(Gsnam.col(i));
                 stations[i] = std::make_unique<one_state_station>(exit_station);
                 break;
             }
+            
             default:
                 throw std::invalid_argument("Station type not found");    
         }

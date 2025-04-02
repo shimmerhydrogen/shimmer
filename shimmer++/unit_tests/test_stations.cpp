@@ -75,16 +75,6 @@ make_init_graph(infrastructure_graph& g, const  std::vector<std::unique_ptr<stat
 }
 */
 
-
-
-enum station_type
-{
-    INLET,
-    OUTLET,
-    JUNCTION,
-};
-
-
 std::vector<station_type>
 make_stations_type_vector()
 {
@@ -99,9 +89,9 @@ make_stations_type_vector()
 
     std::vector<station_type> vec(num_nodes); 
     for(size_t i = 0; i < outlet_nodes.size(); i++)
-        vec[outlet_nodes[i]] = station_type::OUTLET;            
+        vec[outlet_nodes[i]] = station_type::PRIVATE_OUTLET;            
     for(size_t i = 0; i < inlet_nodes.size(); i++)
-        vec[inlet_nodes[i]] = station_type::INLET;            
+        vec[inlet_nodes[i]] = station_type::PRIVATE_INLET;            
     for(size_t i = 0; i < junction_nodes.size(); i++)
         vec[junction_nodes[i]] = station_type::JUNCTION;            
     
@@ -155,13 +145,13 @@ int main()
     {   
         switch(station_type_vec[i])
         {
-            case(station_type::INLET):{
-                auto entry = make_inlet(Pset);
+            case(station_type::PRIVATE_INLET):{
+                auto entry = priv::make_station_inlet(Pset);
                 stations[i] = std::make_unique<one_state_station>(entry);
                 break;
             }
-            case(station_type::OUTLET):{
-                auto outlet = make_outlet(Gsnam.col(i));
+            case(station_type::PRIVATE_OUTLET):{
+                auto outlet = priv::make_station_outlet(Gsnam.col(i));
                 stations[i] = std::make_unique<one_state_station>(outlet);
                 break;
             }

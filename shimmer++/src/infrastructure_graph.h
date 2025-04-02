@@ -43,6 +43,7 @@ enum GAS_TYPE
     Ar,
 };
 
+/*
 enum station_type_x
 {
     REMI_WO_BACKFLOW,
@@ -51,6 +52,7 @@ enum station_type_x
     JUNCTION,
     CONSUMPTION_WO_PRESS,
 };
+*/
 
 struct vertex_properties {
     std::string     name;
@@ -59,7 +61,7 @@ struct vertex_properties {
     int             node_num;
     int             u_snum;
     int             i_snum;
-    station_type_x  type;
+    station_type    type;
     double          height;
     double          latitude;
     double          longitude;

@@ -86,16 +86,19 @@ constexpr auto operator+(T e) {
 
 namespace shimmer {
 
+template<typename T>
+using optvector = std::vector<std::optional<T>>;
+
 class network_database {
 
     sqlite3 *db_;
     bool verbose_;
 
     /* BEGIN I have the impression that this stuff does not belong here */
-    std::vector<std::optional<int>>                 s_u2i;
-    std::vector<int>                                s_i2u;
-    std::vector<std::optional<vertex_descriptor>>   s_u2vd;
-    std::vector<vertex_descriptor>                  s_i2vd;
+    optvector<int>                      s_u2i;
+    std::vector<int>                    s_i2u;
+    optvector<vertex_descriptor>        s_u2vd;
+    std::vector<vertex_descriptor>      s_i2vd;
 
     std::vector<setting_outlet>         settings_outlet;
     std::vector<setting_entry_p_reg>    settings_entry_p_reg;

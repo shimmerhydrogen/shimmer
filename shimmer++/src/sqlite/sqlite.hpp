@@ -6,27 +6,6 @@
 
 namespace shimmer {
 
-struct station_initial_condition {
-    int     s_number;
-    double  init_P;
-    double  init_L;
-
-    bool operator<(const station_initial_condition& other) const {
-        return s_number < other.s_number;
-    }
-};
-
-struct pipe_initial_condition {
-    int     s_from;
-    int     s_to;
-    double  init_G;
-
-    bool operator<(const pipe_initial_condition& other) const {
-        return (s_from < other.s_from) or
-            (s_from == other.s_from and s_to < other.s_to);
-    }
-};
-
 struct sample {
     double  time;
     double  value;
@@ -73,16 +52,11 @@ using table_name_pair_t = std::pair<std::string, std::string>;
 
 } // namespace shimmer
 
-template<typename T>
-    requires std::is_enum_v<T>
-constexpr auto operator+(T e) {
-    return std::underlying_type_t<T>(e);
-}
-
 #include "sqlite_outlet.h"
 #include "sqlite_entry_p_reg.h"
 #include "sqlite_entry_l_reg.h"
 #include "sqlite_exit_l_reg.h"
+#include "sqlite_initial_conditions.h"
 
 namespace shimmer {
 

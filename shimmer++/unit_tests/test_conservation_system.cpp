@@ -86,9 +86,9 @@ make_init_graph(infrastructure_graph& g)
     vds.push_back( add_vertex( vertex_properties( "station 1", 1, 0., 0.,  0.), x));
     vds.push_back( add_vertex( vertex_properties( "station 2", 2, 0., 0.,  0.), x));
 
-    edge_properties ep0  = {edge_type::pipe, 0,    80000, 0.6, 0.000012};
-    edge_properties ep1  = {edge_type::pipe, 1,    90000, 0.6, 0.000012};
-    edge_properties ep2  = {edge_type::pipe, 2,   100000, 0.6, 0.000012};
+    edge_properties ep0  = {pipe_type::PIPE, 0,    80000, 0.6, 0.000012};
+    edge_properties ep1  = {pipe_type::PIPE, 1,    90000, 0.6, 0.000012};
+    edge_properties ep2  = {pipe_type::PIPE, 2,   100000, 0.6, 0.000012};
 
     /*
     //           0                        *0  *1  *2

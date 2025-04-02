@@ -34,9 +34,9 @@ enum class compressor_mode : int {
 };
 
 /* this must become pipe_type */
-enum class edge_type {
+/*enum class edge_type {
     pipe,
     compressor,
     regulator,
     valve,
-};
+};*/

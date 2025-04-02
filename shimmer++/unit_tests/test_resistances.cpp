@@ -44,11 +44,11 @@ make_init_graph(infrastructure_graph& igraph)
     vds.push_back( add_vertex(vertex_properties( "station 2", 2, 0., 25 ,0.), x));
     vds.push_back( add_vertex(vertex_properties( "station 3", 3, 0., 25 ,0.), x));
 
-    edge_properties ep0  = {edge_type::pipe, 0,   5, 0.7, 0.00001};
-    edge_properties ep1  = {edge_type::pipe, 1,   9, 0.2, 0.00003};
-    edge_properties ep2  = {edge_type::pipe, 2,   7, 0.3, 0.00005};
-    edge_properties ep3  = {edge_type::pipe, 3,   2, 0.5, 0.00007};
-    edge_properties ep4  = {edge_type::pipe, 4,   1, 0.1, 0.00013};
+    edge_properties ep0  = {pipe_type::PIPE, 0,   5, 0.7, 0.00001};
+    edge_properties ep1  = {pipe_type::PIPE, 1,   9, 0.2, 0.00003};
+    edge_properties ep2  = {pipe_type::PIPE, 2,   7, 0.3, 0.00005};
+    edge_properties ep3  = {pipe_type::PIPE, 3,   2, 0.5, 0.00007};
+    edge_properties ep4  = {pipe_type::PIPE, 4,   1, 0.1, 0.00013};
 
 
     /*          _ 0                                *0  *1  *2  *3  *4  

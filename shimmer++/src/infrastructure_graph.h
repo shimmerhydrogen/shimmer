@@ -14,8 +14,7 @@
 #include "../src/nonpipe_over_edges.h"
 #include "network_elements.h"
 
-namespace shimmer
-    {
+namespace shimmer {
 
 using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1>;
 
@@ -99,7 +98,7 @@ struct vertex_properties {
 };
 
 struct edge_properties {
-    edge_type   type;
+    pipe_type   type;
     int         branch_num;
     double      length;
     double      diameter;

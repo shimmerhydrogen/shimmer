@@ -304,7 +304,14 @@ make_init_graph(infrastructure_graph& g,
     auto efficiency = 0.9;
     auto ramp_coeff = 0.0;
     using mode_t = edge_station::control::mode_type;
-    std::vector<mode_t> mode_type_vec = {mode_t::PRESSURE_IN};
+
+    auto mypair = std::make_pair(mode_t::POWER_DRIVER, 2.E6);
+                //std::make_pair(mode_t::BETA, 1.8);
+                // std::make_pair(mode_t::FLUX, 5);
+//                std::make_pair(mode_t::PRESSURE_OUT, 80E5);
+//                std::make_pair(mode_t::PRESSURE_IN , 50E5);
+    std::vector<std::pair<mode_t,double>> mode_type_vec = {mypair};
+    //                                                   
 
     auto comp = edge_station::make_compressor(ramp_coeff,
                                                     efficiency, 

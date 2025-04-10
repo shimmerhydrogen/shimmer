@@ -173,24 +173,31 @@ make_station_outlet(const VALUE& vals)
 
 class multiple_states_station: public station
 {
+    bool only_one_switch_; 
     size_t count_;
     size_t index_;
     size_t num_states_;
     std::vector<state> states_;
 
 public:
-    multiple_states_station(std::string name){
+    multiple_states_station(std::string name,
+                            bool one_switch_allowed = false):
+    only_one_switch_(one_switch_allowed)
+    {
         name_ = name;
         count_ = 0;
         index_ = 0;
         num_states_ = 2;
     };
 
-    multiple_states_station(std::string name, size_t num_states){
+    multiple_states_station(std::string name, size_t num_states,
+                            bool one_switch_allowed = false):
+    only_one_switch_(one_switch_allowed),
+    num_states_(num_states)
+    {
         name_ = name;
         count_ = 0;
         index_ = 0;
-        num_states_ = num_states;
     };
 
 
@@ -213,7 +220,8 @@ template<typename L_TYPE,typename P_TYPE >
 multiple_states_station
 make_station_entry_l_reg(double factor, const P_TYPE& Pset, const L_TYPE& Lset,
                          const std::vector<pair_input_t>& user_limits_s0,
-                         const std::vector<pair_input_t>& user_limits_s1)
+                         const std::vector<pair_input_t>& user_limits_s1,
+                    bool one_switch_allowed = false)
 {
     auto s0_bnd = constraint(hardness_type::BOUNDARY, constraint_type::L_EQUAL, Lset);
     auto s0_int = constraint(hardness_type::HARD,constraint_type::P_LOWER_EQUAL, factor * Pset); 
@@ -226,7 +234,7 @@ make_station_entry_l_reg(double factor, const P_TYPE& Pset, const L_TYPE& Lset,
     auto s0 = state(s0_bnd, s0_int, s0_ext);
     auto s1 = state(s1_bnd, s1_int, s1_ext);
 
-    multiple_states_station inj_station("INJECTION_WP_CONTROL");
+    multiple_states_station inj_station("INJECTION_WP_CONTROL", one_switch_allowed);
 
     inj_station.set_state(s0);
     inj_station.set_state(s1);
@@ -237,22 +245,24 @@ make_station_entry_l_reg(double factor, const P_TYPE& Pset, const L_TYPE& Lset,
 /* Make entry P-regulated station */
 template<typename VALUE_TYPE>
 multiple_states_station
-make_station_entry_p_reg(const VALUE_TYPE& Pset,
-                         const std::vector<pair_input_t>& user_limits_s0,
-                         const std::vector<pair_input_t>& user_limits_s1)
+make_station_entry_p_reg(  const VALUE_TYPE& Pset_s0,
+                           const std::vector<pair_input_t>& user_limits_s0,
+                           const std::vector<pair_input_t>& user_limits_s1,
+                           bool one_switch_allowed = false)
 {
-    auto s0_bnd = constraint(hardness_type::BOUNDARY, constraint_type::P_EQUAL, Pset);
+    auto s0_bnd = constraint(hardness_type::BOUNDARY, constraint_type::P_EQUAL, Pset_s0);
     auto s0_int = constraint(hardness_type::HARD,constraint_type::L_LOWER_EQUAL, 0.0); 
     auto s0_ext = build_user_constraints(user_limits_s0);
 
-    auto s1_bnd = constraint(hardness_type::BOUNDARY, constraint_type::L_EQUAL, 0.0); 
-    auto s1_int = constraint(hardness_type::HARD, constraint_type::P_GREATER_EQUAL, Pset);
+    // THIS MUST BE MODFIED SINCE IT WAS SET TO ZERO ONLY DUE TO COMPARISON WITH MATLAB CODE
+    auto s1_bnd = constraint(hardness_type::BOUNDARY, constraint_type::L_EQUAL, 0.0); //Carefull here!!!!! 
+    auto s1_int = constraint(hardness_type::HARD, constraint_type::P_GREATER_EQUAL, 0.0);
     auto s1_ext = build_user_constraints(user_limits_s1);
 
     auto s0 = state(s0_bnd, s0_int, s0_ext);
     auto s1 = state(s1_bnd, s1_int, s1_ext);
 
-    multiple_states_station remi("REMI_WO_BACKFLOW");
+    multiple_states_station remi("REMI_WO_BACKFLOW", one_switch_allowed);
     remi.set_state(s0);
     remi.set_state(s1);
 

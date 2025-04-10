@@ -506,38 +506,46 @@ compressor::fill_model( control::mode& m,
                         const vector_t& c2_pipes)
 {
 
-    auto p_in = var.pressure[source_num];
+    auto p_in  = var.pressure[source_num];
     auto p_out = var.pressure[target_num];
+
 
     switch (m.type_)
     {
         case control::mode_type::SHUT_OFF:
         case control::mode_type::BY_PASS:
             m.set_c3(p_in < p_out);
+            std::cout<< "I am inside fill_model with BYPASS or SHUTOFF \n"; 
             break;
         case control::mode_type::BETA:
         {
-            auto beta = p_out / p_in;
+            auto beta = -beta_; // p_out / p_in;
             m.set_c1(beta);
+            std::cout<< "I am inside fill_model with BETA \n"; 
             break;
         }
         case control::mode_type::POWER_DRIVER:
         {
-            auto gamma = 1.4; // Or read from GERG
-            auto ck = gamma - 1.0 / gamma;
-            auto beta = compute_beta(p_in, p_out);
-            auto ZTR = c2_nodes[source_num];
-            auto K = ZTR / efficiency_;
-            auto G = var.flux[pipe_num];
-            auto KGB = K * G * beta;
+            double gamma = 1.4; // Or read from GERG
+            double ck = (gamma - 1.0) / gamma;
+            double beta =  p_out / p_in; //For tessting purposes, here we use simplified beta //compute_beta(p_in, p_out);
+            double betaPowck = std::pow(beta, ck);
+            double ZTR = c2_pipes[pipe_num];
+            double K = ZTR / efficiency_;
+            double G = var.flux[pipe_num];
+            double KGB = K * G * betaPowck;
 
-            auto c3 = (K / ck) * (std::pow(beta, ck) - 1.0);
-            auto pwd = c3 * G;
+            double c1 = -KGB / p_in;
+            double c2 =  KGB / p_out;
+            double c3 = (K / ck) * (betaPowck - 1.0);
+            double computed_pwd = c3 * G;
 
             m.set_c1(-KGB / p_in);
-            m.set_c2(KGB / p_out);
-            m.set_c3(c3);
-            m.set_rhs(pwd);
+            m.set_c2( KGB / p_out);
+            m.set_c3( c3);
+            m.set_rhs(pwd_);//For testing purposes, here we use simplified pwd // computed_pwd);
+
+            std::cout<< "I am inside fill_model with POWER_DRIVER \n"; 
             break;
         }
         case control::mode_type::PRESSURE_IN:
@@ -700,6 +708,18 @@ make_compressor(double ramp,
                     throw std::invalid_argument("Maximun pressure for control != to user limits pressure_out_max");
                 auto c_press_out = control::make_pressure_out_mode(user_limits[P_OUT_MAX].second);
                 cmp.add_mode_on(c_press_out);
+                break;
+            }
+            case control::mode_type::BETA:
+            {
+                std::cout << "Adding mode ON ................ BETA \n";
+                
+                cmp.beta_ = model_value;                
+                auto c_beta_min  = control::make_beta_min_mode(user_limits[BETA_MIN].second);
+                cmp.add_mode_on(c_beta_min);
+                // This should add both controls on beta. But When I do so, there are two controls that call fill model,
+                // so the rhs is fill twice.
+
                 break;
             }
             case control::mode_type::FLUX:

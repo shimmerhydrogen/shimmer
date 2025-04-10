@@ -186,6 +186,8 @@ make_init_graph(infrastructure_graph& g,
                  const vector_t& Pset_INJ,
                  const matrix_t& Gsnam)
 {
+    // Only one switch allowed to fit matlab code
+    bool only_one_switch = true;
     //---------------------------------------------------------------
     double factor = 1.0;//0.85;
     //---------------------------------------------------------------
@@ -212,7 +214,7 @@ make_init_graph(infrastructure_graph& g,
             case(station_type::REMI_WO_BACKFLOW):
             {
                 auto remi = make_remi_wo_backflow(Pset_REMI, user_constraints,
-                                                     user_constraints);
+                                                     user_constraints, only_one_switch);
                 stations[i] = std::make_unique<multiple_states_station>(remi);                
                 break;
             }
@@ -223,7 +225,8 @@ make_init_graph(infrastructure_graph& g,
                 // the data provided by the files
                 auto inj_station = make_inj_w_pressure(factor, 75.E5, Gsnam.row(i),
                                               user_constraints,
-                                              user_constraints);
+                                              user_constraints,
+                                              only_one_switch);
                 stations[i] = std::make_unique<multiple_states_station>(inj_station);
                 break;
             }
@@ -489,7 +492,7 @@ int main()
     size_t num_steps = std::ceil(tfinal/dt);
 
     double temperature = 293.15;
-    double tol = 1e-6;
+    double tol = 1e-10;
 
     double tol_std = 1e-14; 
     double dt_std = 1;
@@ -514,14 +517,14 @@ int main()
 
     std::cout << std::setprecision(16) << guess_std.make_vector() << std::endl; 
 
-    //ts1.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);  
-    ts1.set_initialization(guess_unstd);   
+    ts1.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);  
+    //ts1.set_initialization(guess_unstd);   
     vector_t sol_std  = ts1.guess();
-    std::cout << std::setprecision(16)<< sol_std << std::endl; 
+    //std::cout << std::setprecision(16)<< sol_std << std::endl; 
 
     ts1.advance(dt, num_steps, tol, y_nodes, y_pipes);
     vector_t sol_unstd  = ts1.solution();   
-    std::cout << std::setprecision(16)<< sol_unstd << std::endl; 
+    //std::cout << std::setprecision(16)<< sol_unstd << std::endl; 
 
     //---------------------------------------------------------------
     //auto [ref_std, ref_unstd] = make_reference(guess_unstd);

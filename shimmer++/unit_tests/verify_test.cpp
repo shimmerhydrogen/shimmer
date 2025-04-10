@@ -18,7 +18,7 @@ bool verify_test(const std::string & name,
 
     bool pass = true;
 
-   // std::cout << "Vec:" << std::endl;
+   
     for (int k = 0; k < vals.size(); ++k)
     {
         std::cout << std::setprecision(16) << vals[k]  <<  std::endl ;
@@ -39,6 +39,12 @@ bool verify_test(const std::string & name,
     };
 
     std::cout << "  Test " << name << ".........." <<  passfail(pass) << std::endl;
+
+    if(!pass) 
+    {
+        std::cout << " * Vec:" << std::endl;
+        std::cout << vals << std::endl;
+    }
 
     return pass;
 }

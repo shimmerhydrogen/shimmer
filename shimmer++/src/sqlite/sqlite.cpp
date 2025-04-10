@@ -171,6 +171,12 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
     return 0;
 }
 
+int
+network_database::populate_type_dependent_pipe_data()
+{
+    return 0;
+}
+
 std::optional<table_name_pair_t>
 network_database::limits_and_profile_table_names(station_type stat_type)
 {
@@ -378,6 +384,8 @@ network_database::import_pipelines(infrastructure_graph& g)
     }
 
     sqlite3_finalize(stmt);
+
+    populate_type_dependent_pipe_data();
 
     return SHIMMER_SUCCESS;
 }

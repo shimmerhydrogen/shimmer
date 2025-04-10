@@ -150,6 +150,7 @@ class network_database {
     int import_pipe_initial_conditions();
 
     int populate_type_dependent_station_data(vertex_properties&);
+    int populate_type_dependent_pipe_data();
 
     std::optional<table_name_pair_t> limits_and_profile_table_names(station_type);
 

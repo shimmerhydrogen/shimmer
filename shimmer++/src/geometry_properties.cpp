@@ -30,7 +30,7 @@ vector_t area( const infrastructure_graph& g)
     auto end = edge_range.second;
     size_t i = 0;
     for(auto itor = begin; itor != end; itor++,i++ ){
-        auto pipe = g[*itor];
+        auto& pipe = g[*itor];
         a(i) = pipe.area();   
     }
     return a;

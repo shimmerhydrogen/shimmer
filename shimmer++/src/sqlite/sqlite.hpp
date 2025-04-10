@@ -51,7 +51,7 @@ lookup(const std::vector<P>& pps, int i_sfrom, int i_sto)
 
     auto ppsbegin = pps.begin();
     auto ppsend = pps.end();
-    auto ppitor = std::lower_bound(ppsbegin, ppsend, {i_sfrom, i_sto}, comp);
+    auto ppitor = std::lower_bound(ppsbegin, ppsend, std::pair{i_sfrom, i_sto}, comp);
     if ( (ppitor == ppsend) or ((*ppitor).i_sfrom != i_sfrom)
         or ((*ppitor).i_sto != i_sto) )
         return ppsend;
@@ -106,6 +106,7 @@ using table_name_pair_t = std::pair<std::string, std::string>;
 #include "sqlite_entry_l_reg.h"
 #include "sqlite_exit_l_reg.h"
 #include "sqlite_initial_conditions.h"
+#include "sqlite_pipe.h"
 #include "sqlite_compressor.h"
 
 namespace shimmer {
@@ -128,6 +129,7 @@ class network_database {
     std::vector<setting_entry_p_reg>    settings_entry_p_reg;
     std::vector<setting_entry_l_reg>    settings_entry_l_reg;
     std::vector<setting_exit_l_reg>     settings_exit_l_reg;
+    std::vector<setting_pipe>           settings_pipe;
     std::vector<setting_compr_stat>     settings_compr_stat;
 
     std::vector<station_initial_condition>  sics;
@@ -144,13 +146,14 @@ class network_database {
     int import_entry_l_reg(std::vector<setting_entry_l_reg>&);
     int import_exit_l_reg(std::vector<setting_exit_l_reg>&);
 
+    int import_pipe(std::vector<setting_pipe>&);
     int import_compr_stat(std::vector<setting_compr_stat>&);
 
     int import_station_initial_conditions();
     int import_pipe_initial_conditions();
 
     int populate_type_dependent_station_data(vertex_properties&);
-    int populate_type_dependent_pipe_data();
+    int populate_type_dependent_pipe_data(edge_properties&, int, int);
 
     std::optional<table_name_pair_t> limits_and_profile_table_names(station_type);
 

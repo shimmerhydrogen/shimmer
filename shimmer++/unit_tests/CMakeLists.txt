@@ -54,3 +54,7 @@ add_test(NAME test_non-pipe_at_nodes COMMAND test_stations)
 add_executable(test_sqlite_import test_sqlite_import.cpp)
 target_link_libraries(test_sqlite_import shimmer)
 add_test(NAME test_sqlite_import COMMAND test_stations)
+
+add_executable(test_compressor test_compressor.cpp)
+target_link_libraries(test_compressor shimmer verify_test)
+add_test(NAME test_compressor COMMAND test_compressor)

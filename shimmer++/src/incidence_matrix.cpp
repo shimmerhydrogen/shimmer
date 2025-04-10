@@ -16,7 +16,7 @@ namespace shimmer{
     {
         auto edge_range = edges(g);
         for(auto itor = edge_range.first; itor != edge_range.second;itor++ ){
-            auto pipe = g[*itor];   
+            auto& pipe = g[*itor];   
             auto u = source(*itor, g);
             triplets_in_.push_back(triplet_t(g[u].node_num, pipe.branch_num, 1.0));
  

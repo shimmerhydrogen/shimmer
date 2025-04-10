@@ -103,7 +103,7 @@ struct edge_properties {
     double      length;
     double      diameter;
     double      friction_factor;
-    edge_station::station pipe_station;
+    std::shared_ptr<edge_station::station>  pipe_station;
 
     double area()   const { return M_PI * 0.25 * diameter * diameter;}
     double volume() const { return area() * length;}
@@ -113,6 +113,7 @@ struct edge_properties {
         ofs << " length     : " << ep.length << "\n";
         ofs << " diameter   : " << ep.diameter << "\n";
         ofs << " friction factor : " << ep.friction_factor << "\n";
+        ofs << " Station : " << ep.pipe_station << "\n";
 
         return ofs;
     }

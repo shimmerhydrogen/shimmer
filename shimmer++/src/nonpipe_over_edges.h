@@ -51,7 +51,8 @@ namespace control
     public:
 
         constraint(){};
-        constraint(const hardness_type& h, const constraint_type& t, double v)
+        constraint(const hardness_type& h, const constraint_type& t, double v):
+            hardness_(h), type_(t), value_(v)
         {};
 
         bool  check(double value) const;
@@ -86,7 +87,7 @@ namespace control
             model_(m), internal_(internal)
             {};
         mode(const control::mode_type& type, const control::constraint& internal):
-            model_(model(type)), internal_(internal)
+            type_(type), model_(model(type)), internal_(internal)
             {};
 
         bool check_hard() const;
@@ -186,7 +187,7 @@ public:
 
     station() = default;
     station(const std::string& name,
-    const std::vector<bool>& active_history,
+            const std::vector<bool>& active_history,
             const std::vector<control::constraint>& internals,
             const std::vector<control::constraint>& externals):
                     name_(name), active_history_(active_history),
@@ -202,12 +203,12 @@ public:
                             int target_num,
                             const variable& var);
 
-    inline auto which_mode_type()
+    inline auto which_mode_type() const 
     {
         return mode_.type_;
     };
 
-    void change_mode_on(size_t idx)
+    void change_mode_on(int idx)
     {
         mode_ = controls_on.at(idx);
         return;
@@ -236,16 +237,23 @@ public:
                             int source_num,
                             int target_num,
                             const variable& var,
-                            const vector_t& c2_nodes);
+                            const vector_t& c2_pipes);
+
+    friend std::ostream& operator<<(std::ostream& ofs, const station& cmp);
 };
 
 
-class compressor : public station
+class compressor : public edge_station::station
 {
-    double ramp_coeff_;
-    double efficiency_;
 
 public:
+    double ramp_coeff_;
+    double efficiency_;
+    double beta_;
+    double flux_;
+    double pwd_;
+
+
     compressor(const std::string& name,
         double efficiency,
         double ramp_coeff,
@@ -255,11 +263,12 @@ public:
 
     bool control_hard();
 
-    void activate(  size_t step,
+    /*void activate(  size_t step,
                     int source_num,
                     int target_num,
                     const variable& var);
-
+    */
+    
     double compute_beta(double pressure_in,
                         double pressure_out);
 
@@ -270,6 +279,7 @@ public:
                     const variable& var,
                     const vector_t& c2_nodes);
 
+    friend std::ostream& operator<<(std::ostream& ofs, const compressor& cmp);
 };
 
 
@@ -310,16 +320,17 @@ make_valve( double velocity_limit,
                                          double>> & user_limits);
 
 
-auto
+compressor
 make_compressor(double ramp,
                 double efficiency,
-                const std::vector<double>& activate_history,
-                 std::unordered_map<external_type,
-                                        std::pair<control::constraint_type,
-                                        double>> & user_limits);
+                const std::vector<bool>& activate_history,
+                const std::vector<std::pair<control::mode_type, double>>& modes_type_vec,
+                std::unordered_map<external_type,
+                                std::pair<control::constraint_type,
+                                double>> & user_limits);
 
 
-} //end namespace control
+}//end namespace control
 }//end namespace shimmer
 
 // 0. Check activation warning

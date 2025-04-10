@@ -11,11 +11,11 @@ control::constraint::check(double v) const
     switch (type_)
     {
         case LOWER_EQUAL:
-            return (v < (value_ + 1.e-14));
+            return (v <= value_);
         case GREATER_EQUAL:
-            return (v > (value_ - 1.e-14));
+            return (v >= value_);
         case EQUAL:
-            return (std::abs(v - value_) < 1.e-14);
+            return (std::abs((v - value_)/value_) < 1.e-14);
         case LOWER:
             return (v < value_);
         case GREATER:
@@ -66,9 +66,9 @@ control::model::model(control::mode_type ctype)
         control_index_ = 3;
         break;
     case control::mode_type::FLUX:
-        coeffs[0] = 0.0;
-        coeffs[1] = 0.0;
-        coeffs[2] = 1.0;
+        coeffs[0] =  0.0;
+        coeffs[1] =  0.0;
+        coeffs[2] =  1.0;
         free_index = std::vector<int>{ 3 };
         control_index_ = 3;
         break;
@@ -190,6 +190,7 @@ control::make_shutoff_mode(const constraint_type& ctype)
     return  mode(control::mode_type::SHUT_OFF, internal);
 }
 
+
 auto
 control::make_beta_min_mode(double beta_min)
 {
@@ -212,7 +213,7 @@ auto
 control::make_flux_mode(double flux_max)
 {
     auto internal = control::constraint(control::hardness_type::HARD,
-                                    constraint_type::GREATER_EQUAL, flux_max);
+                                    constraint_type::LOWER_EQUAL, flux_max);
 
     return  mode(control::mode_type::FLUX, internal);
 }
@@ -544,10 +545,13 @@ compressor::fill_model( control::mode& m,
             m.set_rhs(m.internal_.value());
             break;
         case control::mode_type::PRESSURE_OUT:
-            m.set_rhs(p_out);
+            //m.set_rhs(p_out);
+            m.set_rhs(m.internal_.value());
+            std::cout<< "I am inside fill_model with PRESSURE_OUT \n"; 
             break;
         case control::mode_type::FLUX:
-            m.set_rhs(var.flux[pipe_num]);
+            //m.set_rhs(var.flux[pipe_num]);
+            m.set_rhs(flux_);
             break;
         default:
             std::cout << "ERROR: compressor does not know this control type.\n";
@@ -639,10 +643,10 @@ compressor
 make_compressor(double ramp,
                 double efficiency,
                 const std::vector<bool>& activate_history,
-                const std::vector<control::mode_type>& modes_type_vec,
+                const std::vector<std::pair<control::mode_type,double>>& modes_type_vec,
                 std::unordered_map<external_type,
                                         std::pair<control::constraint_type,
-                                        double>> & user_limits)
+                                        double>> & user_limits)                                                   
 {
     auto flux_limit = control::constraint(control::hardness_type::HARD,
                                          control::constraint_type::GREATER_EQUAL,
@@ -657,11 +661,13 @@ make_compressor(double ramp,
                                                  user_limits[BETA_MAX]},
                                                 control::hardness_type::SOFT);
 
-    compressor cmp("COMPRESSOR", ramp, efficiency, activate_history, internals, externals);
+    compressor cmp("COMPRESSOR", efficiency, ramp, activate_history, internals, externals);
 
     for(const auto & m : modes_type_vec)
     {
-        switch (m)
+        auto model_name = m.first;
+        auto model_value = m.second; 
+        switch (model_name)
         {
             case control::mode_type::SHUT_OFF:
             {
@@ -680,6 +686,9 @@ make_compressor(double ramp,
             case control::mode_type::PRESSURE_IN:
             {
                 std::cout << "Adding mode ON ................ PRESS_IN \n";
+                if(model_value != user_limits[P_IN_MIN].second)
+                    throw std::invalid_argument("Minimun pressure for control != to user limits pressure_in_min");
+
                 auto c_press_in  = control::make_pressure_in_mode(user_limits[P_IN_MIN].second);
                 cmp.add_mode_on(c_press_in);
                 break;
@@ -687,6 +696,8 @@ make_compressor(double ramp,
             case control::mode_type::PRESSURE_OUT:
             {
                 std::cout << "Adding mode ON ................ PRESS_OUT \n";
+                if(model_value != user_limits[P_OUT_MAX].second)
+                    throw std::invalid_argument("Maximun pressure for control != to user limits pressure_out_max");
                 auto c_press_out = control::make_pressure_out_mode(user_limits[P_OUT_MAX].second);
                 cmp.add_mode_on(c_press_out);
                 break;
@@ -694,6 +705,7 @@ make_compressor(double ramp,
             case control::mode_type::FLUX:
             {
                 std::cout << "Adding mode ON ................ FLUX \n";
+                cmp.flux_ = model_value;
                 auto c_flux = control::make_flux_mode(user_limits[FLUX_MAX].second);
                 cmp.add_mode_on(c_flux);
                 break;
@@ -701,6 +713,7 @@ make_compressor(double ramp,
             case control::mode_type::POWER_DRIVER:
             {
                 std::cout << "Adding mode ON ................ POWER_DRIVER \n";
+                cmp.pwd_ = model_value;
                 auto c_power_driver = control::make_power_driver_mode(user_limits[PWD_NOMINAL].second, ramp);
                 cmp.add_mode_on(c_power_driver);
                 break;

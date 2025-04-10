@@ -541,12 +541,9 @@ linearized_fluid_solver::check_soft_controls(size_t step)
 bool
 linearized_fluid_solver::check_constraints(size_t step)
 {
-    if(check_hard_constraints(step))
-    {
-        check_soft_constraints(step);
-        return true;
-    }
-    return false;
+    check_soft_constraints(step);
+
+    return check_hard_constraints(step);
 }
 
 

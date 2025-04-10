@@ -245,10 +245,15 @@ public:
 
 class compressor : public edge_station::station
 {
-    double ramp_coeff_;
-    double efficiency_;
 
 public:
+    double ramp_coeff_;
+    double efficiency_;
+    double beta_;
+    double flux_;
+    double pwd_;
+
+
     compressor(const std::string& name,
         double efficiency,
         double ramp_coeff,
@@ -319,7 +324,7 @@ compressor
 make_compressor(double ramp,
                 double efficiency,
                 const std::vector<bool>& activate_history,
-                const std::vector<control::mode_type>& modes_type_vec,
+                const std::vector<std::pair<control::mode_type, double>>& modes_type_vec,
                 std::unordered_map<external_type,
                                 std::pair<control::constraint_type,
                                 double>> & user_limits);

@@ -135,10 +135,14 @@ public:
         var_in_time.row(0) =  var_.make_vector();
 
         double t = 0;
-        for(size_t it = 1; it < num_steps; it++, t+=dt)
+
+        std::ofstream ofs("warnings.txt");
+
+        for(size_t it = 1; it <= num_steps; it++, t+=dt)
         {
-            std::ofstream ofs;
             ofs.open("warnings.txt", std::ios::app);
+            if(!ofs.is_open())
+                throw std::runtime_error("ERROR:  warnings file not opened.");
             ofs<<"========================================================"<< std::endl;
             ofs << "Solving at time ...."<< it <<std::endl;
             ofs.close();
@@ -156,8 +160,9 @@ public:
             size_t ic;
             for(ic = 0; ic <= MAX_CONSTRAINT_ITER; ic++)
             {
-                std::ofstream ofs;
                 ofs.open("warnings.txt", std::ios::app);
+                if(!ofs.is_open())
+                    throw std::runtime_error("ERROR:  warnings file not opened.");
                 ofs << " * Iteration it ..."<<ic<< std::endl;
                 ofs.close();
 
@@ -176,44 +181,42 @@ public:
                 linearized_fluid_solver lfs(it, unsteady, tol, dt, temperature_, mu, inc_, graph_);
                 lfs.run(area_pipes_, var_guess_, var_, &eos, ic);
 
-                if(lfs.check_constraints(it) & lfs.check_controls(it))
+                bool pass_constr = lfs.check_constraints(it); 
+                bool pass_control =  lfs.check_controls(it);
+
+                if(pass_constr && pass_control)
                 {
                     std::cout<< "++++++++++++++++++**** MODIFIED VARIABLE ****++++++++++++++++++++++ " << std::endl;
                     var_ =  lfs.get_variable();
 
-                    std::cout<< "VARIABLE : \n";
-                    std::cout<<  var_.make_vector() << std::endl;
+                    //std::cout<< "VARIABLE : \n";
+                    //std::cout<<  var_.make_vector() << std::endl;
                     
                     break;
                 }
-                std::cout<< "VARIABLE : \n";
-                std::cout<<  lfs.get_variable().make_vector() << std::endl;
-                
-               // if( ic == 1)
-               //     exit(1);
+                //std::cout<< "VARIABLE : \n";
+                //std::cout<<  lfs.get_variable().make_vector() << std::endl;
             }
 
             if(ic == MAX_CONSTRAINT_ITER)
                 std::cout << "ERROR: FAILURE to apply HARD constraints. Max number of iterations has been reached.";
 
             var_in_time.row(it) =  var_.make_vector();
-            
-            //exit(1);
 
-            //var_guess_ = var_;
+            var_guess_ = var_;
         }
 
-        std::ofstream ofs("var_in_time.dat");
-        if(!ofs.is_open())
+        std::ofstream vfs("../build/unit_tests/var_time_DISMA_flux.dat");
+        if(!vfs.is_open())
             std::cout<<"WARNING: var_in_time file has not been opened." << std::endl;
 
         for(size_t i = 0; i < var_in_time.rows(); i++)
         {
             for(size_t j = 0; j < var_in_time.cols(); j++)
-                ofs << std::setprecision(16) << var_in_time(i,j) << " ";
-            ofs << std::endl;
+                vfs << std::setprecision(16) << var_in_time(i,j) << " ";
+            vfs << std::endl;
         }
-        ofs.close();
+        vfs.close();
 
 /*
         std::cout << " * Pressure : ["; //<< std::endl;

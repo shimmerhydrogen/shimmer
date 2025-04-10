@@ -280,17 +280,17 @@ bool linearized_fluid_solver::convergence(
     auto norm_mom  = diff.segment(num_nodes_, num_pipes_).norm()/(var_.flux).norm();
     auto residual  = std::max(norm_mass, norm_mom);
 
-    vector_t press_next = a_p_*var_.pressure+(1.0-a_p_)*sol.head(num_nodes_);
-    vector_t flux_next  = a_G_*var_.flux +(1.0-a_G_)*sol.segment(num_nodes_, num_pipes_);
+    //vector_t press_next = a_p_*var_.pressure+(1.0-a_p_)*sol.head(num_nodes_);
+    //vector_t flux_next  = a_G_*var_.flux +(1.0-a_G_)*sol.segment(num_nodes_, num_pipes_);
 
-    var_.pressure = press_next;
-    var_.flux  = flux_next;
+    var_.pressure = sol.head(num_nodes_);//press_next;
+    var_.flux  = sol.segment(num_nodes_, num_pipes_);//flux_next;
     var_.L_rate = sol.tail(num_nodes_);
-/*
-    std::cout << "sol: ("<< norm_mass<< " , " << norm_mom << ")" <<  std::endl ;
-    std::cout << std::setprecision(16) << sol<< std::endl ;
-    std::cout <<  std::endl ;
-*/
+
+    //std::cout << "sol: ("<< norm_mass<< " , " << norm_mom << ")" <<  std::endl ;
+    //std::cout << std::setprecision(16) << sol<< std::endl ;
+    //std::cout <<  std::endl ;
+
 
     if(residual < tolerance_)
         return true;
@@ -307,13 +307,13 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
                             size_t at_iteration)
 {
     press_pipes_.resize(num_pipes_);
-
+/*
     std::cout << "---------------------------------------------------"<< std::endl;
     std::cout << " * Guess "<< std::endl;
     vector_t myguess = var_guess.make_vector();
     std::cout << std::setprecision(16) << myguess  <<  std::endl;
     std::cout << "---------------------------------------------------"<< std::endl;
-    
+*/  
 
     // Initialization of variables with solution in time n;
     var_.pressure = var_guess.pressure;
@@ -378,13 +378,17 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
         }
 
         vector_t sol = solver.solve(rhs);
+
+
         if(solver.info() != Eigen::Success) {
             std::cout << "Error solving system" <<std::endl;
             exit(1);
         }
 
-
-        /*
+/*
+        std::cout << "RHS = [\n "<< rhs << "];"<< std::endl;
+        std::cout << "Sol = [\n "<< sol << "];"<< std::endl;
+*/
         std::cout << "LHS : " <<std::endl;
         size_t count = 0;
         for (int k = 0; k < LHS.outerSize(); ++k)
@@ -396,22 +400,24 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
                             << " ; " << std::endl ;
             }
         }
-        */
+
 
         std::string str_iter =  std::to_string(at_iteration); 
         std::string str_step =  std::to_string(at_step_); 
-        std::string filename_rhs = "rhs_t" + str_step + "_it" + str_iter + ".txt";
-        std::string filename_sol = "sol_t" + str_step + "_it" + str_iter + ".txt";
+        std::string filename_rhs = "../build/unit_tests/rhs_t" + str_step + "_it" + str_iter + ".txt";
+        std::string filename_sol = "../build/unit_tests/sol_t" + str_step + "_it" + str_iter + ".txt";
 
         std::ofstream rfs (filename_rhs, std::ios::app); 
         if(!rfs.is_open())
             throw  std::runtime_error("ERROR: RHS file not opened");
         rfs << "  "<< std::setprecision(16) << rhs.transpose()  <<  std::endl;
+        rfs.close();
 
         std::ofstream sfs (filename_sol, std::ios::app); 
         if(!sfs.is_open())
             throw  std::runtime_error("ERROR: SOLUTION file not opened");
         sfs << "  "<< std::setprecision(16) << sol.transpose()  <<  std::endl;
+        sfs.close();
 
         if (convergence(sol))
         {

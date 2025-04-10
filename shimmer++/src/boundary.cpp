@@ -100,7 +100,13 @@ void
 multiple_states_station::switch_state()
 {
     count_++;
-    index_ = count_%num_states_;
+    
+    /*  
+        Only_one_switch_ is added only for testing reasons against 
+        the Matlab code. Must be set as FALSE by default
+    */
+    index_ = (only_one_switch_)? 1 :  
+                                 count_%num_states_;
 }
 
 

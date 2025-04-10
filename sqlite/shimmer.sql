@@ -274,6 +274,25 @@ create table compressor_limits (
 
 -----------------------------------------------------------------------
 -----------------------------------------------------------------------
+-----------------------------------------------------------------------
+-----------------------------------------------------------------------
+-- Valve parameters.
+create table valve_profile (
+    p_name      TEXT NOT NULL,
+    s_from      INTEGER,
+    s_to        INTEGER,
+
+    prf_time    REAL DEFAULT 0.0,
+    controlmode INTEGER DEFAULT 10, -- default OFF BYPASS
+
+    -- The referenced pipeline must exist
+    FOREIGN KEY (p_name, s_from, s_to)
+        REFERENCES pipelines(p_name, s_from, s_to)
+);
+
+
+-----------------------------------------------------------------------
+-----------------------------------------------------------------------
 create table station_initial_conditions (
     s_number    INTEGER UNIQUE NOT NULL,
     init_P      REAL DEFAULT 0.0 NOT NULL,

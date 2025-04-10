@@ -299,7 +299,7 @@ create table station_initial_conditions (
     init_L      REAL DEFAULT 0.0 NOT NULL,
 
     FOREIGN KEY (s_number)
-        REFERENCES stations(s_number),
+        REFERENCES stations(s_number)
 );
 
 create table pipe_initial_conditions (

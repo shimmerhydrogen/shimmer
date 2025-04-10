@@ -88,7 +88,7 @@ linearized_fluid_solver::continuity(
 
 void
 linearized_fluid_solver::impose_edge_station_model(
-                        const vector_t& c2_nodes,
+                        const vector_t& c2_pipes,
                         const vector_t& nodes_pressure,
                         const vector_t& flux,                         
                         sparse_matrix_t& sADP,
@@ -123,7 +123,7 @@ linearized_fluid_solver::impose_edge_station_model(
                                       source_num,
                                       target_num,
                                       var_,
-                                      c2_nodes);
+                                      c2_pipes);
     
         // Check if values respect limits, otherwise they are modified
         st->control_hard();
@@ -176,7 +176,7 @@ linearized_fluid_solver::momentum(
     vector_t r_scale = r.cwiseQuotient(ADP_p);
     vector_t rhs_scale = rhs.cwiseQuotient(ADP_p);
 
-    impose_edge_station_model(c2_nodes, nodes_pressure, flux,
+    impose_edge_station_model(c2_pipes, nodes_pressure, flux,
                               sADP,r_scale, rhs_scale);
 
     auto t_sR   = build_triplets( r_scale , num_nodes_, num_nodes_);
@@ -475,7 +475,7 @@ linearized_fluid_solver::check_hard_controls(size_t step)
         // =================================================================
         // fill all controls for verification:
         for (edge_station::control::mode& m : st->controls_on)
-            st->fill_model(m, pipe_num, source_num, target_num, var_, c2_nodes_);
+            st->fill_model(m, pipe_num, source_num, target_num, var_, c2_pipes_);
         
 
         // =================================================================

@@ -502,7 +502,7 @@ compressor::fill_model( control::mode& m,
                         int source_num,
                         int target_num,
                         const variable& var,
-                        const vector_t& c2_nodes)
+                        const vector_t& c2_pipes)
 {
 
     auto p_in = var.pressure[source_num];

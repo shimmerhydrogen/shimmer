@@ -237,7 +237,7 @@ public:
                             int source_num,
                             int target_num,
                             const variable& var,
-                            const vector_t& c2_nodes);
+                            const vector_t& c2_pipes);
 
     friend std::ostream& operator<<(std::ostream& ofs, const station& cmp);
 };

@@ -172,8 +172,58 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
 }
 
 int
-network_database::populate_type_dependent_pipe_data()
+network_database::populate_type_dependent_pipe_data(edge_properties& ep, int i_from, int i_to)
 {
+    //edge_properties ep15 = {    pipe_type::COMPR_STAT,
+    //    15, 1, 0.2 ,	1.20E-05,
+    //    };
+   
+    switch (ep.type) {
+        
+        case pipe_type::PIPE: {
+            auto sitor = lookup(settings_pipe, i_from, i_to);
+            if (sitor == settings_pipe.end()) {
+                std::cerr << "WARNING: no data for pipe" << std::endl;
+            }
+            break;
+        }
+
+        case pipe_type::COMPR_STAT: {
+
+            auto sitor = lookup(settings_compr_stat, i_from, i_to);
+            if (sitor == settings_compr_stat.end()) {
+                std::cerr << "WARNING: no data for pipe" << std::endl;
+            }
+            auto ramp_coeff = 0.0;
+            auto efficiency = 0.9;
+
+            /*
+            edge_station::make_compressor(ramp_coeff,
+                                                    efficiency, 
+                                                    activate_history,
+                                                    mode_type_vec,
+                                                    user_limits);
+
+            ep.pipe_station = std::make_shared<edge_station::compressor>(comp);
+            */
+            break;
+        }
+
+        case pipe_type::RED_STAT: {
+            throw std::invalid_argument("RED_STAT not implemented");
+            break;
+        }
+
+        case pipe_type::VALVE: {
+            throw std::invalid_argument("VALVE not implemented");
+            break;
+        }
+
+        default:
+            std::cerr << "WARNING: invalid pipe type " << +ep.type << std::endl;
+            return 1;
+    }
+   
     return 0;
 }
 
@@ -368,24 +418,32 @@ network_database::import_pipelines(infrastructure_graph& g)
         return SHIMMER_DATABASE_PROBLEM;
     }
 
+    int branch_num = 0;
     while (sqlite3_step(stmt) != SQLITE_DONE) {
         std::string name = (char *) sqlite3_column_text(stmt, 0);
         int from_un = sqlite3_column_int(stmt, 1);
         int to_un = sqlite3_column_int(stmt, 2);
         auto from_vtx = s_u2vd.at(from_un).value();
         auto to_vtx = s_u2vd.at(to_un).value();
+
+        auto from_in = s_u2i.at(from_un).value();
+        auto to_in = s_u2i.at(to_un).value();
         
         /* XXX: NAME CURRENTLY NOT USED - CANNOT HAVE
          *      MULTIPLE PIPES BETWEEN THE SAME TWO NODES
          */
         int type = sqlite3_column_int(stmt, 3);
         
-        boost::add_edge(from_vtx, to_vtx, g);
+        edge_properties ep;
+        ep.type = static_cast<pipe_type>(type);
+        ep.branch_num = branch_num++;
+
+        populate_type_dependent_pipe_data(ep, from_in, to_in);
+
+        boost::add_edge(from_vtx, to_vtx, ep, g);
     }
 
     sqlite3_finalize(stmt);
-
-    populate_type_dependent_pipe_data();
 
     return SHIMMER_SUCCESS;
 }

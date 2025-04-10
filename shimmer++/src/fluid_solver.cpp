@@ -405,21 +405,7 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
 
         std::string str_iter =  std::to_string(at_iteration); 
         std::string str_step =  std::to_string(at_step_); 
-        std::string filename_rhs = "../build/unit_tests/rhs_t" + str_step + "_it" + str_iter + ".txt";
-        std::string filename_sol = "../build/unit_tests/sol_t" + str_step + "_it" + str_iter + ".txt";
-
-        std::ofstream rfs (filename_rhs, std::ios::app); 
-        if(!rfs.is_open())
-            throw  std::runtime_error("ERROR: RHS file not opened");
-        rfs << "  "<< std::setprecision(16) << rhs.transpose()  <<  std::endl;
-        rfs.close();
-
-        std::ofstream sfs (filename_sol, std::ios::app); 
-        if(!sfs.is_open())
-            throw  std::runtime_error("ERROR: SOLUTION file not opened");
-        sfs << "  "<< std::setprecision(16) << sol.transpose()  <<  std::endl;
-        sfs.close();
-
+        
         if (convergence(sol))
         {
             c2_nodes_ = c2_nodes;

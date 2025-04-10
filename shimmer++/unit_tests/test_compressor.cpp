@@ -33,7 +33,7 @@
 #include "../src/time_solver.h"
 #include "../src/viscosity.h"
 #include "../src/nonpipe_over_edges.h"
-
+#include "network_elements.h"
 
 using triple_t = std::array<double, 3>;
 using namespace shimmer;
@@ -43,32 +43,23 @@ size_t num_pipes = 17;
 size_t num_nodes = 15;
 size_t num_outlet = 5;    
 
-enum station_type
-{
-    REMI_WO_BACKFLOW,
-    INJ_W_PRESS_CONTROL,
-    OUTLET,
-    JUNCTION,
-    CONSUMPTION_WO_PRESS,
-};
-
 std::vector<station_type>
 make_stations_type_vector()
 {
     return std::vector<station_type>{
-        station_type::REMI_WO_BACKFLOW,
-        station_type::OUTLET,
+        station_type::ENTRY_P_REG,
+        station_type::PRIVATE_OUTLET,
         station_type::JUNCTION,
         station_type::JUNCTION,
         station_type::JUNCTION,
-        station_type::CONSUMPTION_WO_PRESS,
+        station_type::EXIT_L_REG,
         station_type::JUNCTION,
         station_type::JUNCTION,
-        station_type::CONSUMPTION_WO_PRESS,
+        station_type::EXIT_L_REG,
         station_type::JUNCTION,
-        station_type::CONSUMPTION_WO_PRESS,
-        station_type::INJ_W_PRESS_CONTROL,
-        station_type::OUTLET,
+        station_type::EXIT_L_REG,
+        station_type::ENTRY_L_REG,
+        station_type::PRIVATE_OUTLET,
         station_type::JUNCTION,
         station_type::JUNCTION
     };
@@ -211,35 +202,35 @@ make_init_graph(infrastructure_graph& g,
             case(station_type::JUNCTION):
                 stations[i] = std::make_unique<junction>();
                 break;
-            case(station_type::REMI_WO_BACKFLOW):
+            case(station_type::ENTRY_P_REG):
             {
-                auto remi = make_remi_wo_backflow(Pset_REMI, user_constraints,
+                auto remi = make_station_entry_p_reg(Pset_REMI, user_constraints,
                                                      user_constraints, only_one_switch);
                 stations[i] = std::make_unique<multiple_states_station>(remi);                
                 break;
             }
-            case(station_type::INJ_W_PRESS_CONTROL):
+            case(station_type::ENTRY_L_REG):
             {
                 std::cout<< " INJ_W_PRESS: Lset"<< std::endl;
                 // Here Pset_Inj should be given, but in the code Pset=75E5, instead of
                 // the data provided by the files
-                auto inj_station = make_inj_w_pressure(factor, 75.E5, Gsnam.row(i),
+                auto inj_station = make_station_entry_l_reg(factor, 75.E5, Gsnam.row(i),
                                               user_constraints,
                                               user_constraints,
                                               only_one_switch);
                 stations[i] = std::make_unique<multiple_states_station>(inj_station);
                 break;
             }
-            case(station_type::CONSUMPTION_WO_PRESS):
+            case(station_type::EXIT_L_REG):
             {
-                auto consumption = make_consumption_wo_press(Gsnam.row(i), user_constraints);
+                auto consumption = make_station_exit_l_reg(Gsnam.row(i), user_constraints);
                 stations[i] = std::make_unique<one_state_station>(consumption);
                 break;
 
             }
-            case(station_type::OUTLET):
+            case(station_type::PRIVATE_OUTLET):
             {
-                auto exit_station = make_outlet(Gsnam.row(i));
+                auto exit_station = priv::make_station_outlet(Gsnam.row(i));
                 stations[i] = std::make_unique<one_state_station>(exit_station);
                 break;
             }
@@ -308,11 +299,11 @@ make_init_graph(infrastructure_graph& g,
     auto ramp_coeff = 0.0;
     using mode_t = edge_station::control::mode_type;
 
-    auto mypair = std::make_pair(mode_t::POWER_DRIVER, 2.E6);
+    auto mypair = //std::make_pair(mode_t::POWER_DRIVER, 2.E6);
                 //std::make_pair(mode_t::BETA, 1.8);
                 // std::make_pair(mode_t::FLUX, 5);
-//                std::make_pair(mode_t::PRESSURE_OUT, 80E5);
-//                std::make_pair(mode_t::PRESSURE_IN , 50E5);
+                //std::make_pair(mode_t::PRESSURE_OUT, 80E5);
+                std::make_pair(mode_t::PRESSURE_IN , 50E5);
     std::vector<std::pair<mode_t,double>> mode_type_vec = {mypair};
     //                                                   
 
@@ -325,23 +316,23 @@ make_init_graph(infrastructure_graph& g,
     std::cout << comp <<std::endl;
 
     // Read in topology.xlsx, sheet: PIPEs
-    edge_properties ep0  = {edge_type::pipe, 0,  80000,	1.2,	1.20E-05};
-    edge_properties ep1  = {edge_type::pipe, 1,  16000,	0.6,	1.20E-05};
-    edge_properties ep2  = {edge_type::pipe, 2,  40000,	0.8,	1.20E-05};
-    edge_properties ep3  = {edge_type::pipe, 3, 160000,	0.7,	1.20E-05};
-    edge_properties ep4  = {edge_type::pipe, 4, 200000,	0.8,	1.20E-05};
-    edge_properties ep5  = {edge_type::pipe, 5,  24000,	0.6,	1.20E-05};
-    edge_properties ep6  = {edge_type::pipe, 6,  60000,	0.2,	1.20E-05};
-    edge_properties ep7  = {edge_type::pipe, 7,  80000,	0.9,	1.20E-05};
-    edge_properties ep8  = {edge_type::pipe, 8,  64000,	0.7,	1.20E-05};
-    edge_properties ep9  = {edge_type::pipe, 9, 240000,	0.6,	1.20E-05};
-    edge_properties ep10 = {edge_type::pipe,10,  28000,	0.2,	1.20E-05};
-    edge_properties ep11 = {edge_type::pipe,11,  80000,	0.9,	1.20E-05};
-    edge_properties ep12 = {edge_type::pipe,12, 160000,	0.7,	1.20E-05};
-    edge_properties ep13 = {edge_type::pipe,13,  40000,	0.3,	1.20E-05};
-    edge_properties ep14 = {edge_type::pipe,14, 320000,	0.9,	1.20E-05};
-    edge_properties ep15 = {edge_type::compressor,15, 1, 0.2 ,	1.20E-05, std::make_shared<edge_station::compressor>(comp)};
-    edge_properties ep16 = {edge_type::pipe,16,  60000, 0.2,	1.20E-05};
+    edge_properties ep0  = {pipe_type::PIPE, 0,  80000,	1.2,	1.20E-05};
+    edge_properties ep1  = {pipe_type::PIPE, 1,  16000,	0.6,	1.20E-05};
+    edge_properties ep2  = {pipe_type::PIPE, 2,  40000,	0.8,	1.20E-05};
+    edge_properties ep3  = {pipe_type::PIPE, 3, 160000,	0.7,	1.20E-05};
+    edge_properties ep4  = {pipe_type::PIPE, 4, 200000,	0.8,	1.20E-05};
+    edge_properties ep5  = {pipe_type::PIPE, 5,  24000,	0.6,	1.20E-05};
+    edge_properties ep6  = {pipe_type::PIPE, 6,  60000,	0.2,	1.20E-05};
+    edge_properties ep7  = {pipe_type::PIPE, 7,  80000,	0.9,	1.20E-05};
+    edge_properties ep8  = {pipe_type::PIPE, 8,  64000,	0.7,	1.20E-05};
+    edge_properties ep9  = {pipe_type::PIPE, 9, 240000,	0.6,	1.20E-05};
+    edge_properties ep10 = {pipe_type::PIPE,10,  28000,	0.2,	1.20E-05};
+    edge_properties ep11 = {pipe_type::PIPE,11,  80000,	0.9,	1.20E-05};
+    edge_properties ep12 = {pipe_type::PIPE,12, 160000,	0.7,	1.20E-05};
+    edge_properties ep13 = {pipe_type::PIPE,13,  40000,	0.3,	1.20E-05};
+    edge_properties ep14 = {pipe_type::PIPE,14, 320000,	0.9,	1.20E-05};
+    edge_properties ep15 = {pipe_type::COMPR_STAT,15, 1, 0.2 ,	1.20E-05, std::make_shared<edge_station::compressor>(comp)};
+    edge_properties ep16 = {pipe_type::PIPE,16,  60000, 0.2,	1.20E-05};
 
 
     // Read in topology.xlsx, sheet: PIPEs
@@ -527,12 +518,12 @@ int main()
     //std::cout << std::setprecision(16)<< sol_unstd << std::endl; 
 
     //---------------------------------------------------------------
-    //auto [ref_std, ref_unstd] = make_reference(guess_unstd);
-    //bool pass =  verify_test("time solver with computed init", sol_std, ref_std); 
+    auto [ref_std, ref_unstd] = make_reference(guess_unstd);
+    bool pass =  verify_test("time solver with computed init", sol_std, ref_std); 
 
-    //std::cout << pass << std::endl; 
+    std::cout << pass << std::endl; 
 
-    bool pass = true;
+    //bool pass = true;
 
     return !(pass);
 }

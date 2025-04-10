@@ -192,9 +192,9 @@ create table pipeline_types (
 );
 
 insert into pipeline_types values
-    (0, 'Plain pipe')
-    (1, 'Compressor');
-    (2, 'Reduction station');
+    (0, 'Plain pipe'),
+    (1, 'Compressor'),
+    (2, 'Reduction station'),
     (3, 'Valve');
 
 -- The pipelines. They are the edges of the graph.

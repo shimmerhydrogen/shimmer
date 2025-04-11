@@ -36,6 +36,17 @@ end
 %% Boundary conditions
 % MATLAB 1 trovi il valore in graph.Nodes.PRESSURES
 % MATLAB 2/3 trovi il valore in graph.Nodes.G_EXE (G is flow exchanged)
+% Metti questo nelle tabelle profiles con time 0
+% Invece per i limits non so dove andarli a prendere, ma mi sa che sarà un
+% valore settato a manina (da chiedere) -> vedere file small_network_disma_nodes_nonpipe.xlsx
+
+%% Initial conditions
+%
+% graph.Nodes.PRESSURES (p)
+% graph.Nodes.G_EXE (L)
+% graph.Nodes.FLOWRATES (G)
+% Ask if it is the guess or the last value
+
 
 stations_type = zeros(num_nodes);
 for s = 1:num_nodes

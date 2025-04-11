@@ -88,11 +88,13 @@ linearized_fluid_solver::continuity(
 
 void
 linearized_fluid_solver::impose_edge_station_model(
-                        const vector_t& c2_nodes,
+                        const vector_t& c2_pipes,
                         const vector_t& nodes_pressure,
-                        const vector_t& flux,
-                        std::vector<triplet_t>& triplets_mom,
+                        const vector_t& flux,                         
+                        sparse_matrix_t& sADP,
+                        vector_t& r_scale,
                         vector_t& rhs_mom)
+
 {
     size_t offset = num_nodes_;
 
@@ -104,9 +106,10 @@ linearized_fluid_solver::impose_edge_station_model(
     for (auto itor = begin; itor != end; itor++, idx++)
     {
         auto pipe = graph_[*itor];
-        if (pipe.type == edge_type::pipe) continue;
+        if (pipe.type == pipe_type::PIPE)
+            continue;
 
-        auto& st = pipe.pipe_station;
+        const auto& st = pipe.pipe_station;
 
         auto pipe_num = pipe.branch_num;
 
@@ -116,17 +119,28 @@ linearized_fluid_solver::impose_edge_station_model(
         auto source_num = graph_[s].node_num;
         auto target_num = graph_[t].node_num;
 
-        st.fill_model(st.mode_, pipe_num, source_num, target_num, var_, c2_nodes);
-
+        st->fill_model(st->mode_,
+                                      pipe_num,
+                                      source_num,
+                                      target_num,
+                                      var_,
+                                      c2_pipes);
+    
         // Check if values respect limits, otherwise they are modified
-        st.control_hard();
+        st->control_hard();
 
         size_t row = pipe_num + offset;
 
-        triplets_mom.push_back(triplet_t(row, source_num, st.model_c1()));
-        triplets_mom.push_back(triplet_t(row, target_num, st.model_c2()));
-        triplets_mom.push_back(triplet_t(row, row, st.model_c3()));
-        rhs_mom(row) = st.model_rhs();
+        //triplets_mom.push_back(triplet_t(row, source_num, st.model_c1()));
+        //triplets_mom.push_back(triplet_t(row, target_num, st.model_c2()));
+
+        //WARNING: THIS MUST BE DONE IN ANOTHER WAY!!! TEMPORALLY MODIFYING THE SPARSE MATRIX
+        // See Issue #25
+        sADP.coeffRef(pipe_num, source_num) = st->model_c1();
+        sADP.coeffRef(pipe_num, target_num) = st->model_c2();
+
+        r_scale(pipe_num) = st->model_c3();
+        rhs_mom(pipe_num) = st->model_rhs();
     }
 
     return;
@@ -161,15 +175,16 @@ linearized_fluid_solver::momentum(
     }
 
     vector_t r_scale = r.cwiseQuotient(ADP_p);
+    vector_t rhs_scale = rhs.cwiseQuotient(ADP_p);
+
+    impose_edge_station_model(c2_pipes, nodes_pressure, flux,
+                              sADP,r_scale, rhs_scale);
+
     auto t_sR   = build_triplets( r_scale , num_nodes_, num_nodes_);
     auto t_sADP = build_triplets( sADP,  num_nodes_, 0);
 
     std::vector<triplet_t> triplets =  t_sADP;
     triplets.insert(triplets.begin(), t_sR.begin(), t_sR.end());
-
-    vector_t rhs_scale = rhs.cwiseQuotient(ADP_p);
-
-    impose_edge_station_model(c2_nodes, nodes_pressure, flux, triplets,rhs_scale);
 
     return std::make_pair(triplets, rhs_scale);
 }
@@ -266,18 +281,17 @@ bool linearized_fluid_solver::convergence(
     auto norm_mom  = diff.segment(num_nodes_, num_pipes_).norm()/(var_.flux).norm();
     auto residual  = std::max(norm_mass, norm_mom);
 
-    vector_t press_next = a_p_*var_.pressure+(1.0-a_p_)*sol.head(num_nodes_);
-    vector_t flux_next  = a_G_*var_.flux +(1.0-a_G_)*sol.segment(num_nodes_, num_pipes_);
+    //vector_t press_next = a_p_*var_.pressure+(1.0-a_p_)*sol.head(num_nodes_);
+    //vector_t flux_next  = a_G_*var_.flux +(1.0-a_G_)*sol.segment(num_nodes_, num_pipes_);
 
-    var_.pressure = press_next;
-    var_.flux  = flux_next;
+    var_.pressure = sol.head(num_nodes_);//press_next;
+    var_.flux  = sol.segment(num_nodes_, num_pipes_);//flux_next;
     var_.L_rate = sol.tail(num_nodes_);
-/*
-    std::cout << "sol: ("<< norm_mass<< " , " << norm_mom << ")" <<  std::endl ;
-    for (int k = 0; k < sol.size(); ++k)
-        std::cout << std::setprecision(16) << sol(k)<< std::endl ;
-    std::cout <<  std::endl ;
-*/
+
+    //std::cout << "sol: ("<< norm_mass<< " , " << norm_mom << ")" <<  std::endl ;
+    //std::cout << std::setprecision(16) << sol<< std::endl ;
+    //std::cout <<  std::endl ;
+
 
     if(residual < tolerance_)
         return true;
@@ -290,9 +304,17 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
                             //const vector_t& flux_ext,
                             const variable& var_guess,
                             const variable& var_time,
-                            equation_of_state *eos)
+                            equation_of_state *eos,                        
+                            size_t at_iteration)
 {
     press_pipes_.resize(num_pipes_);
+/*
+    std::cout << "---------------------------------------------------"<< std::endl;
+    std::cout << " * Guess "<< std::endl;
+    vector_t myguess = var_guess.make_vector();
+    std::cout << std::setprecision(16) << myguess  <<  std::endl;
+    std::cout << "---------------------------------------------------"<< std::endl;
+*/  
 
     // Initialization of variables with solution in time n;
     var_.pressure = var_guess.pressure;
@@ -310,9 +332,12 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
     eos->initialization(this);
 
     for(size_t iter = 0; iter <= MAX_ITERS_; iter++)
+    //for(size_t iter = 0; iter <= 16; iter++)
     {
-        std::cout<< "---------------------------------" << std::endl;
-        std::cout<< "Solver at iteration k ..."<< iter << std::endl;
+        std::cout << "---------------------------------------------------"<< std::endl;
+        std::cout<< "Fluid solver at iteration k ..............."<< iter << std::endl;
+        std::cout << "---------------------------------------------------"<< std::endl;
+
 
         press_pipes_ = average(var_.pressure, inc_);
         auto [c2_nodes, c2_pipes] = eos->speed_of_sound(this);
@@ -331,7 +356,9 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
                             << " , " << trip.col() << " , " << trip.value()
                             << " ; " << std::endl ;
         }
+        std::cout << "---------------------------------------------------"<< std::endl;
         */
+
 
         Eigen::SparseLU<sparse_matrix_t> solver;
         solver.compute(LHS);
@@ -352,12 +379,17 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
         }
 
         vector_t sol = solver.solve(rhs);
+
+
         if(solver.info() != Eigen::Success) {
             std::cout << "Error solving system" <<std::endl;
             exit(1);
         }
 
-        /*
+/*
+        std::cout << "RHS = [\n "<< rhs << "];"<< std::endl;
+        std::cout << "Sol = [\n "<< sol << "];"<< std::endl;
+*/
         std::cout << "LHS : " <<std::endl;
         size_t count = 0;
         for (int k = 0; k < LHS.outerSize(); ++k)
@@ -371,16 +403,9 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
         }
 
 
-        std::cout << "rhs = "<< std::endl;
-        for (int k = 0; k < rhs.size(); ++k)
-            std::cout << "  " << rhs[k]  <<  std::endl;
-
-        std::cout << " * XXX_k at iter ...."<< iter << std::endl;
-        for (int k = 0; k < sol.size(); ++k)
-            std::cout << "  " << sol[k]  <<  std::endl;
-        */
-        std::cout<< "Solver at iteration k ..."<< iter << std::endl;
-
+        std::string str_iter =  std::to_string(at_iteration); 
+        std::string str_step =  std::to_string(at_step_); 
+        
         if (convergence(sol))
         {
             c2_nodes_ = c2_nodes;
@@ -424,27 +449,28 @@ linearized_fluid_solver::check_hard_controls(size_t step)
 
     for (auto itor = begin; itor != end; itor++)
     {
-        auto pipe = graph_[*itor];
+        const auto& pipe = graph_[*itor];
 
-        if (pipe.type == edge_type::pipe) continue;
+        if (pipe.type == pipe_type::PIPE)
+            continue;
 
         auto& st = pipe.pipe_station;
 
-        if (!st.is_on()) continue;
+        if (!st->is_on()) continue;
 
-        auto pipe_num = pipe.branch_num;
+        int pipe_num = pipe.branch_num;
 
         auto s = boost::source(*itor, graph_);
         auto t = boost::target(*itor, graph_);
 
-        auto source_num = graph_[s].node_num;
-        auto target_num = graph_[t].node_num;
-
+        int source_num = graph_[s].node_num;
+        int target_num = graph_[t].node_num;
 
         // =================================================================
         // fill all controls for verification:
-        for (auto& m : st.controls_on)
-            st.fill_model(m, pipe_num, source_num, target_num, var_, c2_nodes_);
+        for (edge_station::control::mode& m : st->controls_on)
+            st->fill_model(m, pipe_num, source_num, target_num, var_, c2_pipes_);
+        
 
         // =================================================================
 
@@ -458,12 +484,12 @@ linearized_fluid_solver::check_hard_controls(size_t step)
         size_t idx = 0;
         bool pass;
 
-        for (const auto& m : st.controls_on)
+        for (const auto& m : st->controls_on)
         {
             pass = m.check_hard();
             if (!pass)
             {
-                st.change_mode_on(idx);
+                st->change_mode_on(idx);
                 break;
             }
             idx++;
@@ -509,12 +535,9 @@ linearized_fluid_solver::check_soft_controls(size_t step)
 bool
 linearized_fluid_solver::check_constraints(size_t step)
 {
-    if(check_hard_constraints(step))
-    {
-        check_soft_constraints(step);
-        return true;
-    }
-    return false;
+    check_soft_constraints(step);
+
+    return check_hard_constraints(step);
 }
 
 

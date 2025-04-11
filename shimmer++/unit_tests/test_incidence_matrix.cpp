@@ -66,18 +66,18 @@ make_init_graph(infrastructure_graph& igraph)
 
     using eprop_t = edge_properties;
 
-    edge_properties ep0  = {edge_type::pipe, 0,   80, 0.6, 0.012};
-    edge_properties ep1  = {edge_type::pipe, 1,   90, 0.6, 0.012};
-    edge_properties ep2  = {edge_type::pipe, 2,  100, 0.6, 0.012};
-    edge_properties ep3  = {edge_type::pipe, 3,  110, 0.6, 0.012};
-    edge_properties ep4  = {edge_type::pipe, 4,   80, 0.6, 0.012};
-    edge_properties ep5  = {edge_type::pipe, 5,   80, 0.6, 0.012};
-    edge_properties ep6  = {edge_type::pipe, 6,   80, 0.6, 0.012};
-    edge_properties ep7  = {edge_type::pipe, 7,   80, 0.6, 0.012};
-    edge_properties ep8  = {edge_type::pipe, 8,   80, 0.6, 0.012};
-    edge_properties ep9  = {edge_type::pipe, 9,   80, 0.6, 0.012};
-    edge_properties ep10 = {edge_type::pipe,10,   80, 0.6, 0.012};
-    edge_properties ep11 = {edge_type::pipe,11,   80, 0.6, 0.012};
+    edge_properties ep0  = {pipe_type::PIPE, 0,   80, 0.6, 0.012};
+    edge_properties ep1  = {pipe_type::PIPE, 1,   90, 0.6, 0.012};
+    edge_properties ep2  = {pipe_type::PIPE, 2,  100, 0.6, 0.012};
+    edge_properties ep3  = {pipe_type::PIPE, 3,  110, 0.6, 0.012};
+    edge_properties ep4  = {pipe_type::PIPE, 4,   80, 0.6, 0.012};
+    edge_properties ep5  = {pipe_type::PIPE, 5,   80, 0.6, 0.012};
+    edge_properties ep6  = {pipe_type::PIPE, 6,   80, 0.6, 0.012};
+    edge_properties ep7  = {pipe_type::PIPE, 7,   80, 0.6, 0.012};
+    edge_properties ep8  = {pipe_type::PIPE, 8,   80, 0.6, 0.012};
+    edge_properties ep9  = {pipe_type::PIPE, 9,   80, 0.6, 0.012};
+    edge_properties ep10 = {pipe_type::PIPE,10,   80, 0.6, 0.012};
+    edge_properties ep11 = {pipe_type::PIPE,11,   80, 0.6, 0.012};
 
 
     boost::add_edge( vds[0], vds[ 1], ep0, igraph);

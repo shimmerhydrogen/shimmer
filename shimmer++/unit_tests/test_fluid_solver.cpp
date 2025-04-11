@@ -38,9 +38,9 @@ make_init_graph(infrastructure_graph& g)
     vector_t flux_ext(num_nodes);
     flux_ext << 0.0, 30.80, 15.4;
 
-    auto sint0 = make_inlet(pressure_in);
-    auto sout1 = make_outlet(flux_ext(1));
-    auto sout2 = make_outlet(flux_ext(2));
+    auto sint0 = priv::make_station_inlet(pressure_in);
+    auto sout1 = priv::make_station_outlet(flux_ext(1));
+    auto sout2 = priv::make_station_outlet(flux_ext(2));
 
     //---------------------------------------------------------------
     std::vector<std::unique_ptr<station>> stations(num_nodes);
@@ -68,9 +68,9 @@ make_init_graph(infrastructure_graph& g)
     vds.push_back( add_vertex( vertex_properties( "station 1", 1, 0., 0.,  0.), x, 1));
     vds.push_back( add_vertex( vertex_properties( "station 2", 2, 0., 0.,  0.), x, 2));
 
-    edge_properties ep0  = {edge_type::pipe, 0,    80000, 0.6, 0.000012};
-    edge_properties ep1  = {edge_type::pipe, 1,    90000, 0.6, 0.000012};
-    edge_properties ep2  = {edge_type::pipe, 2,   100000, 0.6, 0.000012};
+    edge_properties ep0  = {pipe_type::PIPE, 0,    80000, 0.6, 0.000012};
+    edge_properties ep1  = {pipe_type::PIPE, 1,    90000, 0.6, 0.000012};
+    edge_properties ep2  = {pipe_type::PIPE, 2,   100000, 0.6, 0.000012};
 
     /*                                            
     //           0                        *0  *1  *2              

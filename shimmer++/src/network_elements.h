@@ -6,6 +6,7 @@
  */
 
 #pragma once
+#include <concepts>
 
 namespace shimmer {
 
@@ -36,3 +37,9 @@ enum class compressor_mode : int {
 };
 
 } // namespace shimmer
+
+template<typename T>
+    requires std::is_enum_v<T>
+constexpr auto operator+(T e) {
+    return std::underlying_type_t<T>(e);
+}

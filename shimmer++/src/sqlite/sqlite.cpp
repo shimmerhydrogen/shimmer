@@ -177,13 +177,27 @@ network_database::populate_type_dependent_pipe_data(edge_properties& ep, int i_f
     //edge_properties ep15 = {    pipe_type::COMPR_STAT,
     //    15, 1, 0.2 ,	1.20E-05,
     //    };
+
+    //std::unordered_map<external_t, std::pair<edge_constraint_t, double>>  user_limits; 
+
+    //user_limits[external_t::P_OUT_MAX] = std::make_pair(edge_constraint_t::LOWER_EQUAL,   80.E+5);
+    //user_limits[external_t::P_IN_MIN]  = std::make_pair(edge_constraint_t::GREATER_EQUAL, 50.E+5);
+    //user_limits[external_t::BETA_MAX]  = std::make_pair(edge_constraint_t::LOWER_EQUAL,   2.0);
+    //user_limits[external_t::BETA_MIN]  = std::make_pair(edge_constraint_t::GREATER_EQUAL, 1.2);
+    //user_limits[external_t::FLUX_MAX]  = std::make_pair(edge_constraint_t::LOWER_EQUAL,   80.0);
+    //user_limits[external_t::PWD_NOMINAL] = std::make_pair(edge_constraint_t::LOWER_EQUAL, 10.0);
    
+    using edge_constraint_t = edge_station::control::constraint_type;
+    using external_t = edge_station::external_type; 
+    using user_limits_t = std::unordered_map<external_t, std::pair<edge_constraint_t, double>>;
+
     switch (ep.type) {
         
         case pipe_type::PIPE: {
             auto sitor = lookup(settings_pipe, i_from, i_to);
             if (sitor == settings_pipe.end()) {
                 std::cerr << "WARNING: no data for pipe" << std::endl;
+                return 1;
             }
             break;
         }
@@ -193,19 +207,44 @@ network_database::populate_type_dependent_pipe_data(edge_properties& ep, int i_f
             auto sitor = lookup(settings_compr_stat, i_from, i_to);
             if (sitor == settings_compr_stat.end()) {
                 std::cerr << "WARNING: no data for pipe" << std::endl;
+                return 1;
             }
-            auto ramp_coeff = 0.0;
-            auto efficiency = 0.9;
+            auto& setting = *sitor;
 
-            /*
-            edge_station::make_compressor(ramp_coeff,
-                                                    efficiency, 
-                                                    activate_history,
-                                                    mode_type_vec,
-                                                    user_limits);
+            user_limits_t user_limits;
+            
+            user_limits[external_t::P_OUT_MAX] =
+                std::pair(edge_constraint_t::LOWER_EQUAL, setting.max_outpress);
+            user_limits[external_t::P_IN_MIN] =
+                std::pair(edge_constraint_t::GREATER_EQUAL, setting.min_inpress);
+            user_limits[external_t::BETA_MAX] =
+                std::make_pair(edge_constraint_t::LOWER_EQUAL, setting.max_ratio);
+            user_limits[external_t::BETA_MIN] =
+                std::make_pair(edge_constraint_t::GREATER_EQUAL, setting.min_ratio);
+            user_limits[external_t::FLUX_MAX] =
+                std::make_pair(edge_constraint_t::LOWER_EQUAL, setting.max_massflow);
+            user_limits[external_t::PWD_NOMINAL] =
+                std::make_pair(edge_constraint_t::LOWER_EQUAL, setting.max_power);
+
+            std::vector<std::pair<compressor_mode,double>> mode_type_vec;
+            mode_type_vec.resize( setting.profile.size() );
+
+            std::transform(setting.profile.begin(), setting.profile.end(),
+                mode_type_vec.begin(),
+                [](const compressor_profile_sample& cps){ return cps.value_bymode(); }
+            );
+
+            auto num_steps = 0;
+            std::vector<bool> activate_history ( num_steps, true); 
+
+            auto comp = edge_station::make_compressor(setting.ramp_coeff,
+                                                      setting.efficiency, 
+                                                      activate_history,
+                                                      mode_type_vec,
+                                                      user_limits);
 
             ep.pipe_station = std::make_shared<edge_station::compressor>(comp);
-            */
+
             break;
         }
 

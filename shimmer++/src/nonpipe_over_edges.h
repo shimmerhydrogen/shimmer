@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <tuple>
 #include "../src/variable.h"
+#include "network_elements.h"
+
 
 namespace shimmer
 {
@@ -30,7 +32,7 @@ namespace control
         GREATER_EQUAL,
         NONE,
     };
-
+/*
     enum mode_type
     {
         BY_PASS,
@@ -41,7 +43,7 @@ namespace control
         BETA,
         FLUX,
     };
-
+*/
     class constraint
     {
         hardness_type   hardness_;
@@ -68,7 +70,7 @@ namespace control
 
         public:
         model() = default;
-        model(control::mode_type ctype);
+        model(compressor_mode ctype);
         void set_coefficient(size_t index, double value);
         void set_control_coefficient(double value);
         double get_coefficient(size_t index) const;
@@ -80,13 +82,13 @@ namespace control
     public:
         model model_;
         control::constraint internal_;
-        control::mode_type type_;
+        compressor_mode type_;
 
         mode() = default;
         mode(const model& m, const control::constraint& internal):
             model_(m), internal_(internal)
             {};
-        mode(const control::mode_type& type, const control::constraint& internal):
+        mode(const compressor_mode& type, const control::constraint& internal):
             type_(type), model_(model(type)), internal_(internal)
             {};
 
@@ -151,7 +153,7 @@ namespace control
 enum external_type
 {
     BETA_MIN,
-    BETA_MAX,
+    BETA_MAX, /* VHS rul3z*/
     P_OUT_MAX,
     P_OUT_MIN,
     P_IN_MIN,
@@ -324,7 +326,7 @@ compressor
 make_compressor(double ramp,
                 double efficiency,
                 const std::vector<bool>& activate_history,
-                const std::vector<std::pair<control::mode_type, double>>& modes_type_vec,
+                const std::vector<std::pair<compressor_mode, double>>& modes_type_vec,
                 std::unordered_map<external_type,
                                 std::pair<control::constraint_type,
                                 double>> & user_limits);

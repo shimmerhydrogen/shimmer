@@ -18,6 +18,25 @@ struct compressor_profile_sample {
     bool operator<(const compressor_profile_sample& other) const {
         return time < other.time;
     }
+
+    std::pair<compressor_mode, double> value_bymode() const {
+        switch (mode) {
+            case compressor_mode::ON_POWER:
+                return {mode, power};
+            case compressor_mode::ON_OPRESS:
+                return {mode, outpress};
+            case compressor_mode::ON_IPRESS:
+                return {mode, inpress};
+            case compressor_mode::ON_RATIO:
+                return {mode, ratio};
+            case compressor_mode::ON_MASSFLOW:
+                return {mode, massflow};
+            case compressor_mode::OFF_BYPASS:
+            case compressor_mode::OFF_CLOSED:
+                return {mode, 0.0};
+        }
+        throw std::invalid_argument("bad compressor mode");
+    }
 };
 
 struct setting_compr_stat {
@@ -30,6 +49,8 @@ struct setting_compr_stat {
     double      max_ratio;
     double      min_ratio;
     double      max_massflow;
+    double      ramp_coeff;
+    double      efficiency;
 
     std::vector<compressor_profile_sample> profile;
 

@@ -27,52 +27,52 @@ control::constraint::check(double v) const
     }
 };
 
-control::model::model(control::mode_type ctype)
+control::model::model(compressor_mode ctype)
 {
     coeffs = std::vector<double>{1.e20,1.e20,1.e20,1.e20};
 
     switch (ctype)
     {
-    case control::mode_type::BY_PASS:
+    case compressor_mode::OFF_BYPASS:
         coeffs[0] =-1.0;
         coeffs[1] = 1.0;
         coeffs[2] = 0.0;
         coeffs[3] = 0.0;
         control_index_ = -1;
         break;
-    case control::mode_type::SHUT_OFF:
+    case compressor_mode::OFF_CLOSED:
         coeffs[0] = 0.0;
         coeffs[1] = 0.0;
         coeffs[2] = 1.0;
         coeffs[3] = 0.0;
         control_index_ = -1;
         break;
-    case control::mode_type::POWER_DRIVER:
+    case compressor_mode::ON_POWER:
         free_index = std::vector<int>{ 0,1,2,3 };
         control_index_ = 3;
         break;
-    case control::mode_type::PRESSURE_IN:
+    case compressor_mode::ON_IPRESS:
         coeffs[0] = 1.0;
         coeffs[1] = 0.0;
         coeffs[2] = 0.0;
         free_index = std::vector<int>{ 3 };
         control_index_ = 3;
         break;
-    case control::mode_type::PRESSURE_OUT:
+    case compressor_mode::ON_OPRESS:
         coeffs[0] = 0.0;
         coeffs[1] = 1.0;
         coeffs[2] = 0.0;
         free_index = std::vector<int>{ 3 };
         control_index_ = 3;
         break;
-    case control::mode_type::FLUX:
+    case compressor_mode::ON_MASSFLOW:
         coeffs[0] =  0.0;
         coeffs[1] =  0.0;
         coeffs[2] =  1.0;
         free_index = std::vector<int>{ 3 };
         control_index_ = 3;
         break;
-    case control::mode_type::BETA:
+    case compressor_mode::ON_RATIO:
         coeffs[1] = 1.0;
         coeffs[2] = 0.0;
         coeffs[3] = 0.0;
@@ -80,7 +80,7 @@ control::model::model(control::mode_type ctype)
         control_index_ = 1;
         break;
     default:
-        std::cout << "ERROR: station does not know this control type => "<< ctype << "\n";
+        std::cout << "ERROR: station does not know this control type => "<< +ctype << "\n";
         throw std::exception();
     }
 }
@@ -150,7 +150,7 @@ control::make_power_driver_mode(double PWD_nominal, double ramp)
                                         control::constraint_type::GREATER_EQUAL,
         PWD_nominal);
 
-    return mode(control::mode_type::POWER_DRIVER, internal);
+    return mode(compressor_mode::ON_POWER, internal);
 }
 
 auto
@@ -159,7 +159,7 @@ control::make_pressure_out_mode(double pressure_out_max)
     auto internal = control::constraint(hardness_type::HARD,
                 constraint_type::LOWER_EQUAL, pressure_out_max);
 
-    return mode(control::mode_type::PRESSURE_OUT, internal);
+    return mode(compressor_mode::ON_OPRESS, internal);
 }
 
 auto
@@ -169,7 +169,7 @@ control::make_pressure_in_mode(double pressure_in_min)
                                         constraint_type::GREATER_EQUAL,
                                         pressure_in_min);
 
-    return mode(control::mode_type::PRESSURE_IN, internal);
+    return mode(compressor_mode::ON_IPRESS, internal);
 }
 
 auto
@@ -178,7 +178,7 @@ control::make_bypass_mode(const constraint_type& ctype)
     auto internal = control::constraint(control::hardness_type::HARD,
                                     ctype, 0);
 
-    return mode(control::mode_type::BY_PASS, internal);
+    return mode(compressor_mode::OFF_BYPASS, internal);
 }
 
 auto
@@ -187,7 +187,7 @@ control::make_shutoff_mode(const constraint_type& ctype)
     auto internal = control::constraint(control::hardness_type::HARD,
                                     ctype, 1);
 
-    return  mode(control::mode_type::SHUT_OFF, internal);
+    return  mode(compressor_mode::OFF_CLOSED, internal);
 }
 
 
@@ -197,7 +197,7 @@ control::make_beta_min_mode(double beta_min)
     auto internal = control::constraint(control::hardness_type::HARD,
                                     constraint_type::LOWER_EQUAL, beta_min);
 
-    return  mode(control::mode_type::BETA, internal);
+    return  mode(compressor_mode::ON_RATIO, internal);
 }
 
 auto
@@ -206,7 +206,7 @@ control::make_beta_max_mode(double beta_max)
     auto internal = control::constraint(control::hardness_type::HARD,
                                     constraint_type::GREATER_EQUAL, beta_max);
 
-    return  mode(control::mode_type::BETA, internal);
+    return  mode(compressor_mode::ON_RATIO, internal);
 }
 
 auto
@@ -215,7 +215,7 @@ control::make_flux_mode(double flux_max)
     auto internal = control::constraint(control::hardness_type::HARD,
                                     constraint_type::LOWER_EQUAL, flux_max);
 
-    return  mode(control::mode_type::FLUX, internal);
+    return  mode(compressor_mode::ON_MASSFLOW, internal);
 }
 //-----------------------------------------------------------------------------
 
@@ -306,17 +306,17 @@ edge_station::station::fill_model(control::mode& m,
 
     switch (m.type_)
     {
-        case control::mode_type::SHUT_OFF:
-        case control::mode_type::BY_PASS:
+        case compressor_mode::OFF_CLOSED:
+        case compressor_mode::OFF_BYPASS:
             m.set_c3(p_in < p_out);
             break;
-        case control::mode_type::PRESSURE_IN:
+        case compressor_mode::ON_IPRESS:
             m.set_rhs(p_in);
             break;
-        case control::mode_type::PRESSURE_OUT:
+        case compressor_mode::ON_OPRESS:
             m.set_rhs(p_out);
             break;
-        case control::mode_type::FLUX:
+        case compressor_mode::ON_MASSFLOW:
             m.set_rhs(var.flux[pipe_num]);
             break;
         default:
@@ -329,7 +329,7 @@ edge_station::station::fill_model(control::mode& m,
 std::ostream& operator<<(std::ostream& ofs, const station& st)
 {
     ofs << " name : " << st.name_ << "\n";
-    ofs << " current mode_type  : " << st.which_mode_type() << "\n";
+    ofs << " current mode_type  : " << +st.which_mode_type() << "\n";
 
     return ofs;
 }
@@ -381,7 +381,7 @@ compressor::control_hard()
     if (!pass)
         return false;
 
-    if(mode_.type_ == control::mode_type::POWER_DRIVER)
+    if(mode_.type_ == compressor_mode::ON_POWER)
     {
         auto pwd = mode_.model_.get_control_coefficient();
         auto pwd_nominal = mode_.internal_.value();
@@ -512,19 +512,19 @@ compressor::fill_model( control::mode& m,
 
     switch (m.type_)
     {
-        case control::mode_type::SHUT_OFF:
-        case control::mode_type::BY_PASS:
+        case compressor_mode::OFF_CLOSED:
+        case compressor_mode::OFF_BYPASS:
             m.set_c3(p_in < p_out);
             std::cout<< "I am inside fill_model with BYPASS or SHUTOFF \n"; 
             break;
-        case control::mode_type::BETA:
+        case compressor_mode::ON_RATIO:
         {
             auto beta = -beta_; // p_out / p_in;
             m.set_c1(beta);
             std::cout<< "I am inside fill_model with BETA \n"; 
             break;
         }
-        case control::mode_type::POWER_DRIVER:
+        case compressor_mode::ON_POWER:
         {
             double gamma = 1.4; // Or read from GERG
             double ck = (gamma - 1.0) / gamma;
@@ -548,16 +548,16 @@ compressor::fill_model( control::mode& m,
             std::cout<< "I am inside fill_model with POWER_DRIVER \n"; 
             break;
         }
-        case control::mode_type::PRESSURE_IN:
+        case compressor_mode::ON_IPRESS:
             //m.set_rhs(p_in);
             m.set_rhs(m.internal_.value());
             break;
-        case control::mode_type::PRESSURE_OUT:
+        case compressor_mode::ON_OPRESS:
             //m.set_rhs(p_out);
             m.set_rhs(m.internal_.value());
             std::cout<< "I am inside fill_model with PRESSURE_OUT \n"; 
             break;
-        case control::mode_type::FLUX:
+        case compressor_mode::ON_MASSFLOW:
             //m.set_rhs(var.flux[pipe_num]);
             m.set_rhs(flux_);
             break;
@@ -573,7 +573,7 @@ std::ostream& operator<<(std::ostream& ofs, const compressor& cmp)
     ofs << " name : " << cmp.name_ << "\n";
     ofs << " ramp_coeff : " << cmp.ramp_coeff_ << "\n";
     ofs << " efficiency : " << cmp.efficiency_ << "\n";
-    ofs << " current mode_type : " << cmp.which_mode_type() << "\n";
+    ofs << " current mode_type : " << +cmp.which_mode_type() << "\n";
 
     return ofs;
 }
@@ -651,7 +651,7 @@ compressor
 make_compressor(double ramp,
                 double efficiency,
                 const std::vector<bool>& activate_history,
-                const std::vector<std::pair<control::mode_type,double>>& modes_type_vec,
+                const std::vector<std::pair<compressor_mode,double>>& modes_type_vec,
                 std::unordered_map<external_type,
                                         std::pair<control::constraint_type,
                                         double>> & user_limits)                                                   
@@ -677,21 +677,21 @@ make_compressor(double ramp,
         auto model_value = m.second; 
         switch (model_name)
         {
-            case control::mode_type::SHUT_OFF:
+            case compressor_mode::OFF_CLOSED:
             {
                 std::cout << "Adding mode OFF................ SHUT_OFF \n";
                 auto c_shutoff = control::make_shutoff_mode(control::constraint_type::EQUAL);
                 cmp.add_mode_off(c_shutoff);
                 break;
             }    
-            case control::mode_type::BY_PASS:
+            case compressor_mode::OFF_BYPASS:
             {
                 std::cout << "Adding mode OFF................ BY_PASS \n";
                 auto c_by_pass = control::make_bypass_mode(control::constraint_type::EQUAL);
                 cmp.add_mode_off(c_by_pass);
                 break;
             }
-            case control::mode_type::PRESSURE_IN:
+            case compressor_mode::ON_IPRESS:
             {
                 std::cout << "Adding mode ON ................ PRESS_IN \n";
                 if(model_value != user_limits[P_IN_MIN].second)
@@ -701,7 +701,7 @@ make_compressor(double ramp,
                 cmp.add_mode_on(c_press_in);
                 break;
             }
-            case control::mode_type::PRESSURE_OUT:
+            case compressor_mode::ON_OPRESS:
             {
                 std::cout << "Adding mode ON ................ PRESS_OUT \n";
                 if(model_value != user_limits[P_OUT_MAX].second)
@@ -710,7 +710,7 @@ make_compressor(double ramp,
                 cmp.add_mode_on(c_press_out);
                 break;
             }
-            case control::mode_type::BETA:
+            case compressor_mode::ON_RATIO:
             {
                 std::cout << "Adding mode ON ................ BETA \n";
                 
@@ -722,7 +722,7 @@ make_compressor(double ramp,
 
                 break;
             }
-            case control::mode_type::FLUX:
+            case compressor_mode::ON_MASSFLOW:
             {
                 std::cout << "Adding mode ON ................ FLUX \n";
                 cmp.flux_ = model_value;
@@ -730,7 +730,7 @@ make_compressor(double ramp,
                 cmp.add_mode_on(c_flux);
                 break;
             }
-            case control::mode_type::POWER_DRIVER:
+            case compressor_mode::ON_POWER:
             {
                 std::cout << "Adding mode ON ................ POWER_DRIVER \n";
                 cmp.pwd_ = model_value;

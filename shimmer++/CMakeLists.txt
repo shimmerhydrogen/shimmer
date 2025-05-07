@@ -72,6 +72,7 @@ set(SHIMMER_SOURCES
     src/sqlite/sqlite_entry_l_reg.cpp src/sqlite/sqlite_exit_l_reg.cpp
     src/sqlite/sqlite_initial_conditions.cpp
     src/sqlite/sqlite_compressor.cpp src/sqlite/sqlite_pipe.cpp
+    src/sqlite/sqlite_reduction.cpp
 )
 
 

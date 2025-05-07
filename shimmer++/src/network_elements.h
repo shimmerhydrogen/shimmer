@@ -36,6 +36,15 @@ enum class compressor_mode : int {
     OFF_CLOSED  = 11    /* Compressor off, closed */
 };
 
+enum class reduction_mode : int {
+    ON_OPRESS   = 0,    /* Reduction station on, Control mode outlet pressure */
+    ON_IPRESS   = 1,    /* Reduction station on, Control mode inlet pressure */
+    ON_RATIO    = 2,    /* Reduction station on, Control mode compression ratio */
+    ON_MASSFLOW = 3,    /* Reduction station on, Control mode mass flow */
+    OFF_BYPASS  = 10,   /* Reduction station off, bypass */
+    OFF_CLOSED  = 11    /* Reduction station off, closed */
+};
+
 } // namespace shimmer
 
 template<typename T>

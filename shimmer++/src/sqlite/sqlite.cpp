@@ -96,7 +96,7 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
             if ( itor == settings_entry_p_reg.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
                 std::cout << " (ReMi w/o pressure control)" << std::endl;
-                return 1;
+                return SHIMMER_MISSING_DATA;
             }
             const setting_entry_p_reg &setting = *itor;
             assert((setting.u_snum == vp.u_snum) and (setting.i_snum == vp.i_snum));
@@ -113,7 +113,7 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
             if ( itor == settings_entry_l_reg.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
                 std::cout << " (Injection w/ pressure control)" << std::endl;
-                return 1;
+                return SHIMMER_MISSING_DATA;
             }
             const setting_entry_l_reg &setting = *itor;
             assert((setting.u_snum == vp.u_snum) and (setting.i_snum == vp.i_snum));
@@ -134,7 +134,7 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
             if ( itor == settings_exit_l_reg.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
                 std::cout << " (consumption w/o pressure control)" << std::endl;
-                return 1;
+                return SHIMMER_MISSING_DATA;
             }
             const setting_exit_l_reg &setting = *itor;
             assert((setting.u_snum == vp.u_snum) and (setting.i_snum == vp.i_snum));
@@ -165,10 +165,11 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
         */
             
         default:
-            std::cout << "Unhandled station type" << std::endl;
-            return 1;
+            std::cerr << "WARNING: Unhandled station type " << +vp.type;
+            std::cerr << " while loading type-dependent station data" << std::endl;
+            return SHIMMER_INVALID_DATA;
     }
-    return 0;
+    return SHIMMER_SUCCESS;
 }
 
 int
@@ -196,8 +197,11 @@ network_database::populate_type_dependent_pipe_data(edge_properties& ep, int i_f
         case pipe_type::PIPE: {
             auto sitor = lookup(settings_pipe, i_from, i_to);
             if (sitor == settings_pipe.end()) {
-                std::cerr << "WARNING: no data for pipe" << std::endl;
-                return 1;
+                auto u_from = s_i2u.at(i_from);
+                auto u_to = s_i2u.at(i_to);
+                std::cerr << "WARNING: no data for pipe (" << u_from << ", ";
+                std::cerr << u_to << ")" << std::endl;
+                return SHIMMER_MISSING_DATA;
             }
             break;
         }
@@ -207,7 +211,7 @@ network_database::populate_type_dependent_pipe_data(edge_properties& ep, int i_f
             auto sitor = lookup(settings_compr_stat, i_from, i_to);
             if (sitor == settings_compr_stat.end()) {
                 std::cerr << "WARNING: no data for pipe" << std::endl;
-                return 1;
+                return SHIMMER_MISSING_DATA;
             }
             auto& setting = *sitor;
 
@@ -249,21 +253,23 @@ network_database::populate_type_dependent_pipe_data(edge_properties& ep, int i_f
         }
 
         case pipe_type::RED_STAT: {
-            throw std::invalid_argument("RED_STAT not implemented");
+            std::cerr << "RED_STAT not implemented" << std::endl;
+            return SHIMMER_INVALID_DATA;
             break;
         }
 
         case pipe_type::VALVE: {
-            throw std::invalid_argument("VALVE not implemented");
+            std::cerr << "VALVE not implemented" << std::endl;
+            return SHIMMER_INVALID_DATA;
             break;
         }
 
         default:
             std::cerr << "WARNING: invalid pipe type " << +ep.type << std::endl;
-            return 1;
+            return SHIMMER_INVALID_DATA;
     }
    
-    return 0;
+    return SHIMMER_SUCCESS;
 }
 
 std::optional<table_name_pair_t>

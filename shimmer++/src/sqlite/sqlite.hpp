@@ -108,6 +108,7 @@ using table_name_pair_t = std::pair<std::string, std::string>;
 #include "sqlite_initial_conditions.h"
 #include "sqlite_pipe.h"
 #include "sqlite_compressor.h"
+#include "sqlite_reduction.h"
 
 namespace shimmer {
 
@@ -131,6 +132,7 @@ class network_database {
     std::vector<setting_exit_l_reg>     settings_exit_l_reg;
     std::vector<setting_pipe>           settings_pipe;
     std::vector<setting_compr_stat>     settings_compr_stat;
+    std::vector<setting_red_stat>     settings_red_stat;
 
     std::vector<station_initial_condition>  sics;
     std::vector<pipe_initial_condition>     pics;
@@ -148,6 +150,7 @@ class network_database {
 
     int import_pipe(std::vector<setting_pipe>&);
     int import_compr_stat(std::vector<setting_compr_stat>&);
+    int import_red_stat(std::vector<setting_red_stat>&);
 
     int import_station_initial_conditions();
     int import_pipe_initial_conditions();

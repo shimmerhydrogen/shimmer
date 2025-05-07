@@ -210,7 +210,10 @@ network_database::populate_type_dependent_pipe_data(edge_properties& ep, int i_f
 
             auto sitor = lookup(settings_compr_stat, i_from, i_to);
             if (sitor == settings_compr_stat.end()) {
-                std::cerr << "WARNING: no data for pipe" << std::endl;
+                auto u_from = s_i2u.at(i_from);
+                auto u_to = s_i2u.at(i_to);
+                std::cerr << "WARNING: no data for compressor (";
+                std::cerr << u_from << ", " << u_to << ")" << std::endl;
                 return SHIMMER_MISSING_DATA;
             }
             auto& setting = *sitor;
@@ -253,6 +256,18 @@ network_database::populate_type_dependent_pipe_data(edge_properties& ep, int i_f
         }
 
         case pipe_type::RED_STAT: {
+            auto sitor = lookup(settings_red_stat, i_from, i_to);
+            if (sitor == settings_red_stat.end()) {
+                auto u_from = s_i2u.at(i_from);
+                auto u_to = s_i2u.at(i_to);
+                std::cerr << "WARNING: no data for reduction station (";
+                std::cerr << u_from << ", " << u_to << ")" << std::endl;
+                return SHIMMER_MISSING_DATA;
+            }
+
+            auto& setting = *sitor;
+            /* extract & populate from settin */
+
             std::cerr << "RED_STAT not implemented" << std::endl;
             return SHIMMER_INVALID_DATA;
             break;

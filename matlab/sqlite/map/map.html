@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenLayers with Local GeoJSON</title>
+    <link rel="stylesheet" href="https://unpkg.com/ol@latest/ol.css">
+    <script src="https://unpkg.com/ol@latest/dist/ol.js"></script>
+    <style>
+        #map {
+            width: 100%;
+            height: 850px;
+        }
+    </style>
+    <link rel="shortcut icon" href="#">
+</head>
+<body>
+    <h2>Map of sqlite DB</h2>
+    <div id="map"></div>
+
+    <script>
+    	var point_style = new ol.style.Style({
+			  image: new ol.style.Circle({
+				  radius: 7,
+				  stroke: new ol.style.Stroke({
+				    color: 'rgba(0,0,0,1.0)',
+				    width: 3,
+				  }),
+				  fill: new ol.style.Fill({
+				    color: 'rgba(255, 51, 51,1.0)'
+				  })
+			  }),
+			  text: new ol.style.Text({
+				  font: 'bold 11px "Open Sans", "Arial Unicode MS", "sans-serif"',
+				  placement: 'point',
+				  overflow: true,
+				  fill: new ol.style.Fill({color: '#fff'}),
+				  stroke: new ol.style.Stroke({color: '#000', width: 2}),
+				  textBaseline: 'top',
+				  textAlign: 'left',
+				  offsetX: 12
+			  }),
+		  });
+
+		var point_styleFunction = function(feature, resolution) {
+		  var text = resolution < 4 ? feature.get('name') : '';
+		  point_style.getText().setText(text);
+		  return point_style;
+		}
+		
+		var line_style = [
+			new ol.style.Style({
+				  stroke: new ol.style.Stroke({
+					color: 'rgba(0,0,0,1.0)',
+					width: 5,
+				  })
+			  }),
+			new ol.style.Style({
+				  stroke: new ol.style.Stroke({
+					color: 'rgba(0,0,250,1.0)',
+					width: 2,
+				  }),
+				  text: new ol.style.Text({
+					  font: 'bold 11px "Open Sans", "Arial Unicode MS", "sans-serif"',
+					  placement: 'line',
+					  fill: new ol.style.Fill({color: '#fff'}),
+					  stroke: new ol.style.Stroke({color: '#000', width: 2}),
+				  }),
+			  })
+			  ];
+
+		var line_styleFunction = function(feature, resolution) {
+		  var text = resolution < 5 ? feature.get('name') : '';
+		  line_style[1].getText().setText(text);
+		  return line_style;
+		}
+
+    
+        const osmLayer = new ol.layer.Tile({
+            source: new ol.source.OSM(),
+            layer_name: 'osm'
+        });
+        
+        const nodes_source = new ol.source.Vector({
+            format: new ol.format.GeoJSON(),
+            url: './nodes.json'
+        });
+        const nodes_layer = new ol.layer.Vector({
+            source: nodes_source,
+            style: point_styleFunction,
+            layer_name: 'nodes'
+        });
+        
+        const pipes_source = new ol.source.Vector({
+            format: new ol.format.GeoJSON(),
+            url: './pipes.json'
+        });
+        const pipes_layer = new ol.layer.Vector({
+            source: pipes_source,
+            style: line_styleFunction,
+            layer_name: 'pipes'
+        });
+
+        const map = new ol.Map({
+            target: 'map',
+            layers: [osmLayer, pipes_layer, nodes_layer],
+            view: new ol.View({
+                center: ol.proj.fromLonLat([7.15, 40.075]), // Change coordinates if needed
+                zoom: 13
+            })
+        });
+        
+        map.on('pointermove', function(e) {
+			if (e.dragging) return;
+			var pixel = e.map.getEventPixel(e.originalEvent);
+			var hit = map.hasFeatureAtPixel(e.pixel, {
+				layerFilter: function(layer) {
+				    return layer.get('layer_name') === 'pipes' || layer.get('layer_name') === 'nodes';
+				}
+			});
+			e.map.getTargetElement().style.cursor = hit ? 'pointer' : '';
+		});
+		
+		
+		map.on('click', function(e) {
+			var pixel = e.map.getEventPixel(e.originalEvent);
+
+			var feature = map.forEachFeatureAtPixel(pixel, function(feature) {
+				return feature;
+			});
+		
+			  if (feature) {
+			  	console.log(feature);
+				alert(feature.get('name'));
+			  }
+		});
+    </script>
+</body>
+</html>
+

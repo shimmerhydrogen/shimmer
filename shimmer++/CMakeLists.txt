@@ -68,7 +68,7 @@ set(SHIMMER_SOURCES
     src/conservation_matrices.cpp src/incidence_matrix.cpp
     src/matrix_manipulations.cpp src/pipe_calculator.cpp src/matlab_manip.cpp
     src/fluid_solver.cpp src/nonpipe_over_edges.cpp
-    src/variable.cpp src/boundary.cpp  src/sqlite/sqlite.cpp src/sqlite/sqlite_entry_p_reg.cpp
+    src/variable.cpp src/boundary.cpp src/sqlite/sqlite.cpp src/sqlite/sqlite_entry_p_reg.cpp
     src/sqlite/sqlite_entry_l_reg.cpp src/sqlite/sqlite_exit_l_reg.cpp
     src/sqlite/sqlite_initial_conditions.cpp
     src/sqlite/sqlite_compressor.cpp src/sqlite/sqlite_pipe.cpp
@@ -83,6 +83,10 @@ add_library(shimmer SHARED ${SHIMMER_SOURCES})
 add_library(shimmer::shimmer ALIAS shimmer)
 target_link_libraries(shimmer ${LINK_LIBS})
 target_include_directories(shimmer PUBLIC src)
+
+add_executable(ptd unit_tests/populate_test_db.cpp)
+target_link_libraries(ptd shimmer ${LINK_LIBS})
+target_include_directories(ptd PUBLIC src)
 
 if (BUILD_SHIMMER_UNIT_TESTS)
     include(CTest)

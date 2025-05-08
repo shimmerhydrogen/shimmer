@@ -6,6 +6,55 @@
 
 namespace shimmer {
 
+std::optional<table_name_pair_t>
+limits_and_profile_table_names(sqlite3 *db, station_type stat_type)
+{
+    sqlite3_stmt *stmt = nullptr;
+
+    enum class col : int {
+        t_limits_table = 0,
+        t_profile_table = 1
+    };
+
+    std::string q =
+        "SELECT t_limits_table, t_profile_table "
+        "FROM station_types "
+        "WHERE t_type = ?";
+
+    int rc = sqlite3_prepare_v2(db, q.c_str(), q.length(), &stmt, nullptr);
+    if (rc) {
+        std::cerr << "SQL error on query '" << q << "': " << sqlite3_errmsg(db) << std::endl;
+        return {};
+    }
+
+    rc = sqlite3_bind_int(stmt, 1, +stat_type);
+
+    if ( sqlite3_step(stmt) != SQLITE_ROW ) {
+        std::cerr << "Shimmer DB: Invalid station type " << +stat_type << std::endl;
+        return {};
+    }
+    
+    std::string limits_table_name;
+    if ( sqlite3_column_type(stmt, +col::t_limits_table) == SQLITE3_TEXT ) {
+        limits_table_name = (const char *) sqlite3_column_text(stmt, +col::t_limits_table);
+    }
+
+    std::string profile_table_name;
+    if ( sqlite3_column_type(stmt, +col::t_profile_table) == SQLITE3_TEXT ) {
+        profile_table_name = (const char *) sqlite3_column_text(stmt, +col::t_profile_table);
+    }
+
+    if ( (limits_table_name == "") or (profile_table_name == "") ) {
+        return {};
+    }
+
+    rc = sqlite3_clear_bindings(stmt);
+    rc = sqlite3_reset(stmt);
+    rc = sqlite3_finalize(stmt);
+
+    return std::pair(limits_table_name, profile_table_name);
+}
+
 network_database::network_database()
     : db_(nullptr)
 {}
@@ -290,53 +339,7 @@ network_database::populate_type_dependent_pipe_data(edge_properties& ep, int i_f
 std::optional<table_name_pair_t>
 network_database::limits_and_profile_table_names(station_type stat_type)
 {
-    char *zErrMsg = nullptr;
-    sqlite3_stmt *stmt = nullptr;
-
-    enum class col : int {
-        t_limits_table = 0,
-        t_profile_table = 1
-    };
-
-    std::string q =
-        "SELECT t_limits_table, t_profile_table "
-        "FROM station_types "
-        "WHERE t_type = ?";
-
-    int rc = sqlite3_prepare_v2(db_, q.c_str(), q.length(), &stmt, nullptr);
-    if (rc) {
-        std::cerr << "SQL error on query '" << q << "': " << zErrMsg << std::endl;
-        sqlite3_free(zErrMsg);
-        return {};
-    }
-
-    rc = sqlite3_bind_int(stmt, 1, +stat_type);
-
-    if ( sqlite3_step(stmt) != SQLITE_ROW ) {
-        std::cerr << "Shimmer DB: Invalid station type " << +stat_type << std::endl;
-        return {};
-    }
-    
-    std::string limits_table_name;
-    if ( sqlite3_column_type(stmt, 0) == SQLITE3_TEXT ) {
-        limits_table_name = (const char *) sqlite3_column_text(stmt, +col::t_limits_table);
-    }
-
-    std::string profile_table_name;
-    if ( sqlite3_column_type(stmt, 1) == SQLITE3_TEXT ) {
-        profile_table_name = (const char *) sqlite3_column_text(stmt, +col::t_profile_table);
-    }
-
-    if ( (limits_table_name == "") or (profile_table_name == "") ) {
-        std::cerr << "Shimmer DB: Invalid table name in 'station_types'" << std::endl;
-        return {};
-    }
-
-    rc = sqlite3_clear_bindings(stmt);
-    rc = sqlite3_reset(stmt);
-    rc = sqlite3_finalize(stmt);
-
-    return std::pair(limits_table_name, profile_table_name);
+    return shimmer::limits_and_profile_table_names(db_, stat_type);
 }
 
 /* Callback for aggregate functions COUNT() and MAX() */

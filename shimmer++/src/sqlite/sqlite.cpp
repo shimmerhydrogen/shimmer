@@ -195,8 +195,8 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
             break;
         }
         
-        /*
-        case(station_type_x::OUTLET): {
+        
+        case(station_type::PRIVATE_OUTLET): {
             auto itor = lookup(settings_outlet, vp.i_snum);
             if ( itor == settings_outlet.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
@@ -207,11 +207,10 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
             assert((setting.u_snum == vp.u_snum) and (setting.i_snum == vp.i_snum));
 
             auto Lset = convert_Lprof(setting);
-            auto exit_station = make_outlet(Lset);
+            auto exit_station = priv::make_station_outlet(Lset);
             vp.node_station = std::make_unique<one_state_station>(exit_station);
             break;
         }
-        */
             
         default:
             std::cerr << "WARNING: Unhandled station type " << +vp.type;
@@ -252,6 +251,10 @@ network_database::populate_type_dependent_pipe_data(edge_properties& ep, int i_f
                 std::cerr << u_to << ")" << std::endl;
                 return SHIMMER_MISSING_DATA;
             }
+
+            ep.friction_factor = (*sitor).roughness;
+            ep.diameter = (*sitor).diameter;
+            ep.length = (*sitor).length;
             break;
         }
 
@@ -427,6 +430,10 @@ network_database::import_stations(infrastructure_graph& g)
     s_u2vd.resize( s_u2i.size() );
     s_i2vd.resize( s_i2u.size() );
 
+    /// TODO: get this from the DB
+    vector_t  x = vector_t::Zero(21);
+    x(GAS_TYPE::CH4) = 1.0;
+
     while (sqlite3_step(stmt) != SQLITE_DONE) {
         //int num_cols = sqlite3_column_count(stmt);
         vertex_properties vp;
@@ -442,6 +449,9 @@ network_database::import_stations(infrastructure_graph& g)
         vp.name = (char *) sqlite3_column_text(stmt, 1);
         
         vp.type = static_cast<station_type>(sqlite3_column_int(stmt,2));
+        
+        /// TODO: get this from the DB
+        vp.gas_mixture = x;
 
         /* Station location */
         vp.height = sqlite3_column_double(stmt, 3);
@@ -523,20 +533,21 @@ network_database::populate_graph(infrastructure_graph& g)
     renumber_stations();
 
     /* Import the data for all the stations */
-    //import_outlet(settings_outlet);
+    import_outlet(settings_outlet);
     import_entry_p_reg(settings_entry_p_reg);
     import_entry_l_reg(settings_entry_l_reg);
     import_exit_l_reg(settings_exit_l_reg);
 
+    import_pipe(settings_pipe);
     import_compr_stat(settings_compr_stat);
-
-    /* Import initial conditions */
-    import_station_initial_conditions();
-    import_pipe_initial_conditions();
 
     /* Import the graph */
     import_stations(g);
     import_pipelines(g);
+
+    /* Import initial conditions */
+    import_station_initial_conditions();
+    import_pipe_initial_conditions();
 
     return SHIMMER_SUCCESS;
 }

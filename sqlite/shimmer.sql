@@ -23,8 +23,8 @@ insert into station_types values
     (2, 'Injection station w/ pressure control', 'limits_injection_w', 'profiles_injection_w'),
     (3, 'Consumption point w/o pressure control', 'limits_conspoint_wo', 'profiles_conspoint_wo'),
     (4, 'Junction', NULL, NULL),
-    (10, 'Inlet station', NULL, NULL),
-    (11, 'Outlet station', NULL, NULL);
+    (10, 'Inlet station - private', NULL, NULL),
+    (11, 'Outlet station - private', 'limits_outlet_priv', 'profiles_outlet_priv');
 
 -----------------------------------------------------------------------
 -----------------------------------------------------------------------
@@ -135,6 +135,7 @@ create table limits_injection_w (
 create table profiles_injection_w (
     s_number    INTEGER,
     prf_time    REAL DEFAULT 0.0 NOT NULL,
+    prf_Pset    REAL DEFAULT 0.0 NOT NULL,
     prf_Lset    REAL DEFAULT 0.0 NOT NULL,
 
     FOREIGN KEY (s_number)
@@ -172,6 +173,21 @@ create table limits_conspoint_wo (
 --  prf_Pset:   pressure setpoint at the specified time
 
 create table profiles_conspoint_wo (
+    s_number    INTEGER,
+    prf_time    REAL DEFAULT 0.0 NOT NULL,
+    prf_Lset    REAL DEFAULT 0.0 NOT NULL,
+
+    CHECK(prf_Lset >= 0),
+
+    FOREIGN KEY (s_number)
+        REFERENCES stations(s_number)
+);
+
+-----------------------------------------------------------------------
+-----------------------------------------------------------------------
+-- Outlet station. This is private, it will disappear in a future release
+
+create table profiles_outlet_priv (
     s_number    INTEGER,
     prf_time    REAL DEFAULT 0.0 NOT NULL,
     prf_Lset    REAL DEFAULT 0.0 NOT NULL,

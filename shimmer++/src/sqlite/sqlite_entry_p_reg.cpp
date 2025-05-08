@@ -74,7 +74,7 @@ network_database::import_entry_p_reg(std::vector<setting_entry_p_reg>& settings)
     rc = sqlite3_finalize(stmt);
 
     std::string qprof = "SELECT * FROM " + profile_tab + " WHERE s_number = ?";
-    rc = sqlite3_prepare_v2(db_, qlim.c_str(), qlim.length(), &stmt, nullptr);
+    rc = sqlite3_prepare_v2(db_, qprof.c_str(), qprof.length(), &stmt, nullptr);
     if (rc) {
         std::cerr << "SQL error on query '" << qprof << "': " << zErrMsg << std::endl;
         sqlite3_free(zErrMsg);

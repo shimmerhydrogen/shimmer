@@ -23,7 +23,8 @@ enum class limits_col : int {
 enum class profile_col : int {
     s_number = 0,
     prf_time = 1,
-    prf_Pset = 2
+    prf_Pset = 2,
+    prf_Lset = 3
 };
 
 } // namespace entry_l_reg
@@ -74,7 +75,7 @@ network_database::import_entry_l_reg(std::vector<setting_entry_l_reg>& settings)
     rc = sqlite3_finalize(stmt);
 
     std::string qprof = "SELECT * FROM " + profile_tab + " WHERE s_number = ?";
-    rc = sqlite3_prepare_v2(db_, qlim.c_str(), qlim.length(), &stmt, nullptr);
+    rc = sqlite3_prepare_v2(db_, qprof.c_str(), qprof.length(), &stmt, nullptr);
     if (rc) {
         std::cerr << "SQL error on query '" << qprof << "': " << zErrMsg << std::endl;
         sqlite3_free(zErrMsg);
@@ -84,23 +85,32 @@ network_database::import_entry_l_reg(std::vector<setting_entry_l_reg>& settings)
     /* Import profiles for all the stations */
     for (auto& setting : settings) {
         rc = sqlite3_bind_int(stmt, 1, setting.u_snum);
-        std::vector<sample> profile;
+        std::vector<sample> profileP;
+        std::vector<sample> profileL;
         while (sqlite3_step(stmt) == SQLITE_ROW) {
-            sample s;
-            s.time  = sqlite3_column_double(stmt, +profile_col::prf_time);
-            s.value = sqlite3_column_double(stmt, +profile_col::prf_Pset);
-            profile.push_back(s);
+            sample sP, sL;
+            auto time  = sqlite3_column_double(stmt, +profile_col::prf_time);
+            sP.time = time;
+            sP.value = sqlite3_column_double(stmt, +profile_col::prf_Pset);
+            profileP.push_back(sP);
+            sL.time = time;
+            sL.value = sqlite3_column_double(stmt, +profile_col::prf_Lset);
+            profileL.push_back(sL);
         }
 
-        if (profile.size() == 0) {
+        assert(profileP.size() == profileL.size());
+
+        if (profileP.size() == 0) {
             std::cout << "Warning: node " << setting.u_snum << " has ";
-            std::cout << "no pressure profile data defined." << std::endl;
+            std::cout << "no pressure and mass flow profile data defined." << std::endl;
         }
 
         rc = sqlite3_clear_bindings(stmt);
         rc = sqlite3_reset(stmt);
-        std::sort(profile.begin(), profile.end());
-        setting.Pprofile = std::move(profile);
+        std::sort(profileP.begin(), profileP.end());
+        setting.Pprofile = std::move(profileP);
+        std::sort(profileL.begin(), profileL.end());
+        setting.Lprofile = std::move(profileL);
     }
     
     sqlite3_finalize(stmt);

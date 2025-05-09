@@ -198,7 +198,7 @@ static int store_profiles(sqlite3 *db, const std::vector<int>& s_i2u,
     if (rc) {
         std::cerr << "SQL error on query '" << q << "': ";
         std::cerr << sqlite3_errmsg(db) << std::endl;
-        return -1;
+        return SHIMMER_DATABASE_PROBLEM;
     }
 
     rc = sqlite3_exec(db, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);

@@ -145,6 +145,106 @@ int load(sqlite3 *db, const optvector<int>& s_u2i,
     return SHIMMER_SUCCESS;
 }
 
+static int store_limits(sqlite3 *db, const std::vector<int>& s_i2u,
+    const std::vector<setting_entry_l_reg>& settings)
+{
+    using namespace entry_l_reg;
+    auto tname_opt = table_name(db, setting_table::limits,
+        station_type::ENTRY_L_REG);
+    if ( not tname_opt ) {
+        std::cerr << "Shimmer DB: cannot retrieve limits table name ";
+        std::cerr << "for 'entry_l_reg' station" << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    sqlite3_stmt *stmt = nullptr;
+
+    std::string q =
+        "INSERT INTO " + tname_opt.value() + " VALUES (?, ?, ?, ?, ?, ?)";
+        
+    int rc = sqlite3_prepare_v2(db, q.c_str(), q.length(), &stmt, nullptr);
+    if (rc) {
+        std::cerr << "SQL error on query '" << q << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    rc = sqlite3_exec(db, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
+
+    for (auto& setting : settings) {
+        rc = sqlite3_bind_int(stmt, 1, convert_i2u(s_i2u, setting.i_snum) );
+        rc = sqlite3_bind_double(stmt, 2, setting.Lmin);
+        rc = sqlite3_bind_double(stmt, 3, setting.Lmax);
+        rc = sqlite3_bind_double(stmt, 4, setting.Pmin);
+        rc = sqlite3_bind_double(stmt, 5, setting.Pmax);
+        rc = sqlite3_bind_double(stmt, 6, setting.f);
+        rc = sqlite3_step(stmt);
+        rc = sqlite3_clear_bindings(stmt);
+        rc = sqlite3_reset(stmt);
+    }
+
+    rc = sqlite3_exec(db, "COMMIT", nullptr, nullptr, nullptr);
+
+    return SHIMMER_SUCCESS;
+}
+
+static int store_profiles(sqlite3 *db, const std::vector<int>& s_i2u,
+    const std::vector<setting_entry_l_reg>& settings)
+{
+    using namespace entry_l_reg;
+    auto tname_opt = table_name(db, setting_table::profiles,
+        station_type::ENTRY_L_REG);
+    if ( not tname_opt ) {
+        std::cerr << "Shimmer DB: cannot retrieve profile table name ";
+        std::cerr << "for 'entry_l_reg' station" << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    sqlite3_stmt *stmt = nullptr;
+    
+    std::string q =
+        "INSERT INTO " + tname_opt.value() + " (s_number, prf_time, prf_Pset, prf_Lset) "
+        "VALUES (?, ?, ?, ?)";
+
+    int rc = sqlite3_prepare_v2(db, q.c_str(), q.length(), &stmt, nullptr);
+    if (rc) {
+        std::cerr << "SQL error on query '" << q << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+    
+    rc = sqlite3_exec(db, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
+
+    for (auto& setting : settings) {
+        assert(setting.Lprofile.size() == setting.Pprofile.size());
+        for (int i = 0; i < setting.Lprofile.size(); i++) {
+            auto& sampleP = setting.Pprofile[i];
+            auto& sampleL = setting.Lprofile[i];
+            rc = sqlite3_bind_int(stmt, 1, convert_i2u(s_i2u, setting.i_snum));
+            rc = sqlite3_bind_int(stmt, 2, sampleP.time);
+            rc = sqlite3_bind_int(stmt, 3, sampleP.value);
+            rc = sqlite3_bind_int(stmt, 4, sampleL.value);
+            rc = sqlite3_step(stmt);
+            rc = sqlite3_clear_bindings(stmt);
+            rc = sqlite3_reset(stmt);
+        }
+    }
+    
+    rc = sqlite3_exec(db, "COMMIT", nullptr, nullptr, nullptr);
+
+    rc = sqlite3_finalize(stmt);
+
+    return SHIMMER_SUCCESS;
+}
+
+int store(sqlite3 *db, const std::vector<int>& s_i2u,
+    const std::vector<setting_entry_l_reg>& settings)
+{
+    store_limits(db, s_i2u, settings);
+    store_profiles(db, s_i2u, settings);
+    return SHIMMER_SUCCESS;
+}
+
 } // namespace database
 
 } // namespace shimmer

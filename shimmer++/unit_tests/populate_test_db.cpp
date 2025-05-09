@@ -90,98 +90,6 @@ int populate_pipes(const state& st, const std::vector<edge_type>& pipes)
     return 0;
 }
 
-int populate_limits(const state& st, int station, station_type type)
-{
-    auto names_opt = limits_and_profile_table_names(st.db, type);
- 
-    if ( not names_opt ) {
-        std::cerr << "    Not storing limits data for station type " << +type << std::endl;
-        return -1;
-    }
-
-    auto [limits_tab, profiles_tab] = names_opt.value();
-
-    sqlite3_stmt *stmt = nullptr;
-
-    std::string q =
-        "INSERT INTO " + limits_tab + " (s_number, lim_Lmin, lim_Lmax, lim_Pmin, lim_Pmax) "
-        "VALUES (?, ?, ?, ?, ?)";
-        
-    int rc = sqlite3_prepare_v2(st.db, q.c_str(), q.length(), &stmt, nullptr);
-    if (rc) {
-        std::cerr << "SQL error on query '" << q << "': " << sqlite3_errmsg(st.db) << std::endl;
-        return -1;
-    }
-
-    double lim_Pmin = 60e5;
-    double lim_Pmax = 80e5;
-    double lim_Lmin = -300;
-    double lim_Lmax = -10;
-
-    rc = sqlite3_exec(st.db, "BEGIN TRANSACTION", 0, 0, 0);
-
-        rc = sqlite3_bind_int(stmt, 1, station);
-        rc = sqlite3_bind_double(stmt, 2, lim_Lmin);
-        rc = sqlite3_bind_double(stmt, 3, lim_Lmax);
-        rc = sqlite3_bind_double(stmt, 4, lim_Pmin);
-        rc = sqlite3_bind_double(stmt, 5, lim_Pmax);
-        rc = sqlite3_step(stmt);
-        rc = sqlite3_clear_bindings(stmt);
-        rc = sqlite3_reset(stmt);
-     
-    rc = sqlite3_exec(st.db, "COMMIT", 0, 0, 0);
-
-    rc = sqlite3_finalize(stmt);
-
-    return 0;
-}
-
-int populate_entry_l_reg_profile(const state& st, int station,
-    const std::vector<double>& P, const std::vector<double>& L,
-    double delta_t)
-{
-    auto type = station_type::ENTRY_L_REG;
-    std::cout << "  L profile for type " << +type << " station " << station << std::endl;
-    auto names_opt = limits_and_profile_table_names(st.db, type);
- 
-    if ( not names_opt ) {
-        std::cerr << "    Not storing profile data for station type " << +type << std::endl;
-        return -1;
-    }
-
-    auto [limits_tab, profiles_tab] = names_opt.value();
-
-    sqlite3_stmt *stmt = nullptr;
-
-    std::string q =
-        "INSERT INTO " + profiles_tab + " (s_number, prf_time, prf_Pset, prf_Lset) "
-        "VALUES (?, ?, ?, ?)";
-        
-    int rc = sqlite3_prepare_v2(st.db, q.c_str(), q.length(), &stmt, nullptr);
-    if (rc) {
-        std::cerr << "SQL error on query '" << q << "': " << sqlite3_errmsg(st.db) << std::endl;
-        return -1;
-    }
-
-    rc = sqlite3_exec(st.db, "BEGIN TRANSACTION", 0, 0, 0);
-
-    for (int i = 0; i < L.size(); i++) {
-        rc = sqlite3_bind_int(stmt, 1, station);
-        rc = sqlite3_bind_int(stmt, 2, i*delta_t);
-        rc = sqlite3_bind_int(stmt, 3, P[i]);
-        rc = sqlite3_bind_int(stmt, 4, L[i]);
-        rc = sqlite3_step(stmt);
-        rc = sqlite3_clear_bindings(stmt);
-        rc = sqlite3_reset(stmt);
-    }
-    
-    rc = sqlite3_exec(st.db, "COMMIT", 0, 0, 0);
-
-    rc = sqlite3_finalize(stmt);
-
-    return 0;
-}
-
 int initialize_test_db(void)
 {
     state st;
@@ -279,11 +187,6 @@ int initialize_test_db(void)
     for (int i = 0; i < pipes.size(); i++)
         pipe_ics.push_back( {std::get<0>(pipes[i]), std::get<1>(pipes[i]), 50} );
     database::store(st.db, {}, pipe_ics);
-
-    /* Limits */
-    std::cout << "Limits" << std::endl;
-    for (int i = 0; i < station_types.size(); i++)
-        populate_limits(st, i, station_types[i]);
 
     /* Profiles */
     std::cout << "Profiles" << std::endl;
@@ -405,7 +308,14 @@ int initialize_test_db(void)
     database::store(st.db, {}, {node10_set});
     }
 
-    /******** NODE 11 ********/
+    /******** NODE 11 ********/ {
+    setting_entry_l_reg node11_set;
+    node11_set.i_snum = 11;
+    node11_set.Lmin = -300.0;
+    node11_set.Lmax = -10.0;
+    node11_set.Pmin = 60e5;
+    node11_set.Pmax = 80e5;
+    node11_set.f = 1.0;
     std::vector<double> node11_P(25, 7500000.0);
     std::vector<double> node11_L = {
         -40.000000000000000, -38.666666666666664, -37.333333333333336,
@@ -417,7 +327,15 @@ int initialize_test_db(void)
         -48.000000000000000, -48.333333333333329, -48.666666666666664,
         -48.999999999999993, -49.333333333333329, -49.666666666666657,
         -5.0000000e+01 };
-    populate_entry_l_reg_profile(st, 11, node11_P, node11_L, 3600);
+    node11_set.Pprofile.reserve(node11_P.size());
+    node11_set.Lprofile.reserve(node11_L.size());
+    assert(node11_set.Lprofile.size() == node11_set.Pprofile.size());
+    for (int i = 0; i < node11_L.size(); i++) {
+        node11_set.Pprofile.push_back({double(3600*i), node11_P[i]});
+        node11_set.Lprofile.push_back({double(3600*i), node11_L[i]});
+    }
+    database::store(st.db, {}, {node11_set});
+    }
 
     /******** NODE 12 ********/ {
     setting_outlet node12_set;

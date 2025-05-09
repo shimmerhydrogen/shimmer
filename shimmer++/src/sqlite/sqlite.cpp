@@ -253,7 +253,7 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
                 return 1;
             }
             const setting_outlet &setting = *itor;
-            assert((setting.u_snum == vp.u_snum) and (setting.i_snum == vp.i_snum));
+            assert( setting.i_snum == vp.i_snum );
 
             auto Lset = convert_Lprof(setting);
             auto exit_station = priv::make_station_outlet(Lset);

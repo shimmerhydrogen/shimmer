@@ -14,4 +14,7 @@ sql_populate_boundary_conditions(db_path, graph);
 %% Initial Conditions
 sql_populate_initial_conditions(db_path, graph);
 
+%% Limits
+sql_populate_limits(db_path, graph);
+
 end

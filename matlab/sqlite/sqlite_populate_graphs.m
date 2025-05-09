@@ -9,7 +9,7 @@ graph = load(graph_path);
 graph = graph.gasNet_Res;
 db_path = fullfile(pwd, "graphs/test_case_1/test_case_1.db");
 
-if exist(db_path, 'file')==2
+if exist(db_path, 'file') == 2
   delete(db_path);
 end
 
@@ -24,7 +24,7 @@ graph = graph.gasNet_Res;
 graph.Nodes.Nodes_ID =  graph.Nodes.Nodes_ID';
 db_path = fullfile(pwd, "graphs/test_gasco/test_gasco.db");
 
-if exist(db_path, 'file')==2
+if exist(db_path, 'file') == 2
   delete(db_path);
 end
 
@@ -38,7 +38,7 @@ graph = load(graph_path);
 graph = graph.gasNet_Res;
 db_path = fullfile(pwd, "graphs/test_inrete/test_inrete.db");
 
-if exist(db_path, 'file')==2
+if exist(db_path, 'file') == 2
   delete(db_path);
 end
 
@@ -54,7 +54,7 @@ graph = graph.SicilyNetworkComplete;
 graph.Nodes.coordinates_XY = graph.Nodes.Coordinates_XY;
 db_path = fullfile(pwd, "graphs/test_sicilia/test_sicilia.db");
 
-if exist(db_path, 'file')==2
+if exist(db_path, 'file') == 2
   delete(db_path);
 end
 

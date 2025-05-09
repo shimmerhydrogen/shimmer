@@ -15,8 +15,7 @@ stations_type = map_stations_type(graph);
 %% Boundary conditions - ReMi
 % ReMi station w/o backflow (set pressure)
 % MATLAB 1 trovi il valore in graph.Nodes.PRESSURES
-% MATLAB 2/3 trovi il valore in graph.Nodes.G_EXE (G is flow exchanged)
-% Metti questo nelle tabelle profiles con time 0
+% profiles table with time 0.0
 
 remi_stations = graph.Nodes.Nodes_ID((stations_type == 1));
 num_remi_stations = size(remi_stations, 1);
@@ -44,7 +43,7 @@ end
 %% Boundary conditions - Inj
 % Injection station w/ pressure control (set flow)
 % MATLAB 2/3 trovi il valore in graph.Nodes.G_EXE (G is flow exchanged)
-% Metti questo nelle tabelle profiles con time 0
+% profiles table with time 0.0
 % ASK: why pressure, I set 0.0 on pressure?
 
 inj_stations = graph.Nodes.Nodes_ID((stations_type == 2));
@@ -73,9 +72,8 @@ end
 
 %% Boundary conditions - Cons
 % Consumption point w/o pressure control (set flow)
-% MATLAB 1 trovi il valore in graph.Nodes.PRESSURES
 % MATLAB 2/3 trovi il valore in graph.Nodes.G_EXE (G is flow exchanged)
-% Metti questo nelle tabelle profiles con time 0
+% profiles table with time 0.0
 
 cons_stations = graph.Nodes.Nodes_ID((stations_type == 3));
 num_cons_stations = size(cons_stations, 1);

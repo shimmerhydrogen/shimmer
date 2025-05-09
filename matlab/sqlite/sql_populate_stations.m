@@ -27,7 +27,7 @@ if isfield(graph.Nodes, 'coordinates_XY') && size(graph.Nodes.coordinates_XY, 1)
     stations_tab_variables_name(longitude_index) = 's_longitude';
 end
 
-%% Check Station type
+%% Station type
 % MATLAB 1 is SQL ReMi station w/o backflow (set pressure)
 % MATLAB 2 is SQL Injection station w/ pressure control (set flow)
 % MATLAB 3 is SQL Outlet station / Consumption point w/o pressure control
@@ -39,13 +39,6 @@ end
 % Metti questo nelle tabelle profiles con time 0
 % Invece per i limits non so dove andarli a prendere, ma mi sa che sarà un
 % valore settato a manina (da chiedere) -> vedere file small_network_disma_nodes_nonpipe.xlsx
-
-%% Initial conditions
-%
-% graph.Nodes.PRESSURES (p)
-% graph.Nodes.G_EXE (L)
-% graph.Nodes.FLOWRATES (G)
-% Ask if it is the guess or the last value
 
 
 stations_type = zeros(num_nodes);

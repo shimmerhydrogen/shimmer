@@ -6,6 +6,55 @@
 
 namespace shimmer {
 
+std::optional<table_name_pair_t>
+limits_and_profile_table_names(sqlite3 *db, station_type stat_type)
+{
+    sqlite3_stmt *stmt = nullptr;
+
+    enum class col : int {
+        t_limits_table = 0,
+        t_profile_table = 1
+    };
+
+    std::string q =
+        "SELECT t_limits_table, t_profile_table "
+        "FROM station_types "
+        "WHERE t_type = ?";
+
+    int rc = sqlite3_prepare_v2(db, q.c_str(), q.length(), &stmt, nullptr);
+    if (rc) {
+        std::cerr << "SQL error on query '" << q << "': " << sqlite3_errmsg(db) << std::endl;
+        return {};
+    }
+
+    rc = sqlite3_bind_int(stmt, 1, +stat_type);
+
+    if ( sqlite3_step(stmt) != SQLITE_ROW ) {
+        std::cerr << "Shimmer DB: Invalid station type " << +stat_type << std::endl;
+        return {};
+    }
+    
+    std::string limits_table_name;
+    if ( sqlite3_column_type(stmt, +col::t_limits_table) == SQLITE3_TEXT ) {
+        limits_table_name = (const char *) sqlite3_column_text(stmt, +col::t_limits_table);
+    }
+
+    std::string profile_table_name;
+    if ( sqlite3_column_type(stmt, +col::t_profile_table) == SQLITE3_TEXT ) {
+        profile_table_name = (const char *) sqlite3_column_text(stmt, +col::t_profile_table);
+    }
+
+    if ( (limits_table_name == "") or (profile_table_name == "") ) {
+        return {};
+    }
+
+    rc = sqlite3_clear_bindings(stmt);
+    rc = sqlite3_reset(stmt);
+    rc = sqlite3_finalize(stmt);
+
+    return std::pair(limits_table_name, profile_table_name);
+}
+
 network_database::network_database()
     : db_(nullptr)
 {}
@@ -146,8 +195,8 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
             break;
         }
         
-        /*
-        case(station_type_x::OUTLET): {
+        
+        case(station_type::PRIVATE_OUTLET): {
             auto itor = lookup(settings_outlet, vp.i_snum);
             if ( itor == settings_outlet.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
@@ -158,11 +207,10 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
             assert((setting.u_snum == vp.u_snum) and (setting.i_snum == vp.i_snum));
 
             auto Lset = convert_Lprof(setting);
-            auto exit_station = make_outlet(Lset);
+            auto exit_station = priv::make_station_outlet(Lset);
             vp.node_station = std::make_unique<one_state_station>(exit_station);
             break;
         }
-        */
             
         default:
             std::cerr << "WARNING: Unhandled station type " << +vp.type;
@@ -203,6 +251,10 @@ network_database::populate_type_dependent_pipe_data(edge_properties& ep, int i_f
                 std::cerr << u_to << ")" << std::endl;
                 return SHIMMER_MISSING_DATA;
             }
+
+            ep.friction_factor = (*sitor).roughness;
+            ep.diameter = (*sitor).diameter;
+            ep.length = (*sitor).length;
             break;
         }
 
@@ -290,53 +342,7 @@ network_database::populate_type_dependent_pipe_data(edge_properties& ep, int i_f
 std::optional<table_name_pair_t>
 network_database::limits_and_profile_table_names(station_type stat_type)
 {
-    char *zErrMsg = nullptr;
-    sqlite3_stmt *stmt = nullptr;
-
-    enum class col : int {
-        t_limits_table = 0,
-        t_profile_table = 1
-    };
-
-    std::string q =
-        "SELECT t_limits_table, t_profile_table "
-        "FROM station_types "
-        "WHERE t_type = ?";
-
-    int rc = sqlite3_prepare_v2(db_, q.c_str(), q.length(), &stmt, nullptr);
-    if (rc) {
-        std::cerr << "SQL error on query '" << q << "': " << zErrMsg << std::endl;
-        sqlite3_free(zErrMsg);
-        return {};
-    }
-
-    rc = sqlite3_bind_int(stmt, 1, +stat_type);
-
-    if ( sqlite3_step(stmt) != SQLITE_ROW ) {
-        std::cerr << "Shimmer DB: Invalid station type " << +stat_type << std::endl;
-        return {};
-    }
-    
-    std::string limits_table_name;
-    if ( sqlite3_column_type(stmt, 0) == SQLITE3_TEXT ) {
-        limits_table_name = (const char *) sqlite3_column_text(stmt, +col::t_limits_table);
-    }
-
-    std::string profile_table_name;
-    if ( sqlite3_column_type(stmt, 1) == SQLITE3_TEXT ) {
-        profile_table_name = (const char *) sqlite3_column_text(stmt, +col::t_profile_table);
-    }
-
-    if ( (limits_table_name == "") or (profile_table_name == "") ) {
-        std::cerr << "Shimmer DB: Invalid table name in 'station_types'" << std::endl;
-        return {};
-    }
-
-    rc = sqlite3_clear_bindings(stmt);
-    rc = sqlite3_reset(stmt);
-    rc = sqlite3_finalize(stmt);
-
-    return std::pair(limits_table_name, profile_table_name);
+    return shimmer::limits_and_profile_table_names(db_, stat_type);
 }
 
 /* Callback for aggregate functions COUNT() and MAX() */
@@ -424,6 +430,10 @@ network_database::import_stations(infrastructure_graph& g)
     s_u2vd.resize( s_u2i.size() );
     s_i2vd.resize( s_i2u.size() );
 
+    /// TODO: get this from the DB
+    vector_t  x = vector_t::Zero(21);
+    x(GAS_TYPE::CH4) = 1.0;
+
     while (sqlite3_step(stmt) != SQLITE_DONE) {
         //int num_cols = sqlite3_column_count(stmt);
         vertex_properties vp;
@@ -439,6 +449,9 @@ network_database::import_stations(infrastructure_graph& g)
         vp.name = (char *) sqlite3_column_text(stmt, 1);
         
         vp.type = static_cast<station_type>(sqlite3_column_int(stmt,2));
+        
+        /// TODO: get this from the DB
+        vp.gas_mixture = x;
 
         /* Station location */
         vp.height = sqlite3_column_double(stmt, 3);
@@ -520,20 +533,21 @@ network_database::populate_graph(infrastructure_graph& g)
     renumber_stations();
 
     /* Import the data for all the stations */
-    //import_outlet(settings_outlet);
+    import_outlet(settings_outlet);
     import_entry_p_reg(settings_entry_p_reg);
     import_entry_l_reg(settings_entry_l_reg);
     import_exit_l_reg(settings_exit_l_reg);
 
+    import_pipe(settings_pipe);
     import_compr_stat(settings_compr_stat);
-
-    /* Import initial conditions */
-    import_station_initial_conditions();
-    import_pipe_initial_conditions();
 
     /* Import the graph */
     import_stations(g);
     import_pipelines(g);
+
+    /* Import initial conditions */
+    import_station_initial_conditions();
+    import_pipe_initial_conditions();
 
     return SHIMMER_SUCCESS;
 }

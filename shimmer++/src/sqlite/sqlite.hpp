@@ -98,6 +98,8 @@ operator<<(std::ostream& os, const sample& s) {
 }
 
 using table_name_pair_t = std::pair<std::string, std::string>;
+std::optional<table_name_pair_t>
+limits_and_profile_table_names(sqlite3 *, station_type);
 
 } // namespace shimmer
 
@@ -132,7 +134,7 @@ class network_database {
     std::vector<setting_exit_l_reg>     settings_exit_l_reg;
     std::vector<setting_pipe>           settings_pipe;
     std::vector<setting_compr_stat>     settings_compr_stat;
-    std::vector<setting_red_stat>     settings_red_stat;
+    std::vector<setting_red_stat>       settings_red_stat;
 
     std::vector<station_initial_condition>  sics;
     std::vector<pipe_initial_condition>     pics;

@@ -2,7 +2,7 @@ function [num_pipes, num_pipes_converted] = sql_populate_pipes(db_path, graph)
 
 num_pipes = size(graph.Edges.EndNodes, 1);
 
-if (num_pipes == 0)
+if (num_pipes < 1)
     num_pipes_converted = 0;
     return;
 end

@@ -1,8 +1,8 @@
 function [num_nodes, num_nodes_converted] = sql_populate_stations(db_path, graph)
+        
+num_nodes = size(graph.Nodes.Nodes_ID, 1);
 
-num_nodes = max(size(graph.Nodes.Nodes_ID, 1), size(graph.Nodes.Nodes_ID, 2));
-
-if (num_nodes == 0)
+if (num_nodes < 2)
     num_nodes_converted = 0;
     return;
 end

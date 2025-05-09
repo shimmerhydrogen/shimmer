@@ -31,7 +31,7 @@ end
 
 pipes = cell(num_pipes, pipes_tab_num_variables);
 for p = 1:num_pipes
-    pipes{p, 1} = ['Pipe_', num2str(p)];
+    pipes{p, 1} = [num2str(p)];
     pipes{p, 2} = graph.Edges.EndNodes(p, 1);
     pipes{p, 3} = graph.Edges.EndNodes(p, 2);
     pipes{p, 4} = pipes_type(p);

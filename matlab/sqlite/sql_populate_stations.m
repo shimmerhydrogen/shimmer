@@ -51,15 +51,15 @@ end
 stations_type = zeros(num_nodes);
 for s = 1:num_nodes
     if graph.Nodes.Type(s) == 1 % ReMi station w/o backflow (set pressure)
-        stations_type(s) = 0;
-    elseif graph.Nodes.Type(s) == 2 % Injection station w/ pressure control (set flow)
         stations_type(s) = 1;
+    elseif graph.Nodes.Type(s) == 2 % Injection station w/ pressure control (set flow)
+        stations_type(s) = 2;
     elseif graph.Nodes.Type(s) == 3 % Outlet station / Consumption point w/o pressure control
-        stations_type(s) = 4; % Outlet station not used
+        stations_type(s) = 3; % Outlet station not used
     elseif graph.Nodes.Type(s) == 0 % Junction
-        stations_type(s) = 3;
+        stations_type(s) = 4;
     else
-        stations_type(s) = 3; % DEFAULT is Junction
+        stations_type(s) = 4; % DEFAULT is Junction
     end
 end
 

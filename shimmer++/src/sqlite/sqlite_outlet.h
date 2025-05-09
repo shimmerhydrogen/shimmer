@@ -7,7 +7,6 @@
 namespace shimmer {
 
 struct setting_outlet {
-    int     u_snum;     // User number of the station
     int     i_snum;     // Internal number of the station
 
     std::vector<sample> Lprofile;
@@ -19,10 +18,19 @@ struct setting_outlet {
 
 inline std::ostream&
 operator<<(std::ostream& os, const setting_outlet& s) {
-    os << "Outlet - unum: " << s.u_snum << ", inum: " << s.i_snum << " - ";
+    os << "Outlet - inum: " << s.i_snum << " - ";
     os << "profile samples: ";
     os << s.Lprofile.size();
     return os;
 }
+
+namespace database {
+
+int load(sqlite3 *db, const optvector<int>& s_u2i,
+    std::vector<setting_outlet>& settings);
+int store(sqlite3 *db, const std::vector<int>& s_i2u,
+    const std::vector<setting_outlet>& settings);
+
+} //namespace database
 
 } // namespace shimmer

@@ -58,8 +58,8 @@ network_database::import_compr_stat(std::vector<setting_compr_stat>& settings)
         int u_from = sqlite3_column_int(stmt, +limits_col::s_from);
         int u_to = sqlite3_column_int(stmt, +limits_col::s_to);
         
-        auto i_sfrom_opt = s_u2i.at(u_from);
-        auto i_sto_opt = s_u2i.at(u_to);
+        auto i_sfrom_opt = nd_.s_u2i.at(u_from);
+        auto i_sto_opt = nd_.s_u2i.at(u_to);
         if (not i_sfrom_opt or not i_sto_opt) {
             std::cerr << "s_u2i: invalid station numbers. Inconsistent data in DB?" << std::endl;
             return SHIMMER_DATABASE_PROBLEM;

@@ -29,27 +29,28 @@ enum class profile_col : int {
 
 } // namespace entry_l_reg
 
-int
-network_database::import_entry_l_reg(std::vector<setting_entry_l_reg>& settings)
+namespace database {
+
+static int
+load_limits(sqlite3 *db, const optvector<int>& s_u2i,
+    std::vector<setting_entry_l_reg>& settings)
 {
     using namespace entry_l_reg;
-
-    auto tabnames_opt = limits_and_profile_table_names(station_type::ENTRY_L_REG);
-    if ( not tabnames_opt ) {
-        std::cerr << "Shimmer DB: cannot retrieve table names for 'entry_l_reg' station" << std::endl;
+    auto tname_opt = table_name(db, setting_table::limits,
+        station_type::ENTRY_L_REG);
+    if ( not tname_opt ) {
+        std::cerr << "Shimmer DB: cannot retrieve limits table name ";
+        std::cerr << "for 'entry_l_reg' station" << std::endl;
         return SHIMMER_DATABASE_PROBLEM;
     }
 
-    auto [limits_tab, profile_tab] = tabnames_opt.value();
-
-    char *zErrMsg = nullptr;
     sqlite3_stmt *stmt = nullptr;
 
-    std::string qlim = "SELECT * FROM " + limits_tab;
-    int rc = sqlite3_prepare_v2(db_, qlim.c_str(), qlim.length(), &stmt, nullptr);
+    std::string qlim = "SELECT * FROM " + tname_opt.value();
+    int rc = sqlite3_prepare_v2(db, qlim.c_str(), qlim.length(), &stmt, nullptr);
     if (rc) {
-        std::cerr << "SQL error on query '" << qlim << "': " << zErrMsg << std::endl;
-        sqlite3_free(zErrMsg);
+        std::cerr << "SQL error on query '" << qlim << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
         return SHIMMER_DATABASE_PROBLEM;
     }
 
@@ -58,7 +59,7 @@ network_database::import_entry_l_reg(std::vector<setting_entry_l_reg>& settings)
         setting_entry_l_reg setting;
         setting.u_snum = sqlite3_column_int(stmt, +limits_col::s_number);
         
-        auto i_snum_opt = s_u2i.at(setting.u_snum);
+        auto i_snum_opt = convert_u2i(s_u2i, setting.u_snum);
         if (not i_snum_opt) {
             std::cerr << "s_u2i: invalid station number. Inconsistent data in DB?" << std::endl;
             return SHIMMER_DATABASE_PROBLEM;
@@ -74,11 +75,29 @@ network_database::import_entry_l_reg(std::vector<setting_entry_l_reg>& settings)
     }
     rc = sqlite3_finalize(stmt);
 
-    std::string qprof = "SELECT * FROM " + profile_tab + " WHERE s_number = ?";
-    rc = sqlite3_prepare_v2(db_, qprof.c_str(), qprof.length(), &stmt, nullptr);
+    return SHIMMER_SUCCESS;
+}
+
+static int
+load_profiles(sqlite3 *db, const optvector<int>& s_u2i,
+    std::vector<setting_entry_l_reg>& settings)
+{
+    using namespace entry_l_reg;
+    auto tname_opt = table_name(db, setting_table::profiles,
+        station_type::ENTRY_L_REG);
+    if ( not tname_opt ) {
+        std::cerr << "Shimmer DB: cannot retrieve profile table name ";
+        std::cerr << "for 'entry_l_reg' station" << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    sqlite3_stmt *stmt = nullptr;
+
+    std::string qprof = "SELECT * FROM " + tname_opt.value() + " WHERE s_number = ?";
+    int rc = sqlite3_prepare_v2(db, qprof.c_str(), qprof.length(), &stmt, nullptr);
     if (rc) {
-        std::cerr << "SQL error on query '" << qprof << "': " << zErrMsg << std::endl;
-        sqlite3_free(zErrMsg);
+        std::cerr << "SQL error on query '" << qprof << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
         return SHIMMER_DATABASE_PROBLEM;
     }
 
@@ -117,5 +136,15 @@ network_database::import_entry_l_reg(std::vector<setting_entry_l_reg>& settings)
     std::sort(settings.begin(), settings.end());
     return SHIMMER_SUCCESS;
 }
+
+int load(sqlite3 *db, const optvector<int>& s_u2i,
+    std::vector<setting_entry_l_reg>& settings)
+{
+    load_limits(db, s_u2i, settings);
+    load_profiles(db, s_u2i, settings);
+    return SHIMMER_SUCCESS;
+}
+
+} // namespace database
 
 } // namespace shimmer

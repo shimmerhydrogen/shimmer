@@ -170,7 +170,7 @@ create table limits_conspoint_wo (
 -- Profiles
 --  s_number:   number of the station
 --  prf_time:   relative time of the sample
---  prf_Pset:   pressure setpoint at the specified time
+--  prf_Lset:   pressure setpoint at the specified time
 
 create table profiles_conspoint_wo (
     s_number    INTEGER,
@@ -329,6 +329,49 @@ create table pipe_initial_conditions (
     FOREIGN KEY (p_name, s_from, s_to)
         REFERENCES pipelines(p_name, s_from, s_to)
 );
+
+
+create table gas_mass_fractions (
+    s_number        INTEGER UNIQUE NOT NULL,
+    frac_CH4        REAL DEFAULT 0.0 NOT NULL,
+    frac_N2         REAL DEFAULT 0.0 NOT NULL,
+    frac_CO2        REAL DEFAULT 0.0 NOT NULL,
+    frac_C2H6       REAL DEFAULT 0.0 NOT NULL,
+    frac_C3H8       REAL DEFAULT 0.0 NOT NULL,
+    frac_iC4H10     REAL DEFAULT 0.0 NOT NULL,
+    frac_nC4H10     REAL DEFAULT 0.0 NOT NULL,
+    frac_iC5H12     REAL DEFAULT 0.0 NOT NULL,
+    frac_nC5H12     REAL DEFAULT 0.0 NOT NULL,
+    frac_C6H14      REAL DEFAULT 0.0 NOT NULL,
+    frac_C7H16      REAL DEFAULT 0.0 NOT NULL,
+    frac_C8H18      REAL DEFAULT 0.0 NOT NULL,
+    frac_C9H20      REAL DEFAULT 0.0 NOT NULL,
+    frac_C10H22     REAL DEFAULT 0.0 NOT NULL,
+    frac_H2         REAL DEFAULT 0.0 NOT NULL,
+    frac_O2         REAL DEFAULT 0.0 NOT NULL,
+    frac_CO         REAL DEFAULT 0.0 NOT NULL,
+    frac_H2O        REAL DEFAULT 0.0 NOT NULL,
+    frac_H2S        REAL DEFAULT 0.0 NOT NULL,
+    frac_He         REAL DEFAULT 0.0 NOT NULL,
+    frac_Ar         REAL DEFAULT 0.0 NOT NULL,
+    
+    FOREIGN KEY (s_number)
+        REFERENCES stations(s_number)
+);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 -- The gases. Which are the parameters associated to each gas?

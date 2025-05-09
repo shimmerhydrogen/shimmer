@@ -52,7 +52,7 @@ target_link_libraries(test_non-pipe_at_nodes shimmer verify_test)
 add_test(NAME test_non-pipe_at_nodes COMMAND test_stations)
 
 add_executable(test_sqlite_import test_sqlite_import.cpp)
-target_link_libraries(test_sqlite_import shimmer)
+target_link_libraries(test_sqlite_import shimmer shimmer_dbio)
 add_test(NAME test_sqlite_import COMMAND test_sqlite_import)
 
 add_executable(test_compressor test_compressor.cpp)
@@ -63,5 +63,5 @@ add_test(NAME test_compressor COMMAND test_compressor)
 
 
 add_executable(test_non-pipe_at_nodes_withdb test_non-pipe_at_nodes_withdb.cpp)
-target_link_libraries(test_non-pipe_at_nodes_withdb shimmer verify_test)
+target_link_libraries(test_non-pipe_at_nodes_withdb shimmer shimmer_dbio verify_test)
 add_test(NAME test_non-pipe_at_nodes_withdb COMMAND test_non-pipe_at_nodes_withdb)

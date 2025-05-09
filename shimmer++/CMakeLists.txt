@@ -68,24 +68,30 @@ set(SHIMMER_SOURCES
     src/conservation_matrices.cpp src/incidence_matrix.cpp
     src/matrix_manipulations.cpp src/pipe_calculator.cpp src/matlab_manip.cpp
     src/fluid_solver.cpp src/nonpipe_over_edges.cpp
-    src/variable.cpp src/boundary.cpp src/sqlite/sqlite.cpp src/sqlite/sqlite_entry_p_reg.cpp
-    src/sqlite/sqlite_entry_l_reg.cpp src/sqlite/sqlite_exit_l_reg.cpp
-    src/sqlite/sqlite_initial_conditions.cpp
-    src/sqlite/sqlite_compressor.cpp src/sqlite/sqlite_pipe.cpp
-    src/sqlite/sqlite_reduction.cpp src/sqlite/sqlite_outlet.cpp
+    src/variable.cpp src/boundary.cpp
 )
-
-
-#add_executable(shimmer src/main.cpp ${SHIMMER_SOURCES})
-#target_link_libraries(shimmer ${LINK_LIBS})
 
 add_library(shimmer SHARED ${SHIMMER_SOURCES})
 add_library(shimmer::shimmer ALIAS shimmer)
 target_link_libraries(shimmer ${LINK_LIBS})
 target_include_directories(shimmer PUBLIC src)
 
+set(SHIMMER_DBIO_SOURCES
+    src/sqlite/sqlite.cpp src/sqlite/sqlite_entry_p_reg.cpp
+    src/sqlite/sqlite_entry_l_reg.cpp src/sqlite/sqlite_exit_l_reg.cpp
+    src/sqlite/sqlite_initial_conditions.cpp
+    src/sqlite/sqlite_compressor.cpp src/sqlite/sqlite_pipe.cpp
+    src/sqlite/sqlite_reduction.cpp src/sqlite/sqlite_outlet.cpp
+    src/sqlite/sqlite_gases.cpp
+)
+
+add_library(shimmer_dbio SHARED ${SHIMMER_DBIO_SOURCES})
+add_library(shimmer::shimmer_dbio ALIAS shimmer_dbio)
+target_link_libraries(shimmer_dbio shimmer ${LINK_LIBS})
+target_include_directories(shimmer_dbio PUBLIC src)
+
 add_executable(ptd unit_tests/populate_test_db.cpp)
-target_link_libraries(ptd shimmer ${LINK_LIBS})
+target_link_libraries(ptd shimmer shimmer_dbio ${LINK_LIBS})
 target_include_directories(ptd PUBLIC src)
 
 if (BUILD_SHIMMER_UNIT_TESTS)

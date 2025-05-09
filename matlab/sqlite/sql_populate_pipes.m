@@ -10,28 +10,12 @@ end
 pipes_tab_num_variables = 4;
 pipes_tab_variables_name = ["p_name", "s_from", "s_to", "p_type"];
 
-pipes_type = zeros(num_pipes);
-
-% pipes_type(p) = 1; Not implemented - No, resistor not supported yet
-
-for p = 1:num_pipes
-    if isfield(graph.Edges, 'PIPE') && size(graph.Edges.PIPE, 1) == num_pipes && graph.Edges.PIPE(p)
-        pipes_type(p) = 0;
-    elseif isfield(graph.Edges, 'COMP') && size(graph.Edges.COMP, 1) == num_pipes && graph.Edges.COMP(p) % compressor
-        pipes_type(p) = 1;
-    elseif isfield(graph.Edges, 'VALV') && size(graph.Edges.VALV, 1) == num_pipes && graph.Edges.VALV(p) % valve
-        pipes_type(p) = 3;
-    elseif isfield(graph.Edges, 'REDST') && size(graph.Edges.REDST, 1) == num_pipes && graph.Edges.REDST(p) % reduction station
-    elseif isfield(graph.Edges, 'REG') && size(graph.Edges.REG, 1) == num_pipes && graph.Edges.REG(p) % regulation station
-        pipes_type(p) = 2;
-    else
-        pipes_type(p) = 0; % DEFAULT is 0
-    end
-end
+pipes_name = map_pipes_name(graph);
+pipes_type = map_pipes_type(graph);
 
 pipes = cell(num_pipes, pipes_tab_num_variables);
 for p = 1:num_pipes
-    pipes{p, 1} = [num2str(p)];
+    pipes{p, 1} = pipes_name{p};
     pipes{p, 2} = graph.Edges.EndNodes(p, 1);
     pipes{p, 3} = graph.Edges.EndNodes(p, 2);
     pipes{p, 4} = pipes_type(p);

@@ -27,36 +27,12 @@ if isfield(graph.Nodes, 'coordinates_XY') && size(graph.Nodes.coordinates_XY, 1)
     stations_tab_variables_name(longitude_index) = 's_longitude';
 end
 
-%% Station type
-% MATLAB 1 is SQL ReMi station w/o backflow (set pressure)
-% MATLAB 2 is SQL Injection station w/ pressure control (set flow)
-% MATLAB 3 is SQL Outlet station / Consumption point w/o pressure control
-% MATLAB 0 is SQL Junction
-
-%% Boundary conditions
-% MATLAB 1 trovi il valore in graph.Nodes.PRESSURES
-% MATLAB 2/3 trovi il valore in graph.Nodes.G_EXE (G is flow exchanged)
-% Metti questo nelle tabelle profiles con time 0
+%% Limits
 % Invece per i limits non so dove andarli a prendere, ma mi sa che sarà un
 % valore settato a manina (da chiedere) -> vedere file small_network_disma_nodes_nonpipe.xlsx
 
 
-stations_type = zeros(num_nodes);
-for s = 1:num_nodes
-    if graph.Nodes.Type(s) == 1 % ReMi station w/o backflow (set pressure)
-        stations_type(s) = 1;
-    elseif graph.Nodes.Type(s) == 2 % Injection station w/ pressure control (set flow)
-        stations_type(s) = 2;
-    elseif graph.Nodes.Type(s) == 3 % Outlet station / Consumption point w/o pressure control
-        stations_type(s) = 3; % Outlet station not used
-    elseif graph.Nodes.Type(s) == 0 % Junction
-        stations_type(s) = 4;
-    else
-        stations_type(s) = 4; % DEFAULT is Junction
-    end
-end
-
-
+stations_type = map_stations_type(graph);
 stations = cell(num_nodes, num_variables);
 for s = 1:num_nodes
     stations{s, 1} = graph.Nodes.Nodes_ID(s);

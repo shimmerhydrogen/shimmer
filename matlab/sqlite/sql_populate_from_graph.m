@@ -8,7 +8,10 @@ assert(num_nodes == num_stations_converted);
 [num_pipes, numpipes_converted] = sql_populate_pipes(db_path, graph);
 assert(num_pipes == numpipes_converted);
 
+%% Boundary conditions
+sql_populate_boundary_conditions(db_path, graph);
+
 %% Initial Conditions
-sql_populate_initial_conditions(db_path, graph)
+sql_populate_initial_conditions(db_path, graph);
 
 end

@@ -116,13 +116,18 @@ public:
     //bool check_soft_controls(size_t step);
     bool check_controls(size_t step);
 
-    double temperature();
-    vector_t pressure_nodes();
-    vector_t pressure_pipes();
-    matrix_t x_nodes();
-    matrix_t x_pipes();
-    const incidence& get_incidence();
-    inline const variable& get_variable(){return var_;}
+    inline size_t num_nodes() const {return num_nodes_;};
+    inline size_t num_pipes() const {return num_pipes_;};
+
+    inline double temperature() const {return Tm_;};
+    inline vector_t temperature_nodes() const {return T_nodes_;};
+    inline vector_t temperature_pipes() const {return T_pipes_;};
+    inline vector_t pressure_nodes() const {return var_.pressure;};
+    inline vector_t pressure_pipes() const {return press_pipes_;};
+    inline matrix_t x_nodes() const {return x_nodes_;};
+    inline matrix_t x_pipes() const {return x_pipes_;};
+    const incidence& get_incidence() const {return inc_;};
+    inline const variable& get_variable() const{return var_;}
 };
 
 

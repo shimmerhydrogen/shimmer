@@ -23,6 +23,10 @@ endif()
 # GERG
 add_subdirectory(deps/gerg)
 set(LINK_LIBS ${LINK_LIBS} GERG::GERG)
+#######################################################################
+# AGA8CODE (gerg)
+find_package(SHMGERG REQUIRED)
+set(LINK_LIBS ${LINK_LIBS} SHMGERG::SHMGERG)
 
 #######################################################################
 # SQLite

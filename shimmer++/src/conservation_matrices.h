@@ -16,7 +16,6 @@
 #include "../src/pipe_calculator.h"
 #include "../src/matlab_manip.h"
 #include "../src/gas_law.h"
-#include "MATLAB_GERG_functions.hpp"
 #include "../src/variable.h"
 
 namespace shimmer{

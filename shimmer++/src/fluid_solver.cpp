@@ -6,15 +6,6 @@
 namespace shimmer
 {
 
-
-
-double linearized_fluid_solver::temperature(){return Tm_;}
-vector_t linearized_fluid_solver::pressure_nodes(){return var_.pressure;}
-vector_t linearized_fluid_solver::pressure_pipes(){return press_pipes_;}
-matrix_t linearized_fluid_solver::x_nodes(){return x_nodes_;}
-matrix_t linearized_fluid_solver::x_pipes(){return x_pipes_;}
-const incidence& linearized_fluid_solver::get_incidence(){return inc_;}
-
 linearized_fluid_solver::linearized_fluid_solver(
                         size_t at_step,
                         const bool& unsteady,

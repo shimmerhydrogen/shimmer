@@ -2,7 +2,6 @@
 
 #include <iostream>
 #include <vector>
-#include "sqlite.hpp"
 
 #define NUM_GASES 21
 namespace shimmer {

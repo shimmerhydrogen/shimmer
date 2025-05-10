@@ -2,7 +2,6 @@
 
 #include <iostream>
 #include <vector>
-#include "sqlite.hpp"
 
 
 namespace shimmer {

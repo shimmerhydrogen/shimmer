@@ -438,6 +438,7 @@ network_database::renumber_stations()
     /* Resize the mapping arrays */
     nd_.s_u2i.resize(max_station_number+1);
     nd_.s_i2u.resize(station_count);
+    nnodes_ = station_count;
     
     /* Compute the actual mapping */
     q = "SELECT * FROM stations ORDER BY s_number";
@@ -562,6 +563,7 @@ network_database::import_pipelines(infrastructure_graph& g)
 
         boost::add_edge(from_vtx, to_vtx, ep, g);
     }
+    npipes_ = branch_num;
 
     sqlite3_finalize(stmt);
 

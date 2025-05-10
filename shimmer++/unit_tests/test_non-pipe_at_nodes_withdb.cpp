@@ -32,45 +32,6 @@ size_t num_pipes = 15;
 size_t num_nodes = 13;
 size_t num_outlet = 5;    
 
-std::vector<station_type>
-make_stations_type_vector()
-{
-    return std::vector<station_type>{
-        station_type::ENTRY_P_REG,
-        station_type::PRIVATE_OUTLET,
-        station_type::JUNCTION,
-        station_type::JUNCTION,
-        station_type::JUNCTION,
-        station_type::EXIT_L_REG,
-        station_type::JUNCTION,
-        station_type::JUNCTION,
-        station_type::EXIT_L_REG,
-        station_type::JUNCTION,
-        station_type::EXIT_L_REG,
-        station_type::ENTRY_L_REG,
-        station_type::PRIVATE_OUTLET
-    };
-}
-
-
-vector_t
-read_press_boundary_conditions()
-{
-    vector_t Pset(num_steps);
-    Pset << 70.000000000000000,  69.416666666666671,  68.833333333333343,
-            68.250000000000000,  67.666666666666671,  67.083333333333343,
-            66.500000000000000,  67.083333333333329,  67.666666666666657,
-            68.249999999999986,  68.833333333333329,  69.416666666666657,
-            70.000000000000000,  72.333333333333329,  74.666666666666657,
-            76.999999999999972,  79.333333333333300,  81.666666666666629,
-            84.000000000000000,  81.666666666666657,  79.333333333333329,
-            77.000000000000000,  74.666666666666686,  72.333333333333357,
-            70.000000000000000;
-    Pset  *=1E5;
-    return Pset;
-}
-
-
 std::pair<matrix_t, matrix_t>
 read_flux_boundary_conditions()
 {
@@ -99,22 +60,6 @@ read_flux_boundary_conditions()
     }
 
     return std::make_pair(flux_ext, Gsnam);  
-}
-
-
-
-
-std::pair<matrix_t, matrix_t> 
-make_mass_fraction(size_t size, const infrastructure_graph& graph)
-{
-    incidence inc(graph);
-
-    matrix_t y_nodes(size, 21);
-    y_nodes.col(0).setConstant(1);
-
-    matrix_t y_pipes = inc.matrix_in().transpose() * y_nodes;    
-
-    return  std::make_pair(y_nodes, y_pipes); 
 }
 
 
@@ -256,9 +201,22 @@ int main()
     network_database db("test_network_1.db");
     infrastructure_graph graph;
     db.populate_graph(graph);
+    num_nodes = db.num_stations();
+    num_pipes = db.num_pipes();
 
+    /* BEGIN GAS MASS FRACTIONS */
+    matrix_t y_nodes = matrix_t::Zero(num_nodes, NUM_GASES);
+    for (size_t i = 0; i < db.nd_.mass_fractions.size(); i++) {
+        const auto& mf = db.nd_.mass_fractions[i];
+        assert(mf.i_snum < num_nodes);
+        vector_t y = vector_t::Zero(NUM_GASES);
+        std::copy(mf.fractions.begin(), mf.fractions.end(), y.begin());
+        y_nodes.row(i) = y;
+    }
 
-    auto [y_nodes, y_pipes] = make_mass_fraction(num_nodes, graph);
+    incidence inc(graph);
+    matrix_t y_pipes = inc.matrix_in().transpose() * y_nodes;   
+    /* END GAS MASS FRACTIONS */
 
     using time_solver_t = time_solver<papay, viscosity_type::Constant>; 
 

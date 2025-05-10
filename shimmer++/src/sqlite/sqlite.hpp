@@ -168,7 +168,11 @@ class network_database {
     sqlite3 *db_;
     bool verbose_;
 
+public:
     network_data nd_;
+private:
+    int nnodes_;
+    int npipes_;
 
     int import_stations(infrastructure_graph&);
     int import_station_parameters(infrastructure_graph&);
@@ -201,6 +205,9 @@ public:
 
     int open(const std::string&);
     int populate_graph(infrastructure_graph&);
+
+    int num_stations() const { return nnodes_; }
+    int num_pipes() const { return npipes_; }
 };
 
 } //namespace shimmer

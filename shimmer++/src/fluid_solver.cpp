@@ -31,6 +31,13 @@ linearized_fluid_solver::linearized_fluid_solver(
     x_nodes_ = build_x_nodes(graph_);
     x_pipes_ = inc_.matrix_in().transpose() * x_nodes_;
 
+
+    // We work with an isothermal model, but modifs can be done
+    T_nodes_ = vector_t::Zero(num_nodes_);
+    T_pipes_ = vector_t::Zero(num_pipes_);
+
+    T_nodes_.setConstant(Tm);
+    T_pipes_.setConstant(Tm);
 }
 
 

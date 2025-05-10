@@ -16,6 +16,7 @@
 #include "../src/incidence_matrix.h"
 #include "../src/matlab_manip.h"
 #include "../src/gas_law.h"
+
 #include "verify_test.h"
 
 using namespace shimmer;
@@ -34,8 +35,8 @@ gerg_params
 make_gerg(size_t size)
 {
     gerg_reducing_params_t reducing_parameters;
-    reducing_parameters.Tr.resize(size);
-    reducing_parameters.Dr.resize(size);
+    reducing_parameters.Tr.resize(size, 1);
+    reducing_parameters.Dr.resize(size,1);
     reducing_parameters.Tr.setConstant(1.905640000000000e+02);
     reducing_parameters.Dr.setConstant(1.013934271900000e+01);
 
@@ -62,16 +63,26 @@ make_init_graph(infrastructure_graph& g)
 
     std::vector<vertex_descriptor> vds;
 
+    auto add_vertex = [&](vertex_properties&& vp, const vector_t& x_in)
+    {
+        vp.gas_mixture = x_in;
+        auto v = boost::add_vertex(g);
+        g[v] = std::move(vp);
+        return v;
+    };
+
     vector_t  x = vector_t::Zero(21);
-    x(GAS_TYPE::CH4) = 1.0;
+    //x(GAS_TYPE::CH4) = 1.0;
+    x(GAS_TYPE::CH4) = 0.8;
+    x(GAS_TYPE::CO2) = 0.2;
 
-    vds.push_back( boost::add_vertex({ "station 0", 0, 0., 0.,  0., x}, g));
-    vds.push_back( boost::add_vertex({ "station 1", 1, 0., 0.,  0., x}, g));
-    vds.push_back( boost::add_vertex({ "station 2", 2, 0., 0.,  0., x}, g));
+    vds.push_back( add_vertex( vertex_properties("station 0", 0, 0., 0.,  0.), x));
+    vds.push_back( add_vertex( vertex_properties("station 1", 1, 0., 0.,  0.), x));
+    vds.push_back( add_vertex( vertex_properties("station 2", 2, 0., 0.,  0.), x));
 
-    edge_properties ep0  = {edge_type::pipe, 0,    80000, 0.6, 0.000012};
-    edge_properties ep1  = {edge_type::pipe, 1,    90000, 0.6, 0.000012};
-    edge_properties ep2  = {edge_type::pipe, 2,   100000, 0.6, 0.000012};
+    edge_properties ep0  = {pipe_type::PIPE, 0,    80000, 0.6, 0.000012};
+    edge_properties ep1  = {pipe_type::PIPE, 1,    90000, 0.6, 0.000012};
+    edge_properties ep2  = {pipe_type::PIPE, 2,   100000, 0.6, 0.000012};
 
     /*                                            
     //           0                        *0  *1  *2              
@@ -87,8 +98,9 @@ make_init_graph(infrastructure_graph& g)
     boost::add_edge( vds[2], vds[1], ep2, g);
 }
 
-
-int main()
+/*
+void
+gerg_aga8code_mock()
 {
     double Temp = 293.15;
     size_t num_pipes = 3;
@@ -104,9 +116,59 @@ int main()
 
     vector_t flux (num_pipes), flux_old(num_pipes);
     vector_t pressure_pipes (num_pipes), pressure_nodes(num_nodes);
+    vector_t temperature_nodes(num_nodes), temperature_pipes(num_pipes);
+
+    pressure_nodes << 5.101325000000000e+06, 5.101325000000000e+06, 5.101325000000000e+06;//5101325.0, 4977209.550248852, 4990077.876609823;     
+    pressure_pipes << 5.101325000000000e+06, 5.101325000000000e+06, 5.101325000000000e+06;//5039522.018589198, 5045905.835430760, 4983646.482384357;
+
+    temperature_pipes.setConstant(Temp);
+    temperature_nodes.setConstant(Temp);
+
+    vector_t RRp = make_RR(num_pipes); 
+    vector_t RRn = make_RR(num_nodes); 
+
+    infrastructure_graph graph;
+    make_init_graph(graph);
+
+    incidence inc(graph);
+
+    matrix_t  x_nodes = matrix_t::Zero(num_nodes,21);
+    x_nodes.col(GAS_TYPE::CH4).setConstant(0.8);
+    x_nodes.col(GAS_TYPE::CO2).setConstant(0.2);
+
+    Eigen::MatrixXd  x_pipes = inc.matrix_in().transpose() * x_nodes;
+
+    gerg gerg_eos; 
+
+    auto Z_pipes = gerg_eos.compute(temperature_pipes, pressure_pipes, x_pipes);
+    auto Z_nodes = gerg_eos.compute(temperature_nodes, pressure_nodes, x_nodes);
+}
+*/
+
+bool
+gerg_matlab()
+{
+    double Temp = 293.15;
+    size_t num_pipes = 3;
+    size_t num_nodes = 3;
+
+    std::vector<double> ref_c2_nodes = {138267.2930151191,
+                                        138578.7460692530,
+                                        138546.3842273756};
+
+    std::vector<double> ref_c2_pipes = {138422.1905008311,
+                                        138406.1731482413,
+                                        138562.5561693802};
+
+    vector_t flux (num_pipes), flux_old(num_pipes);
+    vector_t pressure_pipes (num_pipes), pressure_nodes(num_nodes);
+    vector_t temperature_nodes(num_nodes), temperature_pipes(num_pipes);
 
     pressure_nodes << 5101325.0, 4977209.550248852, 4990077.876609823;     
     pressure_pipes << 5039522.018589198, 5045905.835430760, 4983646.482384357;
+
+    temperature_pipes.setConstant(Temp);
+    temperature_nodes.setConstant(Temp);
 
     vector_t RRp = make_RR(num_pipes); 
     vector_t RRn = make_RR(num_nodes); 
@@ -119,18 +181,88 @@ int main()
     gerg_params gerg_nodes = make_gerg(num_nodes); 
     gerg_params gerg_pipes = make_gerg(num_pipes); 
 
-    auto  x_nodes = build_x_nodes(graph);
+    //matrix_t  x_nodes = matrix_t::Zero(num_nodes,21);
+    //x_nodes.col(GAS_TYPE::CH4).setConstant(1.0);
+
+    matrix_t  x_nodes = build_x_nodes(graph);
     Eigen::MatrixXd  x_pipes = inc.matrix_in().transpose() * x_nodes;
 
-    auto eos_pipes = equation_of_state(Temp, pressure_pipes, x_pipes, gerg_pipes);
-    auto eos_nodes = equation_of_state(Temp, pressure_nodes, x_nodes, gerg_nodes);
+    gerg gerg_eos; 
 
-    vector_t c2_pipes = eos_pipes.Z.cwiseProduct(RRp) * Temp; 
-    vector_t c2_nodes = eos_nodes.Z.cwiseProduct(RRn) * Temp; 
+    auto Z_pipes = gerg_eos.compute(Temp, pressure_pipes, x_pipes, gerg_pipes);
+    auto Z_nodes = gerg_eos.compute(Temp, pressure_nodes, x_nodes, gerg_nodes);
+
+    vector_t c2_pipes = Z_pipes.array() * RRp.array() * temperature_pipes.array(); 
+    vector_t c2_nodes = Z_nodes.array() * RRn.array() * temperature_nodes.array(); 
 
     std::cout << __FILE__ << std::endl; 
     bool c2n_pass = verify_test("Speed of sound at nodes", c2_nodes, ref_c2_nodes);
     bool c2p_pass = verify_test("Speed of sound in pipes", c2_pipes, ref_c2_pipes);
-          
+
     return !(c2n_pass & c2p_pass);
+
+}
+
+/*
+bool
+gerg_aga8code()
+{
+    double Temp = 293.15;
+    size_t num_pipes = 3;
+    size_t num_nodes = 3;
+
+    std::vector<double> ref_c2_nodes = {138267.2930151191,
+                                        138578.7460692530,
+                                        138546.3842273756};
+
+    std::vector<double> ref_c2_pipes = {138422.1905008311,
+                                        138406.1731482413,
+                                        138562.5561693802};
+
+    vector_t flux (num_pipes), flux_old(num_pipes);
+    vector_t pressure_pipes (num_pipes), pressure_nodes(num_nodes);
+    vector_t temperature_nodes(num_nodes), temperature_pipes(num_pipes);
+
+    pressure_nodes << 5101325.0, 4977209.550248852, 4990077.876609823;     
+    pressure_pipes << 5039522.018589198, 5045905.835430760, 4983646.482384357;
+
+    temperature_pipes.setConstant(Temp);
+    temperature_nodes.setConstant(Temp);
+
+    vector_t RRp = make_RR(num_pipes); 
+    vector_t RRn = make_RR(num_nodes); 
+
+    infrastructure_graph graph;
+    make_init_graph(graph);
+
+    incidence inc(graph);
+
+    matrix_t  x_nodes = matrix_t::Zero(num_nodes,21);
+    x_nodes.col(GAS_TYPE::CH4).setConstant(1.0);
+
+    //matrix_t  x_nodes = build_x_nodes(graph);
+    Eigen::MatrixXd  x_pipes = inc.matrix_in().transpose() * x_nodes;
+
+    gerg gerg_eos; 
+
+    auto Z_pipes = gerg_eos.compute(temperature_pipes, pressure_pipes, x_pipes);
+    auto Z_nodes = gerg_eos.compute(temperature_nodes, pressure_nodes, x_nodes);
+
+    vector_t c2_pipes = Z_pipes.array() * RRp.array() * temperature_pipes.array(); 
+    vector_t c2_nodes = Z_nodes.array() * RRn.array() * temperature_nodes.array(); 
+
+    std::cout << __FILE__ << std::endl; 
+    bool c2n_pass = verify_test("Speed of sound at nodes", c2_nodes, ref_c2_nodes);
+    bool c2p_pass = verify_test("Speed of sound in pipes", c2_pipes, ref_c2_pipes);
+
+    return !(c2n_pass & c2p_pass);
+}
+*/
+int main()
+{
+
+    bool pass_matlab = gerg_matlab();
+    //bool pass_aga8   = gerg_aga8code();
+
+    return !pass_matlab;
 }

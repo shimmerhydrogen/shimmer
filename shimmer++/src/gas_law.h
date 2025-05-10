@@ -11,6 +11,8 @@
 #include <Eigen/Dense>
 #include "MATLAB_GERG_functions.hpp"
 #include "../src/fluid_solver.h"
+#include "shimmer_gerg_functions.hpp"
+#include "shimmer_gerg_utilities.hpp"
 
 namespace shimmer{
 
@@ -121,7 +123,33 @@ public:
 };
 
 
+using namespace shimmer_gerg;
+typedef gerg_data::Thermodynamic_properties_parameters<double> gerg_aga_thermo_params_t;
+typedef gerg_data::Thermodynamic_properties<vector_t> gerg_aga_thermo_props_t;
 
 
+class gerg_aga: public equation_of_state
+{
+    vector_t mmi_gerg;
+
+    double tolerance_;
+
+public:
+
+    gerg_aga();
+
+    void compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes);
+
+    void initialization(linearized_fluid_solver *lfs); 
+
+    vector_t
+    compute(const vector_t& temperature,
+            const vector_t& pressure,
+            const matrix_t& x);
+
+
+    std::pair<vector_t, vector_t>
+    speed_of_sound(linearized_fluid_solver *lfs);
+};
 
 } //end namespace shimmer

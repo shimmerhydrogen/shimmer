@@ -55,6 +55,55 @@ limits_and_profile_table_names(sqlite3 *db, station_type stat_type)
     return std::pair(limits_table_name, profile_table_name);
 }
 
+std::optional<std::string>
+table_name(sqlite3 *db, setting_table st, station_type stat_type)
+{
+    sqlite3_stmt *stmt = nullptr;
+
+    std::string q;
+    if ( st == setting_table::limits ) {
+        q = "SELECT t_limits_table "
+        "FROM station_types "
+        "WHERE t_type = ?";
+    } else if ( st == setting_table::profiles ) {
+        q = "SELECT t_profile_table "
+        "FROM station_types "
+        "WHERE t_type = ?";
+    } else {
+        std::cerr << "Invalid setting table specified" << std::endl;
+        return {};
+    }
+
+    int rc = sqlite3_prepare_v2(db, q.c_str(), q.length(), &stmt, nullptr);
+    if (rc) {
+        std::cerr << "SQL error on query '" << q << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
+        return {};
+    }
+
+    rc = sqlite3_bind_int(stmt, 1, +stat_type);
+
+    if ( sqlite3_step(stmt) != SQLITE_ROW ) {
+        std::cerr << "Shimmer DB: Invalid station type " << +stat_type << std::endl;
+        return {};
+    }
+    
+    std::string tname;
+    if ( sqlite3_column_type(stmt, /*column*/ 0) == SQLITE3_TEXT ) {
+        tname = (const char *) sqlite3_column_text(stmt, /*column*/ 0);
+    }
+
+    if (tname == "") {
+        return {};
+    }
+
+    rc = sqlite3_clear_bindings(stmt);
+    rc = sqlite3_reset(stmt);
+    rc = sqlite3_finalize(stmt);
+
+    return tname;
+}
+
 network_database::network_database()
     : db_(nullptr)
 {}
@@ -141,8 +190,8 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
         }
 
         case(station_type::ENTRY_P_REG): {
-            auto itor = lookup(settings_entry_p_reg, vp.i_snum);
-            if ( itor == settings_entry_p_reg.end() ) {
+            auto itor = lookup(nd_.settings_entry_p_reg, vp.i_snum);
+            if ( itor == nd_.settings_entry_p_reg.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
                 std::cout << " (ReMi w/o pressure control)" << std::endl;
                 return SHIMMER_MISSING_DATA;
@@ -158,8 +207,8 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
         }
             
         case(station_type::ENTRY_L_REG): {
-            auto itor = lookup(settings_entry_l_reg, vp.i_snum);
-            if ( itor == settings_entry_l_reg.end() ) {
+            auto itor = lookup(nd_.settings_entry_l_reg, vp.i_snum);
+            if ( itor == nd_.settings_entry_l_reg.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
                 std::cout << " (Injection w/ pressure control)" << std::endl;
                 return SHIMMER_MISSING_DATA;
@@ -179,8 +228,8 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
         }
 
         case(station_type::EXIT_L_REG): {
-            auto itor = lookup(settings_exit_l_reg, vp.i_snum);
-            if ( itor == settings_exit_l_reg.end() ) {
+            auto itor = lookup(nd_.settings_exit_l_reg, vp.i_snum);
+            if ( itor == nd_.settings_exit_l_reg.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
                 std::cout << " (consumption w/o pressure control)" << std::endl;
                 return SHIMMER_MISSING_DATA;
@@ -197,14 +246,14 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
         
         
         case(station_type::PRIVATE_OUTLET): {
-            auto itor = lookup(settings_outlet, vp.i_snum);
-            if ( itor == settings_outlet.end() ) {
+            auto itor = lookup(nd_.settings_outlet, vp.i_snum);
+            if ( itor == nd_.settings_outlet.end() ) {
                 std::cout << "Warning: No data for station " << vp.u_snum;
                 std::cout << " (Outlet)" << std::endl;
                 return 1;
             }
             const setting_outlet &setting = *itor;
-            assert((setting.u_snum == vp.u_snum) and (setting.i_snum == vp.i_snum));
+            assert( setting.i_snum == vp.i_snum );
 
             auto Lset = convert_Lprof(setting);
             auto exit_station = priv::make_station_outlet(Lset);
@@ -243,10 +292,10 @@ network_database::populate_type_dependent_pipe_data(edge_properties& ep, int i_f
     switch (ep.type) {
         
         case pipe_type::PIPE: {
-            auto sitor = lookup(settings_pipe, i_from, i_to);
-            if (sitor == settings_pipe.end()) {
-                auto u_from = s_i2u.at(i_from);
-                auto u_to = s_i2u.at(i_to);
+            auto sitor = lookup(nd_.settings_pipe, i_from, i_to);
+            if (sitor == nd_.settings_pipe.end()) {
+                auto u_from = nd_.s_i2u.at(i_from);
+                auto u_to = nd_.s_i2u.at(i_to);
                 std::cerr << "WARNING: no data for pipe (" << u_from << ", ";
                 std::cerr << u_to << ")" << std::endl;
                 return SHIMMER_MISSING_DATA;
@@ -260,10 +309,10 @@ network_database::populate_type_dependent_pipe_data(edge_properties& ep, int i_f
 
         case pipe_type::COMPR_STAT: {
 
-            auto sitor = lookup(settings_compr_stat, i_from, i_to);
-            if (sitor == settings_compr_stat.end()) {
-                auto u_from = s_i2u.at(i_from);
-                auto u_to = s_i2u.at(i_to);
+            auto sitor = lookup(nd_.settings_compr_stat, i_from, i_to);
+            if (sitor == nd_.settings_compr_stat.end()) {
+                auto u_from = nd_.s_i2u.at(i_from);
+                auto u_to = nd_.s_i2u.at(i_to);
                 std::cerr << "WARNING: no data for compressor (";
                 std::cerr << u_from << ", " << u_to << ")" << std::endl;
                 return SHIMMER_MISSING_DATA;
@@ -308,10 +357,10 @@ network_database::populate_type_dependent_pipe_data(edge_properties& ep, int i_f
         }
 
         case pipe_type::RED_STAT: {
-            auto sitor = lookup(settings_red_stat, i_from, i_to);
-            if (sitor == settings_red_stat.end()) {
-                auto u_from = s_i2u.at(i_from);
-                auto u_to = s_i2u.at(i_to);
+            auto sitor = lookup(nd_.settings_red_stat, i_from, i_to);
+            if (sitor == nd_.settings_red_stat.end()) {
+                auto u_from = nd_.s_i2u.at(i_from);
+                auto u_to = nd_.s_i2u.at(i_to);
                 std::cerr << "WARNING: no data for reduction station (";
                 std::cerr << u_from << ", " << u_to << ")" << std::endl;
                 return SHIMMER_MISSING_DATA;
@@ -387,8 +436,9 @@ network_database::renumber_stations()
     }
 
     /* Resize the mapping arrays */
-    s_u2i.resize(max_station_number+1);
-    s_i2u.resize(station_count);
+    nd_.s_u2i.resize(max_station_number+1);
+    nd_.s_i2u.resize(station_count);
+    nnodes_ = station_count;
     
     /* Compute the actual mapping */
     q = "SELECT * FROM stations ORDER BY s_number";
@@ -403,8 +453,8 @@ network_database::renumber_stations()
     int i_num = 0;
     while (sqlite3_step(stmt) != SQLITE_DONE) {
         int u_num = sqlite3_column_int(stmt, 0);
-        s_u2i.at(u_num) = i_num;
-        s_i2u.at(i_num) = u_num;
+        nd_.s_u2i.at(u_num) = i_num;
+        nd_.s_i2u.at(i_num) = u_num;
         i_num++;
     }
     
@@ -427,12 +477,8 @@ network_database::import_stations(infrastructure_graph& g)
         return SHIMMER_DATABASE_PROBLEM;
     }
 
-    s_u2vd.resize( s_u2i.size() );
-    s_i2vd.resize( s_i2u.size() );
-
-    /// TODO: get this from the DB
-    vector_t  x = vector_t::Zero(21);
-    x(GAS_TYPE::CH4) = 1.0;
+    nd_.s_u2vd.resize( nd_.s_u2i.size() );
+    nd_.s_i2vd.resize( nd_.s_i2u.size() );
 
     while (sqlite3_step(stmt) != SQLITE_DONE) {
         //int num_cols = sqlite3_column_count(stmt);
@@ -440,7 +486,7 @@ network_database::import_stations(infrastructure_graph& g)
         
         /* Station number, convert from user to internal */
         int s_un = sqlite3_column_int(stmt, 0);
-        int s_in = s_u2i.at(s_un).value();
+        int s_in = nd_.s_u2i.at(s_un).value();
         vp.node_num = s_in;
         vp.u_snum = s_un;
         vp.i_snum = s_in;
@@ -449,9 +495,11 @@ network_database::import_stations(infrastructure_graph& g)
         vp.name = (char *) sqlite3_column_text(stmt, 1);
         
         vp.type = static_cast<station_type>(sqlite3_column_int(stmt,2));
-        
-        /// TODO: get this from the DB
-        vp.gas_mixture = x;
+
+        const auto& mfs = nd_.mass_fractions[s_in].fractions;
+        vp.gas_mixture = vector_t::Zero(mfs.size());
+        assert(vp.gas_mixture.size() == NUM_GASES);
+        std::copy(mfs.begin(), mfs.end(), vp.gas_mixture.begin());
 
         /* Station location */
         vp.height = sqlite3_column_double(stmt, 3);
@@ -464,8 +512,8 @@ network_database::import_stations(infrastructure_graph& g)
         /* keep track of the mapping from user/internal numbering to boost
          * vertex descriptors. this should be done with boost::labeled_graph,
          * however it does not like unique pointers, so here we are. */
-        s_u2vd.at(s_un) = vtxd;
-        s_i2vd.at(s_in) = vtxd;
+        nd_.s_u2vd.at(s_un) = vtxd;
+        nd_.s_i2vd.at(s_in) = vtxd;
         
         /* Move the newly created vertex_properties to the graph */
         g[vtxd] = std::move(vp);
@@ -496,11 +544,11 @@ network_database::import_pipelines(infrastructure_graph& g)
         std::string name = (char *) sqlite3_column_text(stmt, 0);
         int from_un = sqlite3_column_int(stmt, 1);
         int to_un = sqlite3_column_int(stmt, 2);
-        auto from_vtx = s_u2vd.at(from_un).value();
-        auto to_vtx = s_u2vd.at(to_un).value();
+        auto from_vtx = nd_.s_u2vd.at(from_un).value();
+        auto to_vtx = nd_.s_u2vd.at(to_un).value();
 
-        auto from_in = s_u2i.at(from_un).value();
-        auto to_in = s_u2i.at(to_un).value();
+        auto from_in = nd_.s_u2i.at(from_un).value();
+        auto to_in = nd_.s_u2i.at(to_un).value();
         
         /* XXX: NAME CURRENTLY NOT USED - CANNOT HAVE
          *      MULTIPLE PIPES BETWEEN THE SAME TWO NODES
@@ -515,6 +563,7 @@ network_database::import_pipelines(infrastructure_graph& g)
 
         boost::add_edge(from_vtx, to_vtx, ep, g);
     }
+    npipes_ = branch_num;
 
     sqlite3_finalize(stmt);
 
@@ -533,13 +582,15 @@ network_database::populate_graph(infrastructure_graph& g)
     renumber_stations();
 
     /* Import the data for all the stations */
-    import_outlet(settings_outlet);
-    import_entry_p_reg(settings_entry_p_reg);
-    import_entry_l_reg(settings_entry_l_reg);
-    import_exit_l_reg(settings_exit_l_reg);
+    import_outlet(nd_.settings_outlet);
+    import_entry_p_reg(nd_.settings_entry_p_reg);
+    import_entry_l_reg(nd_.settings_entry_l_reg);
+    import_exit_l_reg(nd_.settings_exit_l_reg);
 
-    import_pipe(settings_pipe);
-    import_compr_stat(settings_compr_stat);
+    import_pipe(nd_.settings_pipe);
+    import_compr_stat(nd_.settings_compr_stat);
+
+    import_gas_mass_fractions(nd_.mass_fractions);
 
     /* Import the graph */
     import_stations(g);
@@ -550,6 +601,54 @@ network_database::populate_graph(infrastructure_graph& g)
     import_pipe_initial_conditions();
 
     return SHIMMER_SUCCESS;
+}
+
+int
+network_database::import_entry_l_reg(std::vector<setting_entry_l_reg>& settings)
+{
+    return database::load(db_, nd_.s_u2i, settings);
+}
+
+int
+network_database::import_entry_p_reg(std::vector<setting_entry_p_reg>& settings)
+{
+    return database::load(db_, nd_.s_u2i, settings);
+}
+
+int
+network_database::import_exit_l_reg(std::vector<setting_exit_l_reg>& settings)
+{
+    return database::load(db_, nd_.s_u2i, settings);
+}
+
+int
+network_database::import_pipe(std::vector<setting_pipe>& settings)
+{
+    return database::load(db_, nd_.s_u2i, settings);
+}
+
+int
+network_database::import_station_initial_conditions()
+{
+    return database::load(db_, nd_.s_u2i, nd_.sics);
+}
+
+int
+network_database::import_pipe_initial_conditions()
+{
+    return database::load(db_, nd_.s_u2i, nd_.pics);
+}
+
+int
+network_database::import_gas_mass_fractions(std::vector<gas_mass_fractions>& fracs)
+{
+    return database::load(db_, nd_.s_u2i, fracs);
+}
+
+int
+network_database::import_outlet(std::vector<setting_outlet>& settings)
+{
+    return database::load(db_, nd_.s_u2i, settings);
 }
 
 } // namespace shimmer

@@ -28,4 +28,13 @@ operator<<(std::ostream& os, const setting_exit_l_reg& s) {
     return os;
 }
 
+namespace database {
+
+int load(sqlite3 *db, const optvector<int>& s_u2i,
+    std::vector<setting_exit_l_reg>& settings);
+int store(sqlite3 *db, const std::vector<int>& s_i2u,
+    const std::vector<setting_exit_l_reg>& settings);
+
+} //namespace database
+
 } // namespace shimmer

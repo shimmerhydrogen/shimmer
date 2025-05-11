@@ -2,7 +2,6 @@
 
 #include <iostream>
 #include <vector>
-#include "sqlite.hpp"
 
 namespace shimmer {
 
@@ -31,5 +30,14 @@ operator<<(std::ostream& os, const setting_entry_l_reg& s) {
     os << s.Pprofile.size();
     return os;
 }
+
+namespace database {
+
+int load(sqlite3 *db, const optvector<int>& s_u2i,
+    std::vector<setting_entry_l_reg>& settings);
+int store(sqlite3 *db, const std::vector<int>& s_i2u,
+    const std::vector<setting_entry_l_reg>& settings);
+
+} //namespace database
 
 } // namespace shimmer

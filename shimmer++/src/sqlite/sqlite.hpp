@@ -101,6 +101,34 @@ using table_name_pair_t = std::pair<std::string, std::string>;
 std::optional<table_name_pair_t>
 limits_and_profile_table_names(sqlite3 *, station_type);
 
+enum class setting_table {
+    limits,
+    profiles
+};
+std::optional<std::string>
+table_name(sqlite3 *db, setting_table st, station_type stat_type);
+
+template<typename T>
+using optvector = std::vector<std::optional<T>>;
+
+inline int
+convert_i2u(const std::vector<int>& s_i2u, int idx)
+{
+    if (s_i2u.size() > 0)
+        return s_i2u.at(idx);
+
+    return idx;
+}
+
+inline std::optional<int>
+convert_u2i(const optvector<int>& s_u2i, int idx)
+{
+    if (s_u2i.size() > 0)
+        return s_u2i.at(idx);
+    
+    return idx;
+}
+
 } // namespace shimmer
 
 #include "sqlite_outlet.h"
@@ -111,34 +139,40 @@ limits_and_profile_table_names(sqlite3 *, station_type);
 #include "sqlite_pipe.h"
 #include "sqlite_compressor.h"
 #include "sqlite_reduction.h"
+#include "sqlite_gases.h"
+
 
 namespace shimmer {
 
-template<typename T>
-using optvector = std::vector<std::optional<T>>;
+struct network_data {
+    optvector<int>                          s_u2i;
+    std::vector<int>                        s_i2u;
+    optvector<vertex_descriptor>            s_u2vd;
+    std::vector<vertex_descriptor>          s_i2vd;
+
+    std::vector<setting_outlet>             settings_outlet;
+    std::vector<setting_entry_p_reg>        settings_entry_p_reg;
+    std::vector<setting_entry_l_reg>        settings_entry_l_reg;
+    std::vector<setting_exit_l_reg>         settings_exit_l_reg;
+    std::vector<setting_pipe>               settings_pipe;
+    std::vector<setting_compr_stat>         settings_compr_stat;
+    std::vector<setting_red_stat>           settings_red_stat;
+    std::vector<gas_mass_fractions>         mass_fractions;
+
+    std::vector<station_initial_condition>  sics;
+    std::vector<pipe_initial_condition>     pics;
+};
 
 class network_database {
 
     sqlite3 *db_;
     bool verbose_;
 
-    /* BEGIN I have the impression that this stuff does not belong here */
-    optvector<int>                      s_u2i;
-    std::vector<int>                    s_i2u;
-    optvector<vertex_descriptor>        s_u2vd;
-    std::vector<vertex_descriptor>      s_i2vd;
-
-    std::vector<setting_outlet>         settings_outlet;
-    std::vector<setting_entry_p_reg>    settings_entry_p_reg;
-    std::vector<setting_entry_l_reg>    settings_entry_l_reg;
-    std::vector<setting_exit_l_reg>     settings_exit_l_reg;
-    std::vector<setting_pipe>           settings_pipe;
-    std::vector<setting_compr_stat>     settings_compr_stat;
-    std::vector<setting_red_stat>       settings_red_stat;
-
-    std::vector<station_initial_condition>  sics;
-    std::vector<pipe_initial_condition>     pics;
-    /* END I have the impression that this stuff does not belong here */
+public:
+    network_data nd_;
+private:
+    int nnodes_;
+    int npipes_;
 
     int import_stations(infrastructure_graph&);
     int import_station_parameters(infrastructure_graph&);
@@ -160,6 +194,8 @@ class network_database {
     int populate_type_dependent_station_data(vertex_properties&);
     int populate_type_dependent_pipe_data(edge_properties&, int, int);
 
+    int import_gas_mass_fractions(std::vector<gas_mass_fractions>&);
+
     std::optional<table_name_pair_t> limits_and_profile_table_names(station_type);
 
 public:
@@ -169,6 +205,9 @@ public:
 
     int open(const std::string&);
     int populate_graph(infrastructure_graph&);
+
+    int num_stations() const { return nnodes_; }
+    int num_pipes() const { return npipes_; }
 };
 
 } //namespace shimmer

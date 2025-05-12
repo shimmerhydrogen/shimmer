@@ -1,0 +1,11 @@
+* where are the limits in the DB? Secondo me non ci sono, ma sono stati concordati con Karol direttamente.
+	* input dati da utente, metto quelli di default. Se non ci fossero non metto nulla
+* where are the limits of the compressor in the DB? Secondo me non ci sono, ma sono stati concordati a voce.
+	* LUISA mi passa SNAM
+
+* the initial guess where are in the DB? secondo me non ci sono am sono nell'excel
+	* lo mettono direttamente da MATLAB, 50/60 BAR 20/30/50 Kg/s oppure espando le condizioni al bordo su tutti i nodi, similmente faccio per le G_ext. Oppure metto una variable in input
+	
+TO CHECK with populate test db
+* populate GAS_mass_fractions e metto per ogni stazione 1 su CH4 e 0 di default su tutti (da db) che è contenuto nella tabella 
+* 

@@ -8,4 +8,16 @@ assert(num_nodes == num_stations_converted);
 [num_pipes, numpipes_converted] = sql_populate_pipes(db_path, graph);
 assert(num_pipes == numpipes_converted);
 
+%% Boundary conditions
+sql_populate_boundary_conditions(db_path, graph);
+
+%% Initial Conditions
+sql_populate_initial_conditions(db_path, graph);
+
+%% Limits
+sql_populate_limits(db_path, graph);
+
+%% Gas Fraction
+sql_populate_stations_gass_mass_fractions(db_path, graph);
+
 end

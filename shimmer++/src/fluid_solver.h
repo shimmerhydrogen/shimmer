@@ -43,6 +43,9 @@ class linearized_fluid_solver
     vector_t c2_nodes_;
     vector_t c2_pipes_;
 
+    vector_t T_nodes_;
+    vector_t T_pipes_;
+
     matrix_t x_nodes_;
     matrix_t x_pipes_;
     vector_t press_pipes_;

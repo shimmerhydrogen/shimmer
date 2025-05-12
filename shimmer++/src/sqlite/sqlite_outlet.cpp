@@ -46,8 +46,8 @@ int load(sqlite3 *db, const optvector<int>& s_u2i,
 
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         setting_outlet setting;
-        setting.i_snum = sqlite3_column_int(stmt, /* column */ 0);
-        auto i_snum_opt = convert_u2i(s_u2i, setting.i_snum);
+        setting.u_snum = sqlite3_column_int(stmt, /* column */ 0);
+        auto i_snum_opt = convert_u2i(s_u2i, setting.u_snum);
         if (not i_snum_opt) {
             std::cerr << "s_u2i: invalid station number. Inconsistent data in DB?" << std::endl;
             return SHIMMER_DATABASE_PROBLEM;
@@ -68,7 +68,7 @@ int load(sqlite3 *db, const optvector<int>& s_u2i,
 
     /* Import profiles for all the stations */
     for (auto& setting : settings) {
-        rc = sqlite3_bind_int(stmt, 1, setting.i_snum);
+        rc = sqlite3_bind_int(stmt, 1, setting.u_snum);
         std::vector<sample> profile;
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             sample s;
@@ -78,7 +78,7 @@ int load(sqlite3 *db, const optvector<int>& s_u2i,
         }
 
         if (profile.size() == 0) {
-            std::cout << "Warning: node " << setting.i_snum << " has ";
+            std::cout << "Warning: node " << setting.u_snum << " has ";
             std::cout << "no mass flow profile data defined." << std::endl;
         }
 

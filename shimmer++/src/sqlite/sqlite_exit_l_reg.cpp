@@ -112,7 +112,7 @@ load_profiles(sqlite3 *db, const optvector<int>& s_u2i,
 
         if (profile.size() == 0) {
             std::cout << "Warning: node " << setting.u_snum << " has ";
-            std::cout << "no pressure profile data defined." << std::endl;
+            std::cout << "no mass flow profile data defined." << std::endl;
         }
 
         rc = sqlite3_clear_bindings(stmt);

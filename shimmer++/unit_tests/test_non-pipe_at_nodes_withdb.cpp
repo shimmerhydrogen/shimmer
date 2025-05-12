@@ -22,6 +22,7 @@
 #include "../src/viscosity.h"
 
 #include "sqlite/sqlite.hpp"
+#include "errors.h"
 
 using triple_t = std::array<double, 3>;
 
@@ -200,7 +201,11 @@ int main()
 
     network_database db("test_network_1.db");
     infrastructure_graph graph;
-    db.populate_graph(graph);
+
+    if ( db.populate_graph(graph) != SHIMMER_SUCCESS ) {
+        return EXIT_FAILURE;
+    }
+
     num_nodes = db.num_stations();
     num_pipes = db.num_pipes();
 

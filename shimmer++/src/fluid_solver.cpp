@@ -205,6 +205,11 @@ linearized_fluid_solver::boundary(const vector_t& area_pipes,
     auto v_range = boost::vertices(graph_);
     for(auto itor = v_range.first; itor != v_range.second; itor++, idx++)
     {
+        if (not graph_[*itor].node_station) {
+            std::string errstr = "Graph node " + std::to_string(*itor) +
+                " points to an invalid station"; 
+            throw std::invalid_argument(errstr);
+        }
         auto bnd =  graph_[*itor].node_station->boundary();
 
         switch(bnd.type())

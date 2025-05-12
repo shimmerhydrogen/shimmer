@@ -6,6 +6,17 @@
 
 namespace shimmer {
 
+int check_sqlite(sqlite3 *db, int rc)
+{
+#ifdef DEBUG_SQL
+    if (rc) {
+        std::cerr << "SQL problem: " << sqlite3_errmsg(db) << std::endl;
+        throw std::invalid_argument("");
+    }
+#endif
+    return rc;
+}
+
 std::optional<table_name_pair_t>
 limits_and_profile_table_names(sqlite3 *db, station_type stat_type)
 {
@@ -202,7 +213,7 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
             auto limits = convert_limits(setting);
             auto Pset = convert_Pprof(setting);
             auto remi = make_station_entry_p_reg(Pset, limits, limits);
-            vp.node_station = std::make_unique<multiple_states_station>(remi);                
+            vp.node_station = std::make_unique<multiple_states_station>(remi);            
             break;
         }
             
@@ -480,6 +491,8 @@ network_database::import_stations(infrastructure_graph& g)
     nd_.s_u2vd.resize( nd_.s_u2i.size() );
     nd_.s_i2vd.resize( nd_.s_i2u.size() );
 
+    int incomplete_stations = 0;
+
     while (sqlite3_step(stmt) != SQLITE_DONE) {
         //int num_cols = sqlite3_column_count(stmt);
         vertex_properties vp;
@@ -509,7 +522,9 @@ network_database::import_stations(infrastructure_graph& g)
         vp.latitude = sqlite3_column_double(stmt, 4);
         vp.longitude = sqlite3_column_double(stmt, 5);
         
-        populate_type_dependent_station_data(vp);
+        if (populate_type_dependent_station_data(vp) != SHIMMER_SUCCESS) {
+            incomplete_stations++;
+        }
         
         vertex_descriptor vtxd = boost::add_vertex(g);
         /* keep track of the mapping from user/internal numbering to boost
@@ -523,6 +538,9 @@ network_database::import_stations(infrastructure_graph& g)
     }
 
     sqlite3_finalize(stmt);
+
+    if (incomplete_stations > 0)
+        return SHIMMER_MISSING_DATA;
 
     return SHIMMER_SUCCESS;
 }
@@ -596,7 +614,11 @@ network_database::populate_graph(infrastructure_graph& g)
     import_gas_mass_fractions(nd_.mass_fractions);
 
     /* Import the graph */
-    import_stations(g);
+    if ( import_stations(g) != SHIMMER_SUCCESS ) {
+        std::cerr << "There were problems with one or more stations: can't continue" << std::endl;
+        return SHIMMER_MISSING_DATA;
+    }
+    
     import_pipelines(g);
 
     /* Import initial conditions */

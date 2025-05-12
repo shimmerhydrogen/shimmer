@@ -6,6 +6,7 @@
 namespace shimmer {
 
 struct setting_outlet {
+    int     u_snum;     // User number of the station
     int     i_snum;     // Internal number of the station
 
     std::vector<sample> Lprofile;

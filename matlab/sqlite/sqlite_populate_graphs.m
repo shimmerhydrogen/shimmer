@@ -2,6 +2,20 @@ clear;
 
 db_schema = fullfile(pwd, "../../sqlite/shimmer.sql");
 
+%% test_case_1_13
+
+graph_path = fullfile(pwd, "graphs/test_case_1_13/trialNet.mat");
+graph = load(graph_path);
+graph = graph.gasNet_Res;
+db_path = fullfile(pwd, "graphs/test_case_1_13/test_case_1.db");
+
+if exist(db_path, 'file') == 2
+  delete(db_path);
+end
+
+sql_create(db_path, db_schema);
+sql_populate_from_graph(db_path, graph);
+
 %% test_case_1
 
 graph_path = fullfile(pwd, "graphs/test_case_1/trialNet.mat");

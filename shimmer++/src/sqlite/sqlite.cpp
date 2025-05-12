@@ -496,7 +496,11 @@ network_database::import_stations(infrastructure_graph& g)
         
         vp.type = static_cast<station_type>(sqlite3_column_int(stmt,2));
 
-        const auto& mfs = nd_.mass_fractions[s_in].fractions;
+        if ( s_in >= nd_.mass_fractions.size() ) {
+            std::cerr << "No mass fractions for station " << s_un << std::endl;
+            return SHIMMER_MISSING_DATA;
+        }
+        const auto& mfs = nd_.mass_fractions.at(s_in).fractions;
         vp.gas_mixture = vector_t::Zero(mfs.size());
         assert(vp.gas_mixture.size() == NUM_GASES);
         std::copy(mfs.begin(), mfs.end(), vp.gas_mixture.begin());

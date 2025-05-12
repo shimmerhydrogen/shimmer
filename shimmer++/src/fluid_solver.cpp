@@ -1,3 +1,24 @@
+/*
+ * This is the SHIMMER gas network simulator.
+ * Copyright (C) 2023-2024-2025 Politecnico di Torino
+ * 
+ * Dipartimento di Matematica "G. L. Lagrange" - DISMA
+ * Dipartimento di Energia "G. Ferraris" - DENERG
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <Eigen/SparseLU>
 #include "../src/fluid_solver.h"
 #include <iomanip>
@@ -385,7 +406,7 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
 /*
         std::cout << "RHS = [\n "<< rhs << "];"<< std::endl;
         std::cout << "Sol = [\n "<< sol << "];"<< std::endl;
-*/
+
         std::cout << "LHS : " <<std::endl;
         size_t count = 0;
         for (int k = 0; k < LHS.outerSize(); ++k)
@@ -397,7 +418,7 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
                             << " ; " << std::endl ;
             }
         }
-
+*/
 
         std::string str_iter =  std::to_string(at_iteration); 
         std::string str_step =  std::to_string(at_step_); 

@@ -1,9 +1,22 @@
-/* This code is part of the SHIMMER project
- *
- * Politecnico di Torino, Dipartimento di Matematica (DISMA)
+/*
+ * This is the SHIMMER gas network simulator.
+ * Copyright (C) 2023-2024-2025 Politecnico di Torino
  * 
- * Karol Cascavita (C) 2024
- * karol.cascavita@polito.it  
+ * Dipartimento di Matematica "G. L. Lagrange" - DISMA
+ * Dipartimento di Energia "G. Ferraris" - DENERG
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <iostream>
@@ -382,13 +395,13 @@ int main()
     */
     
     
-    time_solver_t ts1(graph, temperature, flux_ext);
+    time_solver_t ts1(graph, temperature);
     ts1.set_initialization(guess_unstd);    
     ts1.advance(dt, num_steps, tol, y_nodes, y_pipes);
     auto sol_set_unstd  = ts1.solution();
     
    
-    time_solver_t ts2(graph, temperature, flux_ext);
+    time_solver_t ts2(graph, temperature);
     ts2.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);    
     ts2.advance(dt, num_steps, tol, y_nodes, y_pipes);
     auto sol_init_unstd = ts2.solution();

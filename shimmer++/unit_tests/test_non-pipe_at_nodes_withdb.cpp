@@ -1,9 +1,22 @@
-/* This code is part of the SHIMMER project
- *
- * Politecnico di Torino, Dipartimento di Matematica (DISMA)
+/*
+ * This is the SHIMMER gas network simulator.
+ * Copyright (C) 2023-2024-2025 Politecnico di Torino
  * 
- * Karol Cascavita (C) 2024
- * karol.cascavita@polito.it  
+ * Dipartimento di Matematica "G. L. Lagrange" - DISMA
+ * Dipartimento di Energia "G. Ferraris" - DENERG
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <immintrin.h>
@@ -115,7 +128,8 @@ make_guess_unsteady(const matrix_t& Gsnam)
                 1.135918148126126,  -2.360122439495675, -42.360122439495676,
                40.000000000000000, -10.000000000000000, -50.000000000000000,
               -16.503959412378201,  15.000000000000000,  31.503959412378201;
-    vector_t Lguess = Gsnam.row(1);
+    vector_t Lguess = Gsnam.row(0);
+    std::cout << "LGuess: " << Lguess.transpose() << std::endl;
 
     return variable(Pguess, Gguess, Lguess); 
 }
@@ -178,6 +192,9 @@ make_reference(variable& guess_unsteady)
 }
 
 
+
+
+
 int main()
 {
     _MM_SET_EXCEPTION_MASK(_MM_GET_EXCEPTION_MASK() & ~_MM_MASK_INVALID);
@@ -195,8 +212,7 @@ int main()
   
     auto [flux_ext, Gsnam] = read_flux_boundary_conditions();
     variable guess_unstd = make_guess_unsteady(Gsnam);
-    variable guess_std   = make_guess_steady();
-
+    //variable guess_std   = make_guess_steady();
     //---------------------------------------------------------------
 
     network_database db("test_network_1.db");
@@ -208,6 +224,7 @@ int main()
 
     num_nodes = db.num_stations();
     num_pipes = db.num_pipes();
+    variable guess_std = initial_guess(db.nd_, num_nodes, num_pipes);
 
     /* BEGIN GAS MASS FRACTIONS */
     matrix_t y_nodes = matrix_t::Zero(num_nodes, NUM_GASES);
@@ -234,14 +251,15 @@ int main()
     }
     #endif
 
-    time_solver_t ts1(graph, temperature, flux_ext);
+    time_solver_t ts1(graph, temperature);
     ts1.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);  
     ts1.advance(dt, num_steps, tol, y_nodes, y_pipes);
     auto sol_unstd  = ts1.solution();
-
+    auto sol_std  = ts1.guess();
     //---------------------------------------------------------------
     auto [ref_std, ref_unstd] = make_reference(guess_unstd);
-    bool pass =  verify_test("time solver with computed init", sol_unstd, ref_unstd); 
+    auto xx = guess_unstd.make_vector();
+    bool pass =  verify_test("time solver with computed init", sol_std, {xx.begin(), xx.end()} ); 
 
     std::cout << pass << std::endl; 
 

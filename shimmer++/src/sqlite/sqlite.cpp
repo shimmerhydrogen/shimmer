@@ -213,7 +213,7 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
             auto limits = convert_limits(setting);
             auto Pset = convert_Pprof(setting);
             auto remi = make_station_entry_p_reg(Pset, limits, limits);
-            vp.node_station = std::make_unique<multiple_states_station>(remi);            
+            vp.node_station = std::make_unique<multiple_states_station>(remi);          
             break;
         }
             
@@ -608,6 +608,20 @@ network_database::populate_graph(infrastructure_graph& g)
     import_entry_l_reg(nd_.settings_entry_l_reg);
     import_exit_l_reg(nd_.settings_exit_l_reg);
 
+    std::cout << "-- Station summary --" << std::endl;
+    std::cout << "  Type outlet:" << std::endl;
+    for (auto& s : nd_.settings_outlet)
+        std::cout << "    " << s << std::endl;
+    std::cout << "  Type Entry P:" << std::endl;
+    for (auto& s : nd_.settings_entry_p_reg)
+        std::cout << "    " << s << std::endl;
+    std::cout << "  Type Entry L:" << std::endl;
+    for (auto& s : nd_.settings_entry_l_reg)
+        std::cout << "    " << s << std::endl;
+    std::cout << "  Type Exit L:" << std::endl;
+    for (auto& s : nd_.settings_exit_l_reg)
+        std::cout << "    " << s << std::endl;
+
     import_pipe(nd_.settings_pipe);
     import_compr_stat(nd_.settings_compr_stat);
 
@@ -674,6 +688,47 @@ int
 network_database::import_outlet(std::vector<setting_outlet>& settings)
 {
     return database::load(db_, nd_.s_u2i, settings);
+}
+
+variable
+initial_guess(const network_data& nd, int nstations, int npipes)
+{
+    vector_t P = vector_t::Zero(nstations);
+    vector_t L = vector_t::Zero(nstations);
+    vector_t G = vector_t::Zero(npipes);
+
+    for (const auto& sic : nd.sics) {
+        if (sic.i_snum >= nstations) {
+            throw std::logic_error("station index out of bounds");
+        }
+
+        if (sic.init_P == 0 or sic.init_L == 0) {
+            std::cout << "Warning: zero initial guess for station ";
+            std::cout << nd.s_i2u.at(sic.i_snum) << std::endl;
+        }
+
+        P(sic.i_snum) = sic.init_P;
+        L(sic.i_snum) = sic.init_L;
+    }
+
+    for (size_t i = 0; i < nd.pics.size(); i++) {
+        assert(i < npipes);
+        const auto& pic = nd.pics[i];
+
+        if (pic.init_G == 0) {
+            std::cout << "Warning: zero initial guess for pipe ";
+            std::cout << nd.s_i2u.at(pic.i_sfrom) << "-";
+            std::cout << nd.s_i2u.at(pic.i_sto) << std::endl;
+        }
+
+        G(i) = pic.init_G;
+    }
+
+    //std::cout << "P: " << P.transpose() << std::endl;
+    //std::cout << "G: " << G.transpose() << std::endl;
+    //std::cout << "L: " << L.transpose() << std::endl;
+
+    return variable(P, G, L);
 }
 
 } // namespace shimmer

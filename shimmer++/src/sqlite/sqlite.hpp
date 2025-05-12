@@ -1,8 +1,22 @@
-/* This code is part of the SHIMMER project
+/*
+ * This is the SHIMMER gas network simulator.
+ * Copyright (C) 2023-2024-2025 Politecnico di Torino
+ * 
+ * Dipartimento di Matematica "G. L. Lagrange" - DISMA
+ * Dipartimento di Energia "G. Ferraris" - DENERG
  *
- * Politecnico di Torino, Dipartimento di Matematica (DISMA)
- *
- * The authors (C) 2023, 2024, 2025
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -123,9 +137,9 @@ convert_i2u(const std::vector<int>& s_i2u, int idx)
 inline std::optional<int>
 convert_u2i(const optvector<int>& s_u2i, int idx)
 {
-    if (s_u2i.size() > 0)
-        return s_u2i.at(idx);
-    
+    if (s_u2i.size() > 0 and idx < s_u2i.size())
+        return s_u2i[idx];
+
     return idx;
 }
 
@@ -209,5 +223,8 @@ public:
     int num_stations() const { return nnodes_; }
     int num_pipes() const { return npipes_; }
 };
+
+variable
+initial_guess(const network_data& nd, int nstations, int npipes);
 
 } //namespace shimmer

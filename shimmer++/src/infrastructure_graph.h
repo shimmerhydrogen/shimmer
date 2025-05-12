@@ -56,8 +56,8 @@ enum station_type_x
 struct vertex_properties {
     std::string     name;
     
-    [[deprecated("Use u_snum or i_snum")]]
-    int             node_num;
+    //[[deprecated("Use u_snum or i_snum")]]
+    //int             node_num;
     int             u_snum;
     int             i_snum;
     station_type    type;
@@ -70,12 +70,12 @@ struct vertex_properties {
 
     vertex_properties(){}
 
-    [[deprecated("This constructor requires unneeded parameters")]]
+    //[[deprecated("This constructor requires unneeded parameters")]]
     vertex_properties(std::string     iname,
         int             inode_num,
         double          ipressure,
         double          imass_flow,
-        double          iheight) : name(iname), node_num(inode_num), 
+        double          iheight) : name(iname), /*node_num(inode_num), */
                             //pressure(ipressure),mass_flow(imass_flow),
                             height(iheight)   {} 
 

@@ -71,8 +71,8 @@ public:
             auto s = boost::source(*itor, graph_);
             auto t = boost::target(*itor, graph_);
 
-            auto source_node = graph_[s].node_num;
-            auto target_node = graph_[t].node_num;
+            auto source_node = graph_[s].i_snum;
+            auto target_node = graph_[t].i_snum;
 
             st->activate(step, source_node, target_node, v);
         }

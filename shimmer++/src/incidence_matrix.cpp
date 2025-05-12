@@ -18,10 +18,10 @@ namespace shimmer{
         for(auto itor = edge_range.first; itor != edge_range.second;itor++ ){
             auto& pipe = g[*itor];   
             auto u = source(*itor, g);
-            triplets_in_.push_back(triplet_t(g[u].node_num, pipe.branch_num, 1.0));
+            triplets_in_.push_back(triplet_t(g[u].i_snum, pipe.branch_num, 1.0));
  
             auto v = target(*itor, g);
-            triplets_out_.push_back(triplet_t(g[v].node_num, pipe.branch_num, 1.0));            
+            triplets_out_.push_back(triplet_t(g[v].i_snum, pipe.branch_num, 1.0));            
         }
 
         triplets_ = triplets_out_;

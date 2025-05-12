@@ -116,8 +116,8 @@ linearized_fluid_solver::impose_edge_station_model(
         auto s = boost::source(*itor, graph_);
         auto t = boost::target(*itor, graph_);
 
-        auto source_num = graph_[s].node_num;
-        auto target_num = graph_[t].node_num;
+        auto source_num = graph_[s].i_snum;
+        auto target_num = graph_[t].i_snum;
 
         st->fill_model(st->mode_,
                                       pipe_num,
@@ -463,8 +463,8 @@ linearized_fluid_solver::check_hard_controls(size_t step)
         auto s = boost::source(*itor, graph_);
         auto t = boost::target(*itor, graph_);
 
-        int source_num = graph_[s].node_num;
-        int target_num = graph_[t].node_num;
+        int source_num = graph_[s].i_snum;
+        int target_num = graph_[t].i_snum;
 
         // =================================================================
         // fill all controls for verification:

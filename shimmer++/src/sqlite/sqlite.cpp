@@ -487,7 +487,6 @@ network_database::import_stations(infrastructure_graph& g)
         /* Station number, convert from user to internal */
         int s_un = sqlite3_column_int(stmt, 0);
         int s_in = nd_.s_u2i.at(s_un).value();
-        vp.node_num = s_in;
         vp.u_snum = s_un;
         vp.i_snum = s_in;
 

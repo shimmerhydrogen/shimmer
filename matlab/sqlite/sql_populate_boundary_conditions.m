@@ -41,10 +41,9 @@ if num_remi_stations > 0
 end
 
 %% Boundary conditions - Inj
-% Injection station w/ pressure control (set flow)
+% Injection station w/ pressure control (set flow and pressure)
 % MATLAB 2/3 trovi il valore in graph.Nodes.G_EXE (G is flow exchanged)
 % profiles table with time 0.0
-% ASK: why pressure, I set 0.0 on pressure?
 
 inj_stations = graph.Nodes.Nodes_ID((stations_type == 2));
 num_inj_stations = size(inj_stations, 1);
@@ -56,7 +55,7 @@ if num_inj_stations > 0
         s = inj_stations(r);
         profiles_inj{r, 1} = graph.Nodes.Nodes_ID(s);
         profiles_inj{r, 2} = 0.0;
-        profiles_inj{r, 3} = 0.0; % ASK pressure
+        profiles_inj{r, 3} = graph.Nodes.PRESSURES(s);
         profiles_inj{r, 4} = graph.Nodes.G_EXE(s);
     end
 

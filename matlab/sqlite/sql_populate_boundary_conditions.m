@@ -10,7 +10,7 @@ db = sqlite(db_path, 'readonly');
 station_types_tab = sqlread(db, "station_types");
 close(db);
 
-stations_type = map_stations_type(graph);
+stations_type = map_sql_stations_type(graph);
 
 %% Boundary conditions - ReMi
 % ReMi station w/o backflow (set pressure)

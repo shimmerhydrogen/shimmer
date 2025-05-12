@@ -15,6 +15,10 @@ end
 
 sql_create(db_path, db_schema);
 sql_populate_from_graph(db_path, graph);
+graph_test = graph_populate_from_sql(db_path);
+assert(isequal(graph.Nodes.Nodes_ID, graph_test.Nodes.Nodes_ID));
+assert(isequal(graph.Nodes.Type, graph_test.Nodes.Type));
+
 
 %% test_case_1
 
@@ -29,6 +33,9 @@ end
 
 sql_create(db_path, db_schema);
 sql_populate_from_graph(db_path, graph);
+graph_test = graph_populate_from_sql(db_path);
+assert(isequal(graph.Nodes.Nodes_ID, graph_test.Nodes.Nodes_ID));
+assert(isequal(graph.Nodes.Type, graph_test.Nodes.Type));
 
 %% test_gasco
 
@@ -36,6 +43,7 @@ graph_path = fullfile(pwd, "graphs/test_gasco/GasscoGrid.mat");
 graph = load(graph_path);
 graph = graph.gasNet_Res;
 graph.Nodes.Nodes_ID =  graph.Nodes.Nodes_ID';
+graph.Nodes.Type =  graph.Nodes.Type';
 db_path = fullfile(pwd, "graphs/test_gasco/test_gasco.db");
 
 if exist(db_path, 'file') == 2
@@ -44,6 +52,9 @@ end
 
 sql_create(db_path, db_schema);
 sql_populate_from_graph(db_path, graph);
+graph_test = graph_populate_from_sql(db_path);
+assert(isequal(graph.Nodes.Nodes_ID, graph_test.Nodes.Nodes_ID));
+assert(isequal(graph.Nodes.Type, graph_test.Nodes.Type));
 
 %% test_inrete
 
@@ -58,6 +69,11 @@ end
 
 sql_create(db_path, db_schema);
 sql_populate_from_graph(db_path, graph);
+graph_test = graph_populate_from_sql(db_path);
+assert(isequal(graph.Nodes.Nodes_ID, graph_test.Nodes.Nodes_ID));
+assert(isequal(graph.Nodes.Type, graph_test.Nodes.Type));
+assert(isequal(graph.Nodes.altitude, graph_test.Nodes.altitude));
+assert(isequal(graph.Nodes.coordinates_XY, graph_test.Nodes.coordinates_XY));
 
 
 %% test_sicilia
@@ -74,3 +90,7 @@ end
 
 sql_create(db_path, db_schema);
 sql_populate_from_graph(db_path, graph);
+graph_test = graph_populate_from_sql(db_path);
+assert(isequal(graph.Nodes.Nodes_ID, graph_test.Nodes.Nodes_ID));
+assert(isequal(graph.Nodes.Type, graph_test.Nodes.Type));
+assert(isequal(graph.Nodes.coordinates_XY, graph_test.Nodes.coordinates_XY));

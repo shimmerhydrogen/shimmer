@@ -1,10 +1,22 @@
-
-/* This code is part of the SHIMMER project
+/*
+ * This is the SHIMMER gas network simulator.
+ * Copyright (C) 2023-2024-2025 Politecnico di Torino
+ * 
+ * Dipartimento di Matematica "G. L. Lagrange" - DISMA
+ * Dipartimento di Energia "G. Ferraris" - DENERG
  *
- * Politecnico di Torino, Dipartimento di Matematica (DISMA)
- *
- * Karol Cascavita (C) 2023
- * karol.cascavita@polito.it
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -34,7 +46,6 @@ class time_solver
     double temperature_;
     variable var_guess_;
     variable var_;
-    matrix_t flux_ext_;
     vector_t area_pipes_;
 
     incidence inc_;
@@ -42,10 +53,8 @@ class time_solver
 
 public:
     time_solver(const  infrastructure_graph& g,
-                double Tm,
-                const  matrix_t& flux_ext):
-                graph_(g), temperature_(Tm),
-                flux_ext_(flux_ext)
+                double Tm):
+                graph_(g), temperature_(Tm)
     {
         inc_ = incidence(g);
         area_pipes_ = area(g);
@@ -71,8 +80,8 @@ public:
             auto s = boost::source(*itor, graph_);
             auto t = boost::target(*itor, graph_);
 
-            auto source_node = graph_[s].node_num;
-            auto target_node = graph_[t].node_num;
+            auto source_node = graph_[s].i_snum;
+            auto target_node = graph_[t].i_snum;
 
             st->activate(step, source_node, target_node, v);
         }

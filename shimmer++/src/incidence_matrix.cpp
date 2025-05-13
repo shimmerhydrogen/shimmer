@@ -1,11 +1,23 @@
-/* This code is part of the SHIMMER project
- *
- * Politecnico di Torino, Dipartimento di Matematica (DISMA)
+/*
+ * This is the SHIMMER gas network simulator.
+ * Copyright (C) 2023-2024-2025 Politecnico di Torino
  * 
- * Karol Cascavita (C) 2023
- * karol.cascavita@polito.it  
+ * Dipartimento di Matematica "G. L. Lagrange" - DISMA
+ * Dipartimento di Energia "G. Ferraris" - DENERG
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 
 #include "incidence_matrix.h"
 
@@ -18,10 +30,10 @@ namespace shimmer{
         for(auto itor = edge_range.first; itor != edge_range.second;itor++ ){
             auto& pipe = g[*itor];   
             auto u = source(*itor, g);
-            triplets_in_.push_back(triplet_t(g[u].node_num, pipe.branch_num, 1.0));
+            triplets_in_.push_back(triplet_t(g[u].i_snum, pipe.branch_num, 1.0));
  
             auto v = target(*itor, g);
-            triplets_out_.push_back(triplet_t(g[v].node_num, pipe.branch_num, 1.0));            
+            triplets_out_.push_back(triplet_t(g[v].i_snum, pipe.branch_num, 1.0));            
         }
 
         triplets_ = triplets_out_;

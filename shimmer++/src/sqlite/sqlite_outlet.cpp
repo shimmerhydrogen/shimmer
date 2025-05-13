@@ -1,3 +1,24 @@
+/*
+ * This is the SHIMMER gas network simulator.
+ * Copyright (C) 2023-2024-2025 Politecnico di Torino
+ * 
+ * Dipartimento di Matematica "G. L. Lagrange" - DISMA
+ * Dipartimento di Energia "G. Ferraris" - DENERG
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <optional>
 #include <cassert>
 #include <sqlite3.h>
@@ -46,8 +67,8 @@ int load(sqlite3 *db, const optvector<int>& s_u2i,
 
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         setting_outlet setting;
-        setting.i_snum = sqlite3_column_int(stmt, /* column */ 0);
-        auto i_snum_opt = convert_u2i(s_u2i, setting.i_snum);
+        setting.u_snum = sqlite3_column_int(stmt, /* column */ 0);
+        auto i_snum_opt = convert_u2i(s_u2i, setting.u_snum);
         if (not i_snum_opt) {
             std::cerr << "s_u2i: invalid station number. Inconsistent data in DB?" << std::endl;
             return SHIMMER_DATABASE_PROBLEM;
@@ -68,7 +89,7 @@ int load(sqlite3 *db, const optvector<int>& s_u2i,
 
     /* Import profiles for all the stations */
     for (auto& setting : settings) {
-        rc = sqlite3_bind_int(stmt, 1, setting.i_snum);
+        rc = sqlite3_bind_int(stmt, 1, setting.u_snum);
         std::vector<sample> profile;
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             sample s;
@@ -78,7 +99,7 @@ int load(sqlite3 *db, const optvector<int>& s_u2i,
         }
 
         if (profile.size() == 0) {
-            std::cout << "Warning: node " << setting.i_snum << " has ";
+            std::cout << "Warning: node " << setting.u_snum << " has ";
             std::cout << "no mass flow profile data defined." << std::endl;
         }
 

@@ -1,8 +1,22 @@
-/* This code is part of the SHIMMER project
+/*
+ * This is the SHIMMER gas network simulator.
+ * Copyright (C) 2023-2024-2025 Politecnico di Torino
+ * 
+ * Dipartimento di Matematica "G. L. Lagrange" - DISMA
+ * Dipartimento di Energia "G. Ferraris" - DENERG
  *
- * Politecnico di Torino, Dipartimento di Matematica (DISMA)
- *
- * The authors (C) 2023
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #pragma once
@@ -56,8 +70,8 @@ enum station_type_x
 struct vertex_properties {
     std::string     name;
     
-    [[deprecated("Use u_snum or i_snum")]]
-    int             node_num;
+    //[[deprecated("Use u_snum or i_snum")]]
+    //int             node_num;
     int             u_snum;
     int             i_snum;
     station_type    type;
@@ -70,12 +84,12 @@ struct vertex_properties {
 
     vertex_properties(){}
 
-    [[deprecated("This constructor requires unneeded parameters")]]
+    //[[deprecated("This constructor requires unneeded parameters")]]
     vertex_properties(std::string     iname,
         int             inode_num,
         double          ipressure,
         double          imass_flow,
-        double          iheight) : name(iname), node_num(inode_num), 
+        double          iheight) : name(iname), /*node_num(inode_num), */
                             //pressure(ipressure),mass_flow(imass_flow),
                             height(iheight)   {} 
 

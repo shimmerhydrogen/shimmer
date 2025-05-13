@@ -1,3 +1,24 @@
+/*
+ * This is the SHIMMER gas network simulator.
+ * Copyright (C) 2023-2024-2025 Politecnico di Torino
+ * 
+ * Dipartimento di Matematica "G. L. Lagrange" - DISMA
+ * Dipartimento di Energia "G. Ferraris" - DENERG
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /* 
     0. Type of station must be clearlly clarified! 
         There is no information of which type of exit stations are 3! 
@@ -7,14 +28,6 @@
     2. Density: I did not set anything. But They have rho_g_std
     3. flux_ext seems useless.
 */
-
-/* This code is part of the SHIMMER project
- *
- * Politecnico di Torino, Dipartimento di Matematica (DISMA)
- * 
- * Karol Cascavita (C) 2024
- * karol.cascavita@polito.it  
- */
 
 #include <immintrin.h>
 #include <iostream>
@@ -504,7 +517,7 @@ int main()
 
     using time_solver_t = time_solver<papay, viscosity_type::Constant>; 
 
-    time_solver_t ts1(graph, temperature, dummyZero);
+    time_solver_t ts1(graph, temperature);
 
     std::cout << std::setprecision(16) << guess_std.make_vector() << std::endl; 
 

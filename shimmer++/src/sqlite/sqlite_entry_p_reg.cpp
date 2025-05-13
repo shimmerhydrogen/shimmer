@@ -1,3 +1,24 @@
+/*
+ * This is the SHIMMER gas network simulator.
+ * Copyright (C) 2023-2024-2025 Politecnico di Torino
+ * 
+ * Dipartimento di Matematica "G. L. Lagrange" - DISMA
+ * Dipartimento di Energia "G. Ferraris" - DENERG
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <optional>
 #include <cassert>
 #include <sqlite3.h>
@@ -44,13 +65,17 @@ load_limits(sqlite3 *db, const optvector<int>& s_u2i,
 
     sqlite3_stmt *stmt = nullptr;
 
-    std::string qlim = "SELECT * FROM " + tname_opt.value();
+    const std::string &tname = tname_opt.value();
+    std::string qlim = "SELECT " + tname + ".* FROM " + tname +
+        " INNER JOIN stations ON " + tname + ".s_number = stations.s_number "
+        " WHERE stations.t_type = ?";
     int rc = sqlite3_prepare_v2(db, qlim.c_str(), qlim.length(), &stmt, nullptr);
     if (rc) {
         std::cerr << "SQL error on query '" << qlim << "': ";
         std::cerr << sqlite3_errmsg(db) << std::endl;
         return SHIMMER_DATABASE_PROBLEM;
     }
+    rc = sqlite3_bind_int(stmt, 1, +station_type::ENTRY_P_REG);
 
     /* Import limits for all the stations */
     while (sqlite3_step(stmt) == SQLITE_ROW) {

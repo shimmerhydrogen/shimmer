@@ -1,3 +1,24 @@
+/*
+ * This is the SHIMMER gas network simulator.
+ * Copyright (C) 2023-2024-2025 Politecnico di Torino
+ * 
+ * Dipartimento di Matematica "G. L. Lagrange" - DISMA
+ * Dipartimento di Energia "G. Ferraris" - DENERG
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <iostream>
 #include <cstdio>
 #include "boundary.h"
@@ -5,6 +26,17 @@
 #include "sqlite.hpp"
 
 namespace shimmer {
+
+int check_sqlite(sqlite3 *db, int rc)
+{
+#ifdef DEBUG_SQL
+    if (rc) {
+        std::cerr << "SQL problem: " << sqlite3_errmsg(db) << std::endl;
+        throw std::invalid_argument("");
+    }
+#endif
+    return rc;
+}
 
 std::optional<table_name_pair_t>
 limits_and_profile_table_names(sqlite3 *db, station_type stat_type)
@@ -202,7 +234,7 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
             auto limits = convert_limits(setting);
             auto Pset = convert_Pprof(setting);
             auto remi = make_station_entry_p_reg(Pset, limits, limits);
-            vp.node_station = std::make_unique<multiple_states_station>(remi);                
+            vp.node_station = std::make_unique<multiple_states_station>(remi);          
             break;
         }
             
@@ -480,6 +512,8 @@ network_database::import_stations(infrastructure_graph& g)
     nd_.s_u2vd.resize( nd_.s_u2i.size() );
     nd_.s_i2vd.resize( nd_.s_i2u.size() );
 
+    int incomplete_stations = 0;
+
     while (sqlite3_step(stmt) != SQLITE_DONE) {
         //int num_cols = sqlite3_column_count(stmt);
         vertex_properties vp;
@@ -487,7 +521,6 @@ network_database::import_stations(infrastructure_graph& g)
         /* Station number, convert from user to internal */
         int s_un = sqlite3_column_int(stmt, 0);
         int s_in = nd_.s_u2i.at(s_un).value();
-        vp.node_num = s_in;
         vp.u_snum = s_un;
         vp.i_snum = s_in;
 
@@ -510,7 +543,9 @@ network_database::import_stations(infrastructure_graph& g)
         vp.latitude = sqlite3_column_double(stmt, 4);
         vp.longitude = sqlite3_column_double(stmt, 5);
         
-        populate_type_dependent_station_data(vp);
+        if (populate_type_dependent_station_data(vp) != SHIMMER_SUCCESS) {
+            incomplete_stations++;
+        }
         
         vertex_descriptor vtxd = boost::add_vertex(g);
         /* keep track of the mapping from user/internal numbering to boost
@@ -524,6 +559,9 @@ network_database::import_stations(infrastructure_graph& g)
     }
 
     sqlite3_finalize(stmt);
+
+    if (incomplete_stations > 0)
+        return SHIMMER_MISSING_DATA;
 
     return SHIMMER_SUCCESS;
 }
@@ -591,13 +629,31 @@ network_database::populate_graph(infrastructure_graph& g)
     import_entry_l_reg(nd_.settings_entry_l_reg);
     import_exit_l_reg(nd_.settings_exit_l_reg);
 
+    std::cout << "-- Station summary --" << std::endl;
+    std::cout << "  Type outlet:" << std::endl;
+    for (auto& s : nd_.settings_outlet)
+        std::cout << "    " << s << std::endl;
+    std::cout << "  Type Entry P:" << std::endl;
+    for (auto& s : nd_.settings_entry_p_reg)
+        std::cout << "    " << s << std::endl;
+    std::cout << "  Type Entry L:" << std::endl;
+    for (auto& s : nd_.settings_entry_l_reg)
+        std::cout << "    " << s << std::endl;
+    std::cout << "  Type Exit L:" << std::endl;
+    for (auto& s : nd_.settings_exit_l_reg)
+        std::cout << "    " << s << std::endl;
+
     import_pipe(nd_.settings_pipe);
     import_compr_stat(nd_.settings_compr_stat);
 
     import_gas_mass_fractions(nd_.mass_fractions);
 
     /* Import the graph */
-    import_stations(g);
+    if ( import_stations(g) != SHIMMER_SUCCESS ) {
+        std::cerr << "There were problems with one or more stations: can't continue" << std::endl;
+        return SHIMMER_MISSING_DATA;
+    }
+    
     import_pipelines(g);
 
     /* Import initial conditions */
@@ -653,6 +709,47 @@ int
 network_database::import_outlet(std::vector<setting_outlet>& settings)
 {
     return database::load(db_, nd_.s_u2i, settings);
+}
+
+variable
+initial_guess(const network_data& nd, int nstations, int npipes)
+{
+    vector_t P = vector_t::Zero(nstations);
+    vector_t L = vector_t::Zero(nstations);
+    vector_t G = vector_t::Zero(npipes);
+
+    for (const auto& sic : nd.sics) {
+        if (sic.i_snum >= nstations) {
+            throw std::logic_error("station index out of bounds");
+        }
+
+        if (sic.init_P == 0 or sic.init_L == 0) {
+            std::cout << "Warning: zero initial guess for station ";
+            std::cout << nd.s_i2u.at(sic.i_snum) << std::endl;
+        }
+
+        P(sic.i_snum) = sic.init_P;
+        L(sic.i_snum) = sic.init_L;
+    }
+
+    for (size_t i = 0; i < nd.pics.size(); i++) {
+        assert(i < npipes);
+        const auto& pic = nd.pics[i];
+
+        if (pic.init_G == 0) {
+            std::cout << "Warning: zero initial guess for pipe ";
+            std::cout << nd.s_i2u.at(pic.i_sfrom) << "-";
+            std::cout << nd.s_i2u.at(pic.i_sto) << std::endl;
+        }
+
+        G(i) = pic.init_G;
+    }
+
+    //std::cout << "P: " << P.transpose() << std::endl;
+    //std::cout << "G: " << G.transpose() << std::endl;
+    //std::cout << "L: " << L.transpose() << std::endl;
+
+    return variable(P, G, L);
 }
 
 } // namespace shimmer

@@ -1,3 +1,24 @@
+/*
+ * This is the SHIMMER gas network simulator.
+ * Copyright (C) 2023-2024-2025 Politecnico di Torino
+ * 
+ * Dipartimento di Matematica "G. L. Lagrange" - DISMA
+ * Dipartimento di Energia "G. Ferraris" - DENERG
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <Eigen/SparseLU>
 #include "../src/fluid_solver.h"
 #include <iomanip>
@@ -114,8 +135,8 @@ linearized_fluid_solver::impose_edge_station_model(
         auto s = boost::source(*itor, graph_);
         auto t = boost::target(*itor, graph_);
 
-        auto source_num = graph_[s].node_num;
-        auto target_num = graph_[t].node_num;
+        auto source_num = graph_[s].i_snum;
+        auto target_num = graph_[t].i_snum;
 
         st->fill_model(st->mode_,
                                       pipe_num,
@@ -212,6 +233,11 @@ linearized_fluid_solver::boundary(const vector_t& area_pipes,
     auto v_range = boost::vertices(graph_);
     for(auto itor = v_range.first; itor != v_range.second; itor++, idx++)
     {
+        if (not graph_[*itor].node_station) {
+            std::string errstr = "Graph node " + std::to_string(*itor) +
+                " points to an invalid station"; 
+            throw std::invalid_argument(errstr);
+        }
         auto bnd =  graph_[*itor].node_station->boundary();
 
         switch(bnd.type())
@@ -387,7 +413,7 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
 /*
         std::cout << "RHS = [\n "<< rhs << "];"<< std::endl;
         std::cout << "Sol = [\n "<< sol << "];"<< std::endl;
-*/
+
         std::cout << "LHS : " <<std::endl;
         size_t count = 0;
         for (int k = 0; k < LHS.outerSize(); ++k)
@@ -399,7 +425,7 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
                             << " ; " << std::endl ;
             }
         }
-
+*/
 
         std::string str_iter =  std::to_string(at_iteration); 
         std::string str_step =  std::to_string(at_step_); 
@@ -461,8 +487,8 @@ linearized_fluid_solver::check_hard_controls(size_t step)
         auto s = boost::source(*itor, graph_);
         auto t = boost::target(*itor, graph_);
 
-        int source_num = graph_[s].node_num;
-        int target_num = graph_[t].node_num;
+        int source_num = graph_[s].i_snum;
+        int target_num = graph_[t].i_snum;
 
         // =================================================================
         // fill all controls for verification:

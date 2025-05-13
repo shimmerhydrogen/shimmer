@@ -36,9 +36,11 @@ close(conn);
 %
 % graph.Edges.FLOWRATES (G)
 
+pipes_name = map_pipes_name(graph);
+
 pipelines_initial_condition = cell(num_nodes, 4);
 for p = 1:num_pipes
-    pipelines_initial_condition{p, 1} = [num2str(p)];
+    pipelines_initial_condition{p, 1} = pipes_name{p};
     pipelines_initial_condition{p, 2} = graph.Edges.EndNodes(p, 1);
     pipelines_initial_condition{p, 3} = graph.Edges.EndNodes(p, 2);
     pipelines_initial_condition{p, 4} = graph.Edges.FLOWRATES(p);

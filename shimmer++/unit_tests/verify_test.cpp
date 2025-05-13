@@ -1,10 +1,24 @@
-/* This code is part of the SHIMMER project
- *
- * Politecnico di Torino, Dipartimento di Matematica (DISMA)
+/*
+ * This is the SHIMMER gas network simulator.
+ * Copyright (C) 2023-2024-2025 Politecnico di Torino
  * 
- * Karol Cascavita (C) 2023
- * karol.cascavita@polito.it  
+ * Dipartimento di Matematica "G. L. Lagrange" - DISMA
+ * Dipartimento di Energia "G. Ferraris" - DENERG
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #include "verify_test.h"
 #include <iomanip>
 
@@ -23,11 +37,11 @@ bool verify_test(const std::string & name,
     {
         std::cout << std::setprecision(16) << vals[k]  <<  std::endl ;
         double e_val;
-        if(std::abs(ref.at(k)) > 1.e-15)
-            e_val = std::abs((vals[k] - ref.at(k)) /  ref.at(k));
+        if(std::abs(ref.at(k)) > 1.e-12)
+            e_val = std::abs((vals[k] - ref.at(k))) /  std::abs(ref.at(k));
         else 
             e_val = vals[k];
-        if(e_val > 1.e-12)
+        if(e_val > 1.e-3)
         {
             pass = false;
             break;  

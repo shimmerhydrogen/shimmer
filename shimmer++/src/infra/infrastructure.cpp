@@ -19,174 +19,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <iostream>
-#include <cstdio>
-#include "boundary.h"
+#include "infra/infrastructure.h"
 #include "errors.h"
-#include "sqlite.hpp"
 
 namespace shimmer {
-
-int check_sqlite(sqlite3 *db, int rc)
-{
-#ifdef DEBUG_SQL
-    if (rc) {
-        std::cerr << "SQL problem: " << sqlite3_errmsg(db) << std::endl;
-        throw std::invalid_argument("");
-    }
-#endif
-    return rc;
-}
-
-std::optional<table_name_pair_t>
-limits_and_profile_table_names(sqlite3 *db, station_type stat_type)
-{
-    sqlite3_stmt *stmt = nullptr;
-
-    enum class col : int {
-        t_limits_table = 0,
-        t_profile_table = 1
-    };
-
-    std::string q =
-        "SELECT t_limits_table, t_profile_table "
-        "FROM station_types "
-        "WHERE t_type = ?";
-
-    int rc = sqlite3_prepare_v2(db, q.c_str(), q.length(), &stmt, nullptr);
-    if (rc) {
-        std::cerr << "SQL error on query '" << q << "': " << sqlite3_errmsg(db) << std::endl;
-        return {};
-    }
-
-    rc = sqlite3_bind_int(stmt, 1, +stat_type);
-
-    if ( sqlite3_step(stmt) != SQLITE_ROW ) {
-        std::cerr << "Shimmer DB: Invalid station type " << +stat_type << std::endl;
-        return {};
-    }
-    
-    std::string limits_table_name;
-    if ( sqlite3_column_type(stmt, +col::t_limits_table) == SQLITE3_TEXT ) {
-        limits_table_name = (const char *) sqlite3_column_text(stmt, +col::t_limits_table);
-    }
-
-    std::string profile_table_name;
-    if ( sqlite3_column_type(stmt, +col::t_profile_table) == SQLITE3_TEXT ) {
-        profile_table_name = (const char *) sqlite3_column_text(stmt, +col::t_profile_table);
-    }
-
-    if ( (limits_table_name == "") or (profile_table_name == "") ) {
-        return {};
-    }
-
-    rc = sqlite3_clear_bindings(stmt);
-    rc = sqlite3_reset(stmt);
-    rc = sqlite3_finalize(stmt);
-
-    return std::pair(limits_table_name, profile_table_name);
-}
-
-std::optional<std::string>
-table_name(sqlite3 *db, setting_table st, station_type stat_type)
-{
-    sqlite3_stmt *stmt = nullptr;
-
-    std::string q;
-    if ( st == setting_table::limits ) {
-        q = "SELECT t_limits_table "
-        "FROM station_types "
-        "WHERE t_type = ?";
-    } else if ( st == setting_table::profiles ) {
-        q = "SELECT t_profile_table "
-        "FROM station_types "
-        "WHERE t_type = ?";
-    } else {
-        std::cerr << "Invalid setting table specified" << std::endl;
-        return {};
-    }
-
-    int rc = sqlite3_prepare_v2(db, q.c_str(), q.length(), &stmt, nullptr);
-    if (rc) {
-        std::cerr << "SQL error on query '" << q << "': ";
-        std::cerr << sqlite3_errmsg(db) << std::endl;
-        return {};
-    }
-
-    rc = sqlite3_bind_int(stmt, 1, +stat_type);
-
-    if ( sqlite3_step(stmt) != SQLITE_ROW ) {
-        std::cerr << "Shimmer DB: Invalid station type " << +stat_type << std::endl;
-        return {};
-    }
-    
-    std::string tname;
-    if ( sqlite3_column_type(stmt, /*column*/ 0) == SQLITE3_TEXT ) {
-        tname = (const char *) sqlite3_column_text(stmt, /*column*/ 0);
-    }
-
-    if (tname == "") {
-        return {};
-    }
-
-    rc = sqlite3_clear_bindings(stmt);
-    rc = sqlite3_reset(stmt);
-    rc = sqlite3_finalize(stmt);
-
-    return tname;
-}
-
-network_database::network_database()
-    : db_(nullptr)
-{}
-
-network_database::network_database(const std::string& filename)
-{
-    open(filename);
-}
-
-int
-network_database::open(const std::string& filename)
-{
-    int rc;
-    rc = sqlite3_open(filename.c_str(), &db_);
-    if(rc) {
-        std::cerr << "Can't open database: " << sqlite3_errmsg(db_) << std::endl;
-        sqlite3_close(db_);
-        return SHIMMER_DATABASE_PROBLEM;
-    }
-
-    return SHIMMER_SUCCESS;
-}
-
-network_database::~network_database()
-{
-    sqlite3_close(db_);
-}
-
-
-
-
-
-
-
-std::optional<table_name_pair_t>
-network_database::limits_and_profile_table_names(station_type stat_type)
-{
-    return shimmer::limits_and_profile_table_names(db_, stat_type);
-}
-
-
-
-
-
-int
-network_database::renumber_stations()
-{
-    int err = database::renumber_stations(db_, nd_.s_u2i, nd_.s_i2u);
-    nnodes_ = nd_.s_i2u.size();
-    return err;
-}
 
 static int
 populate_entry_p_reg(const std::vector<setting_entry_p_reg>& settings,
@@ -271,9 +107,9 @@ populate_outlet(const std::vector<setting_outlet>& settings,
     return SHIMMER_SUCCESS;
 }
 
-
-int
-network_database::populate_type_dependent_station_data(vertex_properties& vp)
+static int
+populate_type_dependent_station_data(const infrastructure& infra,
+    vertex_properties& vp)
 {
     int err = SHIMMER_SUCCESS;
     switch (vp.type) {
@@ -282,20 +118,20 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
             break;
 
         case(station_type::ENTRY_P_REG):
-            err = populate_entry_p_reg(nd_.settings_entry_p_reg, vp);
+            err = populate_entry_p_reg(infra.settings_entry_p_reg, vp);
             break;
             
         case(station_type::ENTRY_L_REG):
-            err = populate_entry_l_reg(nd_.settings_entry_l_reg, vp);
+            err = populate_entry_l_reg(infra.settings_entry_l_reg, vp);
             break;
 
         case(station_type::EXIT_L_REG):
-            err = populate_exit_l_reg(nd_.settings_exit_l_reg, vp);
+            err = populate_exit_l_reg(infra.settings_exit_l_reg, vp);
             break;
         
         
         case(station_type::PRIVATE_OUTLET):
-            err = populate_outlet(nd_.settings_outlet, vp);
+            err = populate_outlet(infra.settings_outlet, vp);
             break;
             
         default:
@@ -304,25 +140,25 @@ network_database::populate_type_dependent_station_data(vertex_properties& vp)
             return SHIMMER_INVALID_DATA;
     }
 
-    return err;
+    return err;  
 }
 
-int
-network_database::import_stations(infrastructure_graph& g)
+static int
+load_stations(sqlite3 *db, infrastructure& infra)
 {              
     int rc;
     std::string q = "SELECT * FROM stations";
 
     sqlite3_stmt *stmt;
-    rc = sqlite3_prepare_v2(db_, q.c_str(), q.length(), &stmt, nullptr);
+    rc = sqlite3_prepare_v2(db, q.c_str(), q.length(), &stmt, nullptr);
     if (rc) {
         std::cerr << "SQL error on query '" << q << "': ";
-        std::cerr << sqlite3_errmsg(db_) << std::endl;
+        std::cerr << sqlite3_errmsg(db) << std::endl;
         return SHIMMER_DATABASE_PROBLEM;
     }
 
-    nd_.s_u2vd.resize( nd_.s_u2i.size() );
-    nd_.s_i2vd.resize( nd_.s_i2u.size() );
+    infra.s_u2vd.resize( infra.s_u2i.size() );
+    infra.s_i2vd.resize( infra.s_i2u.size() );
 
     int incomplete_stations = 0;
 
@@ -331,18 +167,18 @@ network_database::import_stations(infrastructure_graph& g)
         
         /* Station number, convert from user to internal */
         int s_un = sqlite3_column_int(stmt, 0);
-        int s_in = nd_.s_u2i.at(s_un).value();
+        int s_in = infra.s_u2i.at(s_un).value();
         vp.u_snum = s_un;
         vp.i_snum = s_in;
         /* Station name and type */
         vp.name = (char *) sqlite3_column_text(stmt, 1);
         vp.type = static_cast<station_type>(sqlite3_column_int(stmt,2));
 
-        if ( s_in >= nd_.mass_fractions.size() ) {
+        if ( s_in >= infra.mass_fractions.size() ) {
             std::cerr << "No mass fractions for station " << s_un << std::endl;
             return SHIMMER_MISSING_DATA;
         }
-        const auto& mfs = nd_.mass_fractions.at(s_in).fractions;
+        const auto& mfs = infra.mass_fractions.at(s_in).fractions;
         vp.gas_mixture = vector_t::Zero(mfs.size());
         assert(vp.gas_mixture.size() == NUM_GASES);
         std::copy(mfs.begin(), mfs.end(), vp.gas_mixture.begin());
@@ -352,19 +188,19 @@ network_database::import_stations(infrastructure_graph& g)
         vp.latitude = sqlite3_column_double(stmt, 4);
         vp.longitude = sqlite3_column_double(stmt, 5);
         
-        if (populate_type_dependent_station_data(vp) != SHIMMER_SUCCESS) {
+        if (populate_type_dependent_station_data(infra, vp) != SHIMMER_SUCCESS) {
             incomplete_stations++;
         }
         
-        vertex_descriptor vtxd = boost::add_vertex(g);
+        vertex_descriptor vtxd = boost::add_vertex(infra.graph);
         /* keep track of the mapping from user/internal numbering to boost
          * vertex descriptors. this should be done with boost::labeled_graph,
          * however it does not like unique pointers, so here we are. */
-        nd_.s_u2vd.at(s_un) = vtxd;
-        nd_.s_i2vd.at(s_in) = vtxd;
+        infra.s_u2vd.at(s_un) = vtxd;
+        infra.s_i2vd.at(s_in) = vtxd;
         
         /* Move the newly created vertex_properties to the graph */
-        g[vtxd] = std::move(vp);
+        infra.graph[vtxd] = std::move(vp);
     }
 
     sqlite3_finalize(stmt);
@@ -375,33 +211,20 @@ network_database::import_stations(infrastructure_graph& g)
     return SHIMMER_SUCCESS;
 }
 
-int
-network_database::populate_type_dependent_pipe_data(edge_properties& ep, int i_from, int i_to)
+static int
+populate_type_dependent_pipe_data(infrastructure& infra,
+    edge_properties& ep, int i_from, int i_to)
 {
-    //edge_properties ep15 = {    pipe_type::COMPR_STAT,
-    //    15, 1, 0.2 ,	1.20E-05,
-    //    };
-
-    //std::unordered_map<external_t, std::pair<edge_constraint_t, double>>  user_limits; 
-
-    //user_limits[external_t::P_OUT_MAX] = std::make_pair(edge_constraint_t::LOWER_EQUAL,   80.E+5);
-    //user_limits[external_t::P_IN_MIN]  = std::make_pair(edge_constraint_t::GREATER_EQUAL, 50.E+5);
-    //user_limits[external_t::BETA_MAX]  = std::make_pair(edge_constraint_t::LOWER_EQUAL,   2.0);
-    //user_limits[external_t::BETA_MIN]  = std::make_pair(edge_constraint_t::GREATER_EQUAL, 1.2);
-    //user_limits[external_t::FLUX_MAX]  = std::make_pair(edge_constraint_t::LOWER_EQUAL,   80.0);
-    //user_limits[external_t::PWD_NOMINAL] = std::make_pair(edge_constraint_t::LOWER_EQUAL, 10.0);
-   
     using edge_constraint_t = edge_station::control::constraint_type;
     using external_t = edge_station::external_type; 
     using user_limits_t = std::unordered_map<external_t, std::pair<edge_constraint_t, double>>;
 
     switch (ep.type) {
-        
         case pipe_type::PIPE: {
-            auto sitor = lookup(nd_.settings_pipe, i_from, i_to);
-            if (sitor == nd_.settings_pipe.end()) {
-                auto u_from = nd_.s_i2u.at(i_from);
-                auto u_to = nd_.s_i2u.at(i_to);
+            auto sitor = lookup(infra.settings_pipe, i_from, i_to);
+            if (sitor == infra.settings_pipe.end()) {
+                auto u_from = infra.s_i2u.at(i_from);
+                auto u_to = infra.s_i2u.at(i_to);
                 std::cerr << "WARNING: no data for pipe (" << u_from << ", ";
                 std::cerr << u_to << ")" << std::endl;
                 return SHIMMER_MISSING_DATA;
@@ -412,13 +235,11 @@ network_database::populate_type_dependent_pipe_data(edge_properties& ep, int i_f
             ep.length = (*sitor).length;
             break;
         }
-
         case pipe_type::COMPR_STAT: {
-
-            auto sitor = lookup(nd_.settings_compr_stat, i_from, i_to);
-            if (sitor == nd_.settings_compr_stat.end()) {
-                auto u_from = nd_.s_i2u.at(i_from);
-                auto u_to = nd_.s_i2u.at(i_to);
+            auto sitor = lookup(infra.settings_compr_stat, i_from, i_to);
+            if (sitor == infra.settings_compr_stat.end()) {
+                auto u_from = infra.s_i2u.at(i_from);
+                auto u_to = infra.s_i2u.at(i_to);
                 std::cerr << "WARNING: no data for compressor (";
                 std::cerr << u_from << ", " << u_to << ")" << std::endl;
                 return SHIMMER_MISSING_DATA;
@@ -461,12 +282,11 @@ network_database::populate_type_dependent_pipe_data(edge_properties& ep, int i_f
 
             break;
         }
-
         case pipe_type::RED_STAT: {
-            auto sitor = lookup(nd_.settings_red_stat, i_from, i_to);
-            if (sitor == nd_.settings_red_stat.end()) {
-                auto u_from = nd_.s_i2u.at(i_from);
-                auto u_to = nd_.s_i2u.at(i_to);
+            auto sitor = lookup(infra.settings_red_stat, i_from, i_to);
+            if (sitor == infra.settings_red_stat.end()) {
+                auto u_from = infra.s_i2u.at(i_from);
+                auto u_to = infra.s_i2u.at(i_to);
                 std::cerr << "WARNING: no data for reduction station (";
                 std::cerr << u_from << ", " << u_to << ")" << std::endl;
                 return SHIMMER_MISSING_DATA;
@@ -490,22 +310,21 @@ network_database::populate_type_dependent_pipe_data(edge_properties& ep, int i_f
             std::cerr << "WARNING: invalid pipe type " << +ep.type << std::endl;
             return SHIMMER_INVALID_DATA;
     }
-   
+
     return SHIMMER_SUCCESS;
 }
 
-int
-network_database::import_pipelines(infrastructure_graph& g)
+static int
+load_pipelines(sqlite3 *db, infrastructure& infra)
 {
     int rc;
-    char *zErrMsg = nullptr;
-    std::string zSql = "SELECT * FROM pipelines";
+    std::string q = "SELECT * FROM pipelines";
 
     sqlite3_stmt *stmt;
-    rc = sqlite3_prepare_v2(db_, zSql.c_str(), zSql.length(), &stmt, nullptr);
+    rc = sqlite3_prepare_v2(db, q.c_str(), q.length(), &stmt, nullptr);
     if (rc) {
-        std::cerr << "SQL error on query '" << zSql << "': " << zErrMsg << std::endl;
-        sqlite3_free(zErrMsg);
+        std::cerr << "SQL error on query '" << q << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
         return SHIMMER_DATABASE_PROBLEM;
     }
 
@@ -514,11 +333,11 @@ network_database::import_pipelines(infrastructure_graph& g)
         std::string name = (char *) sqlite3_column_text(stmt, 0);
         int from_un = sqlite3_column_int(stmt, 1);
         int to_un = sqlite3_column_int(stmt, 2);
-        auto from_vtx = nd_.s_u2vd.at(from_un).value();
-        auto to_vtx = nd_.s_u2vd.at(to_un).value();
+        auto from_vtx = infra.s_u2vd.at(from_un).value();
+        auto to_vtx = infra.s_u2vd.at(to_un).value();
 
-        auto from_in = nd_.s_u2i.at(from_un).value();
-        auto to_in = nd_.s_u2i.at(to_un).value();
+        auto from_in = infra.s_u2i.at(from_un).value();
+        auto to_in = infra.s_u2i.at(to_un).value();
         
         /* XXX: NAME CURRENTLY NOT USED - CANNOT HAVE
          *      MULTIPLE PIPES BETWEEN THE SAME TWO NODES
@@ -529,157 +348,133 @@ network_database::import_pipelines(infrastructure_graph& g)
         ep.type = static_cast<pipe_type>(type);
         ep.branch_num = branch_num++;
 
-        populate_type_dependent_pipe_data(ep, from_in, to_in);
+        populate_type_dependent_pipe_data(infra, ep, from_in, to_in);
 
-        boost::add_edge(from_vtx, to_vtx, ep, g);
+        boost::add_edge(from_vtx, to_vtx, ep, infra.graph);
     }
-    npipes_ = branch_num;
+    //npipes_ = branch_num;
 
     sqlite3_finalize(stmt);
 
     return SHIMMER_SUCCESS;
 }
 
-int
-network_database::populate_graph(infrastructure_graph& g)
+static int
+load_station_settings(sqlite3 *db, infrastructure& infra)
 {
-    if (!db_) {
-        std::cerr << "Shimmer DB: database not opened" << std::endl;
-        return SHIMMER_DATABASE_PROBLEM;
-    }
+    int errors = 0;
+    if (SHIMMER_SUCCESS != database::renumber_stations(db, infra.s_u2i, infra.s_i2u))
+        errors++;
+    if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.settings_entry_p_reg))
+        errors++;
+    if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.settings_entry_l_reg))
+        errors++;
+    if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.settings_exit_l_reg))
+        errors++;
+    if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.settings_outlet))
+        errors++;
 
-    /* Make the mappings from user numbering to internal numbering */
-    renumber_stations();
-
-    /* Import the data for all the stations */
-    import_outlet(nd_.settings_outlet);
-    import_entry_p_reg(nd_.settings_entry_p_reg);
-    import_entry_l_reg(nd_.settings_entry_l_reg);
-    import_exit_l_reg(nd_.settings_exit_l_reg);
+    if (errors > 0)
+        return SHIMMER_INVALID_DATA;
 
     std::cout << "-- Non-junction station summary --" << std::endl;
-    std::cout << "  Type outlet:" << std::endl;
-    for (auto& s : nd_.settings_outlet)
-        std::cout << "    " << s << std::endl;
     std::cout << "  Type Entry P:" << std::endl;
-    for (auto& s : nd_.settings_entry_p_reg)
+    for (auto& s : infra.settings_entry_p_reg)
         std::cout << "    " << s << std::endl;
     std::cout << "  Type Entry L:" << std::endl;
-    for (auto& s : nd_.settings_entry_l_reg)
+    for (auto& s : infra.settings_entry_l_reg)
         std::cout << "    " << s << std::endl;
     std::cout << "  Type Exit L:" << std::endl;
-    for (auto& s : nd_.settings_exit_l_reg)
+    for (auto& s : infra.settings_exit_l_reg)
         std::cout << "    " << s << std::endl;
-
-    import_pipe(nd_.settings_pipe);
-    import_compr_stat(nd_.settings_compr_stat);
-
-    import_gas_mass_fractions(nd_.mass_fractions);
-
-    /* Import the graph */
-    if ( import_stations(g) != SHIMMER_SUCCESS ) {
-        std::cerr << "There were problems with one or more stations: can't continue" << std::endl;
-        return SHIMMER_MISSING_DATA;
-    }
-    
-    import_pipelines(g);
-
-    /* Import initial conditions */
-    import_station_initial_conditions();
-    import_pipe_initial_conditions();
+    std::cout << "  Type outlet:" << std::endl;
+    for (auto& s : infra.settings_outlet)
+        std::cout << "    " << s << std::endl;
 
     return SHIMMER_SUCCESS;
 }
 
-int
-network_database::import_entry_l_reg(std::vector<setting_entry_l_reg>& settings)
+static int
+load_gas_mass_fractions(sqlite3 *db, infrastructure& infra)
 {
-    return database::load(db_, nd_.s_u2i, settings);
-}
-
-int
-network_database::import_entry_p_reg(std::vector<setting_entry_p_reg>& settings)
-{
-    return database::load(db_, nd_.s_u2i, settings);
-}
-
-int
-network_database::import_exit_l_reg(std::vector<setting_exit_l_reg>& settings)
-{
-    return database::load(db_, nd_.s_u2i, settings);
-}
-
-int
-network_database::import_pipe(std::vector<setting_pipe>& settings)
-{
-    return database::load(db_, nd_.s_u2i, settings);
-}
-
-int
-network_database::import_station_initial_conditions()
-{
-    return database::load(db_, nd_.s_u2i, nd_.sics);
-}
-
-int
-network_database::import_pipe_initial_conditions()
-{
-    return database::load(db_, nd_.s_u2i, nd_.pics);
-}
-
-int
-network_database::import_gas_mass_fractions(std::vector<gas_mass_fractions>& fracs)
-{
-    return database::load(db_, nd_.s_u2i, fracs);
-}
-
-int
-network_database::import_outlet(std::vector<setting_outlet>& settings)
-{
-    return database::load(db_, nd_.s_u2i, settings);
-}
-
-variable
-initial_guess(const network_data& nd, int nstations, int npipes)
-{
-    vector_t P = vector_t::Zero(nstations);
-    vector_t L = vector_t::Zero(nstations);
-    vector_t G = vector_t::Zero(npipes);
-
-    for (const auto& sic : nd.sics) {
-        if (sic.i_snum >= nstations) {
-            throw std::logic_error("station index out of bounds");
+    if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.mass_fractions)) {
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+    
+    if (infra.mass_fractions.size() != infra.s_i2u.size()) {
+        std::cerr << "Incorrect number of mass fractions in the DB. ";
+        std::cerr << "There should be as many mass fractions as stations.";
+        std::cerr << std::endl;
+        return SHIMMER_INVALID_DATA;
+    }
+    
+    for (int i = 0; i < infra.s_i2u.size(); i++) {
+        if (infra.mass_fractions[i].i_snum != i) {
+            std::cerr << "Incoherent mass fraction data. Check that ";
+            std::cerr << "there is 1:1 correspondence between stations ";
+            std::cerr << "and mass fraction data" << std::endl;
+            return SHIMMER_INVALID_DATA;
         }
+    }
+    
+    return SHIMMER_SUCCESS;
+}
 
-        if (sic.init_P == 0 or sic.init_L == 0) {
-            std::cout << "Warning: zero initial guess for station ";
-            std::cout << nd.s_i2u.at(sic.i_snum) << std::endl;
-        }
-
-        P(sic.i_snum) = sic.init_P;
-        L(sic.i_snum) = sic.init_L;
+int load(const std::string db_filename, infrastructure& infra)
+{
+    sqlite3 *db;
+    int rc = sqlite3_open(db_filename.c_str(), &db);
+    if(rc) {
+        std::cerr << "Can't open database: ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
+        sqlite3_close(db);
+        return SHIMMER_DATABASE_PROBLEM;
     }
 
-    for (size_t i = 0; i < nd.pics.size(); i++) {
-        assert(i < npipes);
-        const auto& pic = nd.pics[i];
-
-        if (pic.init_G == 0) {
-            std::cout << "Warning: zero initial guess for pipe ";
-            std::cout << nd.s_i2u.at(pic.i_sfrom) << "-";
-            std::cout << nd.s_i2u.at(pic.i_sto) << std::endl;
-        }
-
-        G(i) = pic.init_G;
+    if (SHIMMER_SUCCESS != load_station_settings(db, infra)) {
+        std::cerr << "Problems detected while loading station settings. ";
+        std::cerr << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
     }
 
-    //std::cout << "P: " << P.transpose() << std::endl;
-    //std::cout << "G: " << G.transpose() << std::endl;
-    //std::cout << "L: " << L.transpose() << std::endl;
+    if (SHIMMER_SUCCESS != load_gas_mass_fractions(db, infra)) {
+        std::cerr << "Problems detected while loading gas mass fractions. ";
+        std::cerr << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+    
+    if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.settings_pipe)) {
+        std::cerr << "Problems detected while loading pipe settings";
+        std::cerr << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    };
 
-    return variable(P, G, L);
+    if (SHIMMER_SUCCESS != load_stations(db, infra)) {
+        std::cerr << "Problem detected while loading stations";
+        std::cerr << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    if (SHIMMER_SUCCESS != load_pipelines(db, infra)) {
+        std::cerr << "Problem detected while loading pipelines";
+        std::cerr << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.sics) ) {
+        std::cerr << "Problem detected while loading initial condition for stations";
+        std::cerr << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.pics) ) {
+        std::cerr << "Problem detected while loading initial condition for pipelines";
+        std::cerr << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    sqlite3_close(db);
+    return SHIMMER_SUCCESS;
 }
 
-} // namespace shimmer
-
-
+ } // namespace shimmer

@@ -59,6 +59,11 @@ enum class reduction_mode : int {
     OFF_CLOSED  = 11    /* Reduction station off, closed */
 };
 
+enum class gas : int {
+    CH4 = 0, N2, CO2, C2H6, C3H8, iC4H10, nC4H10, iC5H12, nC5H12,
+    C6H14, C7H16, C8H18, C9H20, C10H22, H2, O2, CO, H2O, H2S, He, Ar
+};
+
 } // namespace shimmer
 
 template<typename T>

@@ -154,9 +154,57 @@ convert_u2i(const optvector<int>& s_u2i, int idx)
 #include "sqlite_compressor.h"
 #include "sqlite_reduction.h"
 #include "sqlite_gases.h"
+#include "sqlite_infra.h"
 
 
 namespace shimmer {
+
+template<typename T>
+concept limits = requires {
+    T::Pmin;
+    T::Pmax;
+    T::Lmin;
+    T::Lmax;
+};
+
+/* Temporary helper */
+auto
+convert_limits(const limits auto& l)
+{
+    std::vector<pair_input_t> user_constraints = {
+        std::make_pair(P_GREATER_EQUAL, l.Pmin),
+        std::make_pair(P_LOWER_EQUAL,   l.Pmax),
+        std::make_pair(L_GREATER_EQUAL, l.Lmin),
+        std::make_pair(L_LOWER_EQUAL,   l.Lmax)
+    };
+
+    return user_constraints;
+}
+
+template<typename T>
+concept profile =
+    requires { T::Lprofile; } ||
+    requires { T::Pprofile; };
+
+/* Temporary helper */
+auto
+convert_Lprof(const profile auto& p)
+{
+    Eigen::VectorXd ret( p.Lprofile.size() );
+    for (size_t i = 0; i < p.Lprofile.size(); i++)
+        ret[i] = p.Lprofile[i].value;
+    return ret;
+}
+
+/* Temporary helper */
+auto
+convert_Pprof(const profile auto& p)
+{
+    Eigen::VectorXd ret( p.Pprofile.size() );
+    for (size_t i = 0; i < p.Pprofile.size(); i++)
+        ret[i] = p.Pprofile[i].value;
+    return ret;
+}
 
 struct network_data {
     optvector<int>                          s_u2i;

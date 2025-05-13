@@ -56,16 +56,6 @@ enum GAS_TYPE
     Ar,
 };
 
-/*
-enum station_type_x
-{
-    REMI_WO_BACKFLOW,
-    INJ_W_PRESS_CONTROL,
-    OUTLET,
-    JUNCTION,
-    CONSUMPTION_WO_PRESS,
-};
-*/
 
 struct vertex_properties {
     std::string     name;

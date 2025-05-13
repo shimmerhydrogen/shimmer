@@ -19,30 +19,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "infra/infrastructure.h"
+#include "errors.h"
 
-#include <iostream>
-#include <vector>
-
-#define NUM_GASES 21
-namespace shimmer {
-
-struct gas_mass_fractions {
-    int                             i_snum;
-    std::array<double, NUM_GASES>   fractions;
-
-    bool operator<(const gas_mass_fractions& other) const {
-        return i_snum < other.i_snum;
+int main(int argc, char **argv)
+{
+    if (argc < 2) {
+        std::cerr << "Please specify database file name" << std::endl;
+        return 1;
     }
-};
 
-namespace database {
+    shimmer::infrastructure infra;
 
-int load(sqlite3 *db, const optvector<int>& s_u2i,
-    std::vector<gas_mass_fractions>& fracs);
-int store(sqlite3 *db, const std::vector<int>& s_i2u,
-    const std::vector<gas_mass_fractions>& fracs);
+    int err = shimmer::load(argv[1], infra);
+    if (err != SHIMMER_SUCCESS) {
+        std::cout << "Problem detected while loading DB" << std::endl;
+        return 1;
+    }
 
-} //namespace database
-
-} // namespace shimmer
+    std::cout << "Database loaded OK" << std::endl;
+    return 0;
+}

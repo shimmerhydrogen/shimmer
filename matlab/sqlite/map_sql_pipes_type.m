@@ -19,6 +19,7 @@ for p = 1:num_pipes
     elseif isfield(graph.Edges, 'VALV') && size(graph.Edges.VALV, 1) == num_pipes && graph.Edges.VALV(p) % valve
         sql_pipes_type(p) = 3;
     elseif isfield(graph.Edges, 'REDST') && size(graph.Edges.REDST, 1) == num_pipes && graph.Edges.REDST(p) % reduction station
+        sql_pipes_type(p) = 2;
     elseif isfield(graph.Edges, 'REG') && size(graph.Edges.REG, 1) == num_pipes && graph.Edges.REG(p) % regulation station
         sql_pipes_type(p) = 2;
     else

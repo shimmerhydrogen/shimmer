@@ -1,4 +1,4 @@
-function [matlab_stations_type] = map_sql_stations_type(station_tab)
+function [matlab_stations_type] = map_matlab_stations_type(station_tab)
         
 num_nodes = size(station_tab, 1);
 

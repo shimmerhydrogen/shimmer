@@ -1,5 +1,5 @@
 function [graph] = graph_populate_stations(db_path, graph)
-        
+
 db = sqlite(db_path, 'readonly');
 station_tab = sqlread(db, "stations");
 close(db);

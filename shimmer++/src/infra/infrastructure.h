@@ -49,4 +49,8 @@ struct infrastructure {
 
 int load(const std::string db_filename, infrastructure& infra);
 
+int num_stations(const infrastructure&);
+int num_pipes(const infrastructure&);
+variable initial_guess(const infrastructure&);
+
 } //namespace shimmer

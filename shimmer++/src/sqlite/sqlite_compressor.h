@@ -79,4 +79,10 @@ struct setting_compr_stat {
     }
 };
 
+namespace database {
+int
+load(sqlite3 *db, const optvector<int>& s_u2i,
+    std::vector<setting_compr_stat>& settings);
+}
+
 } // namespace shimmer

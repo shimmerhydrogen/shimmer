@@ -420,6 +420,60 @@ load_gas_mass_fractions(sqlite3 *db, infrastructure& infra)
     return SHIMMER_SUCCESS;
 }
 
+static int
+count_edges_bytype(const infrastructure& infra, pipe_type type)
+{
+    auto edge_range = boost::edges(infra.graph);
+    auto begin = edge_range.first;
+    auto end = edge_range.second;
+    size_t found_pipes = 0;
+    for (auto itor = begin; itor != end; itor++) {
+        if (infra.graph[*itor].type == type)
+            found_pipes++;
+    }
+    return found_pipes;
+}
+
+static int
+load_pipe_settings(sqlite3 *db, infrastructure& infra)
+{
+    if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.settings_pipe)) {
+        return SHIMMER_DATABASE_PROBLEM;
+    };
+
+    int num_edges = count_edges_bytype(infra, pipe_type::PIPE);
+    int num_settings = infra.settings_pipe.size();
+
+    if (num_edges != num_settings) {
+        std::cerr << "Error: In the database there are " << num_edges;
+        std::cerr << " pipes but " << num_settings << " settings.";
+        std::cerr << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    return SHIMMER_SUCCESS;
+}
+
+static int
+load_compressor_settings(sqlite3 *db, infrastructure& infra)
+{
+    if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.settings_compr_stat)) {
+        return SHIMMER_DATABASE_PROBLEM;
+    };
+
+    int num_edges = count_edges_bytype(infra, pipe_type::COMPR_STAT);
+    int num_settings = infra.settings_pipe.size();
+
+    if (num_edges != num_settings) {
+        std::cerr << "Error: In the database there are " << num_edges;
+        std::cerr << " compressors but " << num_settings << " settings.";
+        std::cerr << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    return SHIMMER_SUCCESS;
+}
+
 int load(const std::string db_filename, infrastructure& infra)
 {
     sqlite3 *db;
@@ -443,8 +497,14 @@ int load(const std::string db_filename, infrastructure& infra)
         return SHIMMER_DATABASE_PROBLEM;
     }
     
-    if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.settings_pipe)) {
+    if (SHIMMER_SUCCESS != load_pipe_settings(db, infra)) {
         std::cerr << "Problems detected while loading pipe settings";
+        std::cerr << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    };
+    
+    if (SHIMMER_SUCCESS != load_compressor_settings(db, infra)) {
+        std::cerr << "Problems detected while loading compressor settings";
         std::cerr << std::endl;
         return SHIMMER_DATABASE_PROBLEM;
     };
@@ -477,4 +537,59 @@ int load(const std::string db_filename, infrastructure& infra)
     return SHIMMER_SUCCESS;
 }
 
- } // namespace shimmer
+int num_stations(const infrastructure& infra)
+{
+    assert(infra.s_i2u.size() == num_vertices(infra.graph));
+    return infra.s_i2u.size();
+}
+
+int num_pipes(const infrastructure& infra)
+{
+    return num_edges(infra.graph);
+}
+
+variable
+initial_guess(const infrastructure& infra)
+{
+    int nstations = num_stations(infra);
+    int npipes = num_pipes(infra);
+
+    vector_t P = vector_t::Zero(nstations);
+    vector_t L = vector_t::Zero(nstations);
+    vector_t G = vector_t::Zero(npipes);
+
+    for (const auto& sic : infra.sics) {
+        if (sic.i_snum >= nstations) {
+            throw std::logic_error("station index out of bounds");
+        }
+
+        if (sic.init_P == 0 or sic.init_L == 0) {
+            std::cout << "Warning: zero initial guess for station ";
+            std::cout << infra.s_i2u.at(sic.i_snum) << std::endl;
+        }
+
+        P(sic.i_snum) = sic.init_P;
+        L(sic.i_snum) = sic.init_L;
+    }
+
+    for (size_t i = 0; i < infra.pics.size(); i++) {
+        assert(i < npipes);
+        const auto& pic = infra.pics[i];
+
+        if (pic.init_G == 0) {
+            std::cout << "Warning: zero initial guess for pipe ";
+            std::cout << infra.s_i2u.at(pic.i_sfrom) << "-";
+            std::cout << infra.s_i2u.at(pic.i_sto) << std::endl;
+        }
+
+        G(i) = pic.init_G;
+    }
+
+    //std::cout << "P: " << P.transpose() << std::endl;
+    //std::cout << "G: " << G.transpose() << std::endl;
+    //std::cout << "L: " << L.transpose() << std::endl;
+
+    return variable(P, G, L);
+}
+
+} // namespace shimmer

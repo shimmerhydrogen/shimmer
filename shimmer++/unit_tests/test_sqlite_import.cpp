@@ -33,9 +33,9 @@ int main(int argc, char ** argv) {
         return 1;
     }
   
-    network_database db(argv[1]);
-    infrastructure_graph g;
-    db.populate_graph(g);
+    //network_database db(argv[1]);
+    //infrastructure_graph g;
+    //db.populate_graph(g);
 
     return 0;
 }

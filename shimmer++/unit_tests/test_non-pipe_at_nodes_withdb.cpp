@@ -34,6 +34,8 @@
 #include "../src/time_solver.h"
 #include "../src/viscosity.h"
 
+#include "infra/infrastructure.h"
+
 #include "sqlite/sqlite.hpp"
 #include "errors.h"
 
@@ -81,7 +83,7 @@ read_flux_boundary_conditions()
 variable
 make_guess_steady()
 {
-    vector_t Gguess(num_pipes), Pguess(num_nodes);
+    vector_t Gguess(::num_pipes), Pguess(num_nodes);
     Gguess.setConstant(50);
     Pguess <<   70.000000000000000,   70.000000000000000,
                 69.299999999999997,   69.299999999999997,
@@ -114,7 +116,7 @@ make_guess_steady()
 variable
 make_guess_unsteady(const matrix_t& Gsnam)
 {
-    vector_t Gguess(num_pipes), Pguess(num_nodes);
+    vector_t Gguess(::num_pipes), Pguess(num_nodes);
 
     Pguess << 7.000000000000000,   6.952086053520747,   6.963715087477524,
               6.976886223836662,   6.953982373265999,   6.936503561559128,
@@ -184,7 +186,7 @@ make_reference(variable& guess_unsteady)
 
     vector_t vec = guess_unsteady.make_vector();
 
-    std::vector<double> ref_sol_steady(num_nodes*2 + num_pipes);
+    std::vector<double> ref_sol_steady(num_nodes*2 + ::num_pipes);
     for(size_t i = 0; i< vec.size(); i++)
         ref_sol_steady[i] = vec(i);
 
@@ -195,11 +197,15 @@ make_reference(variable& guess_unsteady)
 
 
 
-int main()
+int main(int argc, char **argv)
 {
+    if (argc < 2) {
+        std::cerr << "Please specify database file name" << std::endl;
+        return 1;
+    }
+
     _MM_SET_EXCEPTION_MASK(_MM_GET_EXCEPTION_MASK() & ~_MM_MASK_INVALID);
-    size_t num_bcnd = num_nodes;
-    size_t system_size = num_nodes + num_pipes;
+    
 
     size_t num_steps = 7;
     double dt = 3600;
@@ -215,28 +221,30 @@ int main()
     //variable guess_std   = make_guess_steady();
     //---------------------------------------------------------------
 
-    network_database db("test_network_1.db");
-    infrastructure_graph graph;
+    shimmer::infrastructure infra;
 
-    if ( db.populate_graph(graph) != SHIMMER_SUCCESS ) {
-        return EXIT_FAILURE;
+    int err = shimmer::load(argv[1], infra);
+    if (err != SHIMMER_SUCCESS) {
+        std::cout << "Problem detected while loading DB" << std::endl;
+        return 1;
     }
 
-    num_nodes = db.num_stations();
-    num_pipes = db.num_pipes();
-    variable guess_std = initial_guess(db.nd_, num_nodes, num_pipes);
+    size_t num_bcnd = num_stations(infra);
+    size_t system_size = num_stations(infra) + shimmer::num_pipes(infra);
+
+    variable guess_std = initial_guess(infra);
 
     /* BEGIN GAS MASS FRACTIONS */
     matrix_t y_nodes = matrix_t::Zero(num_nodes, NUM_GASES);
-    for (size_t i = 0; i < db.nd_.mass_fractions.size(); i++) {
-        const auto& mf = db.nd_.mass_fractions[i];
+    for (size_t i = 0; i < infra.mass_fractions.size(); i++) {
+        const auto& mf = infra.mass_fractions[i];
         assert(mf.i_snum < num_nodes);
         vector_t y = vector_t::Zero(NUM_GASES);
         std::copy(mf.fractions.begin(), mf.fractions.end(), y.begin());
         y_nodes.row(i) = y;
     }
 
-    incidence inc(graph);
+    incidence inc(infra.graph);
     matrix_t y_pipes = inc.matrix_in().transpose() * y_nodes;   
     /* END GAS MASS FRACTIONS */
 
@@ -251,7 +259,7 @@ int main()
     }
     #endif
 
-    time_solver_t ts1(graph, temperature);
+    time_solver_t ts1(infra.graph, temperature);
     ts1.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);  
     ts1.advance(dt, num_steps, tol, y_nodes, y_pipes);
     auto sol_unstd  = ts1.solution();

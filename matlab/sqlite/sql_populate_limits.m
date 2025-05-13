@@ -11,7 +11,7 @@ if (num_pipes < 1)
 end
 
 pipes_name = map_pipes_name(graph);
-pipes_type = map_pipes_type(graph);
+pipes_type = map_sql_pipes_type(graph);
 
 %% Limits - Compressor
 % Compressor (set limits)

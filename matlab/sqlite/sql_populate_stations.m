@@ -32,7 +32,7 @@ end
 % valore settato a manina (da chiedere) -> vedere file small_network_disma_nodes_nonpipe.xlsx
 
 
-stations_type = map_stations_type(graph);
+stations_type = map_sql_stations_type(graph);
 stations = cell(num_nodes, num_variables);
 for s = 1:num_nodes
     stations{s, 1} = graph.Nodes.Nodes_ID(s);

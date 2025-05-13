@@ -11,7 +11,7 @@ pipes_tab_num_variables = 4;
 pipes_tab_variables_name = ["p_name", "s_from", "s_to", "p_type"];
 
 pipes_name = map_pipes_name(graph);
-pipes_type = map_pipes_type(graph);
+pipes_type = map_sql_pipes_type(graph);
 
 pipes = cell(num_pipes, pipes_tab_num_variables);
 for p = 1:num_pipes

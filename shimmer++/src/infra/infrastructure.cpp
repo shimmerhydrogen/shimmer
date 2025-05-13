@@ -435,12 +435,9 @@ count_edges_bytype(const infrastructure& infra, pipe_type type)
 }
 
 static int
-load_pipe_settings(sqlite3 *db, infrastructure& infra)
+check_pipeline_data_consistency(infrastructure& infra)
 {
-    if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.settings_pipe)) {
-        return SHIMMER_DATABASE_PROBLEM;
-    };
-
+    /* pipes */ {
     int num_edges = count_edges_bytype(infra, pipe_type::PIPE);
     int num_settings = infra.settings_pipe.size();
 
@@ -450,25 +447,18 @@ load_pipe_settings(sqlite3 *db, infrastructure& infra)
         std::cerr << std::endl;
         return SHIMMER_DATABASE_PROBLEM;
     }
+    }
 
-    return SHIMMER_SUCCESS;
-}
-
-static int
-load_compressor_settings(sqlite3 *db, infrastructure& infra)
-{
-    if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.settings_compr_stat)) {
-        return SHIMMER_DATABASE_PROBLEM;
-    };
-
+    /* compressors */ {
     int num_edges = count_edges_bytype(infra, pipe_type::COMPR_STAT);
-    int num_settings = infra.settings_pipe.size();
+    int num_settings = infra.settings_compr_stat.size();
 
     if (num_edges != num_settings) {
         std::cerr << "Error: In the database there are " << num_edges;
         std::cerr << " compressors but " << num_settings << " settings.";
         std::cerr << std::endl;
         return SHIMMER_DATABASE_PROBLEM;
+    }
     }
 
     return SHIMMER_SUCCESS;
@@ -497,13 +487,13 @@ int load(const std::string db_filename, infrastructure& infra)
         return SHIMMER_DATABASE_PROBLEM;
     }
     
-    if (SHIMMER_SUCCESS != load_pipe_settings(db, infra)) {
+    if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.settings_pipe)) {
         std::cerr << "Problems detected while loading pipe settings";
         std::cerr << std::endl;
         return SHIMMER_DATABASE_PROBLEM;
     };
     
-    if (SHIMMER_SUCCESS != load_compressor_settings(db, infra)) {
+    if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.settings_compr_stat)) {
         std::cerr << "Problems detected while loading compressor settings";
         std::cerr << std::endl;
         return SHIMMER_DATABASE_PROBLEM;
@@ -517,6 +507,12 @@ int load(const std::string db_filename, infrastructure& infra)
 
     if (SHIMMER_SUCCESS != load_pipelines(db, infra)) {
         std::cerr << "Problem detected while loading pipelines";
+        std::cerr << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    if (SHIMMER_SUCCESS != check_pipeline_data_consistency(infra)) {
+        std::cerr << "Inconsistencies detected in pipeline data";
         std::cerr << std::endl;
         return SHIMMER_DATABASE_PROBLEM;
     }

@@ -58,7 +58,7 @@ enum class profile_col : int {
 } // namespace compr_stat
 
 namespace database {
-    
+
 int
 load(sqlite3 *db, const optvector<int>& s_u2i,
     std::vector<setting_compr_stat>& settings)
@@ -145,11 +145,5 @@ load(sqlite3 *db, const optvector<int>& s_u2i,
 }
 
 } //namespace database
-
-int
-network_database::import_compr_stat(std::vector<setting_compr_stat>& settings)
-{
-    return database::load(db_, nd_.s_u2i, settings);
-}
 
 } // namespace shimmer

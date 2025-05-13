@@ -55,19 +55,18 @@ enum class profile_col : int {
 
 } // namespace red_stat
 
-int
-network_database::import_red_stat(std::vector<setting_red_stat>& settings)
+int load(sqlite3 *db, const optvector<int>& s_u2i,
+    std::vector<setting_red_stat>& settings)
 {
     using namespace red_stat;
 
-    char *zErrMsg = nullptr;
     sqlite3_stmt *stmt = nullptr;
 
     std::string qlim = "SELECT * FROM reduction_limits";
-    int rc = sqlite3_prepare_v2(db_, qlim.c_str(), qlim.length(), &stmt, nullptr);
+    int rc = sqlite3_prepare_v2(db, qlim.c_str(), qlim.length(), &stmt, nullptr);
     if (rc) {
-        std::cerr << "SQL error on query '" << qlim << "': " << zErrMsg << std::endl;
-        sqlite3_free(zErrMsg);
+        std::cerr << "SQL error on query '" << qlim << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
         return SHIMMER_DATABASE_PROBLEM;
     }
 
@@ -77,8 +76,8 @@ network_database::import_red_stat(std::vector<setting_red_stat>& settings)
         int u_from = sqlite3_column_int(stmt, +limits_col::s_from);
         int u_to = sqlite3_column_int(stmt, +limits_col::s_to);
         
-        auto i_sfrom_opt = nd_.s_u2i.at(u_from);
-        auto i_sto_opt = nd_.s_u2i.at(u_to);
+        auto i_sfrom_opt = s_u2i.at(u_from);
+        auto i_sto_opt = s_u2i.at(u_to);
         if (not i_sfrom_opt or not i_sto_opt) {
             std::cerr << "s_u2i: invalid station numbers. Inconsistent data in DB?" << std::endl;
             return SHIMMER_DATABASE_PROBLEM;
@@ -96,10 +95,10 @@ network_database::import_red_stat(std::vector<setting_red_stat>& settings)
     rc = sqlite3_finalize(stmt);
 
     std::string qprof = "SELECT * FROM reduction_profile WHERE s_from = ? AND s_to = ?";
-    rc = sqlite3_prepare_v2(db_, qlim.c_str(), qlim.length(), &stmt, nullptr);
+    rc = sqlite3_prepare_v2(db, qlim.c_str(), qlim.length(), &stmt, nullptr);
     if (rc) {
-        std::cerr << "SQL error on query '" << qprof << "': " << zErrMsg << std::endl;
-        sqlite3_free(zErrMsg);
+        std::cerr << "SQL error on query '" << qlim << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
         return SHIMMER_DATABASE_PROBLEM;
     }
 

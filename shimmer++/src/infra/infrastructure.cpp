@@ -30,8 +30,9 @@ populate_entry_p_reg(const std::vector<setting_entry_p_reg>& settings,
 {
     auto itor = lookup(settings, vp.i_snum);
     if ( itor == settings.end() ) {
-        std::cout << "Warning: No data for station " << vp.u_snum;
-        std::cout << " (ReMi w/o pressure control)" << std::endl;
+        std::cerr << "Warning: No data for station " << vp.u_snum;
+        std::cerr << " (ReMi w/o pressure control). ";
+        std::cerr << "Check limits and/or profiles." << std::endl;
         return SHIMMER_MISSING_DATA;
     }
     const setting_entry_p_reg &setting = *itor;
@@ -50,8 +51,9 @@ populate_entry_l_reg(const std::vector<setting_entry_l_reg>& settings,
 {
     auto itor = lookup(settings, vp.i_snum);
     if ( itor == settings.end() ) {
-        std::cout << "Warning: No data for station " << vp.u_snum;
-        std::cout << " (Injection w/ pressure control)" << std::endl;
+        std::cerr << "Warning: No data for station " << vp.u_snum;
+        std::cerr << " (Injection w/ pressure control). ";
+        std::cerr << "Check limits and/or profiles."  << std::endl;
         return SHIMMER_MISSING_DATA;
     }
     const setting_entry_l_reg &setting = *itor;
@@ -74,8 +76,9 @@ populate_exit_l_reg(const std::vector<setting_exit_l_reg>& settings,
 {
     auto itor = lookup(settings, vp.i_snum);
     if ( itor == settings.end() ) {
-        std::cout << "Warning: No data for station " << vp.u_snum;
-        std::cout << " (consumption w/o pressure control)" << std::endl;
+        std::cerr << "Warning: No data for station " << vp.u_snum;
+        std::cerr << " (consumption w/o pressure control). ";
+        std::cerr << "Check limits and/or profiles."  << std::endl;
         return SHIMMER_MISSING_DATA;
     }
     const setting_exit_l_reg &setting = *itor;
@@ -466,10 +469,10 @@ check_pipeline_data_consistency(infrastructure& infra)
 
 int load(const std::string db_filename, infrastructure& infra)
 {
-    sqlite3 *db;
-    int rc = sqlite3_open(db_filename.c_str(), &db);
+    sqlite3 *db = nullptr;
+    int rc = sqlite3_open_v2(db_filename.c_str(), &db, SQLITE_OPEN_READWRITE, nullptr);
     if(rc) {
-        std::cerr << "Can't open database: ";
+        std::cerr << "Can't open database '" << db_filename << "': ";
         std::cerr << sqlite3_errmsg(db) << std::endl;
         sqlite3_close(db);
         return SHIMMER_DATABASE_PROBLEM;

@@ -25,6 +25,7 @@
 #include <iostream>
 #include <Eigen/Sparse>
 #include <iomanip>
+#include <fstream>
 
 #include "../src/variable.h"
 #include "../src/gas_law.h"

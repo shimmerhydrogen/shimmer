@@ -48,13 +48,13 @@ find_package(Boost REQUIRED COMPONENTS graph)
 
 #######################################################################
 # Lua stuff
-#find_package(Lua REQUIRED)
-#include_directories("${LUA_INCLUDE_DIR}")
-#set(LINK_LIBS ${LINK_LIBS} ${LUA_LIBRARIES})
-#set(BUILD_TESTING OFF CACHE BOOL "")
-#set(SOL2_BUILD_LUA OFF CACHE BOOL "")
-#add_subdirectory(deps/sol2)
-#set(LINK_LIBS ${LINK_LIBS} sol2::sol2)
+find_package(Lua REQUIRED)
+include_directories("${LUA_INCLUDE_DIR}")
+set(LINK_LIBS ${LINK_LIBS} ${LUA_LIBRARIES})
+set(BUILD_TESTING OFF CACHE BOOL "")
+set(SOL2_BUILD_LUA OFF CACHE BOOL "")
+add_subdirectory(deps/sol2)
+set(LINK_LIBS ${LINK_LIBS} sol2::sol2)
 ######################################################################
 ## Eigen3
 #add_subdirectory(contrib/eigen)
@@ -62,20 +62,6 @@ find_package(Eigen3 REQUIRED)
 set(LINK_LIBS ${LINK_LIBS} Eigen3::Eigen)
 
 ######################################################################
-
-set(SHIMMER_SOURCES
-    src/infrastructure_graph.cpp src/geometry_properties.cpp src/gas_law.cpp
-    src/conservation_matrices.cpp src/incidence_matrix.cpp
-    src/matrix_manipulations.cpp src/pipe_calculator.cpp src/matlab_manip.cpp
-    src/fluid_solver.cpp src/nonpipe_over_edges.cpp
-    src/variable.cpp src/boundary.cpp
-    src/infra/infrastructure.cpp
-)
-
-#add_library(shimmer SHARED ${SHIMMER_SOURCES})
-#add_library(shimmer::shimmer ALIAS shimmer)
-#target_link_libraries(shimmer ${LINK_LIBS})
-#target_include_directories(shimmer PUBLIC src)
 
 set(SHIMMER_DBIO_SOURCES
     src/sqlite/sqlite.cpp src/sqlite/sqlite_entry_p_reg.cpp
@@ -86,14 +72,24 @@ set(SHIMMER_DBIO_SOURCES
     src/sqlite/sqlite_gases.cpp src/sqlite/sqlite_infra.cpp
 )
 
-add_library(shimmer SHARED ${SHIMMER_SOURCES} ${SHIMMER_DBIO_SOURCES})
+add_library(shimmer_dbio SHARED ${SHIMMER_DBIO_SOURCES})
+add_library(shimmer::shimmer_dbio ALIAS shimmer_dbio)
+target_link_libraries(shimmer_dbio ${LINK_LIBS})
+target_include_directories(shimmer_dbio PUBLIC src)
+
+set(SHIMMER_SOURCES
+    src/infrastructure_graph.cpp src/geometry_properties.cpp src/gas_law.cpp
+    src/conservation_matrices.cpp src/incidence_matrix.cpp
+    src/matrix_manipulations.cpp src/pipe_calculator.cpp src/matlab_manip.cpp
+    src/fluid_solver.cpp src/nonpipe_over_edges.cpp
+    src/variable.cpp src/boundary.cpp
+    src/infra/infrastructure.cpp
+)
+
+add_library(shimmer SHARED ${SHIMMER_SOURCES})
 add_library(shimmer::shimmer ALIAS shimmer)
-target_link_libraries(shimmer ${LINK_LIBS})
+target_link_libraries(shimmer shimmer_dbio ${LINK_LIBS})
 target_include_directories(shimmer PUBLIC src)
-#add_library(shimmer_dbio SHARED ${SHIMMER_DBIO_SOURCES})
-#add_library(shimmer::shimmer_dbio ALIAS shimmer_dbio)
-#target_link_libraries(shimmer_dbio shimmer ${LINK_LIBS})
-#target_include_directories(shimmer_dbio PUBLIC src)
 
 add_executable(ptd unit_tests/populate_test_db.cpp)
 target_link_libraries(ptd shimmer ${LINK_LIBS})
@@ -102,6 +98,10 @@ target_include_directories(ptd PUBLIC src)
 add_executable(ldb unit_tests/load_database.cpp)
 target_link_libraries(ldb shimmer ${LINK_LIBS})
 target_include_directories(ldb PUBLIC src)
+
+add_executable(solver src/solver_main.cpp)
+target_link_libraries(solver shimmer ${LINK_LIBS})
+target_include_directories(solver PUBLIC src)
 
 if (BUILD_SHIMMER_UNIT_TESTS)
     include(CTest)

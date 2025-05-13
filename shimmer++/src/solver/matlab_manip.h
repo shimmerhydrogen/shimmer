@@ -19,31 +19,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../src/variable.h"
+#pragma once
+
+#include <Eigen/Dense>
+#include "solver/incidence_matrix.h"
+#include "infrastructure_graph.h"
 
 namespace shimmer{
 
-variable::variable(){};
-variable::variable(const vector_t&p,const vector_t&f,const vector_t&l)
-    {
-        pressure = p;
-        flux = f;
-        L_rate = l;
-    };
+using matrix_t = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>;
+
+matrix_t
+build_x_nodes(const infrastructure_graph& g);
 
 
-vector_t
-variable::make_vector() const
-{
-    size_t num_pipes = flux.size();
-    size_t num_nodes = pressure.size();
-
-    vector_t vec(2 * num_nodes + num_pipes);
-    vec.head(num_nodes) = pressure;
-    vec.segment(num_nodes, num_pipes) = flux;
-    vec.tail(num_nodes) = L_rate;
-
-    return vec;
-}
-
-}
+} // namespace shimmer

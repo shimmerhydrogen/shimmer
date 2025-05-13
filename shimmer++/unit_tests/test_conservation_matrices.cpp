@@ -25,12 +25,12 @@
 #include <string>
 #include <iomanip>
 
-#include "../src/infrastructure_graph.h"
-#include "../src/incidence_matrix.h"
-#include "../src/conservation_matrices.h"
+#include "infrastructure_graph.h"
+#include "solver/incidence_matrix.h"
+#include "solver/conservation_matrices.h"
+#include "solver/matrix_manipulations.h"
+#include "solver/viscosity.h"
 #include "verify_test.h"
-#include "../src/matrix_manipulations.h"
-#include "../src/viscosity.h"
 
 using triple_t = std::array<double, 3>;
 using namespace shimmer;

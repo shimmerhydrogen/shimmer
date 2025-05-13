@@ -21,12 +21,12 @@
 
 #pragma once
 
-#include "../src/matrix_manipulations.h"
-#include "../src/infrastructure_graph.h"
-#include "../src/incidence_matrix.h"
-#include "../src/conservation_matrices.h"
-#include "../src/gas_law.h"
-#include "../src/variable.h"
+#include "solver/matrix_manipulations.h"
+#include "infrastructure_graph.h"
+#include "solver/incidence_matrix.h"
+#include "solver/conservation_matrices.h"
+#include "solver/gas_law.h"
+#include "solver/variable.h"
 
 
 namespace shimmer

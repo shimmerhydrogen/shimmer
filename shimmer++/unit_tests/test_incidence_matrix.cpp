@@ -23,8 +23,8 @@
 #include <fstream>
 #include <string>
 
-#include "../src/infrastructure_graph.h"
-#include "../src/incidence_matrix.h"
+#include "infrastructure_graph.h"
+#include "solver/incidence_matrix.h"
 #include "verify_test.h"
 
 

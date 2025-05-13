@@ -21,7 +21,6 @@
 
 #include <iostream>
 #include <cstdio>
-#include "boundary.h"
 #include "errors.h"
 #include "sqlite.hpp"
 

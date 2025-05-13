@@ -24,8 +24,8 @@
 #include <string>
 #include <iomanip>
 
-#include "../src/infrastructure_graph.h"
-#include "../src/boundary.h"
+#include "infrastructure_graph.h"
+#include "solver/boundary.h"
 #include "verify_test.h"
 
 using namespace shimmer;

@@ -19,18 +19,32 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include <Eigen/Dense>
-#include "../src/incidence_matrix.h"
-#include "infrastructure_graph.h"
+#include "solver/matlab_manip.h"
 
 namespace shimmer{
 
-using matrix_t = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>;
 
 matrix_t
-build_x_nodes(const infrastructure_graph& g);
+build_x_nodes(const infrastructure_graph& g)
+{
+    size_t num_nodes = num_vertices(g);
+    Eigen::MatrixXd x(num_nodes, 21);
 
+    auto index = get(boost::vertex_index, g);
+
+    for (auto vp = vertices(g); vp.first != vp.second; ++vp.first) {
+        auto idx = index[*vp.first]; 
+        x.row(idx) = g[idx].gas_mixture;
+    }
+
+/*
+    for(size_t i = 0; i < num_vertices(g); i++) {
+        x.row(i) = g[i].gas_mixture;
+        std::cout << g[i].node_num <<  " ";
+    }
+    std::cout << std::endl;
+*/
+    return x;
+}
 
 } // namespace shimmer

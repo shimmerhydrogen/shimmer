@@ -20,9 +20,9 @@
  */
 
 #include <cassert>
-#include "../src/pipe_calculator.h" 
 #include <iostream>
 
+#include "solver/pipe_calculator.h" 
 namespace shimmer{
 
 /* 

@@ -19,32 +19,31 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../src/matlab_manip.h"
+#include "solver/variable.h"
 
 namespace shimmer{
 
+variable::variable(){};
+variable::variable(const vector_t&p,const vector_t&f,const vector_t&l)
+    {
+        pressure = p;
+        flux = f;
+        L_rate = l;
+    };
 
-matrix_t
-build_x_nodes(const infrastructure_graph& g)
+
+vector_t
+variable::make_vector() const
 {
-    size_t num_nodes = num_vertices(g);
-    Eigen::MatrixXd x(num_nodes, 21);
+    size_t num_pipes = flux.size();
+    size_t num_nodes = pressure.size();
 
-    auto index = get(boost::vertex_index, g);
+    vector_t vec(2 * num_nodes + num_pipes);
+    vec.head(num_nodes) = pressure;
+    vec.segment(num_nodes, num_pipes) = flux;
+    vec.tail(num_nodes) = L_rate;
 
-    for (auto vp = vertices(g); vp.first != vp.second; ++vp.first) {
-        auto idx = index[*vp.first]; 
-        x.row(idx) = g[idx].gas_mixture;
-    }
-
-/*
-    for(size_t i = 0; i < num_vertices(g); i++) {
-        x.row(i) = g[i].gas_mixture;
-        std::cout << g[i].node_num <<  " ";
-    }
-    std::cout << std::endl;
-*/
-    return x;
+    return vec;
 }
 
-} // namespace shimmer
+}

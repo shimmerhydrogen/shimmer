@@ -20,9 +20,9 @@
  */
 
 #include <Eigen/SparseLU>
-#include "../src/fluid_solver.h"
 #include <iomanip>
 #include <fstream>
+#include "solver/fluid_solver.h"
 
 namespace shimmer
 {

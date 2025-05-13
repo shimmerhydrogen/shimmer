@@ -20,8 +20,8 @@
  */
 
 #include <cassert>
-#include "../src/conservation_matrices.h"
-#include "../src/matrix_manipulations.h"
+#include "solver/conservation_matrices.h"
+#include "solver/matrix_manipulations.h"
 
 namespace shimmer{
 

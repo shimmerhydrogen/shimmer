@@ -24,11 +24,11 @@
 #include <string>
 #include <iomanip>
 
-#include "../src/infrastructure_graph.h"
-#include "../src/incidence_matrix.h"
-#include "../src/pipe_calculator.h"
+#include "infrastructure_graph.h"
+#include "solver/incidence_matrix.h"
+#include "solver/pipe_calculator.h"
+#include "solver/viscosity.h"
 #include "verify_test.h"
-#include "../src/viscosity.h"
 
 using namespace shimmer;
 using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1>; 

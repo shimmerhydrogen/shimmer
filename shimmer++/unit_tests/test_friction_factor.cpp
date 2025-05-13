@@ -25,10 +25,11 @@
 #include <string>
 #include <iomanip>
 
-#include "../src/infrastructure_graph.h"
-#include "../src/pipe_calculator.h"
+
+#include "solver/pipe_calculator.h"
+#include "solver/viscosity.h"
+#include "infrastructure_graph.h"
 #include "verify_test.h"
-#include "../src/viscosity.h"
 
 using triple_t = std::array<double, 3>;
 using namespace shimmer;

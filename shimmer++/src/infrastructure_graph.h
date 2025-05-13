@@ -24,8 +24,8 @@
 #include <unordered_map>
 #include <boost/graph/adjacency_list.hpp>
 #include <Eigen/Dense>
-#include "../src/boundary.h"
-#include "../src/nonpipe_over_edges.h"
+#include "solver/boundary.h"
+#include "solver/nonpipe_over_edges.h"
 #include "network_elements.h"
 
 namespace shimmer {

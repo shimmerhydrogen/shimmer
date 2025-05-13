@@ -24,12 +24,12 @@
 #include <iostream>
 #include <Eigen/Sparse>
 #include "infrastructure_graph.h"
-#include "../src/geometry_properties.h"
-#include "../src/incidence_matrix.h"
-#include "../src/pipe_calculator.h"
-#include "../src/matlab_manip.h"
-#include "../src/gas_law.h"
-#include "../src/variable.h"
+#include "solver/geometry_properties.h"
+#include "solver/incidence_matrix.h"
+#include "solver/pipe_calculator.h"
+#include "solver/matlab_manip.h"
+#include "solver/gas_law.h"
+#include "solver/variable.h"
 
 namespace shimmer{
 

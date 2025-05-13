@@ -36,17 +36,18 @@
 #include <iomanip>
 #include <utility>
 
-#include "../src/infrastructure_graph.h"
-#include "../src/incidence_matrix.h"
-#include "../src/conservation_matrices.h"
-#include "boundary.h"
+#include "infrastructure_graph.h"
 #include "verify_test.h"
-#include "MATLAB_GERG_functions.hpp"
-#include "../src/fluid_solver.h"
-#include "../src/time_solver.h"
-#include "../src/viscosity.h"
-#include "../src/nonpipe_over_edges.h"
 #include "network_elements.h"
+#include "MATLAB_GERG_functions.hpp"
+#include "solver/incidence_matrix.h"
+#include "solver/conservation_matrices.h"
+#include "solver/boundary.h"
+#include "solver/fluid_solver.h"
+#include "solver/time_solver.h"
+#include "solver/viscosity.h"
+#include "solver/nonpipe_over_edges.h"
+
 
 using triple_t = std::array<double, 3>;
 using namespace shimmer;

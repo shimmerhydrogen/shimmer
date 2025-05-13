@@ -21,13 +21,12 @@
 
 #include "sol/sol.hpp"
 
-#include "incidence_matrix.h"
-#include "conservation_matrices.h"
-#include "fluid_solver.h"
-#include "time_solver.h"
-#include "errors.h"
+#include "solver/incidence_matrix.h"
+#include "solver/conservation_matrices.h"
+#include "solver/fluid_solver.h"
+#include "solver/time_solver.h"
 #include "infra/infrastructure.h"
-
+#include "errors.h"
 struct config {
     std::string     database;
     size_t          steps;

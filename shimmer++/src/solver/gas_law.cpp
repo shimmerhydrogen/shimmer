@@ -19,7 +19,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../src/gas_law.h"
+#include "solver/gas_law.h"
 #include <iomanip>
 
 namespace shimmer{

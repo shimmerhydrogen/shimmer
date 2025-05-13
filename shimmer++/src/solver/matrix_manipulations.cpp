@@ -19,7 +19,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../src/matrix_manipulations.h"
+#include "solver/matrix_manipulations.h"
 
 namespace shimmer{
 

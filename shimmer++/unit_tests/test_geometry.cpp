@@ -25,9 +25,9 @@
 #include <string>
 #include <iomanip>
 
-#include "../src/infrastructure_graph.h"
-#include "../src/incidence_matrix.h"
-#include "../src/geometry_properties.h"
+#include "infrastructure_graph.h"
+#include "solver/incidence_matrix.h"
+#include "solver/geometry_properties.h"
 #include "verify_test.h"
 
 

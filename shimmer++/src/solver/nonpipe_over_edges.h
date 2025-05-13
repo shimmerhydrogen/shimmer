@@ -27,7 +27,7 @@
 #include <cassert>
 #include <algorithm>
 #include <tuple>
-#include "../src/variable.h"
+#include "solver/variable.h"
 #include "network_elements.h"
 
 

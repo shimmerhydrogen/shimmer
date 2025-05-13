@@ -19,8 +19,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../src/boundary.h"
 #include <fstream>
+#include "solver/boundary.h"
 namespace shimmer {
 
 std::ostream& operator <<(std::ostream& os, const constraint_type& o)

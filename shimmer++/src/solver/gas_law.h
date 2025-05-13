@@ -23,7 +23,7 @@
 
 #include <Eigen/Dense>
 #include "MATLAB_GERG_functions.hpp"
-#include "../src/fluid_solver.h"
+#include "solver/fluid_solver.h"
 
 namespace shimmer{
 

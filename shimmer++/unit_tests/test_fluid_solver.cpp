@@ -25,14 +25,13 @@
 #include <string>
 #include <iomanip>
 
-#include "../src/infrastructure_graph.h"
-#include "../src/incidence_matrix.h"
-#include "../src/conservation_matrices.h"
+#include "infrastructure_graph.h"
+#include "solver/incidence_matrix.h"
+#include "solver/conservation_matrices.h"
+#include "solver/fluid_solver.h"
+#include "solver/viscosity.h"
 #include "verify_test.h"
 #include "MATLAB_GERG_functions.hpp"
-#include "../src/fluid_solver.h"
-#include "../src/viscosity.h"
-
 
 using triple_t = std::array<double, 3>;
 

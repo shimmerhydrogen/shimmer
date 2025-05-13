@@ -78,11 +78,11 @@ target_link_libraries(shimmer_dbio ${LINK_LIBS})
 target_include_directories(shimmer_dbio PUBLIC src)
 
 set(SHIMMER_SOURCES
-    src/infrastructure_graph.cpp src/geometry_properties.cpp src/gas_law.cpp
-    src/conservation_matrices.cpp src/incidence_matrix.cpp
-    src/matrix_manipulations.cpp src/pipe_calculator.cpp src/matlab_manip.cpp
-    src/fluid_solver.cpp src/nonpipe_over_edges.cpp
-    src/variable.cpp src/boundary.cpp
+    src/infrastructure_graph.cpp src/solver/geometry_properties.cpp src/solver/gas_law.cpp
+    src/solver/conservation_matrices.cpp src/solver/incidence_matrix.cpp
+    src/solver/matrix_manipulations.cpp src/solver/pipe_calculator.cpp src/solver/matlab_manip.cpp
+    src/solver/fluid_solver.cpp src/solver/nonpipe_over_edges.cpp
+    src/solver/variable.cpp src/solver/boundary.cpp
     src/infra/infrastructure.cpp
 )
 

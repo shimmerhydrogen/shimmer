@@ -19,7 +19,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../src/nonpipe_over_edges.h"
+#include "solver/nonpipe_over_edges.h"
 
 namespace shimmer
 {

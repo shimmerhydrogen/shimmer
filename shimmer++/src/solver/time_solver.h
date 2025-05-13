@@ -27,12 +27,12 @@
 #include <iomanip>
 #include <fstream>
 
-#include "../src/variable.h"
-#include "../src/gas_law.h"
-#include "../src/fluid_solver.h"
-#include "../src/incidence_matrix.h"
-#include "../src/viscosity.h"
-#include "../src/boundary.h"
+#include "solver/variable.h"
+#include "solver/gas_law.h"
+#include "solver/fluid_solver.h"
+#include "solver/incidence_matrix.h"
+#include "solver/viscosity.h"
+#include "solver/boundary.h"
 
 namespace shimmer{
 

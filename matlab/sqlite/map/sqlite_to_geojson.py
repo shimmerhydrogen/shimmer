@@ -15,13 +15,13 @@ transformer = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True) # E
 def convert_nodes(db_path, features):
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
-    cur.execute("SELECT s_number, s_name, s_latitude, s_longitude, s_height FROM stations")
+    cur.execute("SELECT s_number, s_name, s_latitude, s_longitude, s_height, t_type FROM stations")
 
     for row in cur.fetchall():
         lon, lat = transformer.transform(row[2], row[3])
         features.append({
             "type": "Feature",
-            "properties": {"id": row[0], "name": row[1], "height": row[4]},
+            "properties": {"id": row[0], "name": row[1], "height": row[4], "type": row[5]},
             "geometry": {"type": "Point", "coordinates": [lon, lat]}
         })
 
@@ -30,14 +30,14 @@ def convert_nodes(db_path, features):
 def convert_pipes(db_path, features):
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
-    cur.execute("SELECT ROW_NUMBER() OVER() AS NoId, P.p_name, S1.s_latitude, S1.s_longitude, S2.s_latitude, S2.s_longitude FROM pipelines AS P LEFT JOIN stations as S1 ON P.s_from = S1.s_number LEFT JOIN stations as S2 ON P.s_to = S2.s_number")
+    cur.execute("SELECT ROW_NUMBER() OVER() AS NoId, P.p_name, S1.s_latitude, S1.s_longitude, S2.s_latitude, S2.s_longitude, P.p_type FROM pipelines AS P LEFT JOIN stations as S1 ON P.s_from = S1.s_number LEFT JOIN stations as S2 ON P.s_to = S2.s_number")
 
     for row in cur.fetchall():
         origin_lon, origin_lat = transformer.transform(row[2], row[3])
         dest_lon, dest_lat = transformer.transform(row[4], row[5])
         features.append({
             "type": "Feature",
-            "properties": {"id": row[0], "name": row[1]},
+            "properties": {"id": row[0], "name": row[1], "type": row[6]},
             "geometry": {"type": "LineString", "coordinates": [[origin_lon, origin_lat],[dest_lon, dest_lat]]}
         })
 

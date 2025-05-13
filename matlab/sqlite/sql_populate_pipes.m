@@ -56,7 +56,7 @@ end
 
 pipes_parameters = cell(num_pipes, pipes_parameters_tab_num_variables);
 for p = 1:num_pipes
-    pipes_parameters{p, 1} = ['Pipe_', num2str(p)];
+    pipes_parameters{p, 1} = pipes_name{p};
     pipes_parameters{p, 2} = graph.Edges.EndNodes(p, 1);
     pipes_parameters{p, 3} = graph.Edges.EndNodes(p, 2);
 end

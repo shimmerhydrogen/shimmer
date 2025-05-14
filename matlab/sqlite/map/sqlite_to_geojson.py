@@ -61,7 +61,7 @@ def generate_geojson(db_path, json_folder_path):
 
 if __name__ == "__main__":
     db_path = "../graphs/test_inrete/test_inrete.db"
-    db_path = "../graphs/test_sicilia/test_sicilia.db"
+    #db_path = "../graphs/test_sicilia/test_sicilia.db"
     json_path = "."
     generate_geojson(db_path, json_path)
 

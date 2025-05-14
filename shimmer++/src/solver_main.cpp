@@ -20,6 +20,10 @@
  */
 
 #define SOL_ALL_SAFETIES_ON 1
+
+#include <iostream>
+#include <unistd.h>
+
 #include "sol/sol.hpp"
 
 #include "solver/incidence_matrix.h"

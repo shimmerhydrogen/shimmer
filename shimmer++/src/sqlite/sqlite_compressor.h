@@ -60,6 +60,8 @@ struct compressor_profile_sample {
 };
 
 struct setting_compr_stat {
+    int         u_sfrom;
+    int         u_sto;
     int         i_sfrom;
     int         i_sto;
 

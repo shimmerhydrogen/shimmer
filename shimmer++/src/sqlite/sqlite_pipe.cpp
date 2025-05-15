@@ -50,13 +50,21 @@ int load(sqlite3 *db, const optvector<int>& s_u2i,
 
     sqlite3_stmt *stmt = nullptr;
 
-    std::string qlim = "SELECT * FROM pipe_parameters";
+    std::string qlim = "SELECT pipe_parameters.* "
+	    "FROM pipe_parameters INNER JOIN pipelines "
+	    "ON pipe_parameters.p_name = pipelines.p_name "
+		"   AND pipe_parameters.s_from = pipelines.s_from "
+		"   AND pipe_parameters.s_to = pipelines.s_to "
+	    "WHERE pipelines.p_type = ?";
+
     int rc = sqlite3_prepare_v2(db, qlim.c_str(), qlim.length(), &stmt, nullptr);
     if (rc) {
         std::cerr << "SQL error on query '" << qlim << "': ";
         std::cerr << sqlite3_errmsg(db) << std::endl;
         return SHIMMER_DATABASE_PROBLEM;
     }
+
+    rc = sqlite3_bind_int(stmt, 1, +pipe_type::PIPE);
 
     /* Import limits for all the stations */
     while (sqlite3_step(stmt) == SQLITE_ROW) {

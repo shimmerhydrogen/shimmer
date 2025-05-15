@@ -67,13 +67,20 @@ load(sqlite3 *db, const optvector<int>& s_u2i,
 
     sqlite3_stmt *stmt = nullptr;
 
-    std::string qlim = "SELECT * FROM compressor_limits";
+    std::string qlim = "SELECT compressor_limits.* "
+	    "FROM compressor_limits INNER JOIN pipelines "
+	    "ON compressor_limits.p_name = pipelines.p_name "
+		"   AND compressor_limits.s_from = pipelines.s_from "
+		"   AND compressor_limits.s_to = pipelines.s_to "
+	    "WHERE pipelines.p_type = ?";
     int rc = sqlite3_prepare_v2(db, qlim.c_str(), qlim.length(), &stmt, nullptr);
     if (rc) {
         std::cerr << "SQL error on query '" << qlim << "': ";
         std::cerr << sqlite3_errmsg(db) << std::endl;
         return SHIMMER_DATABASE_PROBLEM;
     }
+
+    rc = sqlite3_bind_int(stmt, 1, +pipe_type::COMPR_STAT);
 
     /* Import limits for all the stations */
     while (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -88,6 +95,8 @@ load(sqlite3 *db, const optvector<int>& s_u2i,
             return SHIMMER_DATABASE_PROBLEM;
         }
 
+        setting.u_sfrom = u_from;
+        setting.u_sto = u_to;
         setting.i_sfrom = i_sfrom_opt.value();
         setting.i_sto = i_sto_opt.value();
         setting.max_power = sqlite3_column_double(stmt, +limits_col::max_power);
@@ -128,8 +137,8 @@ load(sqlite3 *db, const optvector<int>& s_u2i,
         }
 
         if (profile.size() == 0) {
-            std::cout << "Warning: pipe from " << setting.i_sfrom << " to ";
-            std::cerr << setting.i_sto << " has ";
+            std::cout << "Warning: compressor (" << setting.u_sfrom << ", ";
+            std::cerr << setting.u_sto << ") has ";
             std::cout << "no pressure profile data defined." << std::endl;
         }
 

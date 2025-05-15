@@ -79,7 +79,7 @@ struct vertex_properties {
         int             inode_num,
         double          ipressure,
         double          imass_flow,
-        double          iheight) : name(iname), /*node_num(inode_num), */
+        double          iheight) : name(iname), i_snum(inode_num),
                             //pressure(ipressure),mass_flow(imass_flow),
                             height(iheight)   {} 
 

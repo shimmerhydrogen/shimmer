@@ -97,6 +97,115 @@ parse_cmdline(int& argc, char**&argv, std::string& luafn, config& cfg)
     return 0;
 }
 
+namespace shimmer {
+
+int save_pressures(const std::string& db_filename, const infrastructure& infra,
+    const matrix_t& pressures)
+{
+    assert(pressures.cols() == infra.s_i2u.size());
+
+    sqlite3 *db = nullptr;
+    int rc = sqlite3_open_v2(db_filename.c_str(), &db, SQLITE_OPEN_READWRITE, nullptr);
+    if(rc) {
+        std::cerr << "Can't open database '" << db_filename << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
+        sqlite3_close(db);
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    sqlite3_stmt *stmt = nullptr;
+
+    std::string q =
+        "INSERT INTO solution_station_pressures VALUES (?, ?, ?)";
+
+    rc = sqlite3_prepare_v2(db, q.c_str(), q.length(), &stmt, nullptr);
+    if (rc) {
+        std::cerr << "SQL error on query '" << q << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+    
+    rc = sqlite3_exec(db, "DELETE FROM solution_station_pressures", nullptr, nullptr, nullptr);
+    rc = sqlite3_exec(db, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
+
+    
+    for (int ts = 0; ts < pressures.rows(); ts++) {
+        for (int i_snum = 0; i_snum < pressures.cols(); i_snum++) {
+            rc = sqlite3_bind_int(stmt, 1, convert_i2u(infra.s_i2u, i_snum));
+            rc = sqlite3_bind_int(stmt, 2, ts);
+            rc = sqlite3_bind_double(stmt, 3, pressures(ts,i_snum));
+            rc = sqlite3_step(stmt);
+            rc = sqlite3_clear_bindings(stmt);
+            rc = sqlite3_reset(stmt);
+        }
+    }
+    rc = sqlite3_exec(db, "COMMIT", nullptr, nullptr, nullptr);
+
+    rc = sqlite3_finalize(stmt);
+
+    sqlite3_close(db);
+    return SHIMMER_SUCCESS;
+}
+
+int save_flowrates(const std::string& db_filename, const infrastructure& infra,
+    const matrix_t& flowrates)
+{
+    assert(flowrates.cols() == num_pipes(infra));
+
+    auto edge_range = boost::edges(infra.graph);
+    auto edge_begin = edge_range.first;
+    auto edge_end = edge_range.second;
+
+    sqlite3 *db = nullptr;
+    int rc = sqlite3_open_v2(db_filename.c_str(), &db, SQLITE_OPEN_READWRITE, nullptr);
+    if(rc) {
+        std::cerr << "Can't open database '" << db_filename << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
+        sqlite3_close(db);
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    sqlite3_stmt *stmt = nullptr;
+
+    std::string q =
+        "INSERT INTO solution_pipe_flowrates VALUES (?, ?, ?, ?, ?)";
+
+    rc = sqlite3_prepare_v2(db, q.c_str(), q.length(), &stmt, nullptr);
+    if (rc) {
+        std::cerr << "SQL error on query '" << q << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+    
+    rc = sqlite3_exec(db, "DELETE FROM solution_pipe_flowrates", nullptr, nullptr, nullptr);
+    rc = sqlite3_exec(db, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
+
+    
+    for (int ts = 0; ts < flowrates.rows(); ts++) {
+        for (int branch_num = 0; branch_num < flowrates.cols(); branch_num++) {
+            auto edge_itor = std::next(edge_begin, branch_num);
+            auto ep = infra.graph[*edge_itor];
+            rc = sqlite3_bind_text(stmt, 1, ep.name.c_str(), -1, nullptr);
+            rc = sqlite3_bind_int(stmt, 2, convert_i2u(infra.s_i2u, ep.i_sfrom));
+            rc = sqlite3_bind_int(stmt, 3, convert_i2u(infra.s_i2u, ep.i_sto));
+            rc = sqlite3_bind_int(stmt, 4, ts);
+            rc = sqlite3_bind_double(stmt, 5, flowrates(ts, branch_num));
+            rc = sqlite3_step(stmt);
+            rc = sqlite3_clear_bindings(stmt);
+            rc = sqlite3_reset(stmt);
+        }
+    }
+    rc = sqlite3_exec(db, "COMMIT", nullptr, nullptr, nullptr);
+
+    rc = sqlite3_finalize(stmt);
+
+    sqlite3_close(db);
+    return SHIMMER_SUCCESS;
+}
+
+
+} //namespace shimmer
+
 int main(int argc, char **argv)
 {
     if (argc < 2) {
@@ -155,8 +264,22 @@ int main(int argc, char **argv)
     time_solver_t ts1(infra.graph, cfg.temperature);
     ts1.initialization(guess, cfg.dt_std, cfg.tol_std, y_nodes, y_pipes);  
     ts1.advance(cfg.dt, cfg.steps, cfg.tol, y_nodes, y_pipes);
-    auto sol  = ts1.solution();
-    std::cout << sol << std::endl;
+    auto sol_full  = ts1.solution_full();
+    std::cout << sol_full << std::endl;
+
+    std::cout << sol_full.rows() << " " << sol_full.cols() << std::endl;
+
+    auto Pbegin = 0;
+    auto Plen = num_stations(infra);
+    shimmer::save_pressures(cfg.database, infra,
+        sol_full.block(0, Pbegin, sol_full.rows(), Plen)
+    );
+
+    auto Lbegin = num_stations(infra);
+    auto Llen = num_pipes(infra);
+    shimmer::save_flowrates(cfg.database, infra,
+        sol_full.block(0, Lbegin, sol_full.rows(), Llen)
+    );
 
     return 0;
 }

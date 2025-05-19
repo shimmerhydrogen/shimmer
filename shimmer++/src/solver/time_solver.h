@@ -49,6 +49,8 @@ class time_solver
     variable var_;
     vector_t area_pipes_;
 
+    matrix_t var_in_time_;
+
     incidence inc_;
     const infrastructure_graph& graph_;
 
@@ -140,10 +142,10 @@ public:
 
         bool unsteady = true;
 
-        matrix_t var_in_time(num_steps +1, num_edges(graph_) + 2 * num_vertices(graph_));
+        var_in_time_ = matrix_t::Zero(num_steps +1, num_edges(graph_) + 2 * num_vertices(graph_));
 
         var_ = var_guess_;
-        var_in_time.row(0) =  var_.make_vector();
+        var_in_time_.row(0) =  var_.make_vector();
 
         double t = 0;
 
@@ -212,7 +214,7 @@ public:
             if(ic == MAX_CONSTRAINT_ITER)
                 std::cout << "ERROR: FAILURE to apply HARD constraints. Max number of iterations has been reached.";
 
-            var_in_time.row(it) =  var_.make_vector();
+            var_in_time_.row(it) =  var_.make_vector();
 
             var_guess_ = var_;
         }
@@ -221,10 +223,10 @@ public:
         if(!vfs.is_open())
             std::cout<<"WARNING: var_in_time file has not been opened." << std::endl;
 
-        for(size_t i = 0; i < var_in_time.rows(); i++)
+        for(size_t i = 0; i < var_in_time_.rows(); i++)
         {
-            for(size_t j = 0; j < var_in_time.cols(); j++)
-                vfs << std::setprecision(16) << var_in_time(i,j) << " ";
+            for(size_t j = 0; j < var_in_time_.cols(); j++)
+                vfs << std::setprecision(16) << var_in_time_(i,j) << " ";
             vfs << std::endl;
         }
         vfs.close();
@@ -250,6 +252,7 @@ public:
 
     vector_t solution(){return var_.make_vector();}
     vector_t guess(){return var_guess_.make_vector();}
+    matrix_t solution_full() { return var_in_time_; }
 };
 
 }

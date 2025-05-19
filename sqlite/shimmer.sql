@@ -361,10 +361,25 @@ create table gas_mass_fractions (
 
 
 
+create table solution_station_pressures (
+    s_number        INTEGER NOT NULL,
+    timestep        INTEGER NOT NULL,
+    pressure        REAL DEFAULT 0.0 NOT NULL,
+    
+    FOREIGN KEY (s_number)
+        REFERENCES stations(s_number)
+);
 
+create table solution_pipe_flowrates (
+    p_name      TEXT NOT NULL,
+    s_from      INTEGER NOT NULL,
+    s_to        INTEGER NOT NULL,
+    timestep    INTEGER NOT NULL,
+    flowrate    REAL DEFAULT 0.0 NOT NULL,
 
-
-
+    FOREIGN KEY (p_name, s_from, s_to)
+        REFERENCES pipelines(p_name, s_from, s_to)
+);
 
 
 

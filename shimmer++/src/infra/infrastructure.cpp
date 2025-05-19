@@ -348,6 +348,9 @@ load_pipelines(sqlite3 *db, infrastructure& infra)
         int type = sqlite3_column_int(stmt, 3);
         
         edge_properties ep;
+        ep.name = name;
+        ep.i_sfrom = from_in;
+        ep.i_sto = to_in;
         ep.type = static_cast<pipe_type>(type);
         ep.branch_num = branch_num++;
 

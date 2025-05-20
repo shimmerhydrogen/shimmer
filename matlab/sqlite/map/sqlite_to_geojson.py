@@ -11,6 +11,7 @@ from pyproj import Transformer
 # 6706	RDN2008	Geographic (Lat/Lon)	Replacement for Monte Mario
 
 transformer = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True) # EU standard
+transformer = Transformer.from_crs("EPSG:4326", "EPSG:4326", always_xy=True) # WGS 84
 
 def convert_nodes(db_path, features):
     conn = sqlite3.connect(db_path)
@@ -60,7 +61,8 @@ def generate_geojson(db_path, json_folder_path):
     write_geojson(json_folder_path + "/pipes.json", pipes)
 
 if __name__ == "__main__":
-    db_path = "../graphs/test_inrete/test_inrete.db"
+    db_path = "../graphs/test_gasco/test_gasco.db"
+    #db_path = "../graphs/test_inrete/test_inrete.db"
     #db_path = "../graphs/test_sicilia/test_sicilia.db"
     json_path = "."
     generate_geojson(db_path, json_path)

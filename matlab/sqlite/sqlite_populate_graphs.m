@@ -57,12 +57,47 @@ assert(isequal(graph.Edges.FLOWRATES(:, 1), graph_test.Edges.FLOWRATES));
 
 %% test_gasco
 
-graph_path = fullfile(pwd, "graphs/test_gasco/GasscoGrid.mat");
+graph_path = fullfile(pwd, "graphs/test_gasco/gassco_res_small.mat");
+graph = load(graph_path);
+graph = graph.gasNet_Res;
+graph.Nodes.Nodes_ID =  graph.Nodes.Nodes_ID';
+graph.Nodes.coordinates_XY = [
+    4.8419054048323495, 60.55916692208016
+    5.534474571003653, 59.38768321539189
+    2.4631164141539705, 57.77672651248003
+    7.399360295413453, 53.67057855404977
+    2.3139222514284628, 51.03760755736377
+    ];
+
+
+
+db_path = fullfile(pwd, "graphs/test_gasco/test_gasco.db");
+
+if exist(db_path, 'file') == 2
+  delete(db_path);
+end
+
+sql_create(db_path, db_schema);
+sql_populate_from_graph(db_path, graph);
+graph_test = graph_populate_from_sql(db_path);
+assert(isequal(graph.Nodes.Nodes_ID, graph_test.Nodes.Nodes_ID));
+assert(isequal(graph.Nodes.Type, graph_test.Nodes.Type));
+assert(isequal(graph.Nodes.PRESSURES(:, 1), graph_test.Nodes.PRESSURES));
+assert(isequal(graph.Nodes.G_EXE(:, 1), graph_test.Nodes.G_EXE));
+assert(isequal(graph.Edges.EndNodes, graph_test.Edges.EndNodes));
+assert(isequal(graph.Edges.Length, graph_test.Edges.Length));
+assert(isequal(graph.Edges.Diameter, graph_test.Edges.Diameter));
+assert(isequal(graph.Edges.Epsi, graph_test.Edges.Epsi));
+assert(isequal(graph.Edges.FLOWRATES(:, 1), graph_test.Edges.FLOWRATES));
+
+%% test_gasco_refined
+
+graph_path = fullfile(pwd, "graphs/test_gasco_refined/GasscoGrid.mat");
 graph = load(graph_path);
 graph = graph.gasNet_Res;
 graph.Nodes.Nodes_ID =  graph.Nodes.Nodes_ID';
 graph.Nodes.Type =  graph.Nodes.Type';
-db_path = fullfile(pwd, "graphs/test_gasco/test_gasco.db");
+db_path = fullfile(pwd, "graphs/test_gasco_refined/test_gasco.db");
 
 if exist(db_path, 'file') == 2
   delete(db_path);

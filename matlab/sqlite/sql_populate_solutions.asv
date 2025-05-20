@@ -1,0 +1,28 @@
+function [] = sql_populate_solutions(db_path, graph)
+        
+num_nodes = size(graph.Nodes.Nodes_ID, 1);
+
+if (num_nodes < 2)
+    return;
+end
+
+num_variables = 3;
+stations_tab_variables_name = ["s_number", "s_name", "t_type"];
+
+stations = cell(num_nodes, num_variables);
+for s = 1:num_nodes
+    stations{s, 1} = graph.Nodes.Nodes_ID(s);
+    stations{s, 2} =  ['Station_', num2str(s)];
+    stations{s, 3} = stations_type(s);
+end
+
+stations_tab = cell2table(stations, ...
+    "VariableNames", stations_tab_variables_name );
+
+conn = sqlite(db_path, 'connect');
+sqlwrite(conn, "stations", stations_tab);
+close(conn);
+
+num_nodes_converted = size(stations_tab, 1);
+
+end

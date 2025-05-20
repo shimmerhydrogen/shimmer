@@ -20,4 +20,10 @@ sql_populate_limits(db_path, graph);
 %% Gas Fraction
 sql_populate_stations_gass_mass_fractions(db_path, graph);
 
+%% Solutions
+if true 
+    warning('export solutions...');
+    sql_populate_solutions(db_path, graph);
+end
+
 end

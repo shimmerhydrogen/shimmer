@@ -244,15 +244,18 @@ gerg_aga::speed_of_sound(linearized_fluid_solver *lfs)
     vector_t T_nodes = vector_t::Zero(lfs->num_nodes());
     vector_t T_pipes = vector_t::Zero(lfs->num_pipes());
 
-    vector_t Z_nodes = compute( lfs->temperature_nodes(),
+    T_nodes.setConstant(lfs->temperature());
+    T_pipes.setConstant(lfs->temperature());
+
+    vector_t Z_nodes = compute( T_nodes,
                                 lfs->pressure_nodes(),
                                 lfs->x_nodes());
-    vector_t Z_pipes = compute( lfs->temperature_pipes(),
+    vector_t Z_pipes = compute( T_pipes,
                                 lfs->pressure_pipes(),
                                 lfs->x_pipes());
 
-    vector_t c2_nodes = Z_nodes.array() * R_nodes_.array() * lfs->temperature_nodes().array(); 
-    vector_t c2_pipes = Z_pipes.array() * R_pipes_.array() * lfs->temperature_pipes().array();
+    vector_t c2_nodes = Z_nodes.array() * R_nodes_.array() * lfs->temperature(); 
+    vector_t c2_pipes = Z_pipes.array() * R_pipes_.array() * lfs->temperature();
 
     compute_density(lfs, c2_pipes);
 

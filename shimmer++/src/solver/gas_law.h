@@ -145,8 +145,6 @@ typedef gerg_data::Thermodynamic_properties<vector_t> gerg_aga_thermo_props_t;
 
 class gerg_aga: public equation_of_state
 {
-    vector_t mmi_gerg;
-
     double tolerance_;
 
 public:

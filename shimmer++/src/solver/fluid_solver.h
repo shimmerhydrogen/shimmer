@@ -56,9 +56,6 @@ class linearized_fluid_solver
     vector_t c2_nodes_;
     vector_t c2_pipes_;
 
-    vector_t T_nodes_;
-    vector_t T_pipes_;
-
     matrix_t x_nodes_;
     matrix_t x_pipes_;
     vector_t press_pipes_;
@@ -136,8 +133,6 @@ public:
     inline size_t num_pipes() const {return num_pipes_;};
 
     inline double temperature() const {return Tm_;};
-    inline vector_t temperature_nodes() const {return T_nodes_;};
-    inline vector_t temperature_pipes() const {return T_pipes_;};
     inline vector_t pressure_nodes() const {return var_.pressure;};
     inline vector_t pressure_pipes() const {return press_pipes_;};
     inline matrix_t x_nodes() const {return x_nodes_;};

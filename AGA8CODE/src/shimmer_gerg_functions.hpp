@@ -35,7 +35,9 @@ namespace gerg_functions
     }
     // *********************************************************
     void 
-    molar_mass(const Eigen::MatrixXd &mole_frac, Eigen::VectorXd &Mm);
+    molar_mass(const Eigen::MatrixXd &mole_frac, 
+               const double& tolerance,
+               Eigen::VectorXd &Mm);
     // *********************************************************
     gerg_data::Reducing_parameters<double> 
     reducing_parameters(const std::vector<double>& x,

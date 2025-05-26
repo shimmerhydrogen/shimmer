@@ -5,11 +5,16 @@ namespace shimmer_gerg
 namespace gerg_functions
 {
 // *********************************************************
-void molar_mass(const Eigen::MatrixXd &mole_frac, Eigen::VectorXd &Mm)
+void molar_mass(const Eigen::MatrixXd &x,                 
+                const double& tolerance,
+                Eigen::VectorXd &Mm)
 {
-    Mm = Eigen::VectorXd::Zero(mole_frac.rows());
-    for(size_t iR = 0; iR <= mole_frac.rows(); iR++)
-        MolarMassGERG(mole_frac.row(iR), Mm(iR));
+    Mm = Eigen::VectorXd::Zero(x.rows());
+    for(auto iR = 0; iR < x.rows(); iR++)
+    {
+        const auto x_GERG = create_x_GERG(x.row(iR), tolerance);        
+        MolarMassGERG(x_GERG, Mm(iR));
+    }
 }
 
 // *********************************************************
@@ -151,6 +156,7 @@ thermodynamic_properties(const Eigen::VectorXd& temperature,
     for(auto iR = 0; iR <  x.rows(); iR++)
     {
         const auto x_GERG = create_x_GERG(x.row(iR), tolerance);
+        /*
         std::cout << "x_row: "<< x.row(iR) << std::endl;
         std::cout << "temp : "<< temperature[iR] << std::endl;
         std::cout << "press: "<< pressure[iR]*PressureScaling<< " [kPa]" << std::endl;
@@ -160,7 +166,7 @@ thermodynamic_properties(const Eigen::VectorXd& temperature,
             std::cout << " "<< xv; 
         std::cout<<std::endl;
         std::cout << "tol : "<< tolerance << std::endl;
-
+        */
         int ierr = 0;
         std::string herr;
         DensityGERG(static_cast<int>(type),
@@ -196,7 +202,7 @@ thermodynamic_properties(const Eigen::VectorXd& temperature,
 
         thermodynamic_properties.gamma[iR] = thermodynamic_properties.Cp[iR] / thermodynamic_properties.Cv[iR];
 
-        std::cout << "Z : "<<  thermodynamic_properties.Z[iR] << std::endl;
+        //std::cout << "Z : "<<  thermodynamic_properties.Z[iR] << std::endl;
     }
     return thermodynamic_properties;
 }

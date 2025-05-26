@@ -266,8 +266,8 @@ gerg_aga::compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes)
     mm_nodes_ = vector_t::Zero(y_nodes.rows()); 
     mm_pipes_ = vector_t::Zero(y_pipes.rows()); 
 
-    shimmer_gerg::gerg_functions::molar_mass(y_nodes, mm_nodes_);
-    shimmer_gerg::gerg_functions::molar_mass(y_pipes, mm_pipes_);
+    shimmer_gerg::gerg_functions::molar_mass(y_nodes, tolerance_, mm_nodes_);
+    shimmer_gerg::gerg_functions::molar_mass(y_pipes, tolerance_, mm_pipes_);
 
     R_nodes_= Runiversal_ * mm_nodes_.cwiseInverse();     
     R_pipes_= Runiversal_ * mm_pipes_.cwiseInverse();     

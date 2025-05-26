@@ -202,11 +202,69 @@ RR_matlab()
     return !(RRp_pass & RRn_pass);
 }
 
+
+bool
+gerg_aga8code()
+{
+    double Temp = 293.15;
+    size_t num_pipes = 3;
+    size_t num_nodes = 3;
+
+    std::vector<double> ref_c2_nodes = {138267.2930151191,
+                                        138578.7460692530,
+                                        138546.3842273756};
+
+    std::vector<double> ref_c2_pipes = {138422.1905008311,
+                                        138406.1731482413,
+                                        138562.5561693802};
+
+    vector_t flux (num_pipes), flux_old(num_pipes);
+    vector_t pressure_pipes (num_pipes), pressure_nodes(num_nodes);
+    vector_t temperature_nodes(num_nodes), temperature_pipes(num_pipes);
+
+    pressure_nodes << 5101325.0, 4977209.550248852, 4990077.876609823;     
+    pressure_pipes << 5039522.018589198, 5045905.835430760, 4983646.482384357;
+
+    temperature_pipes.setConstant(Temp);
+    temperature_nodes.setConstant(Temp);
+
+    
+    infrastructure_graph graph;
+    make_init_graph(graph);
+
+    incidence inc(graph);
+
+    matrix_t  x_nodes = build_x_nodes(graph);
+    matrix_t  x_pipes = inc.matrix_in().transpose() * x_nodes;
+
+    gerg_aga gerg_eos; 
+
+    gerg_eos.compute_molar_mass(x_nodes, x_pipes);
+
+    vector_t RRp = gerg_eos.Rgas_pipes(); 
+    vector_t RRn = gerg_eos.Rgas_nodes(); 
+
+    auto Z_pipes = gerg_eos.compute(temperature_pipes, pressure_pipes, x_pipes);
+    auto Z_nodes = gerg_eos.compute(temperature_nodes, pressure_nodes, x_nodes);
+
+    vector_t c2_pipes = Z_pipes.array() * RRp.array() * temperature_pipes.array(); 
+    vector_t c2_nodes = Z_nodes.array() * RRn.array() * temperature_nodes.array(); 
+
+    std::cout << __FILE__ << std::endl; 
+    bool c2n_pass = verify_test("Speed of sound at nodes", c2_nodes, ref_c2_nodes);
+    bool c2p_pass = verify_test("Speed of sound in pipes", c2_pipes, ref_c2_pipes);
+          
+
+    return !(c2n_pass & c2p_pass);
+}
+
+
 int main()
 {
     bool pass_RR = RR_matlab();
     bool pass_matlab = gerg_matlab();
+    bool pass_aga8cd = gerg_aga8code();
 
     
-    return !(pass_matlab && pass_RR);
+    return !(pass_matlab && pass_RR && pass_aga8cd);
 }

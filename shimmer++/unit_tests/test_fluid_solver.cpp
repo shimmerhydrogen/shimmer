@@ -188,7 +188,6 @@ int main()
     auto mu = viscosity<viscosity_type::Kukurugya>(temperature, graph); 
 
     linearized_fluid_solver lfs(0, unsteady,tolerance, dt,temperature, mu,inc, graph);
-    //lfs.run(area_pipes, flux_ext, var, var, &gerg_eos);
     lfs.run(area_pipes, var, var, &gerg_eos);
     auto sol = lfs.get_variable().make_vector();    
 

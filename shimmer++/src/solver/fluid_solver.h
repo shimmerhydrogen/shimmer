@@ -116,7 +116,6 @@ public:
 
     bool
     run(const vector_t& area_pipes,
-        //const vector_t& flux_ext,
         const variable& var_guess,
         const variable& var_time,
         equation_of_state *eos,
@@ -126,7 +125,6 @@ public:
     void check_soft_constraints(size_t step);
     bool check_constraints(size_t step);
     bool check_hard_controls(size_t step);
-    //bool check_soft_controls(size_t step);
     bool check_controls(size_t step);
 
     inline size_t num_nodes() const {return num_nodes_;};

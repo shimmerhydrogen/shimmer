@@ -41,7 +41,7 @@
 // Kunz, O., Klimeck, R., Wagner, W., and Jaeschke, M.
 // The GERG-2004 Wide-Range Equation of State for Natural Gases and Other Mixtures
 // GERG Technical Monograph 15
-// Fortschr.-Ber. VDI, Reihe 6, Nr. 557, VDI Verlag, Düsseldorf, 2007.
+// Fortschr.-Ber. VDI, Reihe 6, Nr. 557, VDI Verlag, Dï¿½sseldorf, 2007.
 // http://www.gerg.eu/public/uploads/files/publications/technical_monographs/tm15_04.pdf
 
 // Subroutines contained here for property calculations:
@@ -117,6 +117,13 @@ void MolarMassGERG(const std::vector<double> &x, double &Mm)
     for (int i = 1; i <= NcGERG; ++i){
         Mm += x[i] * MMiGERG[i];
     }
+}
+
+void MolarMassGERG(const Eigen::VectorXd &x, double &Mm)
+{
+    Mm = 0;
+    for(size_t i = 0; i <= NcGERG; i++)
+        Mm +=  x(i) * MMiGERG[i]; 
 }
 
 void PressureGERG(const double T, const double D, const std::vector<double> &x, double &P, double &Z)

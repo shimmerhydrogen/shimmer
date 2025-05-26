@@ -4,140 +4,59 @@
 #include "GERG2008.h"
 #include "shimmer_gerg_data.hpp"
 #include <stdexcept>
+#include <Eigen/Dense>
+#include <vector>
 
 namespace shimmer_gerg
 {
-  namespace gerg_functions
-  {
+namespace gerg_functions
+{
     static const unsigned int GERG_num_componets = 21;
     // *********************************************************
-    template<typename x_type,
-             typename value_type>
-    auto create_x_GERG(const x_type& x,
-                       const value_type& tolerance)
+    template <typename vector_type>
+    std::vector<double> 
+    create_x_GERG(const vector_type& x,
+                  const double& tolerance)
     {
-      using size_type = typename x_type::size_type;
+        assert(x.size() == GERG_num_componets);
 
-      assert(static_cast<size_type>(x.size()) == GERG_num_componets);
+        std::vector<double> x_GERG(GERG_num_componets + 1);
 
-      std::vector<double> x_GERG(GERG_num_componets + 1);
+        x_GERG[0] = 0.0;
+        for (unsigned int i = 0; i < GERG_num_componets; ++i)
+            x_GERG[i + 1] = std::abs(x[i]) > tolerance ? x[i] : 0.0;
 
-      x_GERG[0] = 0.0;
-      for (unsigned int i = 0; i < GERG_num_componets; ++i)
-        x_GERG[i + 1] = abs(x[i]) > tolerance ? x[i] : 0.0;
-
-      return x_GERG;
+        return x_GERG;
     }
     // *********************************************************
     inline void setup_GERG() noexcept
     {
-      SetupGERG();
+        SetupGERG();
     }
     // *********************************************************
-    template<typename x_type,
-             typename value_type>
-    auto reducing_parameters(const x_type& x,
-                             const value_type& tolerance)
-    {
-      using size_type = typename x_type::size_type;
-
-      assert(static_cast<size_type>(x.size()) == GERG_num_componets);
-
-      const auto x_GERG = create_x_GERG(x, tolerance);
-      gerg_data::Reducing_parameters<value_type> reducing_parameters;
-
-      reducing_parameters.Tr = value_type();
-      reducing_parameters.Dr = value_type();
-
-      ReducingParametersGERG(x_GERG,
-                             reducing_parameters.Tr,
-                             reducing_parameters.Dr);
-
-      return reducing_parameters;
-    }
+    void 
+    molar_mass(const Eigen::MatrixXd &mole_frac, Eigen::VectorXd &Mm);
     // *********************************************************
-    template<typename x_type,
-             typename value_type>
-    auto pseudo_critical_point(const x_type& x,
-                               const value_type& tolerance)
-    {
-      using size_type = typename x_type::size_type;
-
-      assert(static_cast<size_type>(x.size()) == GERG_num_componets);
-
-      gerg_data::Pseudo_critical_point<value_type> pseudo_critical_point;
-
-      pseudo_critical_point.Tcx = value_type();
-      pseudo_critical_point.Vcx = value_type();
-      pseudo_critical_point.Dcx = value_type();
-
-      const auto x_GERG = create_x_GERG(x, tolerance);
-      PseudoCriticalPointGERG(x_GERG,
-                              pseudo_critical_point.Tcx,
-                              pseudo_critical_point.Dcx);
-
-      if (pseudo_critical_point.Dcx > tolerance)
-        pseudo_critical_point.Vcx = 1.0 / pseudo_critical_point.Dcx;
-
-      return pseudo_critical_point;
-    }
+    gerg_data::Reducing_parameters<double> 
+    reducing_parameters(const std::vector<double>& x,
+                        const double& tolerance);
     // *********************************************************
-    template<typename x_type,
-             typename value_type>
-    auto thermodynamic_properties(const x_type& x,
-                                  const gerg_data::Thermodynamic_properties_parameters<value_type>& input_properties,
-                                  const value_type& tolerance)
-    {
-      using size_type = typename x_type::size_type;
-
-      assert(static_cast<size_type>(x.size()) == GERG_num_componets);
-      const auto x_GERG = create_x_GERG(x, tolerance);
-
-      gerg_data::Thermodynamic_properties<value_type> thermodynamic_properties;
-      thermodynamic_properties.D = value_type();
-      thermodynamic_properties.P = value_type();
-      thermodynamic_properties.Z = value_type();
-      thermodynamic_properties.gamma = value_type();
-
-      int ierr = 0;
-      std::string herr;
-      DensityGERG(static_cast<int>(input_properties.Type),
-                  input_properties.T,
-                  input_properties.P,
-                  x_GERG,
-                  thermodynamic_properties.D,
-                  ierr,
-                  herr);
-
-      if (ierr != 0)
-        throw std::runtime_error(herr);
-
-      PropertiesGERG(input_properties.T,
-                     thermodynamic_properties.D,
-                     x_GERG,
-                     thermodynamic_properties.P,
-                     thermodynamic_properties.Z,
-                     thermodynamic_properties.dPdD,
-                     thermodynamic_properties.dPdD2,
-                     thermodynamic_properties.d2PdTD,
-                     thermodynamic_properties.dPdT,
-                     thermodynamic_properties.U,
-                     thermodynamic_properties.H,
-                     thermodynamic_properties.S,
-                     thermodynamic_properties.Cv,
-                     thermodynamic_properties.Cp,
-                     thermodynamic_properties.W,
-                     thermodynamic_properties.G,
-                     thermodynamic_properties.JT,
-                     thermodynamic_properties.Kappa,
-                     thermodynamic_properties.A);
-
-      thermodynamic_properties.gamma = thermodynamic_properties.Cp / thermodynamic_properties.Cv;
-
-      return thermodynamic_properties;
-    }
+    gerg_data::Pseudo_critical_point<double> 
+    pseudo_critical_point(const std::vector<double>& x,
+                          const double& tolerance);
     // *********************************************************
-  }
+    gerg_data::Thermodynamic_properties<double> 
+    thermodynamic_properties(const std::vector<double>& x,
+                             const gerg_data::Thermodynamic_properties_parameters<double>& input_properties,
+                             const double& tolerance);
+    // *********************************************************
+    gerg_data::Thermodynamic_properties<Eigen::VectorXd> 
+    thermodynamic_properties(const Eigen::VectorXd& temperature,
+                             const Eigen::VectorXd& pressure,
+                             const Eigen::MatrixXd& x,
+                             const gerg_data::Thermodynamic_properties_parameters<double>::Types & type,
+                             const double& tolerance);
+}
 }
 
 #endif

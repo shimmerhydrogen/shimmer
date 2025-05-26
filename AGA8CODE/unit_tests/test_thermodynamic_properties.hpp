@@ -22,6 +22,13 @@ namespace shimmer_gerg
       const auto mol_frac = gerg_mock::mol_frac();
 
       const auto x = gerg_mock::x();
+      const Eigen::MatrixXd x_eigen = gerg_mock::x_eigen();
+      Eigen::VectorXd T_eigen = Eigen::VectorXd(1);
+      Eigen::VectorXd P_eigen = Eigen::VectorXd(1);
+      T_eigen(0) = gerg_mock::T();
+      P_eigen(0) = gerg_mock::P();
+
+      const auto type = gerg_data::Thermodynamic_properties_parameters<double>::Types::Gas_phase;
 
       shimmer_gerg::gerg_functions::setup_GERG();
 
@@ -29,6 +36,13 @@ namespace shimmer_gerg
       const auto thermodynamic_properties = shimmer_gerg::gerg_functions::thermodynamic_properties(x,
                                                                                                    input_properties,
                                                                                                    tolerance);
+      const auto thermodynamic_properties_eigen
+                       = shimmer_gerg::gerg_functions::thermodynamic_properties(T_eigen,
+                                                                                P_eigen, 
+                                                                                x_eigen,
+                                                                                type,
+                                                                                tolerance);
+
       const auto expected_thermodynamic_properties = gerg_mock::thermodynamic_properties();
 
       ASSERT_DOUBLE_EQ_TOL(expected_thermodynamic_properties.D,
@@ -42,6 +56,19 @@ namespace shimmer_gerg
                            tolerance);
       ASSERT_DOUBLE_EQ_TOL(expected_thermodynamic_properties.gamma,
                            thermodynamic_properties.gamma,
+                           tolerance);
+
+      ASSERT_DOUBLE_EQ_TOL(expected_thermodynamic_properties.D,
+                           thermodynamic_properties_eigen.D(0),
+                           tolerance);
+      ASSERT_DOUBLE_EQ_TOL(expected_thermodynamic_properties.Z,
+                           thermodynamic_properties_eigen.Z(0),
+                           tolerance);
+      ASSERT_DOUBLE_EQ_TOL(expected_thermodynamic_properties.P,
+                           thermodynamic_properties_eigen.P(0),
+                           tolerance);
+      ASSERT_DOUBLE_EQ_TOL(expected_thermodynamic_properties.gamma,
+                           thermodynamic_properties_eigen.gamma(0),
                            tolerance);
 
       return EXIT_SUCCESS;

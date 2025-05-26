@@ -22,6 +22,15 @@ namespace shimmer_gerg
         return x;
       }
       // *********************************************************
+      Eigen::MatrixXd x_eigen()
+      {
+        Eigen::MatrixXd x = Eigen::MatrixXd::Zero(1,21);
+        x(0,0) = 0.8;
+        x(0,2) = 0.2;
+
+        return x;
+      }
+      // *********************************************************
       auto filter()
       {
         std::vector<unsigned int> filter = { 0, 2 };
@@ -73,7 +82,7 @@ namespace shimmer_gerg
       // *********************************************************
       auto P()
       {
-        return 5.101325000000000e+06;
+        return 5.101325000000000e+06 * 1e3; // [Pa]
       }
       // *********************************************************
       auto alpha_r()
@@ -111,12 +120,36 @@ namespace shimmer_gerg
         gerg_data::Thermodynamic_properties<double> thermodynamic_properties;
         thermodynamic_properties.D = 4.853135975758211e+01;
         thermodynamic_properties.Z = 4.312568035613069e+01;
-        thermodynamic_properties.P = 5.101324999999521e+06;
+        thermodynamic_properties.P = 5.101324999999521e+06; // [kPa]
         thermodynamic_properties.gamma = 1.1714382285678768e+00;
         thermodynamic_properties.Cp = 5.2298638227860138e+01;
         thermodynamic_properties.Cv = 4.4644810927672225e+01;
         thermodynamic_properties.dPdD = 5.3312067323673121e+05;
         thermodynamic_properties.dPdT = 5.7257133461214125e+03;
+
+        return thermodynamic_properties;
+      }
+      // *********************************************************
+      auto thermodynamic_properties_eigen()
+      {
+        gerg_data::Thermodynamic_properties<Eigen::VectorXd> thermodynamic_properties;
+        thermodynamic_properties.D = Eigen::VectorXd::Zero(1);
+        thermodynamic_properties.Z = Eigen::VectorXd::Zero(1);
+        thermodynamic_properties.P = Eigen::VectorXd::Zero(1);
+        thermodynamic_properties.gamma= Eigen::VectorXd::Zero(1);
+        thermodynamic_properties.Cp   = Eigen::VectorXd::Zero(1);
+        thermodynamic_properties.Cv   = Eigen::VectorXd::Zero(1);
+        thermodynamic_properties.dPdD = Eigen::VectorXd::Zero(1);
+        thermodynamic_properties.dPdT = Eigen::VectorXd::Zero(1);
+
+        thermodynamic_properties.D[0] = 4.853135975758211e+01;
+        thermodynamic_properties.Z[0] = 4.312568035613069e+01;
+        thermodynamic_properties.P[0] = 5.101324999999521e+06 * 1.e3;// [Pa]
+        thermodynamic_properties.gamma[0]= 1.1714382285678768e+00;
+        thermodynamic_properties.Cp[0]   = 5.2298638227860138e+01;
+        thermodynamic_properties.Cv[0]   = 4.4644810927672225e+01;
+        thermodynamic_properties.dPdD[0] = 5.3312067323673121e+05;
+        thermodynamic_properties.dPdT[0] = 5.7257133461214125e+03;
 
         return thermodynamic_properties;
       }

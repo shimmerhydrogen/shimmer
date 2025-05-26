@@ -25,6 +25,11 @@ add_subdirectory(deps/gerg)
 set(LINK_LIBS ${LINK_LIBS} GERG::GERG)
 
 #######################################################################
+# AGA8CODE (gerg)
+find_package(SHMGERG REQUIRED)
+set(LINK_LIBS ${LINK_LIBS} SHMGERG::SHMGERG)
+
+#######################################################################
 # SQLite
 find_package(SQLite3 REQUIRED)
 set(LINK_LIBS ${LINK_LIBS} SQLite::SQLite3)

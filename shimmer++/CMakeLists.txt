@@ -41,11 +41,14 @@ set(LINK_LIBS ${LINK_LIBS} Threads::Threads)
 
 #######################################################################
 # Qt stuff
-#set(CMAKE_AUTOMOC ON)
-#set(CMAKE_AUTORCC ON)
-#set(CMAKE_AUTOUIC ON)
-#find_package(Qt6 COMPONENTS Core Widgets REQUIRED)
-#set(LINK_LIBS ${LINK_LIBS} Qt6::Core Qt6::Widgets)
+find_package(Qt6 COMPONENTS Core Widgets)
+if (Qt6Core_FOUND AND Qt6Widgets_FOUND)
+    set(QT_LINK_LIBS ${QT_LINK_LIBS} Qt6::Core Qt6::Widgets)
+    set(CMAKE_AUTOMOC ON)
+    set(CMAKE_AUTORCC ON)
+    set(CMAKE_AUTOUIC ON)
+    set(HAVE_QT TRUE)
+endif()
 
 #######################################################################
 # Boost stuff
@@ -107,6 +110,13 @@ target_include_directories(ldb PUBLIC src)
 add_executable(solver src/solver_main.cpp)
 target_link_libraries(solver shimmer ${LINK_LIBS})
 target_include_directories(solver PUBLIC src)
+
+if (HAVE_QT)
+    add_executable(solver_gui src/solver_guimain.cpp
+        src/gui/CShimmerMainWindow.cpp)
+    target_link_libraries(solver_gui shimmer ${LINK_LIBS} ${QT_LINK_LIBS})
+    target_include_directories(solver_gui PUBLIC src)
+endif()
 
 if (BUILD_SHIMMER_UNIT_TESTS)
     include(CTest)

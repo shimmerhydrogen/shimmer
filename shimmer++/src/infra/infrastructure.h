@@ -23,6 +23,11 @@
 
 #include "sqlite/sqlite.hpp"
 #include "infrastructure_graph.h"
+#include "solver/incidence_matrix.h"
+#include "solver/conservation_matrices.h"
+#include "solver/fluid_solver.h"
+#include "solver/time_solver.h"
+#include "errors.h"
 
 namespace shimmer {
 
@@ -52,5 +57,22 @@ int load(const std::string db_filename, infrastructure& infra);
 int num_stations(const infrastructure&);
 int num_pipes(const infrastructure&);
 variable initial_guess(const infrastructure&);
+
+int save_pressures(const std::string&, const infrastructure&, const matrix_t&);
+int save_flowrates(const std::string&, const infrastructure&, const matrix_t&);
+
+struct config {
+    std::string     database;
+    size_t          steps;
+    double          dt_std;
+    double          dt;
+    double          temperature;
+    double          tol_std;
+    double          tol;
+
+    config();
+};
+
+int launch_solver(const config&);
 
 } //namespace shimmer

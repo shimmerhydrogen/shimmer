@@ -21,6 +21,7 @@
 
 #include "solver/gas_law.h"
 #include <iomanip>
+#include "shimmer_gerg_functions.hpp"
 
 namespace shimmer{
 
@@ -198,6 +199,75 @@ gerg::compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes)
 
     for(size_t i = 0; i <= 20; i++)
         mm_pipes_ +=  mmi_gerg(i) * y_pipes.col(gas_name[i]); 
+
+    R_nodes_= Runiversal_ * mm_nodes_.cwiseInverse();     
+    R_pipes_= Runiversal_ * mm_pipes_.cwiseInverse();     
+}
+
+// ----------------------------------------------------------------------------
+//                    GERG equation of state AGA8CODE
+// ----------------------------------------------------------------------------
+
+gerg_aga::gerg_aga()
+{
+    tolerance_ = 1.e-12;
+
+    shimmer_gerg::gerg_functions::setup_GERG();
+}
+
+
+void
+gerg_aga::initialization(linearized_fluid_solver *lfs)
+{}
+
+
+vector_t 
+gerg_aga::compute( const vector_t& temperature,
+                   const vector_t& pressure,
+                   const matrix_t& x)
+{
+    auto type = gerg_aga_thermo_params_t::Types::Gas_phase;
+    
+    auto eos =  shimmer_gerg::gerg_functions::thermodynamic_properties(
+                        temperature,
+                        pressure, //[Pa]
+                        x,
+                        type,
+                        tolerance_);
+    return eos.Z;
+}
+
+
+std::pair<vector_t, vector_t>
+gerg_aga::speed_of_sound(linearized_fluid_solver *lfs)
+{
+    vector_t T_nodes = vector_t::Zero(lfs->num_nodes());
+    vector_t T_pipes = vector_t::Zero(lfs->num_pipes());
+
+    vector_t Z_nodes = compute( lfs->temperature_nodes(),
+                                lfs->pressure_nodes(),
+                                lfs->x_nodes());
+    vector_t Z_pipes = compute( lfs->temperature_pipes(),
+                                lfs->pressure_pipes(),
+                                lfs->x_pipes());
+
+    vector_t c2_nodes = Z_nodes.array() * R_nodes_.array() * lfs->temperature_nodes().array(); 
+    vector_t c2_pipes = Z_pipes.array() * R_pipes_.array() * lfs->temperature_pipes().array();
+
+    compute_density(lfs, c2_pipes);
+
+    return std::make_pair(c2_nodes, c2_pipes);
+}
+
+
+void
+gerg_aga::compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes)
+{
+    mm_nodes_ = vector_t::Zero(y_nodes.rows()); 
+    mm_pipes_ = vector_t::Zero(y_pipes.rows()); 
+
+    shimmer_gerg::gerg_functions::molar_mass(y_nodes, mm_nodes_);
+    shimmer_gerg::gerg_functions::molar_mass(y_pipes, mm_pipes_);
 
     R_nodes_= Runiversal_ * mm_nodes_.cwiseInverse();     
     R_pipes_= Runiversal_ * mm_pipes_.cwiseInverse();     

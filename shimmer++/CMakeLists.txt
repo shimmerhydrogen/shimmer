@@ -39,9 +39,6 @@ set(LINK_LIBS ${LINK_LIBS} Threads::Threads)
 find_package(Qt6 COMPONENTS Core Widgets)
 if (Qt6Core_FOUND AND Qt6Widgets_FOUND)
     set(QT_LINK_LIBS ${QT_LINK_LIBS} Qt6::Core Qt6::Widgets)
-    set(CMAKE_AUTOMOC ON)
-    set(CMAKE_AUTORCC ON)
-    set(CMAKE_AUTOUIC ON)
     set(HAVE_QT TRUE)
 endif()
 
@@ -66,6 +63,7 @@ set(LINK_LIBS ${LINK_LIBS} Eigen3::Eigen)
 
 ######################################################################
 
+# Shimmer GERG library
 set(SHIMMER_GERG_SOURCES
     src/gerg/shimmer_gerg_functions.cpp
     src/gerg/shimmer_gerg_utilities.cpp
@@ -75,6 +73,7 @@ add_library(shimmer_gerg SHARED ${SHIMMER_GERG_SOURCES})
 add_library(shimmer::shimmer_gerg ALIAS shimmer_gerg)
 target_link_libraries(shimmer_gerg Eigen3::Eigen)
 
+# Shimmer Database I/O library
 set(SHIMMER_DBIO_SOURCES
     src/sqlite/sqlite.cpp src/sqlite/sqlite_entry_p_reg.cpp
     src/sqlite/sqlite_entry_l_reg.cpp src/sqlite/sqlite_exit_l_reg.cpp
@@ -89,6 +88,7 @@ add_library(shimmer::shimmer_dbio ALIAS shimmer_dbio)
 target_link_libraries(shimmer_dbio ${LINK_LIBS})
 target_include_directories(shimmer_dbio PUBLIC src)
 
+# Shimmer core library
 set(SHIMMER_SOURCES
     src/infrastructure_graph.cpp src/solver/geometry_properties.cpp src/solver/gas_law.cpp
     src/solver/conservation_matrices.cpp src/solver/incidence_matrix.cpp
@@ -103,17 +103,24 @@ add_library(shimmer::shimmer ALIAS shimmer)
 target_link_libraries(shimmer shimmer_dbio shimmer_gerg ${LINK_LIBS})
 target_include_directories(shimmer PUBLIC src)
 
-
+# The solver, cmd line version
 add_executable(solver src/solver_main.cpp)
 target_link_libraries(solver shimmer ${LINK_LIBS})
 target_include_directories(solver PUBLIC src)
 
+# GUI for the solver: not official, not maintained, nothing
 if (HAVE_QT)
     add_executable(solver_gui src/solver_guimain.cpp
         src/gui/CShimmerMainWindow.cpp)
+    set_property(TARGET solver_gui PROPERTY AUTOMOC ON)
+    set_property(TARGET solver_gui PROPERTY AUTORCC ON)
+    set_property(TARGET solver_gui PROPERTY AUTOUIC ON)
     target_link_libraries(solver_gui shimmer ${LINK_LIBS} ${QT_LINK_LIBS})
     target_include_directories(solver_gui PUBLIC src)
 endif()
+
+# Utilities
+add_subdirectory(src/utils)
 
 if (BUILD_SHIMMER_UNIT_TESTS)
     include(CTest)

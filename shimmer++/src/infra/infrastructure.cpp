@@ -698,6 +698,14 @@ int save_flowrates(const std::string& db_filename, const infrastructure& infra,
     return SHIMMER_SUCCESS;
 }
 
+int
+preprocess_for_quality_tracking(const infrastructure& infrain,
+    infrastructure& infraout, double dx)
+{
+
+    return 0;
+}
+
 config::config()
 {
     database = "";

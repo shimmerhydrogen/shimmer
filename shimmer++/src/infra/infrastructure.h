@@ -61,6 +61,9 @@ variable initial_guess(const infrastructure&);
 int save_pressures(const std::string&, const infrastructure&, const matrix_t&);
 int save_flowrates(const std::string&, const infrastructure&, const matrix_t&);
 
+
+int preprocess_for_quality_tracking(const infrastructure&, infrastructure&);
+
 struct config {
     std::string     database;
     size_t          steps;

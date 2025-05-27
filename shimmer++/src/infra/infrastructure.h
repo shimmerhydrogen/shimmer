@@ -31,6 +31,19 @@
 
 namespace shimmer {
 
+struct pipe_discretization {
+    int                 parent_ifrom;
+    int                 parent_ito;
+    double              dx;
+    std::vector<int>    nodelist;
+
+    bool operator<(const pipe_discretization& other) const {
+        return
+            std::pair{parent_ifrom, parent_ito}
+                < std::pair{other.parent_ifrom, other.parent_ito};
+    }
+};
+
 struct infrastructure {
     infrastructure_graph                    graph;
 
@@ -47,6 +60,8 @@ struct infrastructure {
     std::vector<setting_compr_stat>         settings_compr_stat;
     std::vector<setting_red_stat>           settings_red_stat;
     std::vector<gas_mass_fractions>         mass_fractions;
+
+    std::vector<pipe_discretization>        pipe_discretizations;
 
     std::vector<station_initial_condition>  sics;
     std::vector<pipe_initial_condition>     pics;

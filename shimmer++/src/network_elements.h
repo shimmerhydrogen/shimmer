@@ -25,12 +25,13 @@
 namespace shimmer {
 
 enum class station_type : int {
-    ENTRY_P_REG = 1,        /* ReMi w/o backflow */
-    ENTRY_L_REG = 2,        /* Injection w/ pressure control */
-    EXIT_L_REG  = 3,        /* Consumption point w/o pressure control */
-    JUNCTION    = 4,        /* Junction */
-    PRIVATE_INLET  = 10,    /* Inlet, internal use only */
-    PRIVATE_OUTLET = 11     /* Outlet, internal use only */
+    ENTRY_P_REG = 1,            /* ReMi w/o backflow */
+    ENTRY_L_REG = 2,            /* Injection w/ pressure control */
+    EXIT_L_REG  = 3,            /* Consumption point w/o pressure control */
+    JUNCTION    = 4,            /* Junction */
+    PRIVATE_INLET  = 10,        /* Inlet, internal use only */
+    PRIVATE_OUTLET = 11,        /* Outlet, internal use only */
+    FICTITIOUS_JUNCTION = 100   /* For quality tracking, should not appear in DB*/
 };
 
 enum class pipe_type : int {

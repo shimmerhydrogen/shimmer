@@ -120,6 +120,10 @@ populate_type_dependent_station_data(const infrastructure& infra,
             vp.node_station = std::make_unique<junction>();
             break;
 
+        case station_type::FICTITIOUS_JUNCTION:
+            vp.node_station = std::make_unique<fictitious_junction>();
+            break;
+
         case(station_type::ENTRY_P_REG):
             err = populate_entry_p_reg(infra.settings_entry_p_reg, vp);
             break;
@@ -702,38 +706,55 @@ int
 preprocess_for_quality_tracking(const infrastructure& infrain,
     infrastructure& infraout, double dx)
 {
-    size_t offset = 0;
+    size_t fict_station_ofs = num_stations(infrain);
 
     int idx = 0;
     auto edge_range = boost::edges(infrain.graph);
     auto begin = edge_range.first;
     auto end = edge_range.second;
 
-    for (auto itor = begin; itor != end; itor++, idx++)
+    for (auto edgeitor = begin; edgeitor != end; edgeitor++, idx++)
     {
-        auto pipe = infrain.graph[*itor];
+        auto pipe = infrain.graph[*edgeitor];
         if (pipe.type != pipe_type::PIPE)
             continue;
 
-        const auto& st = pipe.pipe_station;
-
-        auto pipe_num = pipe.branch_num;
-
-        auto s = boost::source(*itor, infrain.graph);
-        auto t = boost::target(*itor, infrain.graph);
+        auto s = boost::source(*edgeitor, infrain.graph);
+        auto t = boost::target(*edgeitor, infrain.graph);
 
         auto i_from = infrain.graph[s].i_snum;
         auto i_to = infrain.graph[t].i_snum;
 
-        auto itorset = lookup(infrain.settings_pipe, i_from, i_to);
-        if (itorset == infrain.settings_pipe.end()) {
+        auto settingitor = lookup(infrain.settings_pipe, i_from, i_to);
+        if (settingitor == infrain.settings_pipe.end()) {
             std::cout << "boom" << std::endl;
         }
-        auto setting = *itorset;
-        std::cout << setting.length/dx << " ";
-        auto n = std::ceil(setting.length/dx);
-        std::cout << n << " ";
-        std::cout << setting.length/n << std::endl;
+        auto in_setting = *settingitor;
+        auto numfrags = std::ceil(std::abs(in_setting.length/dx));
+        auto lenfrag = in_setting.length/numfrags;
+
+        assert(numfrags > 0);
+        std::vector<int> discrnodes(numfrags+1);
+        discrnodes[0] = i_from;
+        for (int i = 1; i < numfrags; i++)
+            discrnodes[i] = fict_station_ofs++;
+        discrnodes[numfrags] = i_to;
+
+        for (int i = 1; i < discrnodes.size(); i++) {
+            setting_pipe out_setting;
+            out_setting.i_sfrom = i-1;
+            out_setting.i_sto = i;
+            out_setting.length = lenfrag;
+            out_setting.diameter = in_setting.diameter;
+            out_setting.roughness = in_setting.roughness;
+            infraout.settings_pipe.push_back(out_setting);
+        }
+
+        pipe_discretization discr;
+        discr.parent_ifrom = i_from;
+        discr.parent_ito = i_to;
+        discr.dx = lenfrag;
+        discr.nodelist = std::move(discrnodes);
     }
 
     /* The following stations/non-pipe-elements don't change */
@@ -743,6 +764,16 @@ preprocess_for_quality_tracking(const infrastructure& infrain,
     infraout.settings_exit_l_reg = infrain.settings_exit_l_reg;
     infraout.settings_compr_stat = infrain.settings_compr_stat;
     infraout.settings_red_stat = infrain.settings_red_stat;
+
+    std::sort(infraout.pipe_discretizations.begin(),
+        infraout.pipe_discretizations.end());
+
+
+    auto [vbegin, vend] = vertices(infrain.graph);
+    for (auto vitor = vbegin; vitor != vend; vitor++) {
+        auto sname = infrain.graph[*vitor].name;
+        std::cout << sname << std::endl;
+    }
 
     return 0;
 }

@@ -136,6 +136,19 @@ public:
     inline void print(){std::cout << "JUNCTION" << std::endl;}
 };
 
+class fictitious_junction: public station
+{
+    state s0;
+public:
+    fictitious_junction()
+    { 
+        s0.boundary = constraint(hardness_type::BOUNDARY, constraint_type::L_EQUAL, 0.0);
+    }
+
+    inline void set_state(const state& s){};
+    inline const constraint& boundary(){return s0.boundary;};
+    inline void print(){std::cout << "FICTITIOUS JUNCTION" << std::endl;}
+};
 
 
 class one_state_station: public station

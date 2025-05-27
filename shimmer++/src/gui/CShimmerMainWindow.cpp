@@ -7,6 +7,13 @@
 #include "infra/infrastructure.h"
 #include "errors.h"
 
+CShimmerCentralWidget::CShimmerCentralWidget(QWidget *parent = nullptr)
+    : QWidget(parent)
+{
+
+}
+
+
 CShimmerMainWindow::CShimmerMainWindow(QWidget *parent)
 {
     fileMenu_ = new QMenu("&File");
@@ -19,8 +26,11 @@ CShimmerMainWindow::CShimmerMainWindow(QWidget *parent)
 
     dbMenu_ = new QMenu("&Database");
     QAction* initdbaction = dbMenu_->addAction(tr("&Initialize new"));
+    QAction* makedemodbaction = dbMenu_->addAction(tr("&Make demo DB"));
     QAction* testdbaction = dbMenu_->addAction(tr("&Load and test"));
     menuBar()->addMenu(dbMenu_);
+
+    setCentralWidget( new CShimmerCentralWidget() );
 
     QObject::connect(quitaction, SIGNAL(triggered()), this, SLOT(qa()));
     QObject::connect(initdbaction, SIGNAL(triggered()), this, SLOT(database_init()));

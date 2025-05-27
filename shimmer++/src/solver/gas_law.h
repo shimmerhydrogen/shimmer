@@ -24,8 +24,8 @@
 #include <Eigen/Dense>
 #include "MATLAB_GERG_functions.hpp"
 #include "solver/fluid_solver.h"
-#include "shimmer_gerg_functions.hpp"
-#include "shimmer_gerg_utilities.hpp"
+#include "gerg/shimmer_gerg_functions.hpp"
+#include "gerg/shimmer_gerg_utilities.hpp"
 
 namespace shimmer{
 

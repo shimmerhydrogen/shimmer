@@ -1,7 +1,7 @@
 #ifndef __SHIMMER_GERG_FUNCTIONS_HPP__
 #define __SHIMMER_GERG_FUNCTIONS_HPP__
 
-#include "GERG2008.h"
+#include "GERG/GERG2008.h"
 #include "shimmer_gerg_data.hpp"
 #include <stdexcept>
 #include <Eigen/Dense>

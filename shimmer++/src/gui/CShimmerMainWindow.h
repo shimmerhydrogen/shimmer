@@ -5,6 +5,14 @@
 #include <QMenu>
 #include <iostream>
 
+class CShimmerCentralWidget : public QWidget {
+    Q_OBJECT
+
+public:
+    CShimmerCentralWidget(QWidget *parent);
+    
+};
+
 class CShimmerMainWindow : public QMainWindow {
     Q_OBJECT
 

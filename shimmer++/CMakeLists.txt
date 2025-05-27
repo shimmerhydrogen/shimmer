@@ -25,11 +25,6 @@ add_subdirectory(deps/gerg)
 set(LINK_LIBS ${LINK_LIBS} GERG::GERG)
 
 #######################################################################
-# AGA8CODE (gerg)
-find_package(SHMGERG REQUIRED)
-set(LINK_LIBS ${LINK_LIBS} SHMGERG::SHMGERG)
-
-#######################################################################
 # SQLite
 find_package(SQLite3 REQUIRED)
 set(LINK_LIBS ${LINK_LIBS} SQLite::SQLite3)
@@ -71,6 +66,15 @@ set(LINK_LIBS ${LINK_LIBS} Eigen3::Eigen)
 
 ######################################################################
 
+set(SHIMMER_GERG_SOURCES
+    src/gerg/shimmer_gerg_functions.cpp
+    src/gerg/shimmer_gerg_utilities.cpp
+    src/gerg/GERG/GERG2008.cpp)
+
+add_library(shimmer_gerg SHARED ${SHIMMER_GERG_SOURCES})
+add_library(shimmer::shimmer_gerg ALIAS shimmer_gerg)
+target_link_libraries(shimmer_gerg Eigen3::Eigen)
+
 set(SHIMMER_DBIO_SOURCES
     src/sqlite/sqlite.cpp src/sqlite/sqlite_entry_p_reg.cpp
     src/sqlite/sqlite_entry_l_reg.cpp src/sqlite/sqlite_exit_l_reg.cpp
@@ -96,16 +100,9 @@ set(SHIMMER_SOURCES
 
 add_library(shimmer SHARED ${SHIMMER_SOURCES})
 add_library(shimmer::shimmer ALIAS shimmer)
-target_link_libraries(shimmer shimmer_dbio ${LINK_LIBS})
+target_link_libraries(shimmer shimmer_dbio shimmer_gerg ${LINK_LIBS})
 target_include_directories(shimmer PUBLIC src)
 
-add_executable(ptd unit_tests/populate_test_db.cpp)
-target_link_libraries(ptd shimmer ${LINK_LIBS})
-target_include_directories(ptd PUBLIC src)
-
-add_executable(ldb unit_tests/load_database.cpp)
-target_link_libraries(ldb shimmer ${LINK_LIBS})
-target_include_directories(ldb PUBLIC src)
 
 add_executable(solver src/solver_main.cpp)
 target_link_libraries(solver shimmer ${LINK_LIBS})

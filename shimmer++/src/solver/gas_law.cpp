@@ -21,7 +21,6 @@
 
 #include "solver/gas_law.h"
 #include <iomanip>
-#include "shimmer_gerg_functions.hpp"
 
 namespace shimmer{
 

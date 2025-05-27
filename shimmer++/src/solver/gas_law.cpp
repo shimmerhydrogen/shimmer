@@ -38,6 +38,12 @@ equation_of_state::density()
     return density_; 
 }
 
+vector_t
+equation_of_state::compute_R(const vector_t& molar_mass)
+{
+    return Runiversal_ * molar_mass.cwiseInverse();     
+}
+
 // ----------------------------------------------------------------------------
 //                    Papay equation of state
 // ----------------------------------------------------------------------------
@@ -59,31 +65,32 @@ papay::compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes)
 
     mm_nodes_.setConstant(16.0);
     mm_pipes_.setConstant(16.0);
-
-    R_nodes_= Runiversal_ * mm_nodes_.cwiseInverse();     
-    R_pipes_= Runiversal_ * mm_pipes_.cwiseInverse();     
 }
 
+
 vector_t 
-papay::compute(double temperature, const vector_t& pressure)
+papay::compute_Z(double temperature, const vector_t& pressure)
 {
     auto coef0 = std::exp(-2.260 * (temperature/T_cr_)) * (3.52 / p_cr_);
     auto coef1 = std::exp(-1.878 * (temperature/T_cr_)) * 0.274/(p_cr_*p_cr_); 
-    vector_t Z = 1.0 - coef0 *  pressure.array() 
+    return 1.0 - coef0 *  pressure.array() 
                         + coef1 * pressure.array().square() ;
 
-    return Z;
+    //return Z;
 }
 
 
 std::pair<vector_t, vector_t>
 papay::speed_of_sound(linearized_fluid_solver *lfs)
 {
-    auto Z_nodes = compute( lfs->temperature(), lfs->pressure_nodes());
-    auto Z_pipes = compute( lfs->temperature(), lfs->pressure_pipes());
+    vector_t Z_nodes = compute_Z(lfs->temperature(), lfs->pressure_nodes());
+    vector_t Z_pipes = compute_Z(lfs->temperature(), lfs->pressure_pipes());
 
-    vector_t c2_nodes = Z_nodes.cwiseProduct(R_nodes_) * lfs->temperature(); 
-    vector_t c2_pipes = Z_pipes.cwiseProduct(R_pipes_) * lfs->temperature();
+    vector_t R_nodes = compute_R(mm_nodes_); 
+    vector_t R_pipes = compute_R(mm_pipes_); 
+
+    vector_t c2_nodes = Z_nodes.cwiseProduct(R_nodes) * lfs->temperature(); 
+    vector_t c2_pipes = Z_pipes.cwiseProduct(R_pipes) * lfs->temperature();
 
     compute_density(lfs,c2_pipes);
 
@@ -123,6 +130,15 @@ gerg::gerg()
     2.801010e+01,   1.801528e+01,   3.408088e+01,   4.002602e+00,
     //  Ar
     3.9948000e+01;
+
+    gas_name_ = std::vector<int>
+       {GAS_TYPE::CH4, GAS_TYPE::N2, GAS_TYPE::CO2, GAS_TYPE::C2H6,
+        GAS_TYPE::C3H8, GAS_TYPE::i_C4H10, GAS_TYPE::n_C4H10,
+        GAS_TYPE::i_C5H12, GAS_TYPE::n_C5H12,GAS_TYPE::C6H14,
+        GAS_TYPE::C7H16, GAS_TYPE::C8H18, GAS_TYPE::C9H20,
+        GAS_TYPE::C10H22,GAS_TYPE::H2, GAS_TYPE::O2, GAS_TYPE::CO,
+        GAS_TYPE::H2O,GAS_TYPE::H2S,GAS_TYPE::He,GAS_TYPE::Ar}; 
+
 }
 
 
@@ -148,10 +164,10 @@ gerg::initialization(linearized_fluid_solver *lfs)
 
 
 vector_t 
-gerg::compute(  const double& temperature,
-                    const vector_t& pressure,
-                    const matrix_t& x,
-                    const gerg_params& gp)
+gerg::compute_Z( const double& temperature,
+                 const vector_t& pressure,
+                 const matrix_t& x,
+                 const gerg_params& gp)
 {
     auto eos =  GERG::thermodynamic_properties(pressure, temperature, x,
                                               gp.reducing_params,
@@ -164,15 +180,14 @@ gerg::compute(  const double& temperature,
 std::pair<vector_t, vector_t>
 gerg::speed_of_sound(linearized_fluid_solver *lfs)
 {
-    vector_t Z_nodes = compute( lfs->temperature(),
-                                lfs->pressure_nodes(),
-                                lfs->x_nodes(), params_nodes_);
-    vector_t Z_pipes = compute( lfs->temperature(),
-                                lfs->pressure_pipes(),
-                                lfs->x_pipes(), params_pipes_);
+    vector_t Z_nodes = compute_Z(lfs->temperature(), lfs->pressure_nodes(), lfs->x_nodes(), params_nodes_);
+    vector_t Z_pipes = compute_Z(lfs->temperature(), lfs->pressure_pipes(), lfs->x_pipes(), params_pipes_);
 
-    vector_t c2_nodes = Z_nodes.cwiseProduct(R_nodes_) * lfs->temperature(); 
-    vector_t c2_pipes = Z_pipes.cwiseProduct(R_pipes_) * lfs->temperature();
+    vector_t R_nodes = compute_R(mm_nodes_); 
+    vector_t R_pipes = compute_R(mm_pipes_); 
+
+    vector_t c2_nodes = Z_nodes.cwiseProduct(R_nodes) * lfs->temperature(); 
+    vector_t c2_pipes = Z_pipes.cwiseProduct(R_pipes) * lfs->temperature();
 
     compute_density(lfs, c2_pipes);
     return std::make_pair(c2_nodes, c2_pipes);
@@ -185,22 +200,11 @@ gerg::compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes)
     mm_nodes_ = vector_t::Zero(y_nodes.rows()); 
     mm_pipes_ = vector_t::Zero(y_pipes.rows()); 
 
-    std::vector<int> gas_name = 
-       {GAS_TYPE::CH4, GAS_TYPE::N2, GAS_TYPE::CO2, GAS_TYPE::C2H6,
-        GAS_TYPE::C3H8, GAS_TYPE::i_C4H10, GAS_TYPE::n_C4H10,
-        GAS_TYPE::i_C5H12, GAS_TYPE::n_C5H12,GAS_TYPE::C6H14,
-        GAS_TYPE::C7H16, GAS_TYPE::C8H18, GAS_TYPE::C9H20,
-        GAS_TYPE::C10H22,GAS_TYPE::H2, GAS_TYPE::O2, GAS_TYPE::CO,
-        GAS_TYPE::H2O,GAS_TYPE::H2S,GAS_TYPE::He,GAS_TYPE::Ar}; 
+    for(size_t i = 0; i <= 20; i++)
+        mm_nodes_ +=  mmi_gerg(i) * y_nodes.col(gas_name_[i]); 
 
     for(size_t i = 0; i <= 20; i++)
-        mm_nodes_ +=  mmi_gerg(i) * y_nodes.col(gas_name[i]); 
-
-    for(size_t i = 0; i <= 20; i++)
-        mm_pipes_ +=  mmi_gerg(i) * y_pipes.col(gas_name[i]); 
-
-    R_nodes_= Runiversal_ * mm_nodes_.cwiseInverse();     
-    R_pipes_= Runiversal_ * mm_pipes_.cwiseInverse();     
+        mm_pipes_ +=  mmi_gerg(i) * y_pipes.col(gas_name_[i]); 
 }
 
 // ----------------------------------------------------------------------------
@@ -221,7 +225,7 @@ gerg_aga::initialization(linearized_fluid_solver *lfs)
 
 
 vector_t 
-gerg_aga::compute( const vector_t& temperature,
+gerg_aga::compute_Z( const vector_t& temperature,
                    const vector_t& pressure,
                    const matrix_t& x)
 {
@@ -246,15 +250,13 @@ gerg_aga::speed_of_sound(linearized_fluid_solver *lfs)
     T_nodes.setConstant(lfs->temperature());
     T_pipes.setConstant(lfs->temperature());
 
-    vector_t Z_nodes = compute( T_nodes,
-                                lfs->pressure_nodes(),
-                                lfs->x_nodes());
-    vector_t Z_pipes = compute( T_pipes,
-                                lfs->pressure_pipes(),
-                                lfs->x_pipes());
+    vector_t Z_nodes = compute_Z( T_nodes, lfs->pressure_nodes(), lfs->x_nodes());
+    vector_t Z_pipes = compute_Z( T_pipes, lfs->pressure_pipes(), lfs->x_pipes());
+    vector_t R_nodes = compute_R(mm_nodes_); 
+    vector_t R_pipes = compute_R(mm_pipes_); 
 
-    vector_t c2_nodes = Z_nodes.array() * R_nodes_.array() * lfs->temperature(); 
-    vector_t c2_pipes = Z_pipes.array() * R_pipes_.array() * lfs->temperature();
+    vector_t c2_nodes = Z_nodes.array() * R_nodes.array() * lfs->temperature(); 
+    vector_t c2_pipes = Z_pipes.array() * R_pipes.array() * lfs->temperature();
 
     compute_density(lfs, c2_pipes);
 
@@ -270,9 +272,8 @@ gerg_aga::compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes)
 
     shimmer_gerg::gerg_functions::molar_mass(y_nodes, tolerance_, mm_nodes_);
     shimmer_gerg::gerg_functions::molar_mass(y_pipes, tolerance_, mm_pipes_);
-
-    R_nodes_= Runiversal_ * mm_nodes_.cwiseInverse();     
-    R_pipes_= Runiversal_ * mm_pipes_.cwiseInverse();     
 }
+
+
 
 } //end namespace shimmer

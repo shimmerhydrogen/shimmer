@@ -150,11 +150,11 @@ gerg_matlab()
 
     gerg_eos.compute_molar_mass(x_nodes, x_pipes);
 
-    vector_t RRp = gerg_eos.Rgas_pipes(); 
-    vector_t RRn = gerg_eos.Rgas_nodes(); 
+    vector_t RRp = gerg_eos.compute_R(gerg_eos.mm_pipes()); 
+    vector_t RRn = gerg_eos.compute_R(gerg_eos.mm_nodes()); 
     
-    auto Z_nodes = gerg_eos.compute(Temp, pressure_nodes, x_nodes, gerg_nodes);
-    auto Z_pipes = gerg_eos.compute(Temp, pressure_pipes, x_pipes, gerg_pipes);
+    auto Z_nodes = gerg_eos.compute_Z(Temp, pressure_nodes, x_nodes, gerg_nodes);
+    auto Z_pipes = gerg_eos.compute_Z(Temp, pressure_pipes, x_pipes, gerg_pipes);
 
     vector_t c2_nodes = Z_nodes.array() * RRn.array() * Temp; 
     vector_t c2_pipes = Z_pipes.array() * RRp.array() * Temp; 
@@ -192,8 +192,8 @@ RR_matlab()
 
     gerg_eos.compute_molar_mass(x_nodes, x_pipes);
 
-    vector_t RRp = gerg_eos.Rgas_pipes();
-    vector_t RRn = gerg_eos.Rgas_nodes(); 
+    vector_t RRp = gerg_eos.compute_R(gerg_eos.mm_pipes()); 
+    vector_t RRn = gerg_eos.compute_R(gerg_eos.mm_nodes()); 
 
     std::cout << __FILE__ << std::endl; 
     bool RRp_pass = verify_test("Rgas in pipes", RRp, ref_RRp);
@@ -241,11 +241,11 @@ gerg_aga8code()
 
     gerg_eos.compute_molar_mass(x_nodes, x_pipes);
 
-    vector_t RRp = gerg_eos.Rgas_pipes(); 
-    vector_t RRn = gerg_eos.Rgas_nodes(); 
+    vector_t RRp = gerg_eos.compute_R(gerg_eos.mm_pipes()); 
+    vector_t RRn = gerg_eos.compute_R(gerg_eos.mm_nodes()); 
 
-    auto Z_pipes = gerg_eos.compute(temperature_pipes, pressure_pipes, x_pipes);
-    auto Z_nodes = gerg_eos.compute(temperature_nodes, pressure_nodes, x_nodes);
+    auto Z_pipes = gerg_eos.compute_Z(temperature_pipes, pressure_pipes, x_pipes);
+    auto Z_nodes = gerg_eos.compute_Z(temperature_nodes, pressure_nodes, x_nodes);
 
     vector_t c2_pipes = Z_pipes.array() * RRp.array() * temperature_pipes.array(); 
     vector_t c2_nodes = Z_nodes.array() * RRn.array() * temperature_nodes.array(); 

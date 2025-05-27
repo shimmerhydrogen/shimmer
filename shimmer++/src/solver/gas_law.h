@@ -44,8 +44,6 @@ class equation_of_state
 
 protected:
     vector_t density_;
-    vector_t R_nodes_;
-    vector_t R_pipes_;
 
     vector_t mm_nodes_;
     vector_t mm_pipes_;
@@ -56,13 +54,14 @@ protected:
 public:
     equation_of_state(){};
     void compute_density(linearized_fluid_solver *, const vector_t&);
+    vector_t compute_R(const vector_t& molar_mass);
 
     virtual void initialization(linearized_fluid_solver *) = 0; 
     virtual void compute_molar_mass(const matrix_t&, const matrix_t&) = 0;
     virtual std::pair<vector_t, vector_t>
     speed_of_sound(linearized_fluid_solver *) = 0;
-    inline vector_t Rgas_nodes() {return R_nodes_;};
-    inline vector_t Rgas_pipes() {return R_pipes_;};
+    inline vector_t mm_nodes() {return mm_nodes_;};
+    inline vector_t mm_pipes() {return mm_pipes_;};
 
     const vector_t& density(); 
 };
@@ -81,7 +80,7 @@ public:
     void compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes);
 
     vector_t
-    compute(double temperature, const vector_t& pressure);
+    compute_Z(double temperature, const vector_t& pressure);
 
     std::pair<vector_t, vector_t>
     speed_of_sound(linearized_fluid_solver *lfs);
@@ -116,6 +115,7 @@ class gerg: public equation_of_state
     gerg_params params_pipes_;
 
     vector_t mmi_gerg;
+    std::vector<int> gas_name_;
     gerg_params compute_params(const matrix_t& x);
 
 public:
@@ -127,10 +127,10 @@ public:
     void initialization(linearized_fluid_solver *lfs); 
 
     vector_t
-    compute(const double  & temperature,
-            const vector_t& pressure,
-            const matrix_t& x,
-            const gerg_params& gp);
+    compute_Z(const double  & temperature,
+              const vector_t& pressure,
+              const matrix_t& x,
+              const gerg_params& gp);
 
 
     std::pair<vector_t, vector_t>
@@ -156,7 +156,7 @@ public:
     void initialization(linearized_fluid_solver *lfs); 
 
     vector_t
-    compute(const vector_t& temperature,
+    compute_Z(const vector_t& temperature,
             const vector_t& pressure,
             const matrix_t& x);
 

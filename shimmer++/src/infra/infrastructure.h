@@ -62,7 +62,7 @@ int save_pressures(const std::string&, const infrastructure&, const matrix_t&);
 int save_flowrates(const std::string&, const infrastructure&, const matrix_t&);
 
 
-int preprocess_for_quality_tracking(const infrastructure&, infrastructure&);
+int preprocess_for_quality_tracking(const infrastructure&, infrastructure&, double);
 
 struct config {
     std::string     database;

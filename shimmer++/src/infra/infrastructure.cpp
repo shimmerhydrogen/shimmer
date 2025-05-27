@@ -702,6 +702,47 @@ int
 preprocess_for_quality_tracking(const infrastructure& infrain,
     infrastructure& infraout, double dx)
 {
+    size_t offset = 0;
+
+    int idx = 0;
+    auto edge_range = boost::edges(infrain.graph);
+    auto begin = edge_range.first;
+    auto end = edge_range.second;
+
+    for (auto itor = begin; itor != end; itor++, idx++)
+    {
+        auto pipe = infrain.graph[*itor];
+        if (pipe.type != pipe_type::PIPE)
+            continue;
+
+        const auto& st = pipe.pipe_station;
+
+        auto pipe_num = pipe.branch_num;
+
+        auto s = boost::source(*itor, infrain.graph);
+        auto t = boost::target(*itor, infrain.graph);
+
+        auto i_from = infrain.graph[s].i_snum;
+        auto i_to = infrain.graph[t].i_snum;
+
+        auto itorset = lookup(infrain.settings_pipe, i_from, i_to);
+        if (itorset == infrain.settings_pipe.end()) {
+            std::cout << "boom" << std::endl;
+        }
+        auto setting = *itorset;
+        std::cout << setting.length/dx << " ";
+        auto n = std::ceil(setting.length/dx);
+        std::cout << n << " ";
+        std::cout << setting.length/n << std::endl;
+    }
+
+    /* The following stations/non-pipe-elements don't change */
+    infraout.settings_outlet = infrain.settings_outlet;
+    infraout.settings_entry_p_reg = infrain.settings_entry_p_reg;
+    infraout.settings_entry_l_reg = infrain.settings_entry_l_reg;
+    infraout.settings_exit_l_reg = infrain.settings_exit_l_reg;
+    infraout.settings_compr_stat = infrain.settings_compr_stat;
+    infraout.settings_red_stat = infrain.settings_red_stat;
 
     return 0;
 }

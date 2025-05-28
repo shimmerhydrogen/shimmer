@@ -104,6 +104,7 @@ load(sqlite3 *db, const optvector<int>& s_u2i,
         setting.max_ratio = sqlite3_column_double(stmt, +limits_col::max_ratio);
         setting.min_ratio = sqlite3_column_double(stmt, +limits_col::min_ratio);
         setting.max_massflow = sqlite3_column_double(stmt, +limits_col::max_massflow);
+        setting.efficiency = 1.0;
         settings.push_back( std::move(setting) );
     }
     rc = sqlite3_finalize(stmt);

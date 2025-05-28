@@ -271,6 +271,8 @@ populate_type_dependent_pipe_data(infrastructure& infra,
             std::vector<std::pair<compressor_mode,double>> mode_type_vec;
             mode_type_vec.resize( setting.profile.size() );
 
+            /* settings.profile.size() must have as many entries as required timesteps */
+
             std::transform(setting.profile.begin(), setting.profile.end(),
                 mode_type_vec.begin(),
                 [](const compressor_profile_sample& cps){ return cps.value_bymode(); }

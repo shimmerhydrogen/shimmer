@@ -78,6 +78,8 @@ parse_cmdline(int& argc, char**&argv, std::string& luafn,
 
 int main(int argc, char **argv)
 {
+    _MM_SET_EXCEPTION_MASK(_MM_GET_EXCEPTION_MASK() & ~_MM_MASK_INVALID);
+
     if (argc < 2) {
         std::cerr << "Please specify configuration file name" << std::endl;
         return 1;

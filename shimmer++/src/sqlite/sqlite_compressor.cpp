@@ -94,7 +94,6 @@ load(sqlite3 *db, const optvector<int>& s_u2i,
             std::cerr << "s_u2i: invalid station numbers. Inconsistent data in DB?" << std::endl;
             return SHIMMER_DATABASE_PROBLEM;
         }
-
         setting.u_sfrom = u_from;
         setting.u_sto = u_to;
         setting.i_sfrom = i_sfrom_opt.value();
@@ -118,9 +117,10 @@ load(sqlite3 *db, const optvector<int>& s_u2i,
     }
 
     /* Import profiles for all the stations */
+    int missing_settings = 0;
     for (auto& setting : settings) {
-        rc = sqlite3_bind_int(stmt, 1, setting.i_sfrom);
-        rc = sqlite3_bind_int(stmt, 2, setting.i_sto);
+        rc = sqlite3_bind_int(stmt, 1, setting.u_sfrom);
+        rc = sqlite3_bind_int(stmt, 2, setting.u_sto);
         std::vector<compressor_profile_sample> profile;
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             compressor_profile_sample s;
@@ -140,6 +140,7 @@ load(sqlite3 *db, const optvector<int>& s_u2i,
             std::cout << "Warning: compressor (" << setting.u_sfrom << ", ";
             std::cerr << setting.u_sto << ") has ";
             std::cout << "no pressure profile data defined." << std::endl;
+            missing_settings++;
         }
 
         rc = sqlite3_clear_bindings(stmt);
@@ -150,6 +151,10 @@ load(sqlite3 *db, const optvector<int>& s_u2i,
     
     sqlite3_finalize(stmt);
     std::sort(settings.begin(), settings.end());
+
+    if (missing_settings > 0)
+        return SHIMMER_MISSING_DATA;
+
     return SHIMMER_SUCCESS;
 }
 

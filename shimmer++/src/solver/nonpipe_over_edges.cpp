@@ -303,12 +303,12 @@ station::activate( size_t step,
                     int target_num,
                     const variable& var)
 {
-    on_   = active_history_[step];
+    on_   = active_history_.at(step);
 
     if (on_)
-        mode_ = controls_on[0];
+        mode_ = controls_on.at(0);
     else
-        mode_ = controls_off[0];
+        mode_ = controls_off.at(0);
 
     return;
 }

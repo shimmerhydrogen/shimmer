@@ -276,8 +276,8 @@ populate_type_dependent_pipe_data(infrastructure& infra,
                 [](const compressor_profile_sample& cps){ return cps.value_bymode(); }
             );
 
-            auto num_steps = 0;
-            std::vector<bool> activate_history ( num_steps, true); 
+            auto num_steps = setting.profile.size();
+            std::vector<bool> activate_history (num_steps, true); 
 
             auto comp = edge_station::make_compressor(setting.ramp_coeff,
                                                       setting.efficiency, 
@@ -590,10 +590,6 @@ initial_guess(const infrastructure& infra)
 
         G(i) = pic.init_G;
     }
-
-    //std::cout << "P: " << P.transpose() << std::endl;
-    //std::cout << "G: " << G.transpose() << std::endl;
-    //std::cout << "L: " << L.transpose() << std::endl;
 
     return variable(P, G, L);
 }

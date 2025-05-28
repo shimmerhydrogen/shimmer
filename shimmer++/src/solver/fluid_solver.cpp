@@ -322,7 +322,7 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
         solver.compute(LHS);
         if(solver.info() != Eigen::Success) {
             std::cout << "Error factorizing LHS" <<std::endl;
-
+#if 0
             size_t count = 0;
             for (int k = 0; k < LHS.outerSize(); ++k)
             {
@@ -333,6 +333,7 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
                                 << " ; " << std::endl ;
                 }
             }
+#endif
             exit(1);
         }
 

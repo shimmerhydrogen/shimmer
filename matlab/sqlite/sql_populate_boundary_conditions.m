@@ -6,6 +6,15 @@ if (num_nodes < 2)
     return;
 end
 
+num_pipes = size(graph.Edges.EndNodes, 1);
+
+if (num_pipes < 1)
+    return;
+end
+
+
+%% Nodes Boundary conditions
+
 db = sqlite(db_path, 'readonly');
 station_types_tab = sqlread(db, "station_types");
 close(db);
@@ -96,5 +105,43 @@ if num_cons_stations > 0
     sqlwrite(conn, profiles_cons_tab_name, profiles_cons_tab);
     close(conn);
 end
+
+
+%% Pipes Boundary conditions
+
+if isfield(graph.Edges, 'COMP')
+    pipes_name = map_pipes_name(graph);
+
+    comp_pipes = find(graph.Edges.COMP == 1);
+    num_comp_pipes = size(comp_pipes, 1);
+
+    if num_comp_pipes > 0
+        profiles_comp = cell(num_comp_pipes, 3);
+
+        for r = 1:num_comp_pipes
+            p = comp_pipes(r);
+            profiles_comp{r, 1} = pipes_name{p};
+            profiles_comp{r, 2} = graph.Edges.EndNodes(p, 1);
+            profiles_comp{r, 3} = graph.Edges.EndNodes(p, 2);
+            profiles_comp{r, 4} = 0.0;
+            profiles_comp{r, 5} = graph.Edges.COMP_ctrl.RegType(r);
+            profiles_comp{r, 6} = graph.Edges.COMP_ctrl.PWR(r);
+            profiles_comp{r, 7} = graph.Edges.COMP_ctrl.p_out(r);
+            profiles_comp{r, 8} = graph.Edges.COMP_ctrl.p_in(r);
+            profiles_comp{r, 9} = graph.Edges.COMP_ctrl.beta(r);
+            profiles_comp{r, 10} = graph.Edges.COMP_ctrl.Q(r);
+        end
+
+        profiles_comp_tab_variables_name = ["p_name", "s_from", "s_to", "prf_time",	"controlmode", "power", "outpress", "inpress", "ratio", "massflow"];
+        profiles_comp_tab = cell2table(profiles_comp, ...
+            "VariableNames", profiles_comp_tab_variables_name );
+
+        profiles_comp_tab_name = "compressor_profile";
+        conn = sqlite(db_path, 'connect');
+        sqlwrite(conn, profiles_comp_tab_name, profiles_comp_tab);
+        close(conn);
+    end
+end
+
 
 end

@@ -702,18 +702,53 @@ int save_flowrates(const std::string& db_filename, const infrastructure& infra,
     return SHIMMER_SUCCESS;
 }
 
-int
-preprocess_for_quality_tracking(const infrastructure& infrain,
+static void
+transfer_original_stations(const infrastructure& infrain,
+    infrastructure& infraout)
+{
+    infraout.s_u2i = infrain.s_u2i;
+    infraout.s_i2u = infrain.s_i2u;
+    infraout.s_u2vd.resize( infrain.s_u2vd.size() );
+    infraout.s_i2vd.resize( infrain.s_i2vd.size() );
+
+    int incomplete_stations = 0;
+    auto [vbegin, vend] = vertices(infrain.graph);
+    for (auto vitor = vbegin; vitor != vend; vitor++) {
+        const vertex_properties& invp = infrain.graph[*vitor];
+        vertex_properties outvp;
+        outvp.u_snum = invp.u_snum;
+        outvp.i_snum = invp.i_snum;
+        outvp.name = invp.name;
+        outvp.type = invp.type;
+        outvp.gas_mixture = invp.gas_mixture;
+        outvp.height = invp.height;
+        outvp.latitude = invp.latitude;
+        outvp.longitude = invp.longitude;
+
+        if (populate_type_dependent_station_data(infraout, outvp) != SHIMMER_SUCCESS) {
+            incomplete_stations++;
+        }
+
+        if (incomplete_stations) {
+            std::cout << "transfer_original_stations(): incomplete data" << std::endl;
+        }
+        
+        vertex_descriptor vtxd = boost::add_vertex(infraout.graph);
+        infraout.s_u2vd.at(outvp.u_snum) = vtxd;
+        infraout.s_i2vd.at(outvp.i_snum) = vtxd;
+        
+        infraout.graph[vtxd] = std::move(outvp);
+    }
+}
+
+static void
+discretize_pipes(const infrastructure& infrain,
     infrastructure& infraout, double dx)
 {
-    size_t fict_station_ofs = num_stations(infrain);
+    size_t fict_station_idx = num_stations(infrain);
 
-    int idx = 0;
-    auto edge_range = boost::edges(infrain.graph);
-    auto begin = edge_range.first;
-    auto end = edge_range.second;
-
-    for (auto edgeitor = begin; edgeitor != end; edgeitor++, idx++)
+    auto [ebegin, eend] = boost::edges(infrain.graph);
+    for (auto edgeitor = ebegin; edgeitor != eend; edgeitor++)
     {
         auto pipe = infrain.graph[*edgeitor];
         if (pipe.type != pipe_type::PIPE)
@@ -727,24 +762,38 @@ preprocess_for_quality_tracking(const infrastructure& infrain,
 
         auto settingitor = lookup(infrain.settings_pipe, i_from, i_to);
         if (settingitor == infrain.settings_pipe.end()) {
-            std::cout << "boom" << std::endl;
+            throw std::logic_error("pipe not found");
         }
         auto in_setting = *settingitor;
         auto numfrags = std::ceil(std::abs(in_setting.length/dx));
-        auto lenfrag = in_setting.length/numfrags;
+        auto fraglen = in_setting.length/numfrags;
+
+        std::string nname = "pipe_" + std::to_string(i_from) + "_"
+            + std::to_string(i_to) + "_";
 
         assert(numfrags > 0);
         std::vector<int> discrnodes(numfrags+1);
         discrnodes[0] = i_from;
-        for (int i = 1; i < numfrags; i++)
-            discrnodes[i] = fict_station_ofs++;
+        for (int i = 1; i < numfrags; i++) {
+            discrnodes[i] = fict_station_idx;
+            vertex_properties outvp;
+            outvp.i_snum = fict_station_idx;
+            outvp.name = nname + std::to_string(fict_station_idx);
+            outvp.type = station_type::FICTITIOUS_JUNCTION;
+            outvp.gas_mixture = vector_t::Zero(NUM_GASES);
+            vertex_descriptor vtxd = boost::add_vertex(infraout.graph);
+            assert(infraout.s_i2vd.size() == outvp.i_snum);
+            infraout.s_i2vd.push_back(vtxd);
+            infraout.graph[vtxd] = std::move(outvp);
+            fict_station_idx++;
+        }
         discrnodes[numfrags] = i_to;
 
         for (int i = 1; i < discrnodes.size(); i++) {
             setting_pipe out_setting;
             out_setting.i_sfrom = i-1;
             out_setting.i_sto = i;
-            out_setting.length = lenfrag;
+            out_setting.length = fraglen;
             out_setting.diameter = in_setting.diameter;
             out_setting.roughness = in_setting.roughness;
             infraout.settings_pipe.push_back(out_setting);
@@ -753,27 +802,49 @@ preprocess_for_quality_tracking(const infrastructure& infrain,
         pipe_discretization discr;
         discr.parent_ifrom = i_from;
         discr.parent_ito = i_to;
-        discr.dx = lenfrag;
+        discr.dx = fraglen;
         discr.nodelist = std::move(discrnodes);
+
+        infraout.pipe_discretizations.push_back( std::move(discr) );
     }
 
-    /* The following stations/non-pipe-elements don't change */
+    std::sort(infraout.pipe_discretizations.begin(),
+        infraout.pipe_discretizations.end());
+}
+
+int
+preprocess_for_quality_tracking(const infrastructure& infrain,
+    infrastructure& infraout, double dx)
+{
+    /* load_station_settings() */
     infraout.settings_outlet = infrain.settings_outlet;
     infraout.settings_entry_p_reg = infrain.settings_entry_p_reg;
     infraout.settings_entry_l_reg = infrain.settings_entry_l_reg;
     infraout.settings_exit_l_reg = infrain.settings_exit_l_reg;
+
+    /* This has to be recomputed:
+     * load_gas_mass_fractions() */
+
+    /* load_stations() */
+    transfer_original_stations(infrain, infraout);
+
+    /* This has to be recomputed: 
+     * load(db, infra.s_u2i, infra.settings_pipe) */
+    
+    discretize_pipes(infrain, infraout, dx);
+
+    /* This remains the same:
+     * load(db, infra.s_u2i, infra.settings_compr_stat) */
     infraout.settings_compr_stat = infrain.settings_compr_stat;
     infraout.settings_red_stat = infrain.settings_red_stat;
 
-    std::sort(infraout.pipe_discretizations.begin(),
-        infraout.pipe_discretizations.end());
+    
+
+    /* load_pipelines() */
+    
 
 
-    auto [vbegin, vend] = vertices(infrain.graph);
-    for (auto vitor = vbegin; vitor != vend; vitor++) {
-        auto sname = infrain.graph[*vitor].name;
-        std::cout << sname << std::endl;
-    }
+    
 
     return 0;
 }

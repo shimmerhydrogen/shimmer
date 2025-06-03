@@ -97,12 +97,8 @@ linearized_fluid_solver::impose_edge_station_model(
     for (auto itor = begin; itor != end; itor++, idx++)
     {
         auto pipe = graph_[*itor];
-        if (pipe.type == pipe_type::PIPE)
-            continue;
-
-        const auto& st = pipe.pipe_station;
-
         auto pipe_num = pipe.branch_num;
+        size_t row = pipe_num + offset;
 
         auto s = boost::source(*itor, graph_);
         auto t = boost::target(*itor, graph_);
@@ -110,32 +106,56 @@ linearized_fluid_solver::impose_edge_station_model(
         auto source_num = graph_[s].i_snum;
         auto target_num = graph_[t].i_snum;
 
-        st->fill_model(st->mode_,
-                                      pipe_num,
-                                      source_num,
-                                      target_num,
-                                      var_,
-                                      c2_pipes);
-    
-        // Check if values respect limits, otherwise they are modified
-        st->control_hard();
+        switch (pipe.type) 
+        {
+            case pipe_type::PIPE:
+            {
+                // Check if flux respects limits (!= 0)
+                if(std::abs(flux[pipe_num]) > 1.e-16)
+                    break;
+                
+                //WARNING: THIS MUST BE DONE IN ANOTHER WAY!!! TEMPORALLY MODIFYING THE SPARSE MATRIX
+                // See Issue #25
+                sADP.coeffRef(pipe_num, source_num) = -1;
+                sADP.coeffRef(pipe_num, target_num) = 1;
+                r_scale(pipe_num) = 0;
+                rhs_mom(pipe_num) = 0;
 
-        size_t row = pipe_num + offset;
+                break;
+            }
+            default:
+            {
+                const auto& st = pipe.pipe_station;
 
-        //triplets_mom.push_back(triplet_t(row, source_num, st.model_c1()));
-        //triplets_mom.push_back(triplet_t(row, target_num, st.model_c2()));
+                st->fill_model(st->mode_,
+                                pipe_num,
+                                source_num,
+                                target_num,
+                                var_,
+                                c2_pipes);
+            
+                // Check if values respect limits, otherwise they are modified
+                st->control_hard();
 
-        //WARNING: THIS MUST BE DONE IN ANOTHER WAY!!! TEMPORALLY MODIFYING THE SPARSE MATRIX
-        // See Issue #25
-        sADP.coeffRef(pipe_num, source_num) = st->model_c1();
-        sADP.coeffRef(pipe_num, target_num) = st->model_c2();
+                //triplets_mom.push_back(triplet_t(row, source_num, st.model_c1()));
+                //triplets_mom.push_back(triplet_t(row, target_num, st.model_c2()));
 
-        r_scale(pipe_num) = st->model_c3();
-        rhs_mom(pipe_num) = st->model_rhs();
+                //WARNING: THIS MUST BE DONE IN ANOTHER WAY!!! TEMPORALLY MODIFYING THE SPARSE MATRIX
+                // See Issue #25
+                sADP.coeffRef(pipe_num, source_num) = st->model_c1();
+                sADP.coeffRef(pipe_num, target_num) = st->model_c2();
+
+                r_scale(pipe_num) = st->model_c3();
+                rhs_mom(pipe_num) = st->model_rhs();
+                break;
+            }
+        } 
+
     }
 
     return;
 }
+
 
 
 pair_trip_vec_t

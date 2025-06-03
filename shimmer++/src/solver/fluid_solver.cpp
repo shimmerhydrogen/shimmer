@@ -78,7 +78,7 @@ linearized_fluid_solver::continuity(
 
 
 void
-linearized_fluid_solver::impose_edge_station_model(
+linearized_fluid_solver::impose_edge_model(
                         const vector_t& c2_pipes,
                         const vector_t& nodes_pressure,
                         const vector_t& flux,                         
@@ -187,8 +187,8 @@ linearized_fluid_solver::momentum(
     vector_t r_scale = r.cwiseQuotient(ADP_p);
     vector_t rhs_scale = rhs.cwiseQuotient(ADP_p);
 
-    impose_edge_station_model(c2_pipes, nodes_pressure, flux,
-                              sADP,r_scale, rhs_scale);
+    impose_edge_model( c2_pipes, nodes_pressure, flux,
+                       sADP, r_scale, rhs_scale);
 
     auto t_sR   = build_triplets( r_scale , num_nodes_, num_nodes_);
     auto t_sADP = build_triplets( sADP,  num_nodes_, 0);

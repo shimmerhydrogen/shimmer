@@ -66,16 +66,21 @@ double
 friction_factor_average(const edge_properties& pipe, const double & Temperature,
                         const double & flux, const double & mu)
 {
-        auto Re = std::abs(flux) * pipe.diameter / (pipe.area() * mu) ; 
+    // Friction average cannot be computed when flux = 0, since Re = 0 
+    // Therefore a correction is done in impose edge model (fluid solver)
+    if(std::abs(flux) <= 1.e-16) 
+        return 0.;
 
-        auto eps_over_d = pipe.friction_factor / pipe.diameter;
-        auto a = 1.0 / (1.0 + std::pow( Re  / 2720.0, 9));
-        auto b = 1.0 / (1.0 +  std::pow(Re * eps_over_d/160.0, 2.0) );
+    auto Re = std::abs(flux) * pipe.diameter / (pipe.area() * mu) ; 
 
-        auto t0 = 3.7 / eps_over_d;
-        auto t1 = std::pow( 64.0 / Re, a) ;
-        auto t2 = std::pow( 1.8 * std::log10(Re/6.8),  2.0 * (a -1.0) * b);
-        auto t3 = std::pow( 2.0 * std::log10(t0), 2.0 * (a - 1.0) * (1.0 - b));
+    auto eps_over_d = pipe.friction_factor / pipe.diameter;
+    auto a = 1.0 / (1.0 + std::pow( Re  / 2720.0, 9));
+    auto b = 1.0 / (1.0 +  std::pow(Re * eps_over_d/160.0, 2.0) );
+
+    auto t0 = 3.7 / eps_over_d;
+    auto t1 = std::pow( 64.0 / Re, a) ;
+    auto t2 = std::pow( 1.8 * std::log10(Re/6.8),  2.0 * (a -1.0) * b);
+    auto t3 = std::pow( 2.0 * std::log10(t0), 2.0 * (a - 1.0) * (1.0 - b));
         
     return t1 * t2 * t3; 
 }

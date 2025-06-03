@@ -281,7 +281,8 @@ populate_type_dependent_pipe_data(infrastructure& infra,
             auto num_steps = setting.profile.size();
             std::vector<bool> activate_history (num_steps, true); 
 
-            auto comp = edge_station::make_compressor(setting.ramp_coeff,
+            auto comp = edge_station::make_compressor(num_steps, 
+                                                      setting.ramp_coeff,
                                                       setting.efficiency, 
                                                       activate_history,
                                                       mode_type_vec,

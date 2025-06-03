@@ -321,7 +321,8 @@ make_init_graph(infrastructure_graph& g,
     std::vector<std::pair<compressor_mode,double>> mode_type_vec = {mypair};
     //                                                   
 
-    auto comp = edge_station::make_compressor(ramp_coeff,
+    auto comp = edge_station::make_compressor(num_steps,
+                                                    ramp_coeff,
                                                     efficiency, 
                                                     activate_history,
                                                     mode_type_vec,

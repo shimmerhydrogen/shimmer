@@ -669,7 +669,8 @@ make_valve(const std::vector<bool>& activate_history,
 
 
 compressor
-make_compressor(double ramp,
+make_compressor(size_t num_steps,
+                double ramp,
                 double efficiency,
                 const std::vector<bool>& activate_history,
                 const std::vector<std::pair<compressor_mode,double>>& modes_type_vec,
@@ -677,6 +678,8 @@ make_compressor(double ramp,
                                         std::pair<control::constraint_type,
                                         double>> & user_limits)                                                   
 {
+    assert(activate_history.size() == num_steps && "Activate history has inconsistent size with respect to number of steps.");
+
     auto flux_limit = control::constraint(control::hardness_type::HARD,
                                          control::constraint_type::GREATER_EQUAL,
                                          0.0);

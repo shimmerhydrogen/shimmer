@@ -287,10 +287,10 @@ linearized_fluid_solver::assemble(
 bool linearized_fluid_solver::convergence(
                 const vector_t& sol)
 {
-    vector_t diff = sol - var_.make_vector();
-    auto norm_mass = diff.head(num_nodes_).norm()/(var_.pressure).norm();
-    auto norm_mom  = diff.segment(num_nodes_, num_pipes_).norm()/(var_.flux).norm();
-    auto residual  = std::max(norm_mass, norm_mom);
+    auto norm_previous = std::max( (var_.pressure).norm(), (var_.flux).norm()); 
+    auto norm_current  = std::max(sol.head(num_nodes_).norm(),  sol.segment(num_nodes_, num_pipes_).norm());
+    auto min_norm = std::min(norm_previous, norm_current);
+    auto residual = std::abs(norm_previous-norm_current) / min_norm;  
 
     //vector_t press_next = a_p_*var_.pressure+(1.0-a_p_)*sol.head(num_nodes_);
     //vector_t flux_next  = a_G_*var_.flux +(1.0-a_G_)*sol.segment(num_nodes_, num_pipes_);

@@ -87,7 +87,9 @@ struct config {
     double          temperature;
     double          tol_std;
     double          tol;
-
+    bool            refine;
+    double          dx;
+    
     config();
 };
 

@@ -746,12 +746,22 @@ discretize_pipes(const infrastructure& infrain,
 {
     size_t fict_station_idx = num_stations(infrain);
 
+    int unum_max = 0;
+    auto [vbegin, vend] = boost::vertices(infrain.graph);
+    for (auto vtxitor = vbegin; vtxitor != vend; vtxitor++) {
+        auto& vp = infrain.graph[*vtxitor];
+        unum_max = std::max(vp.u_snum, unum_max);
+    }
+    assert(unum_max+1 == infraout.s_u2i.size());
+
+    int branch_num = 0;
     auto [ebegin, eend] = boost::edges(infrain.graph);
     for (auto edgeitor = ebegin; edgeitor != eend; edgeitor++)
     {
         auto pipe = infrain.graph[*edgeitor];
-        if (pipe.type != pipe_type::PIPE)
+        if (pipe.type != pipe_type::PIPE) {
             continue;
+        }
 
         auto s = boost::source(*edgeitor, infrain.graph);
         auto t = boost::target(*edgeitor, infrain.graph);
@@ -772,7 +782,17 @@ discretize_pipes(const infrastructure& infrain,
 
         assert(numfrags > 0);
         std::vector<int> discrnodes(numfrags+1);
+
+        auto from_ic = lookup(infrain.sics, i_from);
+        auto to_ic = lookup(infrain.sics, i_to);
+        auto pipe_ic = lookup(infrain.pics, i_from, i_to);
+
+        auto interp = [](double x, double x2, double q1, double q2) {
+            return x*(q2 - q1)/x2 + q1;
+        };
+
         discrnodes[0] = i_from;
+        std:: cout << from_ic->init_P << " -> " << from_ic->init_L << std::endl;
         for (int i = 1; i < numfrags; i++) {
             discrnodes[i] = fict_station_idx;
             vertex_properties outvp;
@@ -783,19 +803,51 @@ discretize_pipes(const infrastructure& infrain,
             vertex_descriptor vtxd = boost::add_vertex(infraout.graph);
             assert(infraout.s_i2vd.size() == outvp.i_snum);
             infraout.s_i2vd.push_back(vtxd);
+            populate_type_dependent_station_data(infraout, outvp);
             infraout.graph[vtxd] = std::move(outvp);
+            infraout.s_i2u.push_back(unum_max + discrnodes[i]);
+            
+            auto x = i*dx;
+            station_initial_condition sic;
+            sic.i_snum = fict_station_idx;
+            sic.init_P = interp(x, in_setting.length, from_ic->init_P, to_ic->init_P);
+            sic.init_L = interp(x, in_setting.length, from_ic->init_L, to_ic->init_L);
+            std::cout << x << " -> " << sic.init_P << " -> " << sic.init_L << std::endl;
+            infraout.sics.push_back(sic);
+
             fict_station_idx++;
         }
         discrnodes[numfrags] = i_to;
+        std:: cout << to_ic->init_P << " -> " << to_ic->init_L << std::endl;
 
         for (int i = 1; i < discrnodes.size(); i++) {
             setting_pipe out_setting;
-            out_setting.i_sfrom = i-1;
-            out_setting.i_sto = i;
+            out_setting.i_sfrom = discrnodes[i-1];
+            out_setting.i_sto = discrnodes[i];
             out_setting.length = fraglen;
             out_setting.diameter = in_setting.diameter;
             out_setting.roughness = in_setting.roughness;
             infraout.settings_pipe.push_back(out_setting);
+            
+            edge_properties newnp;
+            newnp.branch_num = branch_num;
+            newnp.length = pipe.length;
+            newnp.diameter = pipe.diameter;
+            newnp.friction_factor = pipe.friction_factor;
+            newnp.name = pipe.name + "_seg_" + std::to_string(i);
+            newnp.i_sfrom = discrnodes[i-1];
+            newnp.i_sto = discrnodes[i];
+            auto from_vtx = infraout.s_i2vd[newnp.i_sfrom];
+            auto to_vtx = infraout.s_i2vd[newnp.i_sto];
+            std::cout << from_vtx << " " << to_vtx << std::endl;
+            boost::add_edge(from_vtx, to_vtx, newnp, infraout.graph);
+
+            pipe_initial_condition pic;
+            pic.i_sfrom = discrnodes[i-1];
+            pic.i_sto = discrnodes[i];
+            pic.init_G = pipe_ic->init_G;
+            infraout.pics.push_back(pic);
+            branch_num++;
         }
 
         pipe_discretization discr;
@@ -807,8 +859,43 @@ discretize_pipes(const infrastructure& infrain,
         infraout.pipe_discretizations.push_back( std::move(discr) );
     }
 
+    int unum_max_2 = infraout.s_i2u.back();
+    infraout.s_u2i.resize( unum_max_2+1 );
+    infraout.s_u2vd.resize( unum_max_2+1 );
+    for (size_t i = 0; i < infraout.s_i2u.size(); i++) {
+        infraout.s_u2i[ infraout.s_i2u[i] ] = infraout.s_i2u[i];
+        infraout.s_u2vd[ infraout.s_i2u[i] ] = infraout.s_i2vd[i];
+
+    }
+
+    for (auto edgeitor = ebegin; edgeitor != eend; edgeitor++)
+    {
+        auto pipe = infrain.graph[*edgeitor];
+        if (pipe.type == pipe_type::PIPE) {
+            continue;
+        }
+
+        edge_properties newnp;
+        newnp.branch_num = branch_num;
+        newnp.length = pipe.length;
+        newnp.diameter = pipe.diameter;
+        newnp.friction_factor = pipe.friction_factor;
+        newnp.name = pipe.name;
+        newnp.i_sfrom = pipe.i_sfrom;
+        newnp.i_sto = pipe.i_sto;
+        populate_type_dependent_pipe_data(infraout, newnp, newnp.i_sfrom, newnp.i_sto);
+        auto from_vtx = infraout.s_i2vd[newnp.i_sfrom];
+        auto to_vtx = infraout.s_i2vd[newnp.i_sto];
+        std::cout << from_vtx << " " << to_vtx << std::endl;
+        boost::add_edge(from_vtx, to_vtx, newnp, infraout.graph);
+
+        branch_num++;
+    }
+
     std::sort(infraout.pipe_discretizations.begin(),
         infraout.pipe_discretizations.end());
+    std::sort(infraout.sics.begin(), infraout.sics.end());
+    std::sort(infraout.pics.begin(), infraout.pics.end());
 }
 
 int
@@ -820,7 +907,8 @@ preprocess_for_quality_tracking(const infrastructure& infrain,
     infraout.settings_entry_p_reg = infrain.settings_entry_p_reg;
     infraout.settings_entry_l_reg = infrain.settings_entry_l_reg;
     infraout.settings_exit_l_reg = infrain.settings_exit_l_reg;
-
+    infraout.sics = infrain.sics;
+    //infraout.pics = infrain.pics;
     /* This has to be recomputed:
      * load_gas_mass_fractions() */
 
@@ -831,6 +919,10 @@ preprocess_for_quality_tracking(const infrastructure& infrain,
      * load(db, infra.s_u2i, infra.settings_pipe) */
     
     discretize_pipes(infrain, infraout, dx);
+
+    assert(infraout.sics.size() == num_vertices(infraout.graph));
+    std::cout << infraout.pics.size() << " -- " << boost::num_edges(infraout.graph) << std::endl;
+    assert(infraout.pics.size() == num_edges(infraout.graph));
 
     /* This remains the same:
      * load(db, infra.s_u2i, infra.settings_compr_stat) */
@@ -862,12 +954,25 @@ config::config()
 int launch_solver(const config& cfg)
 {
     shimmer::infrastructure infra;
-
-    int err = shimmer::load(cfg.database, infra);
-    if (err != SHIMMER_SUCCESS) {
-        std::cerr << "Problem detected while loading DB" << std::endl;
-        return 1;
+    
+    if(cfg.refine) {
+        shimmer::infrastructure infrain;
+        int err = shimmer::load(cfg.database, infrain);
+        if (err != SHIMMER_SUCCESS) {
+            std::cerr << "Problem detected while loading DB" << std::endl;
+            return 1;
+        }
+        preprocess_for_quality_tracking(infrain, infra, cfg.dx);
+    } else {
+        int err = shimmer::load(cfg.database, infra);
+        if (err != SHIMMER_SUCCESS) {
+            std::cerr << "Problem detected while loading DB" << std::endl;
+            return 1;
+        }
     }
+
+    assert( num_stations(infra) != 0 );
+    assert( num_pipes(infra) != 0 );
 
     shimmer::variable guess = initial_guess(infra);
 

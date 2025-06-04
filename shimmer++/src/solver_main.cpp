@@ -47,6 +47,8 @@ register_usertypes(sol::state& lua)
     config_ut["temperature"] = &config::temperature;
     config_ut["tol_std"] = &config::tol_std;
     config_ut["tol"] = &config::tol;
+    config_ut["refine"] = &config::refine;
+    config_ut["dx"] = &config::dx;
 }
 
 static int
@@ -94,6 +96,8 @@ int main(int argc, char **argv)
     register_usertypes(lua);    
 
     shimmer::config cfg;
+    cfg.refine = false;
+    cfg.dx = 100e3;
     lua["config"] = &cfg;
 
     auto sresult = lua.safe_script_file(argv[1], sol::script_pass_on_error);

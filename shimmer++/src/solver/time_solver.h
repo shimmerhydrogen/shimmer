@@ -67,13 +67,12 @@ public:
     void
     pipe_stations_activation(size_t step, const variable& v)
     {
-        auto edge_range = boost::edges(graph_);
-        auto begin = edge_range.first;
-        auto end = edge_range.second;
-
-        for (auto itor = begin; itor != end; itor++)
+        auto [ebegin, eend] = boost::edges(graph_);
+        for (auto itor = ebegin; itor != eend; itor++)
         {
             auto pipe = graph_[*itor];
+            auto s = boost::source(*itor, graph_);
+            auto t = boost::target(*itor, graph_);
 
             if (pipe.type == pipe_type::PIPE)
                 continue;
@@ -83,9 +82,6 @@ public:
                 std::cerr << "Invalid pointer" << std::endl;
                 exit(-1);
             }
-
-            auto s = boost::source(*itor, graph_);
-            auto t = boost::target(*itor, graph_);
 
             auto source_node = graph_[s].i_snum;
             auto target_node = graph_[t].i_snum;

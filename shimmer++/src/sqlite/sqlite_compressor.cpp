@@ -159,6 +159,13 @@ load(sqlite3 *db, const optvector<int>& s_u2i,
     return SHIMMER_SUCCESS;
 }
 
+int
+store(sqlite3 *db, const std::vector<int>& s_i2u,
+    std::vector<setting_compr_stat>& settings)
+{
+    return SHIMMER_MISSING_DATA;
+}
+
 } //namespace database
 
 } // namespace shimmer

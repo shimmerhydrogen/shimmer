@@ -19,8 +19,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <filesystem>
 #include "infra/infrastructure.h"
 #include "errors.h"
+
+namespace fs = std::filesystem;
 
 namespace shimmer {
 
@@ -219,6 +222,42 @@ load_stations(sqlite3 *db, infrastructure& infra)
 }
 
 static int
+store_stations(sqlite3 *db, infrastructure& infra)
+{
+    int rc;
+    std::string q = "INSERT INTO stations VALUES "
+        "(?, ?, ?, ?, ?, ?)";
+
+    sqlite3_stmt *stmt;
+    rc = sqlite3_prepare_v2(db, q.c_str(), q.length(), &stmt, nullptr);
+    if (rc) {
+        std::cerr << "SQL error on query '" << q << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    rc = sqlite3_exec(db, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
+    auto [vbegin, vend] = boost::vertices(infra.graph);
+    for (auto vitor = vbegin; vitor != vend; vitor++)
+    {
+        auto& vp = infra.graph[*vitor];
+        assert( vp.u_snum == convert_i2u(infra.s_i2u, vp.i_snum) );
+        rc = sqlite3_bind_int(stmt, 1, vp.u_snum);
+        rc = sqlite3_bind_text(stmt, 2, vp.name.c_str(), vp.name.length(), nullptr);
+        rc = sqlite3_bind_int(stmt, 3, +vp.type);
+        rc = sqlite3_bind_double(stmt, 4, vp.height);
+        rc = sqlite3_bind_double(stmt, 5, vp.latitude);
+        rc = sqlite3_bind_double(stmt, 6, vp.longitude);
+        rc = sqlite3_step(stmt);
+        rc = sqlite3_clear_bindings(stmt);
+        rc = sqlite3_reset(stmt);
+    }
+    rc = sqlite3_exec(db, "COMMIT", nullptr, nullptr, nullptr);
+
+    return SHIMMER_SUCCESS;
+}
+
+static int
 populate_type_dependent_pipe_data(infrastructure& infra,
     edge_properties& ep, int i_from, int i_to)
 {
@@ -373,6 +412,41 @@ load_pipelines(sqlite3 *db, infrastructure& infra)
 }
 
 static int
+store_pipelines(sqlite3 *db, infrastructure& infra)
+{
+    int rc;
+    std::string q = "INSERT INTO pipelines VALUES "
+        "(?, ?, ?, ?)";
+
+    sqlite3_stmt *stmt;
+    rc = sqlite3_prepare_v2(db, q.c_str(), q.length(), &stmt, nullptr);
+    if (rc) {
+        std::cerr << "SQL error on query '" << q << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    rc = sqlite3_exec(db, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
+    auto [ebegin, eend] = boost::edges(infra.graph);
+    for (auto eitor = ebegin; eitor != eend; eitor++)
+    {
+        auto& ep = infra.graph[*eitor];
+        auto u_from = convert_i2u(infra.s_i2u, ep.i_sfrom);
+        auto u_to = convert_i2u(infra.s_i2u, ep.i_sto);
+        rc = sqlite3_bind_text(stmt, 1, ep.name.c_str(), ep.name.length(), nullptr);
+        rc = sqlite3_bind_int(stmt, 2, u_from);
+        rc = sqlite3_bind_int(stmt, 3, u_to);
+        rc = sqlite3_bind_int(stmt, 4, +ep.type);
+        rc = sqlite3_step(stmt);
+        rc = sqlite3_clear_bindings(stmt);
+        rc = sqlite3_reset(stmt);
+    }
+    rc = sqlite3_exec(db, "COMMIT", nullptr, nullptr, nullptr);
+
+    return SHIMMER_SUCCESS;
+}
+
+static int
 load_station_settings(sqlite3 *db, infrastructure& infra)
 {
     int errors = 0;
@@ -403,6 +477,25 @@ load_station_settings(sqlite3 *db, infrastructure& infra)
     std::cout << "  Type outlet:" << std::endl;
     for (auto& s : infra.settings_outlet)
         std::cout << "    " << s << std::endl;
+
+    return SHIMMER_SUCCESS;
+}
+
+static int
+store_station_settings(sqlite3 *db, infrastructure& infra)
+{
+    int errors = 0;
+    if (SHIMMER_SUCCESS != database::store(db, infra.s_i2u, infra.settings_entry_p_reg))
+        errors++;
+    if (SHIMMER_SUCCESS != database::store(db, infra.s_i2u, infra.settings_entry_l_reg))
+        errors++;
+    if (SHIMMER_SUCCESS != database::store(db, infra.s_i2u, infra.settings_exit_l_reg))
+        errors++;
+    if (SHIMMER_SUCCESS != database::store(db, infra.s_i2u, infra.settings_outlet))
+        errors++;
+
+    if (errors > 0)
+        return SHIMMER_INVALID_DATA;
 
     return SHIMMER_SUCCESS;
 }
@@ -557,11 +650,11 @@ int store(const std::string& db_filename, infrastructure& infra)
         return SHIMMER_DATABASE_PROBLEM;
     }
 
-    //if (SHIMMER_SUCCESS != load_station_settings(db, infra)) {
-    //    std::cerr << "Problems detected while loading station settings. ";
-    //    std::cerr << std::endl;
-    //    return SHIMMER_DATABASE_PROBLEM;
-    //}
+    if (SHIMMER_SUCCESS != store_station_settings(db, infra)) {
+        std::cerr << "Problems detected while storing station settings. ";
+        std::cerr << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
 
     //if (SHIMMER_SUCCESS != load_gas_mass_fractions(db, infra)) {
     //    std::cerr << "Problems detected while loading gas mass fractions. ";
@@ -575,23 +668,23 @@ int store(const std::string& db_filename, infrastructure& infra)
         return SHIMMER_DATABASE_PROBLEM;
     };
     
-    //if (SHIMMER_SUCCESS != database::store(db, infra.s_i2u, infra.settings_compr_stat)) {
-    //    std::cerr << "Problems detected while storing compressor settings";
-    //    std::cerr << std::endl;
-    //    return SHIMMER_DATABASE_PROBLEM;
-    //};
+    if (SHIMMER_SUCCESS != database::store(db, infra.s_i2u, infra.settings_compr_stat)) {
+        std::cerr << "Problems detected while storing compressor settings";
+        std::cerr << std::endl;
+        //return SHIMMER_DATABASE_PROBLEM;
+    };
 
-    //if (SHIMMER_SUCCESS != load_stations(db, infra)) {
-    //    std::cerr << "Problem detected while loading stations";
-    //    std::cerr << std::endl;
-    //    return SHIMMER_DATABASE_PROBLEM;
-    //}
+    if (SHIMMER_SUCCESS != store_stations(db, infra)) {
+        std::cerr << "Problem detected while storing stations";
+        std::cerr << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
 
-    //if (SHIMMER_SUCCESS != load_pipelines(db, infra)) {
-    //    std::cerr << "Problem detected while loading pipelines";
-    //    std::cerr << std::endl;
-    //    return SHIMMER_DATABASE_PROBLEM;
-    //}
+    if (SHIMMER_SUCCESS != store_pipelines(db, infra)) {
+        std::cerr << "Problem detected while storing pipelines";
+        std::cerr << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
 
     if (SHIMMER_SUCCESS != database::store(db, infra.s_i2u, infra.sics) ) {
         std::cerr << "Problem detected while storing initial condition for stations";
@@ -808,8 +901,6 @@ static void
 discretize_pipes(const infrastructure& infrain,
     infrastructure& infraout, double dx)
 {
-    size_t fict_station_idx = num_stations(infrain);
-
     int unum_max = 0;
     auto [vbegin, vend] = boost::vertices(infrain.graph);
     for (auto vtxitor = vbegin; vtxitor != vend; vtxitor++) {
@@ -817,6 +908,10 @@ discretize_pipes(const infrastructure& infrain,
         unum_max = std::max(vp.u_snum, unum_max);
     }
     assert(unum_max+1 == infraout.s_u2i.size());
+
+    size_t fict_station_counter = 0;
+    size_t fict_station_ubase = unum_max+1;
+    size_t fict_station_ibase = num_stations(infrain);
 
     int branch_num = 0;
     auto [ebegin, eend] = boost::edges(infrain.graph);
@@ -831,7 +926,15 @@ discretize_pipes(const infrastructure& infrain,
         auto t = boost::target(*edgeitor, infrain.graph);
 
         auto i_from = infrain.graph[s].i_snum;
+        auto u_from = infrain.graph[s].u_snum;
+        auto lat_from = infrain.graph[s].latitude;
+        auto lon_from = infrain.graph[s].longitude;
+
         auto i_to = infrain.graph[t].i_snum;
+        auto u_to = infrain.graph[t].u_snum;
+        auto lat_to = infrain.graph[t].latitude;
+        auto lon_to = infrain.graph[t].longitude;
+
 
         auto settingitor = lookup(infrain.settings_pipe, i_from, i_to);
         if (settingitor == infrain.settings_pipe.end()) {
@@ -840,9 +943,11 @@ discretize_pipes(const infrastructure& infrain,
         auto in_setting = *settingitor;
         auto numfrags = std::ceil(std::abs(in_setting.length/dx));
         auto fraglen = in_setting.length/numfrags;
+        auto dlat = (lat_to - lat_from)/numfrags;
+        auto dlon = (lon_to - lon_from)/numfrags;
 
-        std::string nname = "pipe_" + std::to_string(i_from) + "_"
-            + std::to_string(i_to) + "_";
+        std::string nname = "fict_(" + std::to_string(u_from) + ","
+            + std::to_string(u_to) + ")_";
 
         assert(numfrags > 0);
         std::vector<int> discrnodes(numfrags+1);
@@ -858,28 +963,35 @@ discretize_pipes(const infrastructure& infrain,
         discrnodes[0] = i_from;
         std:: cout << from_ic->init_P << " -> " << from_ic->init_L << std::endl;
         for (int i = 1; i < numfrags; i++) {
-            discrnodes[i] = fict_station_idx;
+            auto inum = fict_station_ibase + fict_station_counter;
+            auto unum = fict_station_ubase + fict_station_counter;
+            discrnodes[i] = inum;
             vertex_properties outvp;
-            outvp.i_snum = fict_station_idx;
-            outvp.name = nname + std::to_string(fict_station_idx);
+            outvp.u_snum = unum;
+            outvp.i_snum = inum;
+            outvp.name = nname + std::to_string(unum);
             outvp.type = station_type::FICTITIOUS_JUNCTION;
             outvp.gas_mixture = vector_t::Zero(NUM_GASES);
+
+            outvp.latitude = lat_from + i*dlat;
+            outvp.longitude = lon_from + i*dlon;
+
             vertex_descriptor vtxd = boost::add_vertex(infraout.graph);
             assert(infraout.s_i2vd.size() == outvp.i_snum);
             infraout.s_i2vd.push_back(vtxd);
             populate_type_dependent_station_data(infraout, outvp);
             infraout.graph[vtxd] = std::move(outvp);
-            infraout.s_i2u.push_back(unum_max + discrnodes[i]);
+            infraout.s_i2u.push_back(unum);
             
-            auto x = i*dx;
+            auto x = i*fraglen;
             station_initial_condition sic;
-            sic.i_snum = fict_station_idx;
+            sic.i_snum = inum;
             sic.init_P = interp(x, in_setting.length, from_ic->init_P, to_ic->init_P);
             sic.init_L = interp(x, in_setting.length, from_ic->init_L, to_ic->init_L);
             std::cout << x << " -> " << sic.init_P << " -> " << sic.init_L << std::endl;
             infraout.sics.push_back(sic);
 
-            fict_station_idx++;
+            fict_station_counter++;
         }
         discrnodes[numfrags] = i_to;
         std:: cout << to_ic->init_P << " -> " << to_ic->init_L << std::endl;
@@ -894,6 +1006,7 @@ discretize_pipes(const infrastructure& infrain,
             infraout.settings_pipe.push_back(out_setting);
             
             edge_properties newnp;
+            newnp.type = pipe_type::PIPE;
             newnp.branch_num = branch_num;
             newnp.length = pipe.length;
             newnp.diameter = pipe.diameter;
@@ -940,6 +1053,7 @@ discretize_pipes(const infrastructure& infrain,
         }
 
         edge_properties newnp;
+        newnp.type = pipe.type;
         newnp.branch_num = branch_num;
         newnp.length = pipe.length;
         newnp.diameter = pipe.diameter;
@@ -1107,7 +1221,10 @@ int launch_solver(const config& cfg)
 
     std::string outfile = cfg.database;
     if (cfg.refine) {
-        outfile = "refined_" + cfg.database;
+        fs::path path(cfg.database);
+        std::string dir = path.parent_path();
+        std::string file = path.filename();
+        outfile =  "refined_" + file;
         if (initdb(outfile) != 0) {
             std::cerr << "Problem creating output db" << std::endl;
             return -1;

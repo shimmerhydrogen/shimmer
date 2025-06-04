@@ -60,9 +60,6 @@ linearized_fluid_solver::continuity(
             const vector_t& pressure_old,
             const vector_t& c2)
 {
-    size_t num_nodes_ = num_vertices(graph_);
-    size_t num_pipes_ = num_edges(graph_);
-
     vector_t phi_vec = is_unsteady_? phi_vector(dt_, c2, graph_)
                                    : vector_t::Zero(num_nodes_);
     auto t_sPHI = build_triplets( phi_vec);
@@ -167,8 +164,6 @@ linearized_fluid_solver::momentum(
         const vector_t& c2_nodes,
         const vector_t& c2_pipes)
     {
-    size_t num_nodes_ = num_vertices(graph_);
-    size_t num_pipes_ = num_edges(graph_);
 
     sparse_matrix_t sADP = adp_matrix(c2_pipes, graph_, inc_);
     vector_t ADP_p = sADP.cwiseAbs() * nodes_pressure;
@@ -321,7 +316,6 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
     std::cout<< "Initializing ..."<< std::endl;
 
     eos->initialization(this);
-
     for(size_t iter = 0; iter <= MAX_ITERS_; iter++)
     {
         std::cout << "---------------------------------------------------"<< std::endl;
@@ -337,6 +331,9 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
         auto bcnd = boundary(area_pipes, var_.flux, eos);
         auto [LHS, rhs] = assemble(mass, mom, bcnd);
 
+        //Eigen::SparseQR<decltype(LHS), Eigen::COLAMDOrdering<int>> qr;
+        //qr.compute(LHS);
+        //std::cout << "cols: " << LHS.cols() << ", rank: " << qr.rank() << std::endl; 
 
         Eigen::SparseLU<sparse_matrix_t> solver;
         solver.compute(LHS);
@@ -358,7 +355,6 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
         }
 
         vector_t sol = solver.solve(rhs);
-
 
         if(solver.info() != Eigen::Success) {
             std::cout << "Error solving system" <<std::endl;

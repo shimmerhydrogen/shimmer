@@ -246,9 +246,9 @@ static int store_profiles(sqlite3 *db, const std::vector<int>& s_i2u,
             auto& sampleP = setting.Pprofile[i];
             auto& sampleL = setting.Lprofile[i];
             rc = sqlite3_bind_int(stmt, 1, convert_i2u(s_i2u, setting.i_snum));
-            rc = sqlite3_bind_int(stmt, 2, sampleP.time);
-            rc = sqlite3_bind_int(stmt, 3, sampleP.value);
-            rc = sqlite3_bind_int(stmt, 4, sampleL.value);
+            rc = sqlite3_bind_double(stmt, 2, sampleP.time);
+            rc = sqlite3_bind_double(stmt, 3, sampleP.value);
+            rc = sqlite3_bind_double(stmt, 4, sampleL.value);
             rc = sqlite3_step(stmt);
             rc = sqlite3_clear_bindings(stmt);
             rc = sqlite3_reset(stmt);

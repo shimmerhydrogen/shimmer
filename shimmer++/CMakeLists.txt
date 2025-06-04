@@ -4,7 +4,7 @@ project(shimmer++)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_CXX_FLAGS_DEBUG "-g -Wshadow")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -Wshadow -Wnarrowing")
 set(CMAKE_CXX_FLAGS_DEBUGSANITIZED "-g -fsanitize=address")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASENATIVE "-O3 -DNDEBUG -march=native")

@@ -661,7 +661,7 @@ int store(const std::string& db_filename, infrastructure& infra)
     //    std::cerr << std::endl;
     //    return SHIMMER_DATABASE_PROBLEM;
     //}
-    
+
     if (SHIMMER_SUCCESS != database::store(db, infra.s_i2u, infra.settings_pipe)) {
         std::cerr << "Problems detected while storing pipe settings";
         std::cerr << std::endl;
@@ -673,7 +673,7 @@ int store(const std::string& db_filename, infrastructure& infra)
         std::cerr << std::endl;
         //return SHIMMER_DATABASE_PROBLEM;
     };
-
+    
     if (SHIMMER_SUCCESS != store_stations(db, infra)) {
         std::cerr << "Problem detected while storing stations";
         std::cerr << std::endl;
@@ -685,13 +685,13 @@ int store(const std::string& db_filename, infrastructure& infra)
         std::cerr << std::endl;
         return SHIMMER_DATABASE_PROBLEM;
     }
-
+    
     if (SHIMMER_SUCCESS != database::store(db, infra.s_i2u, infra.sics) ) {
         std::cerr << "Problem detected while storing initial condition for stations";
         std::cerr << std::endl;
         return SHIMMER_DATABASE_PROBLEM;
     }
-
+    
     if (SHIMMER_SUCCESS != database::store(db, infra.s_i2u, infra.pics) ) {
         std::cerr << "Problem detected while storing initial condition for pipelines";
         std::cerr << std::endl;
@@ -941,6 +941,7 @@ discretize_pipes(const infrastructure& infrain,
             throw std::logic_error("pipe not found");
         }
         auto in_setting = *settingitor;
+        //dx = in_setting.length/3;
         auto numfrags = std::ceil(std::abs(in_setting.length/dx));
         auto fraglen = in_setting.length/numfrags;
         auto dlat = (lat_to - lat_from)/numfrags;

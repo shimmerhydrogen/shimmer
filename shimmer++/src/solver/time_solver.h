@@ -79,6 +79,10 @@ public:
                 continue;
 
             auto& st = pipe.pipe_station;
+            if (!st) {
+                std::cerr << "Invalid pointer" << std::endl;
+                exit(-1);
+            }
 
             auto s = boost::source(*itor, graph_);
             auto t = boost::target(*itor, graph_);

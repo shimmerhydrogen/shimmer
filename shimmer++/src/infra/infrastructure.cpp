@@ -987,7 +987,7 @@ discretize_pipes(const infrastructure& infrain,
             station_initial_condition sic;
             sic.i_snum = inum;
             sic.init_P = interp(x, in_setting.length, from_ic->init_P, to_ic->init_P);
-            sic.init_L = interp(x, in_setting.length, from_ic->init_L, to_ic->init_L);
+            sic.init_L = 0.0;//interp(x, in_setting.length, from_ic->init_L, to_ic->init_L);
             std::cout << x << " -> " << sic.init_P << " -> " << sic.init_L << std::endl;
             infraout.sics.push_back(sic);
 
@@ -1235,13 +1235,13 @@ int launch_solver(const config& cfg)
 
     auto Pbegin = 0;
     auto Plen = num_stations(infra);
-    shimmer::save_pressures(cfg.database, infra,
+    shimmer::save_pressures(outfile, infra,
         sol_full.block(0, Pbegin, sol_full.rows(), Plen)
     );
 
     auto Lbegin = num_stations(infra);
     auto Llen = num_pipes(infra);
-    shimmer::save_flowrates(cfg.database, infra,
+    shimmer::save_flowrates(outfile, infra,
         sol_full.block(0, Lbegin, sol_full.rows(), Llen)
     );
 

@@ -153,7 +153,7 @@ int store(sqlite3 *db, const std::vector<int>& s_i2u,
         rc = sqlite3_bind_text(stmt, 1, pipe_name.c_str(), pipe_name.length(), nullptr);
         rc = sqlite3_bind_int(stmt, 2, from);
         rc = sqlite3_bind_int(stmt, 3, to);
-        rc = sqlite3_bind_int(stmt, 4, init_G);
+        rc = sqlite3_bind_double(stmt, 4, init_G);
         rc = sqlite3_step(stmt);
         rc = sqlite3_clear_bindings(stmt);
         rc = sqlite3_reset(stmt);

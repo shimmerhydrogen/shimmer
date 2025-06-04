@@ -67,7 +67,8 @@ struct infrastructure {
     std::vector<pipe_initial_condition>     pics;
 };
 
-int load(const std::string db_filename, infrastructure& infra);
+int load(const std::string&, infrastructure&);
+int store(const std::string&, infrastructure&);
 
 int num_stations(const infrastructure&);
 int num_pipes(const infrastructure&);

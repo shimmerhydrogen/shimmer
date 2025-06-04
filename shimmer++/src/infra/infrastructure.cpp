@@ -477,7 +477,7 @@ check_pipeline_data_consistency(infrastructure& infra)
     return SHIMMER_SUCCESS;
 }
 
-int load(const std::string db_filename, infrastructure& infra)
+int load(const std::string& db_filename, infrastructure& infra)
 {
     sqlite3 *db = nullptr;
     int rc = sqlite3_open_v2(db_filename.c_str(), &db, SQLITE_OPEN_READWRITE, nullptr);
@@ -545,6 +545,70 @@ int load(const std::string db_filename, infrastructure& infra)
     sqlite3_close(db);
     return SHIMMER_SUCCESS;
 }
+
+int store(const std::string& db_filename, infrastructure& infra)
+{
+    sqlite3 *db = nullptr;
+    int rc = sqlite3_open_v2(db_filename.c_str(), &db, SQLITE_OPEN_READWRITE, nullptr);
+    if(rc) {
+        std::cerr << "Can't open database '" << db_filename << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
+        sqlite3_close(db);
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    //if (SHIMMER_SUCCESS != load_station_settings(db, infra)) {
+    //    std::cerr << "Problems detected while loading station settings. ";
+    //    std::cerr << std::endl;
+    //    return SHIMMER_DATABASE_PROBLEM;
+    //}
+
+    //if (SHIMMER_SUCCESS != load_gas_mass_fractions(db, infra)) {
+    //    std::cerr << "Problems detected while loading gas mass fractions. ";
+    //    std::cerr << std::endl;
+    //    return SHIMMER_DATABASE_PROBLEM;
+    //}
+    
+    if (SHIMMER_SUCCESS != database::store(db, infra.s_i2u, infra.settings_pipe)) {
+        std::cerr << "Problems detected while storing pipe settings";
+        std::cerr << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    };
+    
+    //if (SHIMMER_SUCCESS != database::store(db, infra.s_i2u, infra.settings_compr_stat)) {
+    //    std::cerr << "Problems detected while storing compressor settings";
+    //    std::cerr << std::endl;
+    //    return SHIMMER_DATABASE_PROBLEM;
+    //};
+
+    //if (SHIMMER_SUCCESS != load_stations(db, infra)) {
+    //    std::cerr << "Problem detected while loading stations";
+    //    std::cerr << std::endl;
+    //    return SHIMMER_DATABASE_PROBLEM;
+    //}
+
+    //if (SHIMMER_SUCCESS != load_pipelines(db, infra)) {
+    //    std::cerr << "Problem detected while loading pipelines";
+    //    std::cerr << std::endl;
+    //    return SHIMMER_DATABASE_PROBLEM;
+    //}
+
+    if (SHIMMER_SUCCESS != database::store(db, infra.s_i2u, infra.sics) ) {
+        std::cerr << "Problem detected while storing initial condition for stations";
+        std::cerr << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    if (SHIMMER_SUCCESS != database::store(db, infra.s_i2u, infra.pics) ) {
+        std::cerr << "Problem detected while storing initial condition for pipelines";
+        std::cerr << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    sqlite3_close(db);
+    return SHIMMER_SUCCESS;
+}
+
 
 int num_stations(const infrastructure& infra)
 {
@@ -951,6 +1015,45 @@ config::config()
     tol = 1e-4;
 }
 
+int initdb(const std::string& db_filename)
+{
+    static const size_t BUFSIZE = 1024;
+
+    char buf[BUFSIZE];
+    FILE *fh;
+
+    if ( (fh = fopen("../../sqlite/shimmer.sql", "r")) )
+        goto foundok;
+
+    if ( (fh = fopen("shimmer.sql", "r")) )
+        goto foundok;
+
+    std::cerr << "Can't find database schema file. ";
+    std::cerr << "Can't proceed." << std::endl;
+    return -1;
+
+foundok:
+    unlink(db_filename.c_str());
+    std::string popenstr = "sqlite3 " + db_filename;
+
+    FILE *ph;
+    ph = popen(popenstr.c_str(), "w");
+    if (not ph) {
+        std::cerr << "Failed to populate DB: system error" << std::endl;
+        return -1;
+    }
+
+    while (!feof(fh)) {
+        size_t nread = fread(buf, 1, BUFSIZE, fh);
+        fwrite(buf, 1, nread, ph);
+    }
+
+    pclose(fh);
+    int sqlite_ret = pclose(ph);
+    
+    return sqlite_ret;
+}
+
 int launch_solver(const config& cfg)
 {
     shimmer::infrastructure infra;
@@ -1001,6 +1104,17 @@ int launch_solver(const config& cfg)
     std::cout << sol_full << std::endl;
 
     std::cout << sol_full.rows() << " " << sol_full.cols() << std::endl;
+
+    std::string outfile = cfg.database;
+    if (cfg.refine) {
+        outfile = "refined_" + cfg.database;
+        if (initdb(outfile) != 0) {
+            std::cerr << "Problem creating output db" << std::endl;
+            return -1;
+        }
+
+        shimmer::store(outfile, infra);
+    }
 
     auto Pbegin = 0;
     auto Plen = num_stations(infra);

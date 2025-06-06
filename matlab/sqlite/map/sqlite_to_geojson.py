@@ -36,7 +36,7 @@ def convert_nodes(db_path, features, nodes_map):
 def convert_nodes_solution(db_path, features, nodes_map):
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
-    cur.execute("SELECT s_number, timestep, pressure FROM solution_station_pressures WHERE timestep = 0")
+    cur.execute("SELECT s_number, timestep, pressure FROM solution_station_pressures WHERE timestep = 4")
 
     for row in cur.fetchall():
         node_id = row[0]
@@ -69,7 +69,7 @@ def convert_pipes(db_path, features, pipes_map):
 def convert_pipes_solution(db_path, features, pipes_map):
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
-    cur.execute("SELECT ROW_NUMBER() OVER() AS NoId, timestep, flowrate FROM solution_pipe_flowrates WHERE timestep = 0")
+    cur.execute("SELECT ROW_NUMBER() OVER() AS NoId, timestep, flowrate FROM solution_pipe_flowrates WHERE timestep = 4")
 
     for row in cur.fetchall():
         pipe_id = row[0]
@@ -99,7 +99,8 @@ def generate_geojson(db_path, json_folder_path):
     write_geojson(json_folder_path + "/pipes.json", pipes)
 
 if __name__ == "__main__":
-    db_path = "../graphs/test_gasco/test_gasco.db"
+    db_path = "/home/geoscore/Downloads/test_inrete_2.db"
+    #db_path = "../graphs/test_gasco/test_gasco.db"
     #db_path = "../graphs/test_inrete/test_inrete.db"
     #db_path = "../graphs/test_sicilia/test_sicilia.db"
     json_path = "."

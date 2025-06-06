@@ -9,12 +9,15 @@ if isfield(graph.Nodes, 'PRESSURES')
     num_variables = 3;
     stations_tab_variables_name = ["s_number", "timestep", "pressure"];
 
-    stations_solution = cell(num_nodes, num_variables);
+    num_time_intervals = size(graph.Nodes.PRESSURES, 2);
+    stations_solution = cell(num_nodes * num_time_intervals, num_variables);
+    ti = 1;
     for s = 1:num_nodes
-        stations_solution{s, 1} = graph.Nodes.Nodes_ID(s);
         for t = 1:size(graph.Nodes.PRESSURES, 2)
-            stations_solution{s, 2} = t - 1;
-            stations_solution{s, 3} = graph.Nodes.PRESSURES(s, t);
+            stations_solution{ti, 1} = graph.Nodes.Nodes_ID(s);
+            stations_solution{ti, 2} = t - 1;
+            stations_solution{ti, 3} = graph.Nodes.PRESSURES(s, t);
+            ti = ti + 1;
         end
     end
 
@@ -37,14 +40,17 @@ if isfield(graph.Edges, 'FLOWRATES')
     num_variables = 5;
     pipes_tab_variables_name = ["p_name", "s_from", "s_to", "timestep", "flowrate"];
 
-    pipes_solution = cell(num_nodes, num_variables);
+    num_time_intervals = size(graph.Nodes.PRESSURES, 2);
+    pipes_solution = cell(num_pipes * num_time_intervals, num_variables);
+    ti = 1;
     for p = 1:num_pipes
-        pipes_solution{p, 1} = pipes_name{p};
-        pipes_solution{p, 2} = graph.Edges.EndNodes(p, 1);
-        pipes_solution{p, 3} = graph.Edges.EndNodes(p, 2);
         for t = 1:size(graph.Edges.FLOWRATES, 2)
-            pipes_solution{p, 4} = t - 1;
-            pipes_solution{p, 5} = graph.Edges.FLOWRATES(p, t);
+            pipes_solution{ti, 1} = pipes_name{p};
+            pipes_solution{ti, 2} = graph.Edges.EndNodes(p, 1);
+            pipes_solution{ti, 3} = graph.Edges.EndNodes(p, 2);
+            pipes_solution{ti, 4} = t - 1;
+            pipes_solution{ti, 5} = graph.Edges.FLOWRATES(p, t);
+            ti = ti + 1;
         end
     end
 

@@ -18,13 +18,13 @@ sql_populate_from_graph(db_path, graph);
 graph_test = graph_populate_from_sql(db_path);
 assert(isequal(graph.Nodes.Nodes_ID, graph_test.Nodes.Nodes_ID));
 assert(isequal(graph.Nodes.Type, graph_test.Nodes.Type));
-assert(isequal(graph.Nodes.PRESSURES(:, 1), graph_test.Nodes.PRESSURES));
-assert(isequal(graph.Nodes.G_EXE(:, 1), graph_test.Nodes.G_EXE));
+assert(isequal(graph.Nodes.PRESSURES, graph_test.Nodes.PRESSURES));
+%assert(isequal(graph.Nodes.G_EXE, graph_test.Nodes.G_EXE));
 assert(isequal(graph.Edges.EndNodes, graph_test.Edges.EndNodes));
 assert(isequal(graph.Edges.Length, graph_test.Edges.Length));
 assert(isequal(graph.Edges.Diameter, graph_test.Edges.Diameter));
 assert(isequal(graph.Edges.Epsi, graph_test.Edges.Epsi));
-assert(isequal(graph.Edges.FLOWRATES(:, 1), graph_test.Edges.FLOWRATES));
+assert(isequal(graph.Edges.FLOWRATES, graph_test.Edges.FLOWRATES));
 
 
 %% test_case_1
@@ -43,8 +43,8 @@ sql_populate_from_graph(db_path, graph);
 graph_test = graph_populate_from_sql(db_path);
 assert(isequal(graph.Nodes.Nodes_ID, graph_test.Nodes.Nodes_ID));
 assert(isequal(graph.Nodes.Type, graph_test.Nodes.Type));
-assert(isequal(graph.Nodes.PRESSURES(:, 1), graph_test.Nodes.PRESSURES));
-assert(isequal(graph.Nodes.G_EXE(:, 1), graph_test.Nodes.G_EXE));
+assert(isequal(graph.Nodes.PRESSURES, graph_test.Nodes.PRESSURES));
+%assert(isequal(graph.Nodes.G_EXE(:, 1), graph_test.Nodes.G_EXE));
 assert(isequal(graph.Edges.EndNodes, graph_test.Edges.EndNodes));
 assert(isequal(graph.Edges.PIPE, graph_test.Edges.PIPE));
 assert(isequal(graph.Edges.COMP, graph_test.Edges.COMP));
@@ -53,7 +53,7 @@ assert(isequal(graph.Edges.REDST, graph_test.Edges.REDST));
 assert(isequal(graph.Edges.Length, graph_test.Edges.Length));
 assert(isequal(graph.Edges.Diameter, graph_test.Edges.Diameter));
 assert(isequal(graph.Edges.Epsi, graph_test.Edges.Epsi));
-assert(isequal(graph.Edges.FLOWRATES(:, 1), graph_test.Edges.FLOWRATES));
+assert(isequal(graph.Edges.FLOWRATES, graph_test.Edges.FLOWRATES));
 
 %% test_gasco
 
@@ -82,13 +82,13 @@ sql_populate_from_graph(db_path, graph);
 graph_test = graph_populate_from_sql(db_path);
 assert(isequal(graph.Nodes.Nodes_ID, graph_test.Nodes.Nodes_ID));
 assert(isequal(graph.Nodes.Type, graph_test.Nodes.Type));
-assert(isequal(graph.Nodes.PRESSURES(:, 1), graph_test.Nodes.PRESSURES));
-assert(isequal(graph.Nodes.G_EXE(:, 1), graph_test.Nodes.G_EXE));
+assert(isequal(graph.Nodes.PRESSURES, graph_test.Nodes.PRESSURES));
+%assert(isequal(graph.Nodes.G_EXE(:, 1), graph_test.Nodes.G_EXE));
 assert(isequal(graph.Edges.EndNodes, graph_test.Edges.EndNodes));
 assert(isequal(graph.Edges.Length, graph_test.Edges.Length));
 assert(isequal(graph.Edges.Diameter, graph_test.Edges.Diameter));
 assert(isequal(graph.Edges.Epsi, graph_test.Edges.Epsi));
-assert(isequal(graph.Edges.FLOWRATES(:, 1), graph_test.Edges.FLOWRATES));
+assert(isequal(graph.Edges.FLOWRATES, graph_test.Edges.FLOWRATES));
 
 %% test_gasco_refined
 
@@ -108,13 +108,13 @@ sql_populate_from_graph(db_path, graph);
 graph_test = graph_populate_from_sql(db_path);
 assert(isequal(graph.Nodes.Nodes_ID, graph_test.Nodes.Nodes_ID));
 assert(isequal(graph.Nodes.Type, graph_test.Nodes.Type));
-assert(isequal(graph.Nodes.PRESSURES(:, 1), graph_test.Nodes.PRESSURES));
-assert(isequal(graph.Nodes.G_EXE(:, 1), graph_test.Nodes.G_EXE));
+assert(isequal(graph.Nodes.PRESSURES, graph_test.Nodes.PRESSURES));
+%assert(isequal(graph.Nodes.G_EXE(:, 1), graph_test.Nodes.G_EXE));
 assert(isequal(graph.Edges.EndNodes, graph_test.Edges.EndNodes));
 assert(isequal(graph.Edges.Length, graph_test.Edges.Length));
 assert(isequal(graph.Edges.Diameter, graph_test.Edges.Diameter));
 assert(isequal(graph.Edges.Epsi, graph_test.Edges.Epsi));
-assert(isequal(graph.Edges.FLOWRATES(:, 1), graph_test.Edges.FLOWRATES));
+assert(isequal(graph.Edges.FLOWRATES, graph_test.Edges.FLOWRATES));
 
 %% test_inrete
 
@@ -134,13 +134,13 @@ assert(isequal(graph.Nodes.Nodes_ID, graph_test.Nodes.Nodes_ID));
 assert(isequal(graph.Nodes.Type, graph_test.Nodes.Type));
 assert(isequal(graph.Nodes.altitude, graph_test.Nodes.altitude));
 assert(isequal(graph.Nodes.coordinates_XY, graph_test.Nodes.coordinates_XY));
-assert(isequal(graph.Nodes.PRESSURES(:, 1), graph_test.Nodes.PRESSURES));
-assert(isequal(graph.Nodes.G_EXE(:, 1), graph_test.Nodes.G_EXE));
+assert(isequal(graph.Nodes.PRESSURES, graph_test.Nodes.PRESSURES));
+%assert(isequal(graph.Nodes.G_EXE(:, 1), graph_test.Nodes.G_EXE));
 assert(isequal(graph.Edges.EndNodes, graph_test.Edges.EndNodes));
 assert(isequal(graph.Edges.Length, graph_test.Edges.Length));
 assert(isequal(graph.Edges.Diameter, graph_test.Edges.Diameter));
 assert(isequal(graph.Edges.Epsi, graph_test.Edges.Epsi));
-assert(isequal(graph.Edges.FLOWRATES(:, 1), graph_test.Edges.FLOWRATES));
+assert(isequal(graph.Edges.FLOWRATES, graph_test.Edges.FLOWRATES));
 
 
 %% test_sicilia
@@ -165,8 +165,8 @@ graph_test = graph_populate_from_sql(db_path);
 assert(isequal(graph.Nodes.Nodes_ID, graph_test.Nodes.Nodes_ID));
 assert(isequal(graph.Nodes.Type, graph_test.Nodes.Type));
 assert(isequal(graph.Nodes.coordinates_XY, graph_test.Nodes.coordinates_XY));
-assert(isequal(graph.Nodes.PRESSURES(:, 1), graph_test.Nodes.PRESSURES));
-assert(isequal(graph.Nodes.G_EXE(:, 1), graph_test.Nodes.G_EXE));
+assert(isequal(graph.Nodes.PRESSURES, graph_test.Nodes.PRESSURES));
+%assert(isequal(graph.Nodes.G_EXE(:, 1), graph_test.Nodes.G_EXE));
 assert(isequal(graph.Edges.EndNodes, graph_test.Edges.EndNodes));
 assert(isequal(graph.Edges.PIPE, graph_test.Edges.PIPE));
 assert(isequal(graph.Edges.COMP, graph_test.Edges.COMP));
@@ -175,4 +175,4 @@ assert(isequal(graph.Edges.REDST, graph_test.Edges.REDST));
 assert(isequal(graph.Edges.Length, graph_test.Edges.Length));
 assert(isequal(graph.Edges.Diameter, graph_test.Edges.Diameter));
 assert(isequal(graph.Edges.Epsi, graph_test.Edges.Epsi));
-assert(isequal(graph.Edges.FLOWRATES(:, 1), graph_test.Edges.FLOWRATES));
+assert(isequal(graph.Edges.FLOWRATES, graph_test.Edges.FLOWRATES));

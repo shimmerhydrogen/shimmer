@@ -16,7 +16,6 @@ nodes_time_intervals = zeros(num_nodes, 1);
 for s = 1:num_nodes
     s_index = station_time_interval_tab.s_number(s);
     nodes_time_intervals(s_index) = station_time_interval_tab.num_time_intervals(s);
-    
 end
 
 num_node_time_intervals = max(nodes_time_intervals);

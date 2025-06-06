@@ -99,7 +99,7 @@ def generate_geojson(db_path, json_folder_path):
     write_geojson(json_folder_path + "/pipes.json", pipes)
 
 if __name__ == "__main__":
-    db_path = "/home/geoscore/Downloads/refined_test_gasco.db"
+    db_path = "/home/geoscore/Downloads/test_inrete_2.db"
     #db_path = "../graphs/test_gasco/test_gasco.db"
     #db_path = "../graphs/test_inrete/test_inrete.db"
     #db_path = "../graphs/test_sicilia/test_sicilia.db"

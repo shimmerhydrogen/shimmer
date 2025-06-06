@@ -858,6 +858,54 @@ int save_flowrates(const std::string& db_filename, const infrastructure& infra,
     return SHIMMER_SUCCESS;
 }
 
+int save_gexts(const std::string& db_filename, const infrastructure& infra,
+    const matrix_t& gext)
+{
+    assert(pressures.cols() == infra.s_i2u.size());
+
+    sqlite3 *db = nullptr;
+    int rc = sqlite3_open_v2(db_filename.c_str(), &db, SQLITE_OPEN_READWRITE, nullptr);
+    if(rc) {
+        std::cerr << "Can't open database '" << db_filename << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
+        sqlite3_close(db);
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    sqlite3_stmt *stmt = nullptr;
+
+    std::string q =
+        "INSERT INTO solution_station_flowrates VALUES (?, ?, ?)";
+
+    rc = sqlite3_prepare_v2(db, q.c_str(), q.length(), &stmt, nullptr);
+    if (rc) {
+        std::cerr << "SQL error on query '" << q << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+    
+    rc = sqlite3_exec(db, "DELETE FROM solution_station_flowrates", nullptr, nullptr, nullptr);
+    rc = sqlite3_exec(db, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
+
+    
+    for (int ts = 0; ts < pressures.rows(); ts++) {
+        for (int i_snum = 0; i_snum < pressures.cols(); i_snum++) {
+            rc = sqlite3_bind_int(stmt, 1, convert_i2u(infra.s_i2u, i_snum));
+            rc = sqlite3_bind_int(stmt, 2, ts);
+            rc = sqlite3_bind_double(stmt, 3, gext(ts,i_snum));
+            rc = sqlite3_step(stmt);
+            rc = sqlite3_clear_bindings(stmt);
+            rc = sqlite3_reset(stmt);
+        }
+    }
+    rc = sqlite3_exec(db, "COMMIT", nullptr, nullptr, nullptr);
+
+    rc = sqlite3_finalize(stmt);
+
+    sqlite3_close(db);
+    return SHIMMER_SUCCESS;
+}
+
 static void
 transfer_original_stations(const infrastructure& infrain,
     infrastructure& infraout)
@@ -1240,11 +1288,18 @@ int launch_solver(const config& cfg)
         sol_full.block(0, Pbegin, sol_full.rows(), Plen)
     );
 
-    auto Lbegin = num_stations(infra);
-    auto Llen = num_pipes(infra);
+    auto Gbegin = num_stations(infra);
+    auto Glen = num_pipes(infra);
     shimmer::save_flowrates(outfile, infra,
-        sol_full.block(0, Lbegin, sol_full.rows(), Llen)
+        sol_full.block(0, Gbegin, sol_full.rows(), Glen)
     );
+
+    auto Gextbegin = num_stations(infra) + num_pipes(infra);
+    auto Gextlen = num_stations(infra);
+    shimmer::save_gexts(outfile, infra,
+        sol_full.block(0, Gextbegin, sol_full.rows(), Gextlen)
+    );
+
 
     return 0;
 }

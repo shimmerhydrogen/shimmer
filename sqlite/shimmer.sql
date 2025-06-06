@@ -381,7 +381,14 @@ create table solution_pipe_flowrates (
         REFERENCES pipelines(p_name, s_from, s_to)
 );
 
-
+create table solution_station_flowrates (
+    s_number        INTEGER NOT NULL,
+    timestep        INTEGER NOT NULL,
+    pressure        REAL DEFAULT 0.0 NOT NULL,
+    
+    FOREIGN KEY (s_number)
+        REFERENCES stations(s_number)
+);
 
 
 

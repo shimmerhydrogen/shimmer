@@ -861,7 +861,7 @@ int save_flowrates(const std::string& db_filename, const infrastructure& infra,
 int save_gexts(const std::string& db_filename, const infrastructure& infra,
     const matrix_t& gext)
 {
-    assert(pressures.cols() == infra.s_i2u.size());
+    assert(gext.cols() == infra.s_i2u.size());
 
     sqlite3 *db = nullptr;
     int rc = sqlite3_open_v2(db_filename.c_str(), &db, SQLITE_OPEN_READWRITE, nullptr);
@@ -888,8 +888,8 @@ int save_gexts(const std::string& db_filename, const infrastructure& infra,
     rc = sqlite3_exec(db, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
 
     
-    for (int ts = 0; ts < pressures.rows(); ts++) {
-        for (int i_snum = 0; i_snum < pressures.cols(); i_snum++) {
+    for (int ts = 0; ts < gext.rows(); ts++) {
+        for (int i_snum = 0; i_snum < gext.cols(); i_snum++) {
             rc = sqlite3_bind_int(stmt, 1, convert_i2u(infra.s_i2u, i_snum));
             rc = sqlite3_bind_int(stmt, 2, ts);
             rc = sqlite3_bind_double(stmt, 3, gext(ts,i_snum));

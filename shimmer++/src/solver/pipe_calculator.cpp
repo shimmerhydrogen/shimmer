@@ -68,7 +68,8 @@ friction_factor_average(const edge_properties& pipe, const double & Temperature,
 {
     // Friction average cannot be computed when flux = 0, since Re = 0 
     // Therefore a correction is done in impose edge model (fluid solver)
-    if(std::abs(flux) <= 1.e-16) 
+    // Using units of [Kg/s], we consider a flux equal zero when equal to 1.e-12
+    if(std::abs(flux) <= 1.e-12) 
         return 0.;
 
     auto Re = std::abs(flux) * pipe.diameter / (pipe.area() * mu) ; 

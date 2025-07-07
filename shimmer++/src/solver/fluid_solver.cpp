@@ -107,10 +107,15 @@ linearized_fluid_solver::impose_edge_model(
         {
             case pipe_type::PIPE:
             {
+                
                 // Check if flux respects limits (!= 0)
-                if(std::abs(flux[pipe_num]) > 1.e-16)
+                if(std::abs(flux[pipe_num]) > 1.e-12)
                     break;
                 
+                // Friction average cannot be computed when flux = 0, since Re = 0 
+                // Therefore a correction is done in impose edge model (fluid solver)
+                // Using units of [Kg/s], we consider a flux equal zero when equal to 1.e-12
+
                 //WARNING: THIS MUST BE DONE IN ANOTHER WAY!!! TEMPORALLY MODIFYING THE SPARSE MATRIX
                 // See Issue #25
                 sADP.coeffRef(pipe_num, source_num) = -1;
@@ -337,6 +342,8 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
 
         Eigen::SparseLU<sparse_matrix_t> solver;
         solver.compute(LHS);
+
+
         if(solver.info() != Eigen::Success) {
             std::cout << "Error factorizing LHS" <<std::endl;
 #if 0

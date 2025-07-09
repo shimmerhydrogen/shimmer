@@ -368,6 +368,34 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
             exit(1);
         }
 
+        std::ofstream mfs ("inrete_mat_k0.dat");
+
+        if(!mfs.is_open())
+        {
+            std::cout << "Error openning matrix file" << std::endl;
+            exit(1);
+        }    
+
+        size_t count = 0;
+        for (int k = 0; k < LHS.outerSize(); ++k)
+        {
+            for (itor_t it(LHS,k); it; ++it, count++)
+            {
+                mfs << std::setprecision(16) << "" << it.row()
+                            << "  " << it.col() << "  " << it.value()<< std::endl ;
+            }
+        }
+
+        std::ofstream rfs ("inrete_rhs_k0.dat");
+        if(!rfs.is_open())
+        {
+            std::cout << "Error openning file" << std::endl;
+            exit(1);
+        }    
+
+        rfs << rhs.transpose() << std::endl;
+        //exit(1);
+
         std::string str_iter =  std::to_string(at_iteration); 
         std::string str_step =  std::to_string(at_step_); 
         

@@ -96,8 +96,6 @@ int main(int argc, char **argv)
     register_usertypes(lua);    
 
     shimmer::config cfg;
-    cfg.refine = false;
-    cfg.dx = 100e3;
     lua["config"] = &cfg;
 
     auto sresult = lua.safe_script_file(argv[1], sol::script_pass_on_error);

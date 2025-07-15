@@ -24,19 +24,14 @@
 
 namespace shimmer{
 
-void
-equation_of_state::compute_density(linearized_fluid_solver *lfs,
-                                   const vector_t& c2_pipes)
+vector_t 
+equation_of_state::density(linearized_fluid_solver *lfs) 
 {
-    density_ = lfs->pressure_pipes().array() / c2_pipes.array();
+    auto [c2_nodes, c2_pipes] = speed_of_sound(lfs);
+
+    return lfs->pressure_pipes().array() / c2_pipes.array();
 }
 
-
-const vector_t& 
-equation_of_state::density()
-{
-    return density_; 
-}
 
 vector_t
 equation_of_state::compute_R(const vector_t& molar_mass)
@@ -91,8 +86,6 @@ papay::speed_of_sound(linearized_fluid_solver *lfs)
 
     vector_t c2_nodes = Z_nodes.cwiseProduct(R_nodes) * lfs->temperature(); 
     vector_t c2_pipes = Z_pipes.cwiseProduct(R_pipes) * lfs->temperature();
-
-    compute_density(lfs,c2_pipes);
 
     return std::make_pair(c2_nodes, c2_pipes);
 }
@@ -189,7 +182,6 @@ gerg::speed_of_sound(linearized_fluid_solver *lfs)
     vector_t c2_nodes = Z_nodes.cwiseProduct(R_nodes) * lfs->temperature(); 
     vector_t c2_pipes = Z_pipes.cwiseProduct(R_pipes) * lfs->temperature();
 
-    compute_density(lfs, c2_pipes);
     return std::make_pair(c2_nodes, c2_pipes);
 }
 
@@ -257,8 +249,6 @@ gerg_aga::speed_of_sound(linearized_fluid_solver *lfs)
 
     vector_t c2_nodes = Z_nodes.array() * R_nodes.array() * lfs->temperature(); 
     vector_t c2_pipes = Z_pipes.array() * R_pipes.array() * lfs->temperature();
-
-    compute_density(lfs, c2_pipes);
 
     return std::make_pair(c2_nodes, c2_pipes);
 }

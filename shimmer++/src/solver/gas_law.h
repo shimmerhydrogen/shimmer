@@ -43,8 +43,6 @@ class equation_of_state
 {
 
 protected:
-    vector_t density_;
-
     vector_t mm_nodes_;
     vector_t mm_pipes_;
 
@@ -53,7 +51,7 @@ protected:
 
 public:
     equation_of_state(){};
-    void compute_density(linearized_fluid_solver *, const vector_t&);
+    vector_t density(linearized_fluid_solver *);
     vector_t compute_R(const vector_t& molar_mass);
 
     virtual void initialization(linearized_fluid_solver *) = 0; 
@@ -62,8 +60,6 @@ public:
     speed_of_sound(linearized_fluid_solver *) = 0;
     inline vector_t mm_nodes() {return mm_nodes_;};
     inline vector_t mm_pipes() {return mm_pipes_;};
-
-    const vector_t& density(); 
 };
 
 

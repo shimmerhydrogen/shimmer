@@ -45,10 +45,13 @@ class time_solver
 {
 
     double temperature_;
-    variable var_guess_;
+
+    vector_t rho_;
     variable var_;
+    variable var_guess_;
     vector_t area_pipes_;
 
+    matrix_t rho_in_time_;
     matrix_t var_in_time_;
 
     incidence inc_;
@@ -95,6 +98,8 @@ public:
     set_initialization( const variable& var)
     {
         var_guess_ = var;
+        //Alternatively, rho should be given when setting initialization
+        rho_ = vector_t::Ones(boost::num_edges(graph_));
     }
 
 
@@ -125,6 +130,7 @@ public:
         linearized_fluid_solver lfs(iter, unsteady, tolerance, dt, temperature_, mu, inc_, graph_);
         lfs.run(area_pipes_, var_guess, var_time, &eos);
         var_guess_ = lfs.get_variable();
+        rho_ = eos.density(&lfs);
     }
 
 
@@ -143,11 +149,11 @@ public:
         bool unsteady = true;
 
         var_in_time_ = matrix_t::Zero(num_steps +1, num_edges(graph_) + 2 * num_vertices(graph_));
+        rho_in_time_ = matrix_t::Zero(num_steps +1, num_edges(graph_));
 
         var_ = var_guess_;
         var_in_time_.row(0) =  var_.make_vector();
-
-        double t = 0;
+        rho_in_time_.row(0) =  rho_.transpose();
 
         std::ofstream ofs("warnings.txt");
 
@@ -202,6 +208,7 @@ public:
                 {
                     std::cout<< "++++++++++++++++++**** MODIFIED VARIABLE ****++++++++++++++++++++++ " << std::endl;
                     var_ =  lfs.get_variable();
+                    rho_ =  eos.density(&lfs);  
 
                     //std::cout<< "VARIABLE : \n";
                     //std::cout<<  var_.make_vector() << std::endl;
@@ -216,6 +223,7 @@ public:
                 std::cout << "ERROR: FAILURE to apply HARD constraints. Max number of iterations has been reached.";
 
             var_in_time_.row(it) =  var_.make_vector();
+            rho_in_time_.row(it) =  rho_;
 
             var_guess_ = var_;
         }
@@ -248,12 +256,29 @@ public:
             std::cout << var_.L_rate[k] << ", " <<  std::endl ;
         std::cout << "]; "<<std::endl;
 */
+        
+
         return;
     }
 
-    vector_t solution(){return var_.make_vector();}
-    vector_t guess(){return var_guess_.make_vector();}
-    matrix_t solution_full() { return var_in_time_; }
+    matrix_t 
+    velocity_full() const
+    {
+        auto num_pipes = num_edges(graph_);
+        auto num_nodes = num_vertices(graph_);
+        /// vel [m/s] velocity of the gas within pipes.
+        matrix_t flux_in_time = var_in_time_.middleCols(num_nodes, num_pipes);
+        matrix_t arho_in_time = rho_in_time_;
+
+        for(auto iP = 0; iP < num_pipes; iP++)
+            arho_in_time.col(iP) *= area_pipes_(iP);  
+        return flux_in_time.array() / arho_in_time.array();       
+    }
+
+    vector_t solution() const {return var_.make_vector();}
+    vector_t guess() const {return var_guess_.make_vector();}
+    matrix_t solution_full() const{ return var_in_time_; }
+
 };
 
 }

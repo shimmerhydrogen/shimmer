@@ -312,6 +312,20 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
                             equation_of_state *eos,                        
                             size_t at_iteration)
 {
+    std::string export_folder = "./export_matrices/data";
+    std::ofstream graph_file (export_folder + "inrete_graph.csv");
+    if(!graph_file.is_open())
+    {
+        std::cout << "Error openning file" << std::endl;
+        exit(1);
+    }
+
+    graph_file << "network_data" << std::endl;
+    graph_file<< std::scientific << std::setprecision(16) << "" << num_nodes_<< std::endl ;
+    graph_file<< std::scientific << std::setprecision(16) << "" << num_pipes_<< std::endl ;
+    graph_file.close();
+
+
     press_pipes_.resize(num_pipes_);
 
     // Initialization of variables with solution in time n;
@@ -368,7 +382,6 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
             exit(1);
         }
 
-        std::string export_folder = "./export_matrices/";
         std::ofstream mfs (export_folder + "inrete_mat_k" + std::to_string(iter) + ".csv");
 
         if(!mfs.is_open())

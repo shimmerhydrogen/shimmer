@@ -25,7 +25,7 @@
 namespace shimmer{
 
 vector_t 
-equation_of_state::density(linearized_fluid_solver *lfs) 
+equation_of_state::density(linearized_fluid_solver *lfs) const
 {
     auto [c2_nodes, c2_pipes] = speed_of_sound(lfs);
 
@@ -34,7 +34,7 @@ equation_of_state::density(linearized_fluid_solver *lfs)
 
 
 vector_t
-equation_of_state::compute_R(const vector_t& molar_mass)
+equation_of_state::compute_R(const vector_t& molar_mass) const
 {
     return Runiversal_ * molar_mass.cwiseInverse();     
 }
@@ -64,7 +64,7 @@ papay::compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes)
 
 
 vector_t 
-papay::compute_Z(double temperature, const vector_t& pressure)
+papay::compute_Z(double temperature, const vector_t& pressure) const
 {
     auto coef0 = std::exp(-2.260 * (temperature/T_cr_)) * (3.52 / p_cr_);
     auto coef1 = std::exp(-1.878 * (temperature/T_cr_)) * 0.274/(p_cr_*p_cr_); 
@@ -76,7 +76,7 @@ papay::compute_Z(double temperature, const vector_t& pressure)
 
 
 std::pair<vector_t, vector_t>
-papay::speed_of_sound(linearized_fluid_solver *lfs)
+papay::speed_of_sound(linearized_fluid_solver *lfs) const
 {
     vector_t Z_nodes = compute_Z(lfs->temperature(), lfs->pressure_nodes());
     vector_t Z_pipes = compute_Z(lfs->temperature(), lfs->pressure_pipes());
@@ -160,7 +160,7 @@ vector_t
 gerg::compute_Z( const double& temperature,
                  const vector_t& pressure,
                  const matrix_t& x,
-                 const gerg_params& gp)
+                 const gerg_params& gp) const
 {
     auto eos =  GERG::thermodynamic_properties(pressure, temperature, x,
                                               gp.reducing_params,
@@ -171,7 +171,7 @@ gerg::compute_Z( const double& temperature,
 
 
 std::pair<vector_t, vector_t>
-gerg::speed_of_sound(linearized_fluid_solver *lfs)
+gerg::speed_of_sound(linearized_fluid_solver *lfs) const
 {
     vector_t Z_nodes = compute_Z(lfs->temperature(), lfs->pressure_nodes(), lfs->x_nodes(), params_nodes_);
     vector_t Z_pipes = compute_Z(lfs->temperature(), lfs->pressure_pipes(), lfs->x_pipes(), params_pipes_);
@@ -219,7 +219,7 @@ gerg_aga::initialization(linearized_fluid_solver *lfs)
 vector_t 
 gerg_aga::compute_Z( const vector_t& temperature,
                    const vector_t& pressure,
-                   const matrix_t& x)
+                   const matrix_t& x) const
 {
     auto type = gerg_aga_thermo_params_t::Types::Gas_phase;
     
@@ -234,7 +234,7 @@ gerg_aga::compute_Z( const vector_t& temperature,
 
 
 std::pair<vector_t, vector_t>
-gerg_aga::speed_of_sound(linearized_fluid_solver *lfs)
+gerg_aga::speed_of_sound(linearized_fluid_solver *lfs) const
 {
     vector_t T_nodes = vector_t::Zero(lfs->num_nodes());
     vector_t T_pipes = vector_t::Zero(lfs->num_pipes());

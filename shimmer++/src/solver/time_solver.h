@@ -151,7 +151,8 @@ public:
 
         std::ofstream ofs("warnings.txt");
 
-        for(size_t it = 1; it <= num_steps; it++, t+=dt)
+        double t = 0;
+        for(size_t it = 1; it < num_steps; it++, t+=dt)
         {
             ofs.open("warnings.txt", std::ios::app);
             if(!ofs.is_open())

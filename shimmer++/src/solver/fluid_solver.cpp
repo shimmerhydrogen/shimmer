@@ -312,7 +312,7 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
                             equation_of_state *eos,                        
                             size_t at_iteration)
 {
-    std::string export_folder = "./export_matrices/data";
+    std::string export_folder = "./export_matrices/data/";
     std::ofstream graph_file (export_folder + "inrete_graph.csv");
     if(!graph_file.is_open())
     {

@@ -272,7 +272,7 @@ public:
 
         for(auto iP = 0; iP < num_pipes; iP++)
             arho_in_time.col(iP) *= area_pipes_(iP);  
-        return flux_in_time.array() / arho_in_time.array();       
+        return flux_in_time.array()/ arho_in_time.array();       
     }
 
     vector_t solution() const {return var_.make_vector();}

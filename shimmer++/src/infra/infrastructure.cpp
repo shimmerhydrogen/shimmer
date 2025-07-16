@@ -906,6 +906,64 @@ int save_flowrates_stations(const std::string& db_filename, const infrastructure
     return SHIMMER_SUCCESS;
 }
 
+int save_velocities(const std::string& db_filename, const infrastructure& infra,
+    const matrix_t& vels)
+{
+    assert(vels.cols() == num_pipes(infra));
+
+    auto edge_range = boost::edges(infra.graph);
+    auto edge_begin = edge_range.first;
+    auto edge_end = edge_range.second;
+
+    sqlite3 *db = nullptr;
+    int rc = sqlite3_open_v2(db_filename.c_str(), &db, SQLITE_OPEN_READWRITE, nullptr);
+    if(rc) {
+        std::cerr << "Can't open database '" << db_filename << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
+        sqlite3_close(db);
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    sqlite3_stmt *stmt = nullptr;
+
+    std::string q =
+        "INSERT INTO solution_pipe_velocities VALUES (?, ?, ?, ?, ?)";
+
+    rc = sqlite3_prepare_v2(db, q.c_str(), q.length(), &stmt, nullptr);
+    if (rc) {
+        std::cerr << "SQL error on query '" << q << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+    
+    rc = sqlite3_exec(db, "DELETE FROM solution_pipe_velocities", nullptr, nullptr, nullptr);
+    rc = sqlite3_exec(db, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
+
+    for (int ts = 0; ts < vels.rows(); ts++) {
+        std::cout << ts << ": ";
+        for (int branch_num = 0; branch_num < vels.cols(); branch_num++) {
+            std::cout << branch_num << " ";
+            auto edge_itor = std::next(edge_begin, branch_num);
+            auto ep = infra.graph[*edge_itor];
+            rc = sqlite3_bind_text(stmt, 1, ep.name.c_str(), -1, nullptr);
+            rc = sqlite3_bind_int(stmt, 2, convert_i2u(infra.s_i2u, ep.i_sfrom));
+            rc = sqlite3_bind_int(stmt, 3, convert_i2u(infra.s_i2u, ep.i_sto));
+            rc = sqlite3_bind_int(stmt, 4, ts);
+            rc = sqlite3_bind_double(stmt, 5, vels(ts, branch_num));
+            rc = sqlite3_step(stmt);
+            rc = sqlite3_clear_bindings(stmt);
+            rc = sqlite3_reset(stmt);
+        }
+        std::cout << std::endl;
+    }
+    rc = sqlite3_exec(db, "COMMIT", nullptr, nullptr, nullptr);
+
+    rc = sqlite3_finalize(stmt);
+
+    sqlite3_close(db);
+    return SHIMMER_SUCCESS;
+}
+
 static void
 transfer_original_stations(const infrastructure& infrain,
     infrastructure& infraout)
@@ -1264,6 +1322,7 @@ int launch_solver(const config& cfg)
     ts1.initialization(guess, cfg.dt_std, cfg.tol_std, y_nodes, y_pipes);  
     ts1.advance(cfg.dt, cfg.steps, cfg.tol, y_nodes, y_pipes);
     auto sol_full  = ts1.solution_full();
+    auto vel_full  = ts1.velocity_full();
     std::cout << sol_full << std::endl;
 
     std::cout << sol_full.rows() << " " << sol_full.cols() << std::endl;
@@ -1299,6 +1358,8 @@ int launch_solver(const config& cfg)
     shimmer::save_flowrates_stations(outfile, infra,
         sol_full.block(0, Lbegin, sol_full.rows(), Llen)
     );
+
+    shimmer::save_velocities(outfile, infra, vel_full);
 
     return 0;
 }

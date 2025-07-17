@@ -175,6 +175,9 @@ public:
             std::cout<<"========================================================"<< std::endl;
             std::cout<<"========================================================"<< std::endl;
 
+            EQ_OF_STATE eos;
+            eos.compute_molar_mass(y_nodes, y_pipes);
+
             pipe_stations_activation(it, var_);
 
             size_t ic;
@@ -191,9 +194,6 @@ public:
                 std::cout << " Iteration CONSTRAINTS it ..............."<<ic<< " ... at time "<< it << std::endl;
                 std::cout<<"****************************************************************"<< std::endl;
                 std::cout<<"****************************************************************"<< std::endl;
-
-                EQ_OF_STATE eos;
-                eos.compute_molar_mass(y_nodes, y_pipes);
 
                 // To be finish when it is clear how x changes and modifies mu.
                 auto mu = viscosity<viscosity_type>(temperature_, graph_);

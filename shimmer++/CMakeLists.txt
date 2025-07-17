@@ -96,7 +96,7 @@ set(SHIMMER_SOURCES
     src/solver/matrix_manipulations.cpp src/solver/pipe_calculator.cpp src/solver/matlab_manip.cpp
     src/solver/fluid_solver.cpp src/solver/nonpipe_over_edges.cpp
     src/solver/variable.cpp src/solver/boundary.cpp
-    src/infra/infrastructure.cpp
+    src/infra/infrastructure.cpp src/infra/launch_solver.cpp
 )
 
 add_library(shimmer SHARED ${SHIMMER_SOURCES})

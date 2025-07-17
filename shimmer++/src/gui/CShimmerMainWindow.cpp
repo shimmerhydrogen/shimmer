@@ -5,6 +5,7 @@
 
 #include "CShimmerMainWindow.h"
 #include "infra/infrastructure.h"
+#include "infra/launch_solver.h"
 #include "errors.h"
 
 CShimmerCentralWidget::CShimmerCentralWidget(QWidget *parent = nullptr)

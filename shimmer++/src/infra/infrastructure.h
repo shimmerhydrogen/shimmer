@@ -26,7 +26,7 @@
 #include "solver/incidence_matrix.h"
 #include "solver/conservation_matrices.h"
 #include "solver/fluid_solver.h"
-#include "solver/time_solver.h"
+
 #include "errors.h"
 
 namespace shimmer {
@@ -62,9 +62,14 @@ struct infrastructure {
     std::vector<gas_mass_fractions>         mass_fractions;
 
     std::vector<pipe_discretization>        pipe_discretizations;
+    std::vector<setting_pipe_QT>            settings_pipe_QT;
+    std::vector<edge_descriptor>            p_i2ed;
 
     std::vector<station_initial_condition>  sics;
     std::vector<pipe_initial_condition>     pics;
+
+    int num_original_stations;
+    int num_original_pipes;
 };
 
 int load(const std::string&, infrastructure&);
@@ -72,13 +77,16 @@ int store(const std::string&, infrastructure&);
 
 int num_stations(const infrastructure&);
 int num_pipes(const infrastructure&);
+int num_net_stations(const infrastructure&);
+int num_net_pipes(const infrastructure&);
+
 variable initial_guess(const infrastructure&);
 
 int save_pressures(const std::string&, const infrastructure&, const matrix_t&);
 int save_flowrates(const std::string&, const infrastructure&, const matrix_t&);
+int save_flowrates_stations(const std::string&, const infrastructure&, const matrix_t&);
 
-
-int preprocess_for_quality_tracking(const infrastructure&, infrastructure&, double);
+int refine_pipes(const infrastructure&, infrastructure&, double);
 
 struct config {
     std::string     database;
@@ -90,10 +98,11 @@ struct config {
     double          tol;
     bool            refine;
     double          dx;
-    
+    bool            do_quality_tracking;    
     config();
 };
 
-int launch_solver(const config&);
+int initdb(const std::string&);
+int save_velocities(const std::string&, const infrastructure&, const matrix_t&);
 
 } //namespace shimmer

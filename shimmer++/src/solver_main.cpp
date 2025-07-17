@@ -29,7 +29,7 @@
 
 #include "infra/infrastructure.h"
 #include "errors.h"
-
+#include "infra/launch_solver.h"
 
 
 static void
@@ -98,6 +98,7 @@ int main(int argc, char **argv)
     shimmer::config cfg;
     cfg.refine = false;
     cfg.dx = 100e3;
+    cfg.do_quality_tracking = false;
     lua["config"] = &cfg;
 
     auto sresult = lua.safe_script_file(argv[1], sol::script_pass_on_error);
@@ -109,5 +110,8 @@ int main(int argc, char **argv)
 
     //parse_cmdline(argc, argv, cfg);
 
-    return launch_solver(cfg);
+    if (cfg.do_quality_tracking)
+        return launch_solver_qt(cfg);
+    else
+        return launch_solver(cfg);
 }

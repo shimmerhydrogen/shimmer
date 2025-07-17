@@ -19,26 +19,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
+#include "sqlite/sqlite.hpp"
 #include "infra/infrastructure.h"
-#include "errors.h"
+#include "solver/time_solver.h"
+#include "solver/quality_tracking_solver.h"
 
-int main(int argc, char **argv)
-{
-    if (argc < 2) {
-        std::cerr << "Please specify database file name" << std::endl;
-        return 1;
-    }
 
-    shimmer::infrastructure infra;
+namespace shimmer {
 
-    int err = shimmer::load(argv[1], infra);
-    if (err != SHIMMER_SUCCESS) {
-        std::cout << "Problem detected while loading DB" << std::endl;
-        return 1;
-    }
+int launch_solver(const config&);
 
-    shimmer::infrastructure infraqt;
-    refine_pipes(infra, infraqt, 5000);
+int launch_solver_qt(const config&);
 
-    return 0;
 }

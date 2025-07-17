@@ -58,8 +58,8 @@ public:
     virtual void compute_molar_mass(const matrix_t&, const matrix_t&) = 0;
     virtual std::pair<vector_t, vector_t>
     speed_of_sound(linearized_fluid_solver *) const = 0;
-    inline vector_t mm_nodes() {return mm_nodes_;};
-    inline vector_t mm_pipes() {return mm_pipes_;};
+    inline vector_t mm_nodes() const {return mm_nodes_;};
+    inline vector_t mm_pipes() const {return mm_pipes_;};
 };
 
 

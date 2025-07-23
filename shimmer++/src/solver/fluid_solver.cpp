@@ -313,18 +313,6 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
                             size_t at_iteration)
 {
     std::string export_folder = "./export_matrices/data/";
-    std::ofstream graph_file (export_folder + "inrete_graph.csv");
-    if(!graph_file.is_open())
-    {
-        std::cout << "Error openning file" << std::endl;
-        exit(1);
-    }
-
-    graph_file << "network_data" << std::endl;
-    graph_file<< std::scientific << std::setprecision(16) << "" << num_nodes_<< std::endl ;
-    graph_file<< std::scientific << std::setprecision(16) << "" << num_pipes_<< std::endl ;
-    graph_file.close();
-
 
     press_pipes_.resize(num_pipes_);
 
@@ -382,7 +370,7 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
             exit(1);
         }
 
-        std::ofstream mfs (export_folder + "inrete_mat_k" + std::to_string(iter) + ".csv");
+        std::ofstream mfs (export_folder + "inrete_mat_t" + std::to_string(at_step_) + "_k" + std::to_string(iter) + ".csv");
 
         if(!mfs.is_open())
         {
@@ -405,7 +393,7 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
 
         mfs.close();
 
-        std::ofstream rfs (export_folder + "inrete_rhs_k" + std::to_string(iter) + ".csv");
+        std::ofstream rfs (export_folder + "inrete_rhs_t" + std::to_string(at_step_) + "_k" + std::to_string(iter) + ".csv");
         if(!rfs.is_open())
         {
             std::cout << "Error openning file" << std::endl;
@@ -428,6 +416,21 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
         {
             c2_nodes_ = c2_nodes;
             c2_pipes_ = c2_pipes;
+
+            std::ofstream graph_file (export_folder + "inrete_graph_t" + std::to_string(at_step_) + ".csv");
+            if(!graph_file.is_open())
+            {
+                std::cout << "Error openning file" << std::endl;
+                exit(1);
+            }
+
+            graph_file << "network_data" << std::endl;
+            graph_file<< std::scientific << std::setprecision(16) << "" << num_nodes_<< std::endl ;
+            graph_file<< std::scientific << std::setprecision(16) << "" << num_pipes_<< std::endl ;
+            graph_file<< std::scientific << std::setprecision(16) << "" << at_step_<< std::endl ;
+            graph_file<< std::scientific << std::setprecision(16) << "" << iter<< std::endl ;
+            graph_file.close();
+
 
             return true;
         }

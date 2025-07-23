@@ -43,8 +43,6 @@ class equation_of_state
 {
 
 protected:
-    vector_t density_;
-
     vector_t mm_nodes_;
     vector_t mm_pipes_;
 
@@ -53,17 +51,15 @@ protected:
 
 public:
     equation_of_state(){};
-    void compute_density(linearized_fluid_solver *, const vector_t&);
-    vector_t compute_R(const vector_t& molar_mass);
+    vector_t density(linearized_fluid_solver *) const;
+    vector_t compute_R(const vector_t& molar_mass) const;
 
     virtual void initialization(linearized_fluid_solver *) = 0; 
     virtual void compute_molar_mass(const matrix_t&, const matrix_t&) = 0;
     virtual std::pair<vector_t, vector_t>
-    speed_of_sound(linearized_fluid_solver *) = 0;
-    inline vector_t mm_nodes() {return mm_nodes_;};
-    inline vector_t mm_pipes() {return mm_pipes_;};
-
-    const vector_t& density(); 
+    speed_of_sound(linearized_fluid_solver *) const = 0;
+    inline vector_t mm_nodes() const {return mm_nodes_;};
+    inline vector_t mm_pipes() const {return mm_pipes_;};
 };
 
 
@@ -80,10 +76,10 @@ public:
     void compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes);
 
     vector_t
-    compute_Z(double temperature, const vector_t& pressure);
+    compute_Z(double temperature, const vector_t& pressure) const;
 
     std::pair<vector_t, vector_t>
-    speed_of_sound(linearized_fluid_solver *lfs);
+    speed_of_sound(linearized_fluid_solver *lfs) const;
 };
 
 
@@ -130,11 +126,11 @@ public:
     compute_Z(const double  & temperature,
               const vector_t& pressure,
               const matrix_t& x,
-              const gerg_params& gp);
+              const gerg_params& gp) const;
 
 
     std::pair<vector_t, vector_t>
-    speed_of_sound(linearized_fluid_solver *lfs);
+    speed_of_sound(linearized_fluid_solver *lfs) const;
 };
 
 
@@ -158,11 +154,11 @@ public:
     vector_t
     compute_Z(const vector_t& temperature,
             const vector_t& pressure,
-            const matrix_t& x);
+            const matrix_t& x) const;
 
 
     std::pair<vector_t, vector_t>
-    speed_of_sound(linearized_fluid_solver *lfs);
+    speed_of_sound(linearized_fluid_solver *lfs) const;
 };
 
 

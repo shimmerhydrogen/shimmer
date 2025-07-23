@@ -205,14 +205,7 @@ linearized_fluid_solver::boundary(const vector_t& area_pipes,
          const vector_t& flux,
          equation_of_state *eos)
 {
-
     size_t offset =  num_nodes_ + num_pipes_;
-
-    // This is here due to the first code in matlab. But could be not necessary.
-    auto rho  = eos->density();
-    /// vel [m/s] velocity of the gas within pipes.
-    vector_t vel = flux.cwiseQuotient(area_pipes.cwiseProduct(rho));
-
 
     sparse_matrix_t sId (num_nodes_, num_nodes_);
     sId.setIdentity();

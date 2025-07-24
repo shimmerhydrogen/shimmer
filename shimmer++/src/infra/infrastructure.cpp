@@ -1120,6 +1120,7 @@ discretize_pipes(const infrastructure& infrain,
         //std:: cout << to_ic->init_P << " -> " << to_ic->init_L << std::endl;
 
         // Add discretization pipes for each original pipe
+        std::vector<int> discrpipes(numfrags);
         for (int i = 1; i < discrnodes.size(); i++) {
             setting_pipe out_setting;
             out_setting.name = pipe.name + "_seg_" + std::to_string(i);
@@ -1153,6 +1154,9 @@ discretize_pipes(const infrastructure& infrain,
             pic.i_sto = discrnodes[i];
             pic.init_G = pipe_ic->init_G;
             infraout.pics.push_back(pic);
+
+            discrpipes[i] = branch_num;
+
             branch_num++;
         }
 
@@ -1161,6 +1165,7 @@ discretize_pipes(const infrastructure& infrain,
         discr.parent_ito = i_to;
         discr.dx = fraglen;
         discr.nodelist = std::move(discrnodes);
+        discr.pipelist = std::move(discrpipes); 
 
         infraout.pipe_discretizations.push_back( std::move(discr) );
     }

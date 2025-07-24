@@ -36,6 +36,7 @@ struct pipe_discretization {
     int                 parent_ito;
     double              dx;
     std::vector<int>    nodelist;
+    std::vector<int>    pipelist;
 
     bool operator<(const pipe_discretization& other) const {
         return

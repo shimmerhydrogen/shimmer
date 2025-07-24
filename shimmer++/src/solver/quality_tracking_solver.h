@@ -52,12 +52,12 @@ class qt_solver
     vector_t rho_msh_;
     variable var_msh_;
     variable var_msh_guess_;
-    vector_t area_pipes_;
+    vector_t area_msh_pipes_;
 
     matrix_t rho_msh_in_time_;
     matrix_t var_msh_in_time_;
 
-    incidence msh_inc_;
+    incidence inc_msh_;
     const infrastructure& infra_;
 
     EQ_OF_STATE eos;
@@ -67,8 +67,8 @@ public:
               double Tm):
               infra_(infrain), temperature_(Tm)
     {
-        msh_inc_ = incidence(infra_.graph);
-        area_pipes_ = area(infra_.graph);
+        inc_msh_ = incidence(infra_.graph);
+        area_msh_pipes_ = area(infra_.graph);
     }
 
 
@@ -131,8 +131,8 @@ public:
 
         pipe_stations_activation(iter, var_time);
 
-        linearized_fluid_solver lfs(iter, unsteady, tolerance, dt, temperature_, mu, msh_inc_, infra_.graph);
-        lfs.run(area_pipes_, var_guess, var_time, &eos);
+        linearized_fluid_solver lfs(iter, unsteady, tolerance, dt, temperature_, mu, inc_msh_, infra_.graph);
+        lfs.run(area_msh_pipes_, var_guess, var_time, &eos);
         var_msh_guess_ = lfs.get_variable();
         rho_msh_ = eos.density(&lfs);
     }
@@ -143,16 +143,16 @@ public:
                  const  matrix_t& y_msh_nodes, vector_t& lhs_nodes, matrix_t& rhs_nodes)
     {
         // Mass conservation for network nodes
-        auto inc_mat = msh_inc_.matrix();
+        auto inc_mat = inc_msh_.matrix();
 
 
         // 1. Pipes Injection/Ejection
         
         // Here, local pipe quantities are needed for network(original) nodes
-        auto inc_smat = msh_inc_.matrix();
+        auto inc_smat = inc_msh_.matrix();
         for(size_t iN = 0; iN < infra_.num_original_stations; iN++)
         {
-            Eigen::SparseVector<double> node_flux = msh_inc_.matrix().row(iN).cwiseProduct(var_msh.flux);       
+            Eigen::SparseVector<double> node_flux = inc_msh_.matrix().row(iN).cwiseProduct(var_msh.flux);       
             
             // Loop by face
             for(Eigen::SparseVector<double>::InnerIterator it(node_flux); it; ++it)
@@ -315,8 +315,8 @@ public:
             // To be finished when it is clear how x changes and modifies mu.
             auto mu = viscosity<viscosity_type>(temperature_, infra_.graph);
 
-            linearized_fluid_solver lfs(it, unsteady, tol, dt, temperature_, mu, msh_inc_, infra_.graph);
-            lfs.run(area_pipes_, var_msh_guess_, var_msh_, &eos, ic);
+            linearized_fluid_solver lfs(it, unsteady, tol, dt, temperature_, mu, inc_msh_, infra_.graph);
+            lfs.run(area_msh_pipes_, var_msh_guess_, var_msh_, &eos, ic);
 
             bool pass_constr = lfs.check_constraints(it); 
             bool pass_control= lfs.check_controls(it);
@@ -426,7 +426,7 @@ public:
         matrix_t arho_in_time = rho_msh_in_time_;
 
         for(auto iP = 0; iP < num_pipes; iP++)
-            arho_in_time.col(iP) *= area_pipes_(iP);  
+            arho_in_time.col(iP) *= area_msh_pipes_(iP);  
         return flux_in_time.array() / arho_in_time.array();       
     }
 

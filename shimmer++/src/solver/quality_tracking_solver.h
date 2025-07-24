@@ -403,9 +403,16 @@ public:
     }
 
     vector_t
-    velocity(const variable& var, const vector_t& rho, const vector_t& area) const
+    velocity(const pipe_discretization& pd, const variable& var, const vector_t& rho, const vector_t& area) const
     {
-        return var.flux.array() / (rho.array() * area.array());      
+        vector_t vel = vector_t::Zero(pd.pipelist.size());
+        
+        for (const auto & pipe_num : pd.pipelist)
+        {
+            vel(pipe_num) = var.flux(pipe_num) / (rho(pipe_num) * area(pipe_num));
+        }
+
+        return vel;      
     }
 
 

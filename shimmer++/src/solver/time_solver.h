@@ -148,8 +148,8 @@ public:
 
         bool unsteady = true;
 
-        var_in_time_ = matrix_t::Zero(num_steps +1, num_edges(graph_) + 2 * num_vertices(graph_));
-        rho_in_time_ = matrix_t::Zero(num_steps +1, num_edges(graph_));
+        var_in_time_ = matrix_t::Zero(num_steps, num_edges(graph_) + 2 * num_vertices(graph_));
+        rho_in_time_ = matrix_t::Zero(num_steps, num_edges(graph_));
 
         var_ = var_guess_;
         var_in_time_.row(0) =  var_.make_vector();

@@ -262,23 +262,21 @@ public:
 
 
     void
-    qt_refine_nodes(size_t it, double dt)
+    qt_refine_nodes(size_t it, double dt, const variable& var_msh, const vector_t& rho_msh)
     {
         for(const auto& pd : infra_.pipe_discretizations)
         {
             auto dtdx =  (dt/pd.dx); 
 
-            // Density pipes
-            vector_t rho  = rho_msh_in_time_.row(it-1);  
+            /// vel [m/s] velocity of the gas within pipes 
+            vector_t vel_local = velocity(pd, var_msh, rho_msh, area_msh_pipes_);
 
-    #if 0 
-            /// vel [m/s] velocity of the gas within pipes => Flux is needed! area_pipes too
-            vector_t vel = flux.cwiseQuotient(area_pipes.cwiseProduct(rho));
+    #if 0             
+            // Iterate by global(?) pipe
+            vector_t vel_plus_half  = inc_msh_.matrix_in(pd)  * vel_local; 
+            vector_t vel_minus_half = inc_msh_.matrix_out(pd) * vel_local; 
+            vector_t vel_loc_node   = 0.5 * (vel_plus_half + vel_minus_half);
 
-            // Iterate by global pipe: get velocity local
-            vel_plus_half  = inc.matrix_in() * vel_local; 
-            vel_minus_half = inc.matrix_out() * vel_local; 
-            vel_loc_node   = 0.5* (vel_plus_half + vel_minus_half_);
 
             // Coefficients
             a_loc_node = 1.0 + dtdx * dtdx * vel_loc_node.array() * ( vel_plus_half.array() - vel_minus_half.array());
@@ -388,7 +386,7 @@ public:
             qt_net_nodes(it, dt, var_msh_, y_msh_nodes);
 
             // 3. 2. Continuity at discretized nodes 
-            qt_refine_nodes( it, dt);
+            qt_refine_nodes( it, dt, var_msh_, rho_msh_in_time_.row(it-1));
 
             // 3. 4 Solve Y^n+1            
             matrix_t lhs_inv =  lhs_nodes.cwiseInverse().asDiagonal();

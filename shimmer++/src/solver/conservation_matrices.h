@@ -27,7 +27,6 @@
 #include "solver/geometry_properties.h"
 #include "solver/incidence_matrix.h"
 #include "solver/pipe_calculator.h"
-#include "solver/matlab_manip.h"
 #include "solver/gas_law.h"
 #include "solver/variable.h"
 

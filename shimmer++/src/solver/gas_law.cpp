@@ -24,6 +24,24 @@
 
 namespace shimmer{
 
+
+matrix_t
+build_x_nodes(const infrastructure_graph& g)
+{
+    size_t num_nodes = num_vertices(g);
+    Eigen::MatrixXd x(num_nodes, 21);
+
+    auto index = get(boost::vertex_index, g);
+
+    for (auto vp = vertices(g); vp.first != vp.second; ++vp.first) {
+        auto idx = index[*vp.first]; 
+        x.row(idx) = g[idx].gas_mixture;
+    }
+
+    return x;
+}
+
+
 vector_t 
 equation_of_state::density(linearized_fluid_solver *lfs) const
 {
@@ -38,6 +56,17 @@ equation_of_state::compute_R(const vector_t& molar_mass) const
 {
     return Runiversal_ * molar_mass.cwiseInverse();     
 }
+
+void
+equation_of_state::compute_molar_mass(const infrastructure_graph& graph, const incidence& inc)
+{
+    // Molar frac by comp and by pipe/node
+    matrix_t x_nodes = build_x_nodes(graph);
+    matrix_t x_pipes = inc.matrix_in().transpose() * x_nodes;   
+
+    compute_molar_mass(x_nodes, x_pipes);
+}
+
 
 // ----------------------------------------------------------------------------
 //                    Papay equation of state

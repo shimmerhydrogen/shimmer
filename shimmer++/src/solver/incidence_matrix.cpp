@@ -59,16 +59,7 @@ namespace shimmer{
         mat_ = mat_in_ - mat_out_; 
     }
 
-
-    const sparse_matrix_t& incidence::matrix()      { return mat_;}
-    const sparse_matrix_t& incidence::matrix_in()   { return mat_in_;}
-    const sparse_matrix_t& incidence::matrix_out()  { return mat_out_;}   
     const sparse_matrix_t& incidence::matrix()      const { return mat_;}
     const sparse_matrix_t& incidence::matrix_in()   const { return mat_in_;}
     const sparse_matrix_t& incidence::matrix_out()  const { return mat_out_;}   
-
-
-    
-
-
 } //end namespace shimmer

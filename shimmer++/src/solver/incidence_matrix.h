@@ -55,10 +55,7 @@ public:
     }
 
     incidence(){}
-
-    const sparse_matrix_t& matrix();     
-    const sparse_matrix_t& matrix_in();   
-    const sparse_matrix_t& matrix_out();   
+ 
     const sparse_matrix_t& matrix() const;      
     const sparse_matrix_t& matrix_in()  const;   
     const sparse_matrix_t& matrix_out() const;  

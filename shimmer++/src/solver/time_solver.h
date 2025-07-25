@@ -107,17 +107,17 @@ public:
     initialization( const variable& var_guess,
                     double dt,
                     double tolerance,
-                    const matrix_t& y_nodes,
-                    const matrix_t& y_pipes)
+                    const matrix_t& x_nodes,
+                    const matrix_t& x_pipes)
     {
 
         bool unsteady = false;
-
+ 
 
         EQ_OF_STATE eos;
-        eos.compute_molar_mass(y_nodes, y_pipes);
+        eos.compute_molar_mass(x_nodes, x_pipes);
 
-        // To be finish when it is clear how x changes and modifies mu.
+        // mu(x): if composition of gas changes, mu changes accordingly
         auto mu = viscosity<viscosity_type>(temperature_, graph_);
 
         size_t iter = 0;
@@ -138,12 +138,9 @@ public:
     advance(double dt,
             size_t num_steps,
             double tol,
-            const matrix_t& y_nodes,
-            const matrix_t& y_pipes)
+            const matrix_t& x_nodes,
+            const matrix_t& x_pipes)
     {
-        //matrix_t y_nodes = make_mass_fraction(num_nodes);
-        //matrix_t y_pipes = inc_.matrix_in().transpose() * y_nodes;
-
         size_t MAX_CONSTRAINT_ITER = 10;
 
         bool unsteady = true;
@@ -176,7 +173,7 @@ public:
             std::cout<<"========================================================"<< std::endl;
 
             EQ_OF_STATE eos;
-            eos.compute_molar_mass(y_nodes, y_pipes);
+            eos.compute_molar_mass(x_nodes, x_pipes);
 
             pipe_stations_activation(it, var_);
 

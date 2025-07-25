@@ -82,10 +82,10 @@ papay::initialization(linearized_fluid_solver *lfs){}
 
 
 void
-papay::compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes)
+papay::compute_molar_mass(const matrix_t& x_nodes, const matrix_t& x_pipes)
 {
-    mm_nodes_ = vector_t::Zero(y_nodes.rows()); 
-    mm_pipes_ = vector_t::Zero(y_pipes.rows()); 
+    mm_nodes_ = vector_t::Zero(x_nodes.rows()); 
+    mm_pipes_ = vector_t::Zero(x_pipes.rows()); 
 
     mm_nodes_.setConstant(16.0);
     mm_pipes_.setConstant(16.0);
@@ -138,9 +138,9 @@ gerg_params:: gerg_params(){};
 
 gerg::gerg()
 {
-    mmi_gerg = vector_t::Zero(21); 
+    mm_component = vector_t::Zero(21); 
 
-    mmi_gerg <<
+    mm_component <<
     //  CH4              N2             CO2             C2H6
     1.604246e+01,   2.801340e+01,   4.400950e+01,   3.006904e+01,
     //  C3H8          i-C4H10         n-C4H10         i-C5H12
@@ -217,16 +217,16 @@ gerg::speed_of_sound(linearized_fluid_solver *lfs) const
 
 
 void
-gerg::compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes)
+gerg::compute_molar_mass(const matrix_t& x_nodes, const matrix_t& x_pipes)
 {
-    mm_nodes_ = vector_t::Zero(y_nodes.rows()); 
-    mm_pipes_ = vector_t::Zero(y_pipes.rows()); 
+    mm_nodes_ = vector_t::Zero(x_nodes.rows()); 
+    mm_pipes_ = vector_t::Zero(x_pipes.rows()); 
 
     for(size_t i = 0; i <= 20; i++)
-        mm_nodes_ +=  mmi_gerg(i) * y_nodes.col(gas_name_[i]); 
+        mm_nodes_ +=  mm_component(i) * x_nodes.col(gas_name_[i]); 
 
     for(size_t i = 0; i <= 20; i++)
-        mm_pipes_ +=  mmi_gerg(i) * y_pipes.col(gas_name_[i]); 
+        mm_pipes_ +=  mm_component(i) * x_pipes.col(gas_name_[i]); 
 }
 
 #endif /* HAVE_MATLAB_GERG */
@@ -286,15 +286,14 @@ gerg_aga::speed_of_sound(linearized_fluid_solver *lfs) const
 
 
 void
-gerg_aga::compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes)
+gerg_aga::compute_molar_mass(const matrix_t& x_nodes, const matrix_t& x_pipes)
 {
-    mm_nodes_ = vector_t::Zero(y_nodes.rows()); 
-    mm_pipes_ = vector_t::Zero(y_pipes.rows()); 
+    mm_nodes_ = vector_t::Zero(x_nodes.rows()); 
+    mm_pipes_ = vector_t::Zero(x_pipes.rows()); 
 
-    shimmer_gerg::gerg_functions::molar_mass(y_nodes, tolerance_, mm_nodes_);
-    shimmer_gerg::gerg_functions::molar_mass(y_pipes, tolerance_, mm_pipes_);
+    shimmer_gerg::gerg_functions::molar_mass(x_nodes, tolerance_, mm_nodes_);
+    shimmer_gerg::gerg_functions::molar_mass(x_pipes, tolerance_, mm_pipes_);
 }
-
 
 
 } //end namespace shimmer

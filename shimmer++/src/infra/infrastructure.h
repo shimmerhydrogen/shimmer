@@ -60,7 +60,7 @@ struct infrastructure {
     std::vector<setting_pipe>               settings_pipe;
     std::vector<setting_compr_stat>         settings_compr_stat;
     std::vector<setting_red_stat>           settings_red_stat;
-    std::vector<gas_mass_fractions>         mass_fractions;
+    std::vector<gas_molar_fractions>        molar_fractions;
 
     std::vector<pipe_discretization>        pipe_discretizations;
     std::vector<setting_pipe_QT>            settings_pipe_QT;

@@ -114,7 +114,7 @@ class gerg: public equation_of_state
     gerg_params params_nodes_;
     gerg_params params_pipes_;
 
-    vector_t mmi_gerg;
+    vector_t mm_component;
     std::vector<int> gas_name_;
     gerg_params compute_params(const matrix_t& x);
 

@@ -30,7 +30,6 @@
 #endif /* HAVE_MATLAB_GERG */
 #include "infrastructure_graph.h"
 #include "solver/incidence_matrix.h"
-#include "solver/matlab_manip.h"
 #include "solver/gas_law.h"
 #include "verify_test.h"
 

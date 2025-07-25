@@ -25,6 +25,8 @@
 #ifdef HAVE_MATLAB_GERG
 #include "MATLAB_GERG_functions.hpp"
 #endif /* HAVE_MATLAB_GERG */
+#include "solver/incidence_matrix.h"
+#include "infrastructure_graph.h"
 #include "solver/fluid_solver.h"
 #include "gerg/shimmer_gerg_functions.hpp"
 #include "gerg/shimmer_gerg_utilities.hpp"
@@ -40,6 +42,7 @@ class gerg;
 using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1>; 
 using matrix_t = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>; 
 
+matrix_t build_x_nodes(const infrastructure_graph& g);
 
 class equation_of_state
 {
@@ -55,6 +58,7 @@ public:
     equation_of_state(){};
     vector_t density(linearized_fluid_solver *) const;
     vector_t compute_R(const vector_t& molar_mass) const;
+    void compute_molar_mass(const infrastructure_graph&, const incidence&);
 
     virtual void initialization(linearized_fluid_solver *) = 0; 
     virtual void compute_molar_mass(const matrix_t&, const matrix_t&) = 0;
@@ -75,6 +79,7 @@ public:
     
     void initialization(linearized_fluid_solver *lfs); 
 
+    using equation_of_state::compute_molar_mass;
     void compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes);
 
     vector_t
@@ -117,6 +122,7 @@ public:
 
     gerg();
 
+    using equation_of_state::compute_molar_mass;
     void compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes);
 
     void initialization(linearized_fluid_solver *lfs); 
@@ -146,6 +152,7 @@ public:
 
     gerg_aga();
 
+    using equation_of_state::compute_molar_mass;
     void compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes);
 
     void initialization(linearized_fluid_solver *lfs); 

@@ -201,16 +201,16 @@ make_init_graph(infrastructure_graph& g)
 
 
 std::pair<matrix_t, matrix_t> 
-make_mass_fraction(size_t size, const infrastructure_graph& graph)
+make_molar_fraction(size_t size, const infrastructure_graph& graph)
 {
     incidence inc(graph);
 
-    matrix_t y_nodes(size, 21);
-    y_nodes.col(0).setConstant(1);
+    matrix_t x_nodes(size, 21);
+    x_nodes.col(0).setConstant(1);
 
-    matrix_t y_pipes = inc.matrix_in().transpose() * y_nodes;    
+    matrix_t x_pipes = inc.matrix_in().transpose() * x_nodes;    
 
-    return  std::make_pair(y_nodes, y_pipes); 
+    return  std::make_pair(x_nodes, x_pipes); 
 }
 
 
@@ -386,26 +386,26 @@ int main()
     infrastructure_graph graph;
     make_init_graph(graph);
 
-    auto [y_nodes, y_pipes] = make_mass_fraction(num_nodes, graph);
+    auto [x_nodes, x_pipes] = make_molar_fraction(num_nodes, graph);
 
     using time_solver_t = time_solver<papay, viscosity_type::Constant>; 
 
     /*
     time_solver_t ts0(graph, temperature, flux_ext);
-    ts0.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);    
+    ts0.initialization(guess_std, dt_std, tol_std, x_nodes, x_pipes);    
     auto sol_std =  ts0.guess();
     */
     
     
     time_solver_t ts1(graph, temperature);
     ts1.set_initialization(guess_unstd);    
-    ts1.advance(dt, num_steps, tol, y_nodes, y_pipes);
+    ts1.advance(dt, num_steps, tol, x_nodes, x_pipes);
     auto sol_set_unstd  = ts1.solution();
     
    
     time_solver_t ts2(graph, temperature);
-    ts2.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);    
-    ts2.advance(dt, num_steps, tol, y_nodes, y_pipes);
+    ts2.initialization(guess_std, dt_std, tol_std, x_nodes, x_pipes);    
+    ts2.advance(dt, num_steps, tol, x_nodes, x_pipes);
     auto sol_init_unstd = ts2.solution();
    
     //---------------------------------------------------------------

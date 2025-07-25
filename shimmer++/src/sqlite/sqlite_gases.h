@@ -27,11 +27,11 @@
 #define NUM_GASES 21
 namespace shimmer {
 
-struct gas_mass_fractions {
+struct gas_molar_fractions {
     int                             i_snum;
     std::array<double, NUM_GASES>   fractions;
 
-    bool operator<(const gas_mass_fractions& other) const {
+    bool operator<(const gas_molar_fractions& other) const {
         return i_snum < other.i_snum;
     }
 };
@@ -39,9 +39,9 @@ struct gas_mass_fractions {
 namespace database {
 
 int load(sqlite3 *db, const optvector<int>& s_u2i,
-    std::vector<gas_mass_fractions>& fracs);
+    std::vector<gas_molar_fractions>& fracs);
 int store(sqlite3 *db, const std::vector<int>& s_i2u,
-    const std::vector<gas_mass_fractions>& fracs);
+    const std::vector<gas_molar_fractions>& fracs);
 
 } //namespace database
 

@@ -184,11 +184,11 @@ load_stations(sqlite3 *db, infrastructure& infra)
         vp.name = (char *) sqlite3_column_text(stmt, 1);
         vp.type = static_cast<station_type>(sqlite3_column_int(stmt,2));
 
-        if ( s_in >= infra.mass_fractions.size() ) {
+        if ( s_in >= infra.molar_fractions.size() ) {
             std::cerr << "No mass fractions for station " << s_un << std::endl;
             return SHIMMER_MISSING_DATA;
         }
-        const auto& mfs = infra.mass_fractions.at(s_in).fractions;
+        const auto& mfs = infra.molar_fractions.at(s_in).fractions;
         vp.gas_mixture = vector_t::Zero(mfs.size());
         assert(vp.gas_mixture.size() == NUM_GASES);
         std::copy(mfs.begin(), mfs.end(), vp.gas_mixture.begin());
@@ -501,13 +501,13 @@ store_station_settings(sqlite3 *db, infrastructure& infra)
 }
 
 static int
-load_gas_mass_fractions(sqlite3 *db, infrastructure& infra)
+load_gas_molar_fractions(sqlite3 *db, infrastructure& infra)
 {
-    if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.mass_fractions)) {
+    if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.molar_fractions)) {
         return SHIMMER_DATABASE_PROBLEM;
     }
     
-    if (infra.mass_fractions.size() != infra.s_i2u.size()) {
+    if (infra.molar_fractions.size() != infra.s_i2u.size()) {
         std::cerr << "Incorrect number of mass fractions in the DB. ";
         std::cerr << "There should be as many mass fractions as stations.";
         std::cerr << std::endl;
@@ -515,7 +515,7 @@ load_gas_mass_fractions(sqlite3 *db, infrastructure& infra)
     }
     
     for (int i = 0; i < infra.s_i2u.size(); i++) {
-        if (infra.mass_fractions[i].i_snum != i) {
+        if (infra.molar_fractions[i].i_snum != i) {
             std::cerr << "Incoherent mass fraction data. Check that ";
             std::cerr << "there is 1:1 correspondence between stations ";
             std::cerr << "and mass fraction data" << std::endl;
@@ -586,8 +586,8 @@ int load(const std::string& db_filename, infrastructure& infra)
         goto load_fail;
     }
 
-    if (SHIMMER_SUCCESS != load_gas_mass_fractions(db, infra)) {
-        std::cerr << "Problems detected while loading gas mass fractions. ";
+    if (SHIMMER_SUCCESS != load_gas_molar_fractions(db, infra)) {
+        std::cerr << "Problems detected while loading gas molar fractions. ";
         std::cerr << std::endl;
         goto load_fail;
     }
@@ -659,7 +659,7 @@ int store(const std::string& db_filename, infrastructure& infra)
         return SHIMMER_DATABASE_PROBLEM;
     }
 
-    //if (SHIMMER_SUCCESS != load_gas_mass_fractions(db, infra)) {
+    //if (SHIMMER_SUCCESS != load_gas_molar_fractions(db, infra)) {
     //    std::cerr << "Problems detected while loading gas mass fractions. ";
     //    std::cerr << std::endl;
     //    return SHIMMER_DATABASE_PROBLEM;
@@ -1227,7 +1227,7 @@ refine_pipes(const infrastructure& infrain,
 
     //infraout.pics = infrain.pics;
     /* This has to be recomputed:
-     * load_gas_mass_fractions() */
+     * load_gas_molar_fractions() */
 
     /* load_stations() */
     transfer_original_stations(infrain, infraout);

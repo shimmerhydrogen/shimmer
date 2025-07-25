@@ -140,8 +140,11 @@ public:
     
     bool
     qt_net_nodes(double dt, size_t at_step, const variable& var_msh,
-                 const  matrix_t& y_msh_nodes, vector_t& lhs_nodes, matrix_t& rhs_nodes)
+                 const  matrix_t& y_current, matrix_t& y_new)
     {
+        vector_t lhs_nodes = vector_t::Zero();
+        matrix_t rhs_nodes = matrix_t::Zero();
+
         // Mass conservation for network nodes
         auto inc_mat = inc_msh_.matrix();
 
@@ -194,7 +197,7 @@ public:
                 //1.2.2 Sum inj
                 for (size_t iC = 0; iC < NUM_GASES; iC++)
                 {
-                    double y_face = y_msh_nodes(upw_num, iC);
+                    double y_face = y_current(upw_num, iC);
                     rhs_nodes(iN,iC) += flux_inject * y_face; 
                 }
             }
@@ -228,7 +231,7 @@ public:
             {
                 for (size_t iC = 0; iC < NUM_GASES; iC++)
                 {
-                    rhs_nodes(node_prop.i_snum, iC) += L * y_msh_nodes(node_prop.i_snum, iC);
+                    rhs_nodes(node_prop.i_snum, iC) += L * y_current(node_prop.i_snum, iC);
                 }
             }    
             // Ejection
@@ -258,36 +261,68 @@ public:
 */
 #endif
 
+        // 3. 4 Solve Y^n+1            
+        matrix_t lhs_inv =  lhs_nodes.cwiseInverse().asDiagonal();
+
+        y_new.topRows( infra_.num_original_stations) = lhs_inv.array() * rhs_nodes.array(); 
+
+        return true;
     }
 
 
     void
-    qt_refine_nodes(size_t it, double dt, const variable& var_msh, const vector_t& rho_msh)
+    qt_refine_nodes(size_t it, double dt, const variable& var_msh, const vector_t& rho_msh,
+                    const vector_t& y_current, vector_t& y_new)
     {
+        // Loop over network (original) pipes
         for(const auto& pd : infra_.pipe_discretizations)
         {
             auto dtdx =  (dt/pd.dx); 
 
-            /// vel [m/s] velocity of the gas within pipes 
-            vector_t vel_local = velocity(pd, var_msh, rho_msh, area_msh_pipes_);
+            /// vel [m/s] velocity of the gas within pipes (on dual mesh)
+            vector_t vel_loc_pipes = velocity(pd, var_msh, rho_msh, area_msh_pipes_);
+            assert(vel_loc_pipes.size() == pd.nodelist.size()+2 && "Incorrect size for local velocities");
 
-    #if 0             
-            // Iterate by global(?) pipe
-            vector_t vel_plus_half  = inc_msh_.matrix_in(pd)  * vel_local; 
-            vector_t vel_minus_half = inc_msh_.matrix_out(pd) * vel_local; 
-            vector_t vel_loc_node   = 0.5 * (vel_plus_half + vel_minus_half);
+            // Loop over discretized nodes (primal volume) of the current network pipe
+            /* // Take all discretized pipes on the original pipe
+                vector_t vel_plus_half  = inc_msh_.matrix_in(pd.nodelist)  * vel_local; 
+                vector_t vel_minus_half = inc_msh_.matrix_out(pd.nodelist) * vel_local; 
+                vector_t vel_node   = 0.5 * (vel_plus_half + vel_minus_half);
+            */
 
+            // Approx velocity at nodes(primal mesh)
+            vector_t vel_loc_nodes = vector_t::Zero( pd.nodelist.size());
+            // inner points
+            for(int iN = 1; iN < pd.nodelist.size(); iN++)
+                vel_loc_nodes(iN) = 0.5 * (vel_loc_pipes[iN] + vel_loc_pipes[iN-1]);
 
-            // Coefficients
-            a_loc_node = 1.0 + dtdx * dtdx * vel_loc_node.array() * ( vel_plus_half.array() - vel_minus_half.array());
-            a_plus = dtdx * vel_plus  * (0.5 - dtdx * vel_plus_half);             
-            a_minus= dtdx * vel_minus * (0.5 - dtdx * vel_minus_half);             
+            // outer points: I chose to be equal to the first volume value...maybe a finite difference of higher degree could be better
+            vel_loc_nodes[0] =  vel_loc_pipes[0];
+            vel_loc_nodes[pd.nodelist.size()-1] =  vel_loc_pipes[pd.nodelist.size()-1];
 
-            // mass fracctions
-            Y_loc_nodes_new = a_loc_node * Y_loc_nodes
-                                + a_plus * Y_loc_nodes_plus 
-                                + a_minus * Y_loc_nodes_minus;  
-    #endif
+            for (int iN = 1; iN < pd.nodelist.size()-1; iN++)
+            {
+                // Check the sign with the incidence matrix!
+                double vel_plus_half  = vel_loc_pipes[iN-1]; 
+                double vel_minus_half = vel_loc_pipes[iN]; 
+                double vel_i = vel_loc_nodes[iN];
+                double vel_i_plus  = vel_loc_nodes[iN+1]; 
+                double vel_i_minus = vel_loc_nodes[iN-1]; 
+
+                // Coefficients
+                double a_i = 1.0 + dtdx * dtdx * vel_i * ( vel_plus_half - vel_minus_half);
+                double a_plus = dtdx * vel_i_plus  * (0.5 - dtdx * vel_plus_half);             
+                double a_minus= dtdx * vel_i_minus * (0.5 - dtdx * vel_minus_half);             
+
+                // mass fracctions
+                auto idx = pd.nodelist[iN];
+                auto idx_plus = pd.nodelist[iN-1];
+                auto idx_minus = pd.nodelist[iN+1];
+
+                y_new[idx] = a_i * y_current[idx]
+                            + a_plus * y_current[idx_plus] 
+                            - a_minus * y_current[idx_minus];  // check signs
+            } 
         }
     }
 
@@ -342,12 +377,8 @@ public:
     advance(double dt,
             size_t num_steps,
             double tol,
-            const matrix_t& y_msh_nodes,
-            const matrix_t& y_msh_pipes)
+            const matrix_t& y_msh_nodes)
     {
-        //matrix_t y_nodes = make_mass_fraction(num_nodes);
-        //matrix_t y_pipes = inc_.matrix_in().transpose() * y_nodes;
-
         size_t MAX_CONSTRAINT_ITER = 10;
 
         auto num_nodes = num_vertices(infra_.graph); 
@@ -361,7 +392,9 @@ public:
         rho_msh_in_time_.row(0) =  rho_msh_.transpose();
         
         // save matrices?  y_in_time[it] = y_; 
-        
+        matrix_t y_current = y_msh_nodes;
+        matrix_t y_new = matrix_t::Zero(num_nodes, NUM_GASES);
+
         EQ_OF_STATE eos;
 
         double t = 0;
@@ -372,7 +405,8 @@ public:
             std::cout<<"========================================================"<< std::endl;
 
             // 1. Update molar masses inside eos
-            eos.compute_molar_mass(y_msh_nodes, y_msh_pipes);
+            matrix_t y_msh_pipes = inc_msh_.matrix_in().transpose() * y_current;   
+            eos.compute_molar_mass(y_current, y_msh_pipes);
 
             // 2. Fluid solver
             transmission(it, tol, dt, MAX_CONSTRAINT_ITER, eos);
@@ -383,16 +417,12 @@ public:
             matrix_t rhs_nodes = vector_t::Zero(infra_.num_original_pipes, NUM_GASES); 
 
             // 3. 1. Continuity at network nodes 
-            qt_net_nodes(it, dt, var_msh_, y_msh_nodes);
+            qt_net_nodes(it, dt, var_msh_, y_current, y_new);
 
             // 3. 2. Continuity at discretized nodes 
-            qt_refine_nodes( it, dt, var_msh_, rho_msh_in_time_.row(it-1));
+            qt_refine_nodes( it, dt, var_msh_, rho_msh_in_time_.row(it-1), y_current, y_new);
 
-            // 3. 4 Solve Y^n+1            
-            matrix_t lhs_inv =  lhs_nodes.cwiseInverse().asDiagonal();
-
-            y_ = lhs_inv.array() * rhs_nodes.array(); 
-
+            y_current = y_new;
             // save matrices? y_in_time[it] = y_; 
 
         }

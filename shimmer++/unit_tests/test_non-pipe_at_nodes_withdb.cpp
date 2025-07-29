@@ -205,7 +205,7 @@ int main(int argc, char **argv)
     _MM_SET_EXCEPTION_MASK(_MM_GET_EXCEPTION_MASK() & ~_MM_MASK_INVALID);
     
 
-    size_t num_steps = 7;
+    size_t num_steps_run = 7;
     double dt = 3600;
     double temperature = 293.15;
     double tol = 1e-4;
@@ -237,14 +237,14 @@ int main(int argc, char **argv)
     {
     time_solver_t ts0(graph, temperature, flux_ext);
     ts0.set_initialization(guess_unstd);    
-    ts0.advance(dt, num_steps, tol);
+    ts0.advance(dt, num_steps_run, tol);
     auto sol_set_unstd  = ts0.solution();
     }
     #endif
 
     time_solver_t ts1(infra.graph, temperature);
     ts1.initialization(guess_std, dt_std, tol_std);  
-    ts1.advance(dt, num_steps, tol);
+    ts1.advance(dt, num_steps_run, tol);
     auto sol_unstd  = ts1.solution();
     auto sol_std  = ts1.guess();
     //---------------------------------------------------------------

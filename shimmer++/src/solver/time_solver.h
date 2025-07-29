@@ -150,6 +150,9 @@ public:
 
         std::ofstream ofs("warnings.txt");
 
+        EQ_OF_STATE eos;
+        eos.compute_molar_mass(graph_, inc_);
+
         double t = 0;
         for(size_t it = 1; it < num_steps; it++, t+=dt)
         {
@@ -167,9 +170,6 @@ public:
             std::cout<<"========================================================"<< std::endl;
             std::cout<<"========================================================"<< std::endl;
             std::cout<<"========================================================"<< std::endl;
-
-            EQ_OF_STATE eos;
-            eos.compute_molar_mass(graph_, inc_);
 
             pipe_stations_activation(it, var_);
 

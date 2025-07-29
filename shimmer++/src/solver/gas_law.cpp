@@ -119,6 +119,20 @@ papay::speed_of_sound(linearized_fluid_solver *lfs) const
 }
 
 
+std::pair<matrix_t, matrix_t>
+papay::compute_mass_frac(const infrastructure_graph& graph, const incidence& inc)
+{
+    matrix_t y_nodes = matrix_t::Zero(boost::num_vertices(graph), NUM_GASES ); 
+    matrix_t y_pipes = matrix_t::Zero(boost::num_edges(graph), NUM_GASES ); 
+
+    y_nodes.col(0) = vector_t::Ones(boost::num_vertices(graph), 1); 
+    y_pipes.col(0) = vector_t::Ones(boost::num_edges(graph), 1 ); 
+
+    return std::make_pair(y_nodes, y_pipes);
+}
+
+
+
 // ----------------------------------------------------------------------------
 //                    GERG equation of state
 // ----------------------------------------------------------------------------
@@ -228,7 +242,29 @@ gerg::compute_molar_mass(const matrix_t& x_nodes, const matrix_t& x_pipes)
         mm_pipes_ +=  mm_component(i) * x_pipes.col(gas_name_[i]); 
 }
 
+
+std::pair<matrix_t, matrix_t>
+gerg::compute_mass_frac(const infrastructure_graph& graph, const incidence& inc)
+{
+    // Molar frac by comp and by pipe/node
+    matrix_t x_nodes = build_x_nodes(graph);
+    matrix_t x_pipes = inc.matrix_in().transpose() * x_nodes;      
+    compute_molar_mass(x_nodes, x_pipes);
+
+    matrix_t y_nodes = matrix_t::Zero(boost::num_vertices(graph), NUM_GASES ); 
+    matrix_t y_pipes = matrix_t::Zero(boost::num_edges(graph), NUM_GASES ); 
+
+    for(size_t iN = 0; iN < boost::num_vertices(graph); iN++)
+        y_nodes.row(iN) =  mm_component.array() * x_nodes.row(iN).array() / mm_nodes_.array(); 
+
+    for(size_t iP = 0; iP < boost::num_edges(graph); iP++)
+        y_pipes.row(iP) =  mm_component.array() * x_pipes.row(iP).array() / mm_pipes_.array(); 
+
+    return std::make_pair(y_nodes, y_pipes);
+}
+
 #endif /* HAVE_MATLAB_GERG */
+
 // ----------------------------------------------------------------------------
 //                    GERG equation of state AGA8CODE
 // ----------------------------------------------------------------------------
@@ -296,5 +332,24 @@ gerg_aga::compute_molar_mass(const matrix_t& x_nodes, const matrix_t& x_pipes)
     shimmer_gerg::gerg_functions::molar_mass(x_pipes, tolerance_, mm_pipes_);
 }
 
+
+std::pair<matrix_t, matrix_t>
+gerg_aga::compute_mass_frac(const infrastructure_graph& graph, const incidence& inc)
+{
+    // Molar frac by comp and by pipe/node
+    matrix_t x_nodes = build_x_nodes(graph);
+    matrix_t x_pipes = inc.matrix_in().transpose() * x_nodes;   
+
+    matrix_t y_nodes = matrix_t::Zero(boost::num_vertices(graph), NUM_GASES ); 
+    matrix_t y_pipes = matrix_t::Zero(boost::num_edges(graph), NUM_GASES ); 
+      
+    for(size_t iN = 0; iN < boost::num_vertices(graph); iN++)
+        y_nodes.row(iN) =  mm_component.array() * x_nodes.row(iN).array() / mm_nodes_.array(); 
+
+    for(size_t iP = 0; iP < boost::num_edges(graph); iP++)
+        y_pipes.row(iP) =  mm_component.array() * x_pipes.row(iP).array() / mm_pipes_.array(); 
+
+    return std::make_pair(y_nodes, y_pipes);
+}
 
 } //end namespace shimmer

@@ -62,6 +62,8 @@ public:
 
     virtual void initialization(linearized_fluid_solver *) = 0; 
     virtual void compute_molar_mass(const matrix_t&, const matrix_t&) = 0;
+    virtual std::pair<matrix_t, matrix_t> compute_mass_frac(const infrastructure_graph&, const incidence&) = 0;
+
     virtual std::pair<vector_t, vector_t>
     speed_of_sound(linearized_fluid_solver *) const = 0;
     inline vector_t mm_nodes() const {return mm_nodes_;};
@@ -77,11 +79,12 @@ class papay: public equation_of_state
 public:
     papay();
     
-    void initialization(linearized_fluid_solver *lfs); 
-
     using equation_of_state::compute_molar_mass;
+    void initialization(linearized_fluid_solver *lfs); 
     void compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes);
-
+    std::pair<matrix_t, matrix_t>
+    compute_mass_frac(const infrastructure_graph&, const incidence&);
+    
     vector_t
     compute_Z(double temperature, const vector_t& pressure) const;
 
@@ -123,9 +126,10 @@ public:
     gerg();
 
     using equation_of_state::compute_molar_mass;
-    void compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes);
-
     void initialization(linearized_fluid_solver *lfs); 
+    void compute_molar_mass(const matrix_t& x_nodes, const matrix_t& x_pipes);
+    std::pair<matrix_t, matrix_t>
+    compute_mass_frac(const infrastructure_graph&, const incidence&);
 
     vector_t
     compute_Z(const double  & temperature,
@@ -147,15 +151,17 @@ typedef gerg_data::Thermodynamic_properties<vector_t> gerg_aga_thermo_props_t;
 class gerg_aga: public equation_of_state
 {
     double tolerance_;
+    vector_t mm_component;
 
 public:
 
     gerg_aga();
 
     using equation_of_state::compute_molar_mass;
-    void compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes);
-
     void initialization(linearized_fluid_solver *lfs); 
+    void compute_molar_mass(const matrix_t& x_nodes, const matrix_t& x_pipes);
+    std::pair<matrix_t, matrix_t> 
+    compute_mass_frac(const infrastructure_graph&, const incidence&);
 
     vector_t
     compute_Z(const vector_t& temperature,

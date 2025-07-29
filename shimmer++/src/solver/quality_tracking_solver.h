@@ -110,16 +110,16 @@ public:
     void
     initialization( const variable& var_guess,
                     double dt,
-                    double tolerance,
-                    const matrix_t& y_nodes,
-                    const matrix_t& y_pipes)
+                    double tolerance)
     {
         bool unsteady = false;
 
         EQ_OF_STATE eos;
-        eos.compute_molar_mass(y_nodes, y_pipes);
+        eos.compute_molar_mass(infra_.graph, inc_msh_);
+        //[y_msh_nodes_, y_msh_pipes_] = eos.compute_mass_fraction_comp(x_msh_nodes, x_msh_pipes);
+        // Mass fraction by comp, needs total molar mass. So molar mass has to be updated any time x changes!
 
-        // To be finish when it is clear how x changes and modifies mu.
+        // Viscosity changes with x (stored by comp in the graph).
         auto mu = viscosity<viscosity_type>(temperature_, infra_.graph);
 
         size_t iter = 0;
@@ -312,7 +312,7 @@ public:
                 double a_plus = dtdx * vel_i_plus  * (0.5 - dtdx * vel_plus_half);             
                 double a_minus= dtdx * vel_i_minus * (0.5 - dtdx * vel_minus_half);             
 
-                // mass fracctions
+                // mass fractions
                 auto idx = pd.nodelist[iN];
                 auto idx_plus = pd.nodelist[iN-1];
                 auto idx_minus = pd.nodelist[iN+1];
@@ -374,8 +374,7 @@ public:
     void
     advance(double dt,
             size_t num_steps,
-            double tol,
-            const matrix_t& y_msh_nodes)
+            double tol)
     {
         size_t MAX_CONSTRAINT_ITER = 10;
 
@@ -389,12 +388,14 @@ public:
         var_msh_in_time_.row(0) =  var_msh_.make_vector();
         rho_msh_in_time_.row(0) =  rho_msh_.transpose();
         
-        // save matrices?  y_in_time[it] = y_; 
-        matrix_t y_current = y_msh_nodes;
         matrix_t y_new = matrix_t::Zero(num_nodes, NUM_GASES);
+        // save matrices?  y_in_time[it] = y_; 
 
         EQ_OF_STATE eos;
+        // 1. Initialize inside eos
+        eos.compute_molar_mass(infra_.graph, inc_msh_);
 
+        #if 0
         double t = 0;
         for(size_t it = 1; it < num_steps; it++, t+=dt)
         {
@@ -424,7 +425,7 @@ public:
             // save matrices? y_in_time[it] = y_; 
 
         }
-
+#endif
         return;
     }
 

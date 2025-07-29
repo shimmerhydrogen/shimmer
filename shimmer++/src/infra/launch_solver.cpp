@@ -34,19 +34,6 @@ int launch_solver(const config& cfg)
 
     shimmer::variable guess = initial_guess(infra);
 
-    /* BEGIN GAS MASS FRACTIONS */
-    int nstations = num_stations(infra);
-    shimmer::matrix_t x_nodes = shimmer::matrix_t::Zero(nstations, NUM_GASES);
-    for (size_t i = 0; i < infra.molar_fractions.size(); i++) {
-        const auto& mf = infra.molar_fractions[i];
-        assert(mf.i_snum < nstations);
-        shimmer::vector_t x = shimmer::vector_t::Zero(NUM_GASES);
-        std::copy(mf.fractions.begin(), mf.fractions.end(), x.begin());
-        x_nodes.row(i) = x;
-    }
-
-    shimmer::incidence inc(infra.graph);
-    shimmer::matrix_t x_pipes = inc.matrix_in().transpose() * x_nodes;   
     /* END GAS MASS FRACTIONS */
 
     // Solver
@@ -54,8 +41,8 @@ int launch_solver(const config& cfg)
         shimmer::viscosity_type::Constant>;
 
     time_solver_t ts1(infra.graph, cfg.temperature);
-    ts1.initialization(guess, cfg.dt_std, cfg.tol_std, x_nodes, x_pipes);  
-    ts1.advance(cfg.dt, cfg.steps, cfg.tol, x_nodes, x_pipes);
+    ts1.initialization(guess, cfg.dt_std, cfg.tol_std);  
+    ts1.advance(cfg.dt, cfg.steps, cfg.tol);
     auto sol_full  = ts1.solution_full();
     auto vel_full  = ts1.velocity_full();
 
@@ -125,28 +112,13 @@ int launch_solver_qt(const config& cfg)
 
     shimmer::variable guess = initial_guess(infra);
 
-    /* BEGIN GAS MASS FRACTIONS */
-    int nstations = num_stations(infra);
-    shimmer::matrix_t x_nodes = shimmer::matrix_t::Zero(nstations, NUM_GASES);
-    for (size_t i = 0; i < infra.molar_fractions.size(); i++) {
-        const auto& mf = infra.molar_fractions[i];
-        assert(mf.i_snum < nstations);
-        shimmer::vector_t x = shimmer::vector_t::Zero(NUM_GASES);
-        std::copy(mf.fractions.begin(), mf.fractions.end(), x.begin());
-        x_nodes.row(i) = x;
-    }
-
-    shimmer::incidence inc(infra.graph);
-    shimmer::matrix_t x_pipes = inc.matrix_in().transpose() * x_nodes;   
-    /* END GAS MASS FRACTIONS */
-
     // Solver
     using solver_t = shimmer::qt_solver<shimmer::papay,
         shimmer::viscosity_type::Constant>;
 
     solver_t qt(infra, cfg.temperature);
-    qt.initialization(guess, cfg.dt_std, cfg.tol_std, x_nodes, x_pipes);  
-    //qt.advance(cfg.dt, cfg.steps, cfg.tol, x_nodes, x_pipes);
+    qt.initialization(guess, cfg.dt_std, cfg.tol_std);  
+    //qt.advance(cfg.dt, cfg.steps, cfg.tol);
     auto sol_full  = qt.solution_full();
     auto vel_full  = qt.velocity_full();
 

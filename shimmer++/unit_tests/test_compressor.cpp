@@ -170,20 +170,6 @@ make_guess_steady(const matrix_t& Gsnam )
 }
 
 
-std::pair<matrix_t, matrix_t> 
-make_mass_fraction(size_t size, const infrastructure_graph& graph)
-{
-    incidence inc(graph);
-
-    matrix_t y_nodes(size, 21);
-    y_nodes.col(0).setConstant(1);
-
-    matrix_t y_pipes = inc.matrix_in().transpose() * y_nodes;    
-
-    return  std::make_pair(y_nodes, y_pipes); 
-}
-
-
 void
 make_init_graph(infrastructure_graph& g,
                  const vector_t& Pset_REMI,
@@ -514,20 +500,18 @@ int main()
     infrastructure_graph graph;
     make_init_graph(graph, Pset_REMI, Pset_INJ, Gsnam);
 
-    auto [y_nodes, y_pipes] = make_mass_fraction(num_nodes, graph);
-
     using time_solver_t = time_solver<papay, viscosity_type::Constant>; 
 
     time_solver_t ts1(graph, temperature);
 
     std::cout << std::setprecision(16) << guess_std.make_vector() << std::endl; 
 
-    ts1.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);  
+    ts1.initialization(guess_std, dt_std, tol_std);  
     //ts1.set_initialization(guess_unstd);   
     vector_t sol_std  = ts1.guess();
     //std::cout << std::setprecision(16)<< sol_std << std::endl; 
 
-    ts1.advance(dt, num_steps, tol, y_nodes, y_pipes);
+    ts1.advance(dt, num_steps, tol);
     vector_t sol_unstd  = ts1.solution();   
     //std::cout << std::setprecision(16)<< sol_unstd << std::endl; 
 

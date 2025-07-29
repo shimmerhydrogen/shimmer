@@ -44,7 +44,6 @@ using matrix_t = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>;
 template<typename EQ_OF_STATE, int viscosity_type>
 class qt_solver
 {
-
     double temperature_;
 
     matrix_t y_;
@@ -116,7 +115,6 @@ public:
                     const matrix_t& y_pipes)
     {
         bool unsteady = false;
-
 
         EQ_OF_STATE eos;
         eos.compute_molar_mass(y_nodes, y_pipes);

@@ -37,7 +37,7 @@ class equation_of_state;
 class linearized_fluid_solver;
 class gerg;
 
-
+#define NUM_GASES 21
 
 using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1>; 
 using matrix_t = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>; 

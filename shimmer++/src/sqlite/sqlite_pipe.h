@@ -34,6 +34,7 @@ struct setting_pipe {
     double      length;
     double      diameter;
     double      roughness;
+    int         ref_nsegs;
 
     bool operator<(const setting_pipe& other) const {
         return std::pair{i_sfrom, i_sto} < std::pair{other.i_sfrom, other.i_sto};

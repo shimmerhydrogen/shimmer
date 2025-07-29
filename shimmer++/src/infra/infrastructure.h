@@ -62,7 +62,6 @@ struct infrastructure {
     std::vector<gas_mass_fractions>         mass_fractions;
 
     std::vector<pipe_discretization>        pipe_discretizations;
-    std::vector<setting_pipe_QT>            settings_pipe_QT;
 
     std::vector<station_initial_condition>  sics;
     std::vector<pipe_initial_condition>     pics;

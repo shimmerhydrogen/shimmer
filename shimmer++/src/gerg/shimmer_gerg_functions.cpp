@@ -16,7 +16,15 @@ void molar_mass(const Eigen::MatrixXd &x,
         MolarMassGERG(x_GERG, Mm(iR));
     }
 }
+// *********************************************************
+Eigen::VectorXd component_molar_masses() 
+{
+    Eigen::VectorXd mms = Eigen::VectorXd::Zero(GERG_num_componets);
+    for(int iC = 0; iC < GERG_num_componets; iC++)
+        mms(iC) = ComponentMolarMass(iC);
 
+    return mms;
+}
 // *********************************************************
 gerg_data::Reducing_parameters<double> 
 reducing_parameters(const std::vector<double>& x,

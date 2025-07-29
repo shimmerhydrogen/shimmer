@@ -1,0 +1,201 @@
+\documentclass[10pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage{minted}
+\usepackage{fullpage}
+\usepackage{hyperref}
+\usepackage{newpxtext}
+
+\title{Shimmer++ Handbook}
+
+\begin{document}
+\maketitle
+
+\section{Model description}
+TODO DENERG
+
+\section{Network Data Files}
+The network data files (NDFs) of Shimmer++ are based on SQLite, which is the
+most widely deployed relational database system. This choice guarantees total
+compatibility with any programming language/environment and easy manipulation of
+the network data. On top of the raw SQLite database, Shimmer++ provides a C++
+API and a Matlab API specific for the manipulation of the NDFs.
+
+\subsection{Database schema}
+In the following the NDF database schema will be described. The knowledge of
+the database schema is needed to directly modify the NDFs via tools like
+SQLite Browser (\url{https://sqlitebrowser.org/}) or to implement third party
+tools able to read and write Shimmer++ NDFs.
+
+\subsubsection{Station types}
+Shimmer++ handles gas networks with different types of stations, as described
+in Section~\ref{sec:shimmer_model}. Each station type is assigned a specific
+numeric identifier in order to be appropriately handled by the code. Currently
+implemented station types are visible in \texttt{network\_elements.hpp} and
+summarized in the following code snippet: 
+
+\begin{minted}{c++}
+enum class station_type : int {
+    ENTRY_P_REG = 1,            /* ReMi w/o backflow */
+    ENTRY_L_REG = 2,            /* Injection w/ pressure control */
+    EXIT_L_REG  = 3,            /* Consumption point w/o pressure control */
+    JUNCTION    = 4,            /* Junction */
+    PRIVATE_INLET  = 10,        /* Inlet, internal use only */
+    PRIVATE_OUTLET = 11,        /* Outlet, internal use only */
+    FICTITIOUS_JUNCTION = 100   /* For quality tracking, should not appear in DB*/
+};
+\end{minted}
+
+On the NDF side, the table containing the station types is named
+\texttt{station\_types} and is specified by the following SQL statement:
+\begin{minted}{sql}
+create table station_types (
+    t_type          INTEGER,        -- Station type, as per enum above
+    t_descr         TEXT NOT NULL,  -- Free-form description of the type
+    t_limits_table  TEXT,           -- Table with type-specific operational limits
+    t_profile_table TEXT,           -- Table with type-specific operational profiles
+
+    PRIMARY KEY(t_type)
+);
+\end{minted}
+
+\begin{itemize}
+    
+\end{itemize}
+
+\subsubsection{Stations}
+
+\begin{minted}{sql}
+create table stations (
+    s_number    INTEGER,
+    s_name      TEXT NOT NULL,
+    t_type      INTEGER,
+
+    s_height    REAL DEFAULT 0.0 NOT NULL,
+    s_latitude  REAL DEFAULT 0.0 NOT NULL,
+    s_longitude REAL DEFAULT 0.0 NOT NULL,
+
+    PRIMARY KEY(s_number),
+    
+    -- The type of the station must be well-defined
+    FOREIGN KEY (t_type)
+        REFERENCES station_types(t_type),
+    
+    CHECK(s_number >= 0)
+);
+\end{minted}
+
+\subsubsection{Limits and profiles - ReMi station}
+
+\begin{minted}{sql}
+-- Limits
+--  s_number:   number of the station
+--  lim_Lmin:   minimum allowed mass flow rate
+--  lim_Lmax:   maximum allowed mass flow rate
+--  lim_Pmin:   minimum allowed pressure
+--  lim_Pmax:   maximum allowed pressure
+
+create table limits_remi_wo (
+    s_number    INTEGER UNIQUE,
+    lim_Lmin    REAL DEFAULT 0.0 NOT NULL,
+    lim_Lmax    REAL DEFAULT 0.0 NOT NULL,
+    lim_Pmin    REAL DEFAULT 0.0 NOT NULL,
+    lim_Pmax    REAL DEFAULT 0.0 NOT NULL,
+
+    FOREIGN KEY (s_number)
+        REFERENCES stations(s_number)
+);
+
+-- Profiles
+--  s_number:   number of the station
+--  prf_time:   relative time of the sample
+--  prf_Pset:   pressure setpoint at the specified time
+
+create table profiles_remi_wo (
+    s_number    INTEGER,
+    prf_time    REAL DEFAULT 0.0 NOT NULL,
+    prf_Pset    REAL DEFAULT 0.0 NOT NULL,
+
+    FOREIGN KEY (s_number)
+        REFERENCES stations(s_number)
+);
+\end{minted}
+
+\subsubsection{Limits and profiles - Injection station}
+
+\begin{minted}{sql}
+-- Limits
+--  s_number:   number of the station
+--  lim_Lmin:   minimum allowed mass flow rate
+--  lim_Lmax:   maximum allowed mass flow rate
+--  lim_Pmin:   minimum allowed pressure
+--  lim_Pmax:   maximum allowed pressure
+--  parm_f:     scale factor named "f" in the slides
+
+create table limits_injection_w (
+    s_number    INTEGER UNIQUE,
+    lim_Lmin    REAL DEFAULT 0.0 NOT NULL,
+    lim_Lmax    REAL DEFAULT 0.0 NOT NULL,
+    lim_Pmin    REAL DEFAULT 0.0 NOT NULL,
+    lim_Pmax    REAL DEFAULT 0.0 NOT NULL,
+    parm_f      REAL DEFAULT 1.0 NOT NULL,
+
+    FOREIGN KEY (s_number)
+        REFERENCES stations(s_number)
+);
+
+-- Profiles
+--  s_number:   number of the station
+--  prf_time:   relative time of the sample
+--  prf_Lset:   mass flow rate setpoint at the specified time
+
+create table profiles_injection_w (
+    s_number    INTEGER,
+    prf_time    REAL DEFAULT 0.0 NOT NULL,
+    prf_Pset    REAL DEFAULT 0.0 NOT NULL,
+    prf_Lset    REAL DEFAULT 0.0 NOT NULL,
+
+    FOREIGN KEY (s_number)
+        REFERENCES stations(s_number)
+);
+\end{minted}
+
+\subsubsection{Limits and profiles - Consumption station}
+
+\begin{minted}{sql}
+-- Limits
+--  s_number:   number of the station
+--  lim_Lmin:   minimum allowed mass flow rate
+--  lim_Lmax:   maximum allowed mass flow rate
+--  lim_Pmin:   minimum allowed pressure
+--  lim_Pmax:   maximum allowed pressure
+
+create table limits_conspoint_wo (
+    s_number    INTEGER UNIQUE,
+    lim_Lmin    REAL DEFAULT 0.0 NOT NULL,
+    lim_Lmax    REAL DEFAULT 0.0 NOT NULL,
+    lim_Pmin    REAL DEFAULT 0.0 NOT NULL,
+    lim_Pmax    REAL DEFAULT 0.0 NOT NULL,
+
+    FOREIGN KEY (s_number)
+        REFERENCES stations(s_number)
+);
+
+-- Profiles
+--  s_number:   number of the station
+--  prf_time:   relative time of the sample
+--  prf_Lset:   pressure setpoint at the specified time
+
+create table profiles_conspoint_wo (
+    s_number    INTEGER,
+    prf_time    REAL DEFAULT 0.0 NOT NULL,
+    prf_Lset    REAL DEFAULT 0.0 NOT NULL,
+
+    CHECK(prf_Lset >= 0),
+
+    FOREIGN KEY (s_number)
+        REFERENCES stations(s_number)
+);
+\end{minted}
+
+\end{document}

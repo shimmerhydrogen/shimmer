@@ -28,8 +28,8 @@ namespace shimmer{
 matrix_t
 build_x_nodes(const infrastructure_graph& g)
 {
-    size_t num_nodes = num_vertices(g);
-    Eigen::MatrixXd x(num_nodes, 21);
+    size_t num_nodes = boost::num_vertices(g);
+    Eigen::MatrixXd x(num_nodes, NUM_GASES);
 
     auto index = get(boost::vertex_index, g);
 
@@ -78,7 +78,6 @@ papay::papay(): T_cr_(190.6), p_cr_(4.595e+6)
 
 void 
 papay::initialization(linearized_fluid_solver *lfs){}
-
 
 
 void

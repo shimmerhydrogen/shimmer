@@ -229,22 +229,7 @@ int main(int argc, char **argv)
 
     size_t num_bcnd = num_stations(infra);
     size_t system_size = num_stations(infra) + shimmer::num_pipes(infra);
-
     variable guess_std = initial_guess(infra);
-
-    /* BEGIN GAS MASS FRACTIONS */
-    matrix_t x_nodes = matrix_t::Zero(num_nodes, NUM_GASES);
-    for (size_t i = 0; i < infra.molar_fractions.size(); i++) {
-        const auto& mf = infra.molar_fractions[i];
-        assert(mf.i_snum < num_nodes);
-        vector_t y = vector_t::Zero(NUM_GASES);
-        std::copy(mf.fractions.begin(), mf.fractions.end(), y.begin());
-        x_nodes.row(i) = y;
-    }
-
-    incidence inc(infra.graph);
-    matrix_t x_pipes = inc.matrix_in().transpose() * x_nodes;   
-    /* END GAS MASS FRACTIONS */
 
     using time_solver_t = time_solver<papay, viscosity_type::Constant>; 
 
@@ -252,14 +237,14 @@ int main(int argc, char **argv)
     {
     time_solver_t ts0(graph, temperature, flux_ext);
     ts0.set_initialization(guess_unstd);    
-    ts0.advance(dt, num_steps, tol, x_nodes, x_pipes);
+    ts0.advance(dt, num_steps, tol);
     auto sol_set_unstd  = ts0.solution();
     }
     #endif
 
     time_solver_t ts1(infra.graph, temperature);
-    ts1.initialization(guess_std, dt_std, tol_std, x_nodes, x_pipes);  
-    ts1.advance(dt, num_steps, tol, x_nodes, x_pipes);
+    ts1.initialization(guess_std, dt_std, tol_std);  
+    ts1.advance(dt, num_steps, tol);
     auto sol_unstd  = ts1.solution();
     auto sol_std  = ts1.guess();
     //---------------------------------------------------------------

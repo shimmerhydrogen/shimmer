@@ -1,4 +1,5 @@
-// This file was taken, unmodified, from the https://github.com/usnistgov/AGA8 repository
+// This file was taken unmodified, except for the additional ComponentMolarMass
+// function, from the https://github.com/usnistgov/AGA8 repository
 
 #include "GERG2008.h"
 // We add both math headers to placate some non-standards-compliant compilers
@@ -1602,6 +1603,15 @@ void SetupGERG()
   //   n0i[i][1] = n0i[i][1] - log(d0);
   // }
 }
+// Added for shimmer++
+double ComponentMolarMass(int index)
+{
+    if(index < MaxFlds+1)
+        std::invalid_argument("Error in GERG: index out of bounds");
+
+    return MMiGERG[index];
+}
+
 
 #ifdef TEST_GERG
 int main()

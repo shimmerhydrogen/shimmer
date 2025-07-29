@@ -244,7 +244,9 @@ gerg_aga::gerg_aga()
 
 void
 gerg_aga::initialization(linearized_fluid_solver *lfs)
-{}
+{
+    mm_component = shimmer_gerg::gerg_functions::component_molar_masses(); 
+}
 
 
 vector_t 

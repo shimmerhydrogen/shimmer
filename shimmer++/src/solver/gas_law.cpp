@@ -144,6 +144,8 @@ papay::massfrac_2_molarfrac(const matrix_t& y_nodes, const matrix_t& y_pipes)
     x_nodes.col(0) = vector_t::Ones(y_nodes.rows());
     x_pipes.col(0) = vector_t::Ones(y_pipes.rows() ); 
 
+    mixture_molar_mass(x_nodes, x_pipes);
+    
     return std::make_pair(y_nodes, y_pipes);
 }
 // ----------------------------------------------------------------------------

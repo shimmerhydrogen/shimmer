@@ -118,7 +118,7 @@ int launch_solver_qt(const config& cfg)
 
     solver_t qt(infra, cfg.temperature);
     qt.initialization(guess, cfg.dt_std, cfg.tol_std);  
-    //qt.advance(cfg.dt, cfg.steps, cfg.tol);
+    qt.advance(cfg.dt, cfg.steps, cfg.tol);
     auto sol_full  = qt.solution_full();
     auto vel_full  = qt.velocity_full();
 

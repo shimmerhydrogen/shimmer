@@ -149,7 +149,7 @@ gerg_matlab()
 
     gerg gerg_eos; 
 
-    gerg_eos.compute_molar_mass(x_nodes, x_pipes);
+    gerg_eos.mixture_molar_mass(x_nodes, x_pipes);
 
     vector_t RRp = gerg_eos.compute_R(gerg_eos.mm_pipes()); 
     vector_t RRn = gerg_eos.compute_R(gerg_eos.mm_nodes()); 
@@ -191,7 +191,7 @@ RR_matlab()
 
     gerg gerg_eos; 
 
-    gerg_eos.compute_molar_mass(x_nodes, x_pipes);
+    gerg_eos.mixture_molar_mass(x_nodes, x_pipes);
 
     vector_t RRp = gerg_eos.compute_R(gerg_eos.mm_pipes()); 
     vector_t RRn = gerg_eos.compute_R(gerg_eos.mm_nodes()); 
@@ -240,7 +240,7 @@ gerg_aga8code()
 
     gerg_aga gerg_eos; 
 
-    gerg_eos.compute_molar_mass(x_nodes, x_pipes);
+    gerg_eos.mixture_molar_mass(x_nodes, x_pipes);
 
     vector_t RRp = gerg_eos.compute_R(gerg_eos.mm_pipes()); 
     vector_t RRn = gerg_eos.compute_R(gerg_eos.mm_nodes()); 

@@ -181,7 +181,7 @@ int main()
     bool unsteady = true;
 
     gerg_aga gerg_eos; 
-    gerg_eos.compute_molar_mass(graph, inc);
+    gerg_eos.mixture_molar_mass(graph, inc);
 
     auto mu = viscosity<viscosity_type::Kukurugya>(temperature, graph); 
 

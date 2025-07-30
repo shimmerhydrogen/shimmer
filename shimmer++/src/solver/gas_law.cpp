@@ -58,13 +58,13 @@ equation_of_state::compute_R(const vector_t& molar_mass) const
 }
 
 void
-equation_of_state::compute_molar_mass(const infrastructure_graph& graph, const incidence& inc)
+equation_of_state::mixture_molar_mass(const infrastructure_graph& graph, const incidence& inc)
 {
     // Molar frac by comp and by pipe/node
     matrix_t x_nodes = build_x_nodes(graph);
     matrix_t x_pipes = inc.matrix_in().transpose() * x_nodes;   
 
-    compute_molar_mass(x_nodes, x_pipes);
+    mixture_molar_mass(x_nodes, x_pipes);
 }
 
 
@@ -81,7 +81,7 @@ papay::initialization(linearized_fluid_solver *lfs){}
 
 
 void
-papay::compute_molar_mass(const matrix_t& x_nodes, const matrix_t& x_pipes)
+papay::mixture_molar_mass(const matrix_t& x_nodes, const matrix_t& x_pipes)
 {
     mm_nodes_ = vector_t::Zero(x_nodes.rows()); 
     mm_pipes_ = vector_t::Zero(x_pipes.rows()); 
@@ -120,7 +120,7 @@ papay::speed_of_sound(linearized_fluid_solver *lfs) const
 
 
 std::pair<matrix_t, matrix_t>
-papay::compute_mass_frac(const infrastructure_graph& graph, const incidence& inc)
+papay::molarfrac_2_massfrac(const infrastructure_graph& graph, const incidence& inc)
 {
     matrix_t y_nodes = matrix_t::Zero(boost::num_vertices(graph), NUM_GASES ); 
     matrix_t y_pipes = matrix_t::Zero(boost::num_edges(graph), NUM_GASES ); 
@@ -128,11 +128,24 @@ papay::compute_mass_frac(const infrastructure_graph& graph, const incidence& inc
     y_nodes.col(0) = vector_t::Ones(boost::num_vertices(graph), 1); 
     y_pipes.col(0) = vector_t::Ones(boost::num_edges(graph), 1 ); 
 
+    //In order to not define more variable, we use y as input, instead of x, since they are equal. 
+    mixture_molar_mass(y_nodes, y_pipes);
+
     return std::make_pair(y_nodes, y_pipes);
 }
 
 
+std::pair<matrix_t, matrix_t> 
+papay::massfrac_2_molarfrac(const matrix_t& y_nodes, const matrix_t& y_pipes)
+{
+    matrix_t x_nodes = matrix_t::Zero(y_nodes.rows(), NUM_GASES ); 
+    matrix_t x_pipes = matrix_t::Zero(y_pipes.rows(), NUM_GASES ); 
 
+    x_nodes.col(0) = vector_t::Ones(y_nodes.rows());
+    x_pipes.col(0) = vector_t::Ones(y_pipes.rows() ); 
+
+    return std::make_pair(y_nodes, y_pipes);
+}
 // ----------------------------------------------------------------------------
 //                    GERG equation of state
 // ----------------------------------------------------------------------------
@@ -230,7 +243,7 @@ gerg::speed_of_sound(linearized_fluid_solver *lfs) const
 
 
 void
-gerg::compute_molar_mass(const matrix_t& x_nodes, const matrix_t& x_pipes)
+gerg::mixture_molar_mass(const matrix_t& x_nodes, const matrix_t& x_pipes)
 {
     mm_nodes_ = vector_t::Zero(x_nodes.rows()); 
     mm_pipes_ = vector_t::Zero(x_pipes.rows()); 
@@ -244,12 +257,12 @@ gerg::compute_molar_mass(const matrix_t& x_nodes, const matrix_t& x_pipes)
 
 
 std::pair<matrix_t, matrix_t>
-gerg::compute_mass_frac(const infrastructure_graph& graph, const incidence& inc)
+gerg::molarfrac_2_massfrac(const infrastructure_graph& graph, const incidence& inc)
 {
     // Molar frac by comp and by pipe/node
     matrix_t x_nodes = build_x_nodes(graph);
     matrix_t x_pipes = inc.matrix_in().transpose() * x_nodes;      
-    compute_molar_mass(x_nodes, x_pipes);
+    mixture_molar_mass(x_nodes, x_pipes);
 
     matrix_t y_nodes = matrix_t::Zero(boost::num_vertices(graph), NUM_GASES ); 
     matrix_t y_pipes = matrix_t::Zero(boost::num_edges(graph), NUM_GASES ); 
@@ -263,8 +276,33 @@ gerg::compute_mass_frac(const infrastructure_graph& graph, const incidence& inc)
     return std::make_pair(y_nodes, y_pipes);
 }
 
-#endif /* HAVE_MATLAB_GERG */
+std::pair<matrix_t, matrix_t> 
+gerg::massfrac_2_molarfrac(const matrix_t&y_nodes, const matrix_t&y_pipes)
+{
+    matrix_t x_nodes = matrix_t::Zero(y_nodes.rows(), NUM_GASES ); 
+    matrix_t x_pipes = matrix_t::Zero(y_pipes.rows(), NUM_GASES ); 
 
+    for(int iN = 0; iN < NUM_GASES; iN++)
+    {
+        //diag
+        matrix_t A =  mm_component.asDiagonal();
+
+        // off diag
+        for(int iComp = 0; iComp < NUM_GASES; iComp++)
+        {
+            A.row(iComp) -= y_nodes(iN, iComp) * mm_component;
+        }
+
+        x_nodes.row(iN) = A.fullPivLu().solve(vector_t::Zero(NUM_GASES)).transpose();
+    }
+    
+    // Update mixture molar mass
+    mixture_molar_mass(x_nodes, x_pipes);
+
+    return std::make_pair(x_nodes, x_pipes);
+}
+
+#endif /* HAVE_MATLAB_GERG */
 // ----------------------------------------------------------------------------
 //                    GERG equation of state AGA8CODE
 // ----------------------------------------------------------------------------
@@ -323,7 +361,7 @@ gerg_aga::speed_of_sound(linearized_fluid_solver *lfs) const
 
 
 void
-gerg_aga::compute_molar_mass(const matrix_t& x_nodes, const matrix_t& x_pipes)
+gerg_aga::mixture_molar_mass(const matrix_t& x_nodes, const matrix_t& x_pipes)
 {
     mm_nodes_ = vector_t::Zero(x_nodes.rows()); 
     mm_pipes_ = vector_t::Zero(x_pipes.rows()); 
@@ -334,11 +372,13 @@ gerg_aga::compute_molar_mass(const matrix_t& x_nodes, const matrix_t& x_pipes)
 
 
 std::pair<matrix_t, matrix_t>
-gerg_aga::compute_mass_frac(const infrastructure_graph& graph, const incidence& inc)
+gerg_aga::molarfrac_2_massfrac(const infrastructure_graph& graph, const incidence& inc)
 {
     // Molar frac by comp and by pipe/node
+    // Molar frac by comp and by pipe/node
     matrix_t x_nodes = build_x_nodes(graph);
-    matrix_t x_pipes = inc.matrix_in().transpose() * x_nodes;   
+    matrix_t x_pipes = inc.matrix_in().transpose() * x_nodes;      
+    mixture_molar_mass(x_nodes, x_pipes);
 
     matrix_t y_nodes = matrix_t::Zero(boost::num_vertices(graph), NUM_GASES ); 
     matrix_t y_pipes = matrix_t::Zero(boost::num_edges(graph), NUM_GASES ); 
@@ -350,6 +390,32 @@ gerg_aga::compute_mass_frac(const infrastructure_graph& graph, const incidence& 
         y_pipes.row(iP) =  mm_component.array() * x_pipes.row(iP).array() / mm_pipes_.array(); 
 
     return std::make_pair(y_nodes, y_pipes);
+}
+
+std::pair<matrix_t, matrix_t> 
+gerg_aga::massfrac_2_molarfrac(const matrix_t&y_nodes, const matrix_t&y_pipes)
+{
+    matrix_t x_nodes = matrix_t::Zero(y_nodes.rows(), NUM_GASES ); 
+    matrix_t x_pipes = matrix_t::Zero(y_pipes.rows(), NUM_GASES ); 
+
+    for(int iN = 0; iN < NUM_GASES; iN++)
+    {
+        //diag
+        matrix_t A =  mm_component.asDiagonal();
+
+        // off diag
+        for(int iComp = 0; iComp < NUM_GASES; iComp++)
+        {
+            A.row(iComp) -= y_nodes(iN, iComp) * mm_component;
+        }
+
+        x_nodes.row(iN) = A.fullPivLu().solve(vector_t::Zero(NUM_GASES)).transpose();
+    }
+    
+    // Update molar mixture
+    mixture_molar_mass(x_nodes, x_pipes);
+
+    return std::make_pair(x_nodes, x_pipes);
 }
 
 } //end namespace shimmer

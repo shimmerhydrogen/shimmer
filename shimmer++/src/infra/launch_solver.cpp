@@ -27,6 +27,13 @@ int launch_solver(const config& cfg)
             std::cerr << "Problem detected while loading DB" << std::endl;
             return 1;
         }
+        infra.num_original_stations = num_stations(infra);
+        infra.num_original_pipes = num_pipes(infra);
+
+        auto edge_range = boost::edges(infra.graph);
+        for (auto itor = edge_range.first; itor != edge_range.second; itor++){
+            infra.p_i2ed.push_back(*itor);
+        }
     }
 
     assert( num_stations(infra) != 0 );
@@ -105,6 +112,15 @@ int launch_solver_qt(const config& cfg)
             std::cerr << "Problem detected while loading DB" << std::endl;
             return 1;
         }
+        infra.num_original_stations = num_stations(infra);
+        infra.num_original_pipes = num_pipes(infra);
+
+        auto edge_range = boost::edges(infra.graph);
+        for (auto itor = edge_range.first; itor != edge_range.second; itor++){
+            edge_descriptor ed = *itor;
+            infra.p_i2ed.push_back(ed);
+        }
+
     }
 
     assert( num_stations(infra) != 0 );

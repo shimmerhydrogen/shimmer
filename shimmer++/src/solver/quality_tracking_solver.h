@@ -114,9 +114,8 @@ public:
     {
         bool unsteady = false;
 
-        EQ_OF_STATE eos;
-        eos.compute_molar_mass(infra_.graph, inc_msh_);
-        //[y_msh_nodes_, y_msh_pipes_] = eos.compute_mass_fraction_comp(x_msh_nodes, x_msh_pipes);
+        EQ_OF_STATE eos;    
+        auto [y_nodes_, y_pipes_] =  eos.molarfrac_2_massfrac(infra_.graph, inc_msh_);
         // Mass fraction by comp, needs total molar mass. So molar mass has to be updated any time x changes!
 
         // Viscosity changes with x (stored by comp in the graph).
@@ -392,8 +391,6 @@ public:
         // save matrices?  y_in_time[it] = y_; 
 
         EQ_OF_STATE eos;
-        // 1. Initialize inside eos
-        eos.compute_molar_mass(infra_.graph, inc_msh_);
 
         #if 0
         double t = 0;
@@ -403,9 +400,9 @@ public:
             std::cout << "Solving at time ...."<< it <<std::endl;
             std::cout<<"========================================================"<< std::endl;
 
-            // 1. Update molar masses inside eos
-            matrix_t y_msh_pipes = inc_msh_.matrix_in().transpose() * y_current;   
-            eos.compute_molar_mass(y_current, y_msh_pipes);
+            // 1. Update molar masses (mm) inside eos and molar frac(x) inside graph
+            matrix_t y_msh_pipes = inc_msh_.matrix_in().transpose() * y_current;    
+            auto [x_nodes, x_pipes] =  eos.massfrac_2_molarfrac(y_current, y_msh_pipes);
 
             // 2. Fluid solver
             transmission(it, tol, dt, MAX_CONSTRAINT_ITER, eos);

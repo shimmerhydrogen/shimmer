@@ -113,7 +113,7 @@ public:
  
 
         EQ_OF_STATE eos;
-        eos.compute_molar_mass(graph_, inc_);
+        eos.mixture_molar_mass(graph_, inc_);
 
         // mu(x): if composition of gas changes, mu changes accordingly
         auto mu = viscosity<viscosity_type>(temperature_, graph_);
@@ -151,7 +151,7 @@ public:
         std::ofstream ofs("warnings.txt");
 
         EQ_OF_STATE eos;
-        eos.compute_molar_mass(graph_, inc_);
+        eos.mixture_molar_mass(graph_, inc_);
 
         double t = 0;
         for(size_t it = 1; it < num_steps; it++, t+=dt)

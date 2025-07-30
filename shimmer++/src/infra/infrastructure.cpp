@@ -1222,8 +1222,8 @@ refine_pipes(const infrastructure& infrain,
     infraout.settings_entry_l_reg = infrain.settings_entry_l_reg;
     infraout.settings_exit_l_reg = infrain.settings_exit_l_reg;
     infraout.sics = infrain.sics;
-    infraout.num_original_pipes = num_stations(infrain);
-    infraout.num_original_stations = num_pipes(infrain);
+    infraout.num_original_stations = num_stations(infrain);
+    infraout.num_original_pipes = num_pipes(infrain);
 
     //infraout.pics = infrain.pics;
     /* This has to be recomputed:

@@ -417,7 +417,7 @@ public:
             // 3. [y_nodes, y_pipes] = quality_tracking();
             //matrix_t lhs_nodes = vector_t::Zero(infra_.num_original_stations, NUM_GASES); 
             vector_t lhs_nodes = vector_t::Zero(infra_.num_original_stations); 
-            matrix_t rhs_nodes = vector_t::Zero(infra_.num_original_pipes, NUM_GASES); 
+            matrix_t rhs_nodes = matrix_t::Zero(infra_.num_original_pipes, NUM_GASES); 
 
             // 3. 1. Continuity at network nodes 
             qt_net_nodes(it, dt, 

@@ -147,19 +147,23 @@ public:
 
         // 1. Pipes Injection/Ejection
         
+        using svec_itor_t = Eigen::SparseVector<double>::InnerIterator;
+
         // Here, local pipe quantities are needed for network(original) nodes
         auto inc_smat = inc_msh_.matrix();
         for(size_t iN = 0; iN < infra_.num_original_stations; iN++)
         {
-            Eigen::SparseVector<double> node_flux = inc_msh_.matrix().row(iN).cwiseProduct(var_msh.flux);       
+            Eigen::SparseVector<double> inc_node_i = inc_msh_.matrix().row(iN);
             
             // Loop by face
-            for(Eigen::SparseVector<double>::InnerIterator it(node_flux); it; ++it)
+            for(svec_itor_t it(inc_node_i); it; ++it)
             {
-                auto pipe_num = it.col();
+                auto  pipe_num = it.col();
 
-                double flux_eject  = std::max(0.0,-it.value());
-                double flux_inject = std::max(0.0, it.value());
+                double val = it.value() * var_msh.flux(pipe_num); 
+
+                double flux_eject  = std::max(0.0, -val);
+                double flux_inject = std::max(0.0,  val);
 
                 // 1.1 Compute ejection : LHS
                 lhs_nodes(iN) += flux_eject; 

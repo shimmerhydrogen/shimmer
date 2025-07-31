@@ -107,7 +107,7 @@ int store(sqlite3 *db, const std::vector<int>& s_i2u,
 
     std::string q =
         "INSERT INTO pipe_parameters "
-        "VALUES (?, ?, ?, ?, ?, ?)";
+        "VALUES (?, ?, ?, ?, ?, ?, ?)";
         
     int rc = sqlite3_prepare_v2(db, q.c_str(), q.length(), &stmt, nullptr);
     if (rc) {
@@ -129,6 +129,7 @@ int store(sqlite3 *db, const std::vector<int>& s_i2u,
         rc = sqlite3_bind_double(stmt, 4, settings[i].diameter);
         rc = sqlite3_bind_double(stmt, 5, settings[i].length);
         rc = sqlite3_bind_double(stmt, 6, settings[i].roughness);
+        rc = sqlite3_bind_int(stmt, 7, settings[i].ref_nsegs);
         rc = sqlite3_step(stmt);
         rc = sqlite3_clear_bindings(stmt);
         rc = sqlite3_reset(stmt);

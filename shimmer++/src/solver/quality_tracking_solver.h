@@ -158,12 +158,13 @@ public:
             // Loop by face
             for(svec_itor_t it(inc_node_i); it; ++it)
             {
-                auto  pipe_num = it.col();
+                auto  pipe_num = it.row();
 
-                double val = it.value() * var_msh.flux(pipe_num); 
+                double inc_val = it.value();
+                double val = inc_val * var_msh.flux(pipe_num); 
 
-                double flux_eject  = std::max(0.0, -val);
-                double flux_inject = std::max(0.0,  val);
+                double flux_eject  =  std::max(0.0, val);
+                double flux_inject = -std::max(0.0, -val);
 
                 // 1.1 Compute ejection : LHS
                 lhs_nodes(iN) += flux_eject; 
@@ -172,7 +173,7 @@ public:
 
                 // 1.2.1 Y@face:  y has to be approx @face (equivalently on the center
                 //                of the pipe). Upwind scheme chosen (explicit).  
-                auto ed = infra_.p_i2ed[pipe_num]; 
+                edge_descriptor ed = infra_.p_i2ed[pipe_num]; 
 
                 auto s = boost::source(ed, infra_.graph);
                 auto t = boost::target(ed, infra_.graph);
@@ -187,10 +188,10 @@ public:
                     upw_num = source_num;
                 else 
                 {
-                    std::cout << "ERROR: in QT at  network Node" << iN 
-                              << ". Loop over pipes arriving to iN."
-                              << "Pipe ("<<pipe_num <<"): from "<< source_num
-                              << " to "<<target_num <<"  is incosistent with iN. \n.";
+                    std::cout << "ERROR: in QT at  network node iN = " << iN 
+                              << ". Loop over pipes arriving to this node."
+                              << " Pipe ("<< pipe_num <<"): from "<< source_num
+                              << " to "<< target_num <<"  is incosistent with node. \n.";
                     return SHIMMER_GENERIC_FAILURE;
                 }
 
@@ -223,20 +224,29 @@ public:
             if (node_prop.type == station_type::FICTITIOUS_JUNCTION)
                 continue;
 
+            if (node_prop.type == station_type::JUNCTION)
+                continue;
+
             auto bnd =  node_prop.node_station->boundary();
-            auto L = bnd.value();    
+            auto v = bnd.value(at_step);    
+
+            if(node_prop.type == station_type::ENTRY_L_REG || node_prop.type == station_type::PRIVATE_INLET)
+                v =-1;
+
+            if(node_prop.type == station_type::ENTRY_P_REG)
+                v = var_msh.L_rate(node_prop.i_snum);
 
             // Injection
-            if (L > 0.0)
+            if (v < 0.0)
             {
                 for (size_t iC = 0; iC < NUM_GASES; iC++)
                 {
-                    rhs_nodes(node_prop.i_snum, iC) += L * y_now(node_prop.i_snum, iC);
+                    rhs_nodes(node_prop.i_snum, iC) += -v * y_now(node_prop.i_snum, iC);
                 }
             }    
             // Ejection
             else
-                lhs_nodes(node_prop.i_snum) += L;
+                lhs_nodes(node_prop.i_snum) += v;
         
         }
 #if 0     
@@ -264,7 +274,7 @@ public:
         // 3. 4 Solve Y^n+1            
         matrix_t lhs_inv =  lhs_nodes.cwiseInverse().asDiagonal();
 
-        y_next.topRows( infra_.num_original_stations) = lhs_inv.array() * rhs_nodes.array(); 
+        y_next.topRows( infra_.num_original_stations) = lhs_inv * rhs_nodes; 
 
         return true;
     }
@@ -395,7 +405,6 @@ public:
         matrix_t y_next_nodes = matrix_t::Zero(num_nodes, NUM_GASES);
         // save matrices?  y_in_time[it] = y_; 
 
-#if 0
         EQ_OF_STATE eos;
 
         double t = 0;
@@ -437,7 +446,6 @@ public:
             // save matrices? y_in_time[it] = y_; 
 
         }
-#endif
         return;
     }
 

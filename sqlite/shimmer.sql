@@ -248,7 +248,7 @@ create table pipe_parameters (
     FOREIGN KEY (p_name, s_from, s_to)
         REFERENCES pipelines(p_name, s_from, s_to),
 
-    CHECK(s_number >= 0)
+    CHECK(ref_nsegs >= 0)
 );
 
 -----------------------------------------------------------------------

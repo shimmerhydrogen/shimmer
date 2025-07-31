@@ -242,10 +242,13 @@ create table pipe_parameters (
     diameter    REAL DEFAULT 0.0,
     length      REAL DEFAULT 0.0,
     roughness   REAL DEFAULT 0.0,
+    ref_nsegs   INTEGER DEFAULT 0,
 
     -- The referenced pipeline must exist
     FOREIGN KEY (p_name, s_from, s_to)
-        REFERENCES pipelines(p_name, s_from, s_to)
+        REFERENCES pipelines(p_name, s_from, s_to),
+
+    CHECK(s_number >= 0)
 );
 
 -----------------------------------------------------------------------
@@ -400,19 +403,6 @@ create table solution_pipe_velocities (
     FOREIGN KEY (p_name, s_from, s_to)
         REFERENCES pipelines(p_name, s_from, s_to)
 );
-
-create table pipe_quality_tracking_parameters (
-    p_name      TEXT NOT NULL,
-    s_from      INTEGER,
-    s_to        INTEGER,
-    nsegs       INTEGER DEFAULT 1 NOT NULL,
-    
-    PRIMARY KEY (p_name, s_from, s_to),
-
-    FOREIGN KEY (p_name, s_from, s_to)
-        REFERENCES pipelines(p_name, s_from, s_to)
-);
-
 
 -- The gases. Which are the parameters associated to each gas?
 create table gases (

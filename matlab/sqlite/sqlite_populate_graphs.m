@@ -1,10 +1,11 @@
-clear;
+clear all;
+close all;
 
 db_schema = fullfile(pwd, "../../sqlite/shimmer.sql");
 
 %% test_case_1_13
 
-if false
+if true
     graph_path = fullfile(pwd, "graphs/test_case_1_13/trialNet.mat");
     graph = load(graph_path);
     graph = graph.gasNet_Res;
@@ -30,7 +31,7 @@ end
 
 %% test_case_1
 
-if false
+if true
     graph_path = fullfile(pwd, "graphs/test_case_1/trialNet.mat");
     graph = load(graph_path);
     graph = graph.gasNet_Res;
@@ -60,7 +61,7 @@ end
 
 %% test_gasco
 
-if false
+if true
     graph_path = fullfile(pwd, "graphs/test_gasco/gassco_res_small.mat");
     graph = load(graph_path);
     graph = graph.gasNet_Res;
@@ -97,7 +98,7 @@ end
 
 %% test_gasco_compare
 
-if true
+if false
     graph_path = fullfile(pwd, "graphs/test_gasco/gassco_compare.mat");
     graph = load(graph_path);
     graph_temp = graph.gasNet_Res;
@@ -133,7 +134,7 @@ end
 
 %% test_gasco_refined
 
-if false
+if true
     graph_path = fullfile(pwd, "graphs/test_gasco_refined/GasscoGrid.mat");
     graph = load(graph_path);
     graph = graph.gasNet_Res;
@@ -161,7 +162,7 @@ end
 
 %% test_inrete
 
-if false
+if true
     graph_path = fullfile(pwd, "graphs/test_inrete/InreteNet.mat");
     graph = load(graph_path);
     graph = graph.gasNet_Res;
@@ -189,7 +190,7 @@ end
 
 %% test_sicilia
 
-if false
+if true
     graph_path = fullfile(pwd, "graphs/test_sicilia/SicilyNetworkComplete.mat");
     graph = load(graph_path);
     graph = graph.SicilyNetworkComplete;

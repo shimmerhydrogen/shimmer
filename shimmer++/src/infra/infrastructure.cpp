@@ -635,6 +635,12 @@ int load(const std::string& db_filename, infrastructure& infra)
         return SHIMMER_DATABASE_PROBLEM;
     }
 
+    if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.settings_pipe_QT) ) {
+        std::cerr << "No quality tracking refineme table (no problem if you don't want to specify per-pipe refinement).";
+        std::cerr << std::endl;
+        //return SHIMMER_DATABASE_PROBLEM;
+    }
+
     sqlite3_close(db);
     return SHIMMER_SUCCESS;
 }
@@ -1047,8 +1053,19 @@ discretize_pipes(const infrastructure& infrain,
             throw std::logic_error("pipe not found");
         }
         auto in_setting = *settingitor;
-        //dx = in_setting.length/3;
-        auto numfrags = std::ceil(std::abs(in_setting.length/dx));
+
+        auto qtsettingitor = lookup(infrain.settings_pipe_QT, i_from, i_to);
+        double numfrags = 1.0;
+        if (qtsettingitor == infrain.settings_pipe_QT.end()) {
+            numfrags = std::ceil(std::abs(in_setting.length/dx));
+            std::cout << "Pipe " << u_from << " -> " << u_to << ": split in ";
+            std::cout << numfrags << " segments using global dx" << std::endl;
+        } else {
+            numfrags = std::max(1, (*qtsettingitor).nsegs);
+            std::cout << "Pipe " << u_from << " -> " << u_to << ": split in ";
+            std::cout << numfrags << " segments using database setting" << std::endl;
+        }
+        
         auto fraglen = in_setting.length/numfrags;
         auto dlat = (lat_to - lat_from)/numfrags;
         auto dlon = (lon_to - lon_from)/numfrags;
@@ -1068,7 +1085,7 @@ discretize_pipes(const infrastructure& infrain,
         };
 
         discrnodes[0] = i_from;
-        std:: cout << from_ic->init_P << " -> " << from_ic->init_L << std::endl;
+        //std:: cout << from_ic->init_P << " -> " << from_ic->init_L << std::endl;
         for (int i = 1; i < numfrags; i++) {
             auto inum = fict_station_ibase + fict_station_counter;
             auto unum = fict_station_ubase + fict_station_counter;
@@ -1095,13 +1112,13 @@ discretize_pipes(const infrastructure& infrain,
             sic.i_snum = inum;
             sic.init_P = interp(x, in_setting.length, from_ic->init_P, to_ic->init_P);
             sic.init_L = 0.0;//interp(x, in_setting.length, from_ic->init_L, to_ic->init_L);
-            std::cout << x << " -> " << sic.init_P << " -> " << sic.init_L << std::endl;
+            //std::cout << x << " -> " << sic.init_P << " -> " << sic.init_L << std::endl;
             infraout.sics.push_back(sic);
 
             fict_station_counter++;
         }
         discrnodes[numfrags] = i_to;
-        std:: cout << to_ic->init_P << " -> " << to_ic->init_L << std::endl;
+        //std:: cout << to_ic->init_P << " -> " << to_ic->init_L << std::endl;
 
         for (int i = 1; i < discrnodes.size(); i++) {
             setting_pipe out_setting;
@@ -1123,7 +1140,7 @@ discretize_pipes(const infrastructure& infrain,
             newnp.i_sto = discrnodes[i];
             auto from_vtx = infraout.s_i2vd[newnp.i_sfrom];
             auto to_vtx = infraout.s_i2vd[newnp.i_sto];
-            std::cout << from_vtx << " " << to_vtx << std::endl;
+            //std::cout << from_vtx << " " << to_vtx << std::endl;
             boost::add_edge(from_vtx, to_vtx, newnp, infraout.graph);
 
             pipe_initial_condition pic;
@@ -1171,7 +1188,7 @@ discretize_pipes(const infrastructure& infrain,
         populate_type_dependent_pipe_data(infraout, newnp, newnp.i_sfrom, newnp.i_sto);
         auto from_vtx = infraout.s_i2vd[newnp.i_sfrom];
         auto to_vtx = infraout.s_i2vd[newnp.i_sto];
-        std::cout << from_vtx << " " << to_vtx << std::endl;
+        //std::cout << from_vtx << " " << to_vtx << std::endl;
         boost::add_edge(from_vtx, to_vtx, newnp, infraout.graph);
 
         branch_num++;

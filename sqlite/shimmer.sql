@@ -401,7 +401,17 @@ create table solution_pipe_velocities (
         REFERENCES pipelines(p_name, s_from, s_to)
 );
 
+create table pipe_quality_tracking_parameters (
+    p_name      TEXT NOT NULL,
+    s_from      INTEGER,
+    s_to        INTEGER,
+    nsegs       INTEGER DEFAULT 1 NOT NULL,
+    
+    PRIMARY KEY (p_name, s_from, s_to),
 
+    FOREIGN KEY (p_name, s_from, s_to)
+        REFERENCES pipelines(p_name, s_from, s_to)
+);
 
 
 -- The gases. Which are the parameters associated to each gas?
@@ -430,7 +440,6 @@ create table injects (
     FOREIGN KEY (g_name)
         REFERENCES gases(g_name)
 );
-
 
 --insert into station_parameters values (0, 70.000000000, -75);
 --insert into station_parameters values (1, 70.000000000,  20);

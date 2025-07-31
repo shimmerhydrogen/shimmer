@@ -155,7 +155,7 @@ convert_u2i(const optvector<int>& s_u2i, int idx)
 #include "sqlite_reduction.h"
 #include "sqlite_gases.h"
 #include "sqlite_infra.h"
-
+#include "sqlite_qualitytracking.h"
 
 namespace shimmer {
 

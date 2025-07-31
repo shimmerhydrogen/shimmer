@@ -21,47 +21,31 @@
 
 #pragma once
 
-#include <Eigen/Sparse>
-#include "infrastructure_graph.h"
+#include <iostream>
+#include <vector>
 
-namespace shimmer{
-
-using sparse_matrix_t = Eigen::SparseMatrix<double>; 
-using triplet_t = Eigen::Triplet<double>;
+namespace shimmer {
 
 
-class incidence
-{
-    sparse_matrix_t mat_; 
-    sparse_matrix_t mat_in_;
-    sparse_matrix_t mat_out_; 
+struct setting_pipe_QT {
+    int         i_sfrom;
+    int         i_sto;
 
-    std::vector<triplet_t> triplets_;
-    std::vector<triplet_t> triplets_in_;
-    std::vector<triplet_t> triplets_out_;
+    int         nsegs;
 
-
-    void
-    compute_triplets(const infrastructure_graph& g);
-
-    void
-    compute_matrix(const infrastructure_graph& g);
-
-public:
-    incidence(const infrastructure_graph& g)
-    {
-        compute_triplets(g);
-        compute_matrix(g);
+    bool operator<(const setting_pipe_QT& other) const {
+        return std::pair{i_sfrom, i_sto} < std::pair{other.i_sfrom, other.i_sto};
     }
-
-    incidence(){}
- 
-    const sparse_matrix_t& matrix() const;      
-    const sparse_matrix_t& matrix_in()  const;   
-    const sparse_matrix_t& matrix_out() const;  
-
 };
 
+namespace database {
+
+int load(sqlite3 *db, const optvector<int>& s_u2i,
+    std::vector<setting_pipe_QT>& settings);
+int store(sqlite3 *db, const std::vector<int>& s_i2u,
+    const std::vector<setting_pipe_QT>& settings);
+
+} //namespace database
 
 
-} //end namespace shimmer
+} // namespace shimmer

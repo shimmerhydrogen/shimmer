@@ -81,7 +81,6 @@ set(SHIMMER_DBIO_SOURCES
     src/sqlite/sqlite_compressor.cpp src/sqlite/sqlite_pipe.cpp
     src/sqlite/sqlite_reduction.cpp src/sqlite/sqlite_outlet.cpp
     src/sqlite/sqlite_gases.cpp src/sqlite/sqlite_infra.cpp
-    src/sqlite/sqlite_qualitytracking.cpp
 )
 
 add_library(shimmer_dbio SHARED ${SHIMMER_DBIO_SOURCES})

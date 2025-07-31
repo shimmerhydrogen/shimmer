@@ -38,6 +38,7 @@ enum class params_col : int {
     diameter    = 3,
     length      = 4,
     roughness   = 5,
+    ref_nsegs   = 6,
 };
 
 } // namespace pipe
@@ -66,6 +67,8 @@ int load(sqlite3 *db, const optvector<int>& s_u2i,
 
     rc = sqlite3_bind_int(stmt, 1, +pipe_type::PIPE);
 
+    int table_cols = sqlite3_column_count(stmt);
+
     /* Import limits for all the stations */
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         setting_pipe setting;
@@ -84,6 +87,10 @@ int load(sqlite3 *db, const optvector<int>& s_u2i,
         setting.diameter = sqlite3_column_double(stmt, +params_col::diameter);
         setting.length = sqlite3_column_double(stmt, +params_col::length);
         setting.roughness = sqlite3_column_double(stmt, +params_col::roughness);
+        setting.ref_nsegs = 0;
+        if (table_cols > 6) {
+            setting.ref_nsegs = sqlite3_column_int(stmt, +params_col::ref_nsegs);
+        }
         settings.push_back( std::move(setting) );
     }
     rc = sqlite3_finalize(stmt);

@@ -635,12 +635,6 @@ int load(const std::string& db_filename, infrastructure& infra)
         return SHIMMER_DATABASE_PROBLEM;
     }
 
-    if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.settings_pipe_QT) ) {
-        std::cerr << "No quality tracking refineme table (no problem if you don't want to specify per-pipe refinement).";
-        std::cerr << std::endl;
-        //return SHIMMER_DATABASE_PROBLEM;
-    }
-
     sqlite3_close(db);
     return SHIMMER_SUCCESS;
 }
@@ -1054,14 +1048,13 @@ discretize_pipes(const infrastructure& infrain,
         }
         auto in_setting = *settingitor;
 
-        auto qtsettingitor = lookup(infrain.settings_pipe_QT, i_from, i_to);
         double numfrags = 1.0;
-        if (qtsettingitor == infrain.settings_pipe_QT.end()) {
+        if (in_setting.ref_nsegs == 0) {
             numfrags = std::ceil(std::abs(in_setting.length/dx));
             std::cout << "Pipe " << u_from << " -> " << u_to << ": split in ";
             std::cout << numfrags << " segments using global dx" << std::endl;
         } else {
-            numfrags = std::max(1, (*qtsettingitor).nsegs);
+            numfrags = in_setting.ref_nsegs;
             std::cout << "Pipe " << u_from << " -> " << u_to << ": split in ";
             std::cout << numfrags << " segments using database setting" << std::endl;
         }

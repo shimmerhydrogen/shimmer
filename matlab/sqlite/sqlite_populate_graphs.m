@@ -3,9 +3,12 @@ close all;
 
 db_schema = fullfile(pwd, "../../sqlite/shimmer.sql");
 
+run_tests = [0,0,0,4,0,0,0];
+
 %% test_case_1_13
 
-if true
+if run_tests(1) > 0
+    disp("Run test_case_1_13");
     graph_path = fullfile(pwd, "graphs/test_case_1_13/trialNet.mat");
     graph = load(graph_path);
     graph = graph.gasNet_Res;
@@ -31,7 +34,8 @@ end
 
 %% test_case_1
 
-if true
+if run_tests(2) > 0
+    disp("Run test_case_1");
     graph_path = fullfile(pwd, "graphs/test_case_1/trialNet.mat");
     graph = load(graph_path);
     graph = graph.gasNet_Res;
@@ -61,7 +65,8 @@ end
 
 %% test_gasco
 
-if true
+if run_tests(3) > 0
+    disp("Run test_gasco");
     graph_path = fullfile(pwd, "graphs/test_gasco/gassco_res_small.mat");
     graph = load(graph_path);
     graph = graph.gasNet_Res;
@@ -98,19 +103,13 @@ end
 
 %% test_gasco_compare
 
-if false
+if run_tests(4) > 0
+    disp("Run test_gasco_compare");
     graph_path = fullfile(pwd, "graphs/test_gasco/gassco_compare.mat");
     graph = load(graph_path);
-    graph_temp = graph.gasNet_Res;
-    graph.Nodes = table2struct(graph_temp.Nodes,"ToScalar",true);
-    graph.Edges = table2struct(graph_temp.Edges,"ToScalar",true);
-    graph.Nodes.coordinates_XY = [
-        4.8419054048323495, 60.55916692208016
-        5.534474571003653, 59.38768321539189
-        2.4631164141539705, 57.77672651248003
-        7.399360295413453, 53.67057855404977
-        2.3139222514284628, 51.03760755736377
-        ];
+    graph = graph.gasNet_Res;
+    %graph.Nodes = table2struct(graph_temp.Nodes,"ToScalar",true);
+    %graph.Edges = table2struct(graph_temp.Edges,"ToScalar",true);
 
     db_path = fullfile(pwd, "graphs/test_gasco/test_gasco.db");
 
@@ -134,7 +133,8 @@ end
 
 %% test_gasco_refined
 
-if true
+if run_tests(5) > 0
+    disp("Run test_gasco_refined");
     graph_path = fullfile(pwd, "graphs/test_gasco_refined/GasscoGrid.mat");
     graph = load(graph_path);
     graph = graph.gasNet_Res;
@@ -162,7 +162,8 @@ end
 
 %% test_inrete
 
-if true
+if run_tests(6) > 0
+    disp("Run test_inrete");
     graph_path = fullfile(pwd, "graphs/test_inrete/InreteNet.mat");
     graph = load(graph_path);
     graph = graph.gasNet_Res;
@@ -190,7 +191,8 @@ end
 
 %% test_sicilia
 
-if true
+if run_tests(7) > 0
+    disp("Run test_sicilia");
     graph_path = fullfile(pwd, "graphs/test_sicilia/SicilyNetworkComplete.mat");
     graph = load(graph_path);
     graph = graph.SicilyNetworkComplete;

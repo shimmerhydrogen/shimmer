@@ -1115,11 +1115,13 @@ discretize_pipes(const infrastructure& infrain,
 
         for (int i = 1; i < discrnodes.size(); i++) {
             setting_pipe out_setting;
+            out_setting.name = pipe.name + "_seg_" + std::to_string(i);
             out_setting.i_sfrom = discrnodes[i-1];
             out_setting.i_sto = discrnodes[i];
             out_setting.length = fraglen;
             out_setting.diameter = in_setting.diameter;
             out_setting.roughness = in_setting.roughness;
+            out_setting.ref_nsegs = 0;
             infraout.settings_pipe.push_back(out_setting);
             
             edge_properties newnp;
@@ -1128,9 +1130,9 @@ discretize_pipes(const infrastructure& infrain,
             newnp.length = pipe.length;
             newnp.diameter = pipe.diameter;
             newnp.friction_factor = pipe.friction_factor;
-            newnp.name = pipe.name + "_seg_" + std::to_string(i);
-            newnp.i_sfrom = discrnodes[i-1];
-            newnp.i_sto = discrnodes[i];
+            newnp.name = out_setting.name;
+            newnp.i_sfrom = out_setting.i_sfrom;
+            newnp.i_sto = out_setting.i_sto;
             auto from_vtx = infraout.s_i2vd[newnp.i_sfrom];
             auto to_vtx = infraout.s_i2vd[newnp.i_sto];
             //std::cout << from_vtx << " " << to_vtx << std::endl;

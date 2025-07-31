@@ -28,6 +28,7 @@ namespace shimmer {
 
 
 struct setting_pipe {
+    std::string name;
     int         i_sfrom;
     int         i_sto;
 

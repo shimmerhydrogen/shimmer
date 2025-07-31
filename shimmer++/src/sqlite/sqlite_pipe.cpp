@@ -82,6 +82,7 @@ int load(sqlite3 *db, const optvector<int>& s_u2i,
             return SHIMMER_DATABASE_PROBLEM;
         }
 
+        setting.name = (char *) sqlite3_column_text(stmt, +params_col::p_name);
         setting.i_sfrom = i_sfrom_opt.value();
         setting.i_sto = i_sto_opt.value();
         setting.diameter = sqlite3_column_double(stmt, +params_col::diameter);
@@ -123,7 +124,7 @@ int store(sqlite3 *db, const std::vector<int>& s_i2u,
         auto to = convert_i2u(s_i2u, settings[i].i_sto);
         std::string pipe_name = "pipe-" + std::to_string(from) + "-" + std::to_string(to);
 
-        rc = sqlite3_bind_text(stmt, 1, pipe_name.c_str(), pipe_name.length(), nullptr);
+        rc = sqlite3_bind_text(stmt, 1, settings[i].name.c_str(), settings[i].name.length(), nullptr);
         rc = sqlite3_bind_int(stmt, 2, from);
         rc = sqlite3_bind_int(stmt, 3, to);
         rc = sqlite3_bind_double(stmt, 4, settings[i].diameter);

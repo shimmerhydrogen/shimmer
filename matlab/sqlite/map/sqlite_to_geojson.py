@@ -100,7 +100,7 @@ def generate_geojson(db_path, json_folder_path):
 
 if __name__ == "__main__":
     db_path = "../graphs/test_gasco/test_gasco.db"
-    #db_path = "/home/geoscore/Desktop/GEO++/shimmer/shimmer++/debug/refined_test_gasco.db"
+    db_path = "/home/geoscore/Desktop/GEO++/shimmer/shimmer++/debug/refined_test_gasco.db"
     #db_path = "../graphs/test_inrete/test_inrete.db"
     #db_path = "../graphs/test_sicilia/test_sicilia.db"
     json_path = "."

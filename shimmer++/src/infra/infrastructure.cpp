@@ -1325,10 +1325,10 @@ int launch_solver(const config& cfg)
     shimmer::matrix_t y_pipes = inc.matrix_in().transpose() * y_nodes;   
     /* END GAS MASS FRACTIONS */
 
-    // using time_solver_t = shimmer::time_solver<shimmer::papay,
-    //     shimmer::viscosity_type::Constant>;
-    using time_solver_t = shimmer::time_solver<shimmer::gerg_aga,
-        shimmer::viscosity_type::Constant>;
+     using time_solver_t = shimmer::time_solver<shimmer::papay,
+         shimmer::viscosity_type::Constant>;
+    //using time_solver_t = shimmer::time_solver<shimmer::gerg_aga,
+    //    shimmer::viscosity_type::Constant>;
 
     time_solver_t ts1(infra.graph, cfg.temperature);
     ts1.initialization(guess, cfg.dt_std, cfg.tol_std, y_nodes, y_pipes);  

@@ -85,6 +85,7 @@ variable initial_guess(const infrastructure&);
 int save_pressures(const std::string&, const infrastructure&, const matrix_t&);
 int save_flowrates(const std::string&, const infrastructure&, const matrix_t&);
 int save_flowrates_stations(const std::string&, const infrastructure&, const matrix_t&);
+int save_molar_fractions(const std::string&, const infrastructure&, std::vector<matrix_t>&);
 
 int refine_pipes(const infrastructure&, infrastructure&, double);
 

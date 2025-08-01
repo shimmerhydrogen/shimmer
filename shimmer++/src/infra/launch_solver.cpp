@@ -137,6 +137,7 @@ int launch_solver_qt(const config& cfg)
     qt.advance(cfg.dt, cfg.steps, cfg.tol);
     auto sol_full  = qt.solution_full();
     auto vel_full  = qt.velocity_full();
+    auto x_full  = qt.molar_fractions_full();
 
     // Post-processing
     std::cout << sol_full << std::endl;
@@ -175,6 +176,8 @@ int launch_solver_qt(const config& cfg)
     );
 
     shimmer::save_velocities(outfile, infra, vel_full);
+
+    shimmer::save_molar_fractions(outfile, infra, x_full);
 
     return 0;
 }

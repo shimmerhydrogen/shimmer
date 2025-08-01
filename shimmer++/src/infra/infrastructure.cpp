@@ -967,6 +967,57 @@ int save_velocities(const std::string& db_filename, const infrastructure& infra,
     return SHIMMER_SUCCESS;
 }
 
+int save_molar_fractions(const std::string& db_filename, const infrastructure& infra, std::vector<matrix_t>& molar_fractions)
+{
+    assert(boost::num_vertices(infra.graph) == infra.s_i2u.size());
+
+    sqlite3 *db = nullptr;
+    int rc = sqlite3_open_v2(db_filename.c_str(), &db, SQLITE_OPEN_READWRITE, nullptr);
+    if(rc) {
+        std::cerr << "Can't open database '" << db_filename << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
+        sqlite3_close(db);
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    sqlite3_stmt *stmt = nullptr;
+
+    std::string q =
+        "INSERT INTO solution_station_molarfrac VALUES (?, ?, ?, ?)";
+
+    rc = sqlite3_prepare_v2(db, q.c_str(), q.length(), &stmt, nullptr);
+    if (rc) {
+        std::cerr << "SQL error on query '" << q << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+    
+    rc = sqlite3_exec(db, "DELETE FROM solution_station_molarfrac", nullptr, nullptr, nullptr);
+    rc = sqlite3_exec(db, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
+
+    
+    for (int ts = 0; ts < molar_fractions.size(); ts++) {
+        for (int i_snum = 0; i_snum < molar_fractions[ts].rows(); i_snum++) {
+            for (int comp = 0; comp < molar_fractions[ts].cols(); comp++) {
+                rc = sqlite3_bind_int(stmt, 1, convert_i2u(infra.s_i2u, i_snum));
+                rc = sqlite3_bind_int(stmt, 2, ts);
+                rc = sqlite3_bind_int(stmt, 3, comp);
+                rc = sqlite3_bind_double(stmt, 4, molar_fractions[ts](i_snum, comp));
+                rc = sqlite3_step(stmt);
+                rc = sqlite3_clear_bindings(stmt);
+                rc = sqlite3_reset(stmt);
+            }
+        }
+    }
+    rc = sqlite3_exec(db, "COMMIT", nullptr, nullptr, nullptr);
+
+    rc = sqlite3_finalize(stmt);
+
+    sqlite3_close(db);
+    return SHIMMER_SUCCESS;
+}
+
+
 static void
 transfer_original_stations(const infrastructure& infrain,
     infrastructure& infraout)

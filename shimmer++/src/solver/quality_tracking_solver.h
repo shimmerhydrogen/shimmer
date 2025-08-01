@@ -55,6 +55,7 @@ class qt_solver
 
     matrix_t rho_msh_in_time_;
     matrix_t var_msh_in_time_;
+    std::vector<matrix_t> x_in_time_;
 
     incidence inc_msh_;
     infrastructure& infra_;
@@ -388,7 +389,6 @@ public:
             size_t num_steps,            
             double tol)
     {
-
         size_t MAX_CONSTRAINT_ITER = 10;
 
         auto num_nodes = num_vertices(infra_.graph); 
@@ -396,6 +396,7 @@ public:
 
         var_msh_in_time_ = matrix_t::Zero(num_steps, num_pipes + 2 * num_nodes);
         rho_msh_in_time_ = matrix_t::Ones(num_steps, num_pipes);
+        x_in_time_ = std::vector<matrix_t>(num_steps);
 
         var_msh_ = var_msh_guess_;
         var_msh_in_time_.row(0) =  var_msh_.make_vector();
@@ -403,7 +404,8 @@ public:
         
         matrix_t y_now_nodes = y_guess_;
         matrix_t y_next_nodes = matrix_t::Zero(num_nodes, NUM_GASES);
-        // save matrices?  y_in_time[it] = y_; 
+
+        x_in_time_[0] = build_x_nodes(infra_.graph);
 
         EQ_OF_STATE eos;
 
@@ -443,7 +445,8 @@ public:
                              y_now_nodes, y_next_nodes);
 
             y_now_nodes = y_next_nodes;
-            // save matrices? y_in_time[it] = y_; 
+            
+            x_in_time_[it] = build_x_nodes(infra_.graph); 
 
         }
         return;
@@ -480,6 +483,7 @@ public:
     vector_t solution() const {return var_msh_.make_vector();}
     vector_t guess() const {return var_msh_guess_.make_vector();}
     matrix_t solution_full() const{ return var_msh_in_time_; }
+    std::vector<matrix_t> molar_fractions_full() const{ return x_in_time_;}
 
 };
 

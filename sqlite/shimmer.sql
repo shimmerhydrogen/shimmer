@@ -405,6 +405,44 @@ create table solution_pipe_velocities (
 );
 
 
+create table solution_station_molarfrac (
+    s_number        INTEGER NOT NULL,
+    timestep        INTEGER NOT NULL,
+    g_name          TEXT,
+    molarfrac       REAL DEFAULT 0.0 NOT NULL,
+    
+    FOREIGN KEY (s_number)
+        REFERENCES stations(s_number)
+);
+
+
+-- The gases. Which are the parameters associated to each gas?
+create table gases (
+    g_name      TEXT,
+    --g_descr     TEXT,
+    PRIMARY KEY (g_name)
+);
+
+insert into gases(g_name) values ('CH4'), ('N2'), ('CO2'), ('C2H6'),
+    ('C3H8'), ('i_C4H10'), ('n_C4H10'), ('i_C5H12'), ('n_C5H12'),
+    ('C6H14'), ('C7H16'), ('C8H18'), ('C9H20'), ('C10H22'), ('H2'),
+    ('O2'), ('CO'), ('H2O'), ('H2S'), ('He'), ('Ar');
+
+
+-- Who injects what
+create table injects (
+    s_number    INTEGER,
+    g_name      TEXT,
+    quantity    REAL,
+
+    -- station number must be valid
+    FOREIGN KEY (s_number)
+        REFERENCES stations(s_number),
+    -- gas name must be valid
+    FOREIGN KEY (g_name)
+        REFERENCES gases(g_name)
+);
+
 --insert into station_parameters values (0, 70.000000000, -75);
 --insert into station_parameters values (1, 70.000000000,  20);
 --insert into station_parameters values (2, 69.300000000,   0);

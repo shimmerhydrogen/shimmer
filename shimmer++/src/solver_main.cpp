@@ -49,6 +49,7 @@ register_usertypes(sol::state& lua)
     config_ut["tol"] = &config::tol;
     config_ut["refine"] = &config::refine;
     config_ut["dx"] = &config::dx;
+    config_ut["do_quality_tracking"] = &config::do_quality_tracking;
 }
 
 static int
@@ -98,7 +99,7 @@ int main(int argc, char **argv)
     shimmer::config cfg;
     cfg.refine = false;
     cfg.dx = 100e3;
-    cfg.do_quality_tracking = true;
+    cfg.do_quality_tracking = false;
     lua["config"] = &cfg;
 
     auto sresult = lua.safe_script_file(argv[1], sol::script_pass_on_error);

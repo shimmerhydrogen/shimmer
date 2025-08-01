@@ -334,7 +334,7 @@ create table pipe_initial_conditions (
 );
 
 
-create table gas_mass_fractions (
+create table gas_molar_fractions (
     s_number        INTEGER UNIQUE NOT NULL,
     frac_CH4        REAL DEFAULT 0.0 NOT NULL,
     frac_N2         REAL DEFAULT 0.0 NOT NULL,

@@ -63,7 +63,6 @@ struct infrastructure {
     std::vector<gas_molar_fractions>        molar_fractions;
 
     std::vector<pipe_discretization>        pipe_discretizations;
-    std::vector<setting_pipe_QT>            settings_pipe_QT;
     std::vector<edge_descriptor>            p_i2ed;
 
     std::vector<station_initial_condition>  sics;

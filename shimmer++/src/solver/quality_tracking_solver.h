@@ -324,9 +324,9 @@ public:
                 double vel_i_minus = vel_loc_nodes[iN-1]; 
 
                 // Coefficients
-                double a_i = 1.0 + dtdx * dtdx * vel_i * ( vel_plus_half - vel_minus_half);
-                double a_plus = dtdx * vel_i_plus  * (0.5 - dtdx * vel_plus_half);             
-                double a_minus= dtdx * vel_i_minus * (0.5 - dtdx * vel_minus_half);             
+                double a_i = 1.0 - 0.5 * dtdx * dtdx * vel_i * ( vel_plus_half - vel_minus_half);
+                double a_plus =   0.5 * dtdx * vel_i_plus  * (-1.0 + dtdx * vel_plus_half);             
+                double a_minus=   0.5 * dtdx * vel_i_minus * ( 1.0 + dtdx * vel_minus_half);             
 
                 // mass fractions
                 auto idx = pd.nodelist[iN];
@@ -335,7 +335,7 @@ public:
 
                 y_next.row(idx) = a_i * y_now.row(idx)
                             + a_plus * y_now.row(idx_plus) 
-                            - a_minus * y_now.row(idx_minus);  // check signs
+                            + a_minus * y_now.row(idx_minus);  // check signs
             } 
         }
     }

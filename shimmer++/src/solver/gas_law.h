@@ -57,6 +57,7 @@ protected:
 public:
     equation_of_state(){};
     vector_t density(linearized_fluid_solver *) const;
+    vector_t density_nodes(linearized_fluid_solver *) const;
     vector_t compute_R(const vector_t& molar_mass) const;
     void mixture_molar_mass(const infrastructure_graph&, const incidence&);
 

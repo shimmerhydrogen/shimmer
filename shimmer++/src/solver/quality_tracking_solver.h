@@ -49,11 +49,13 @@ class qt_solver
     matrix_t y_guess_;
 
     vector_t rho_msh_;
+    vector_t rho_nodes_;
     variable var_msh_;
     variable var_msh_guess_;
     vector_t area_msh_pipes_;
 
     matrix_t rho_msh_in_time_;
+    matrix_t rho_nodes_in_time_;
     matrix_t var_msh_in_time_;
     std::vector<matrix_t> x_in_time_;
 
@@ -103,6 +105,7 @@ public:
         var_msh_guess_ = var;
         //Alternatively, rho should be given when setting initialization
         rho_msh_ = vector_t::Ones(boost::num_edges(infra_.graph));
+        rho_nodes_ = vector_t::Ones(boost::num_vertices(infra_.graph));
     }
 
 
@@ -132,6 +135,7 @@ public:
         var_msh_guess_ = lfs.get_variable();
         y_guess_ = y_nodes_;
         rho_msh_ = eos.density(&lfs);
+        rho_nodes_ = eos.density_nodes(&lfs);
     }
 
     
@@ -259,17 +263,29 @@ public:
                     throw std::invalid_argument("QT Error: station is not valid.");
             }
         }
-#if 0     
-/* if NODE_ACCUMULATES
+//#if 0     
+    // if NODE_ACCUMULATES
         // 1.3 Time term
+        /*
         // V/c2 (dpdt) => I would rather do  V*(d(p/c2)/dt)  
-
-        vector_t press_before = var_in_time_[it-1].pressure.head(num_nodes);
-        vector_t press_now  = var_in_time_[it].pressure.head(num_nodes); 
-        vector_t c2_now  = c2_nodes.head(num_nodes);  
+        vector_t press_before = var_in_time_[it-1].pressure.head(infra_.num_original_stations);
+        vector_t press_now  = var_in_time_[it].pressure.head(infra_.num_original_stations); 
+        vector_t c2_now  = c2_nodes.head(infra_.num_original_stations);  
 
         vector_t dp = press_now - press_before;
-        vector_t phi_vec = phi_vector(dt, c2_now, graph_).array() * dp.array();
+        vector_t phi_vec = phi_vector(dt, c2_now, infra_.graph).array() * dp.array();
+        */
+
+        vector_t phi = vector_t::Zero(infra_.num_original_stations);
+
+        for(auto itor = v_range.first; itor != v_range.second; itor++)
+        {
+            const auto & node_prop = infra_.graph[*itor]; 
+
+            auto rho_now = rho_nodes_in_time_(at_step,node_prop.i_snum);
+            auto rho_old = rho_nodes_in_time_(at_step-1,node_prop.i_snum);
+            lhs_nodes(node_prop.i_snum) +=volume(*itor, infra_.graph) * (rho_now - rho_old) / dt;
+        }
 
         #if 0
         Problems:
@@ -278,8 +294,8 @@ public:
         (B) V/c2 (dpdt) => I would rather do  V*(d(p/c2)/dt) thus I would need also c2 in t^{n} 
         (C) global info: num_nodes/num_pipe of the original network are needed.
         #endif
-*/
-#endif
+//*/
+//#endif
 
         // 3. 4 Solve Y^n+1            
         matrix_t lhs_inv =  lhs_nodes.cwiseInverse().asDiagonal();
@@ -372,7 +388,9 @@ public:
             {
                 std::cout<< "++++++++++++++++++**** MODIFIED VARIABLE ****++++++++++++++++++++++ " << std::endl;
                 var_msh_ =  lfs.get_variable();
-                rho_msh_ =  eos.density(&lfs);  
+                rho_msh_ =  eos.density(&lfs);  // needed for the computation of the velocity
+                rho_nodes_ =  eos.density_nodes(&lfs);  // needed for the mass balance on network nodes 
+
                 break;
             }
         }
@@ -382,6 +400,7 @@ public:
 
         var_msh_in_time_.row(it) =  var_msh_.make_vector();
         rho_msh_in_time_.row(it) =  rho_msh_;
+        rho_nodes_in_time_.row(it) =  rho_nodes_;
 
         var_msh_guess_ = var_msh_;
     }
@@ -399,12 +418,14 @@ public:
 
         var_msh_in_time_ = matrix_t::Zero(num_steps, num_pipes + 2 * num_nodes);
         rho_msh_in_time_ = matrix_t::Ones(num_steps, num_pipes);
+        rho_nodes_in_time_ = matrix_t::Ones(num_steps, num_nodes);
         x_in_time_ = std::vector<matrix_t>(num_steps);
 
         var_msh_ = var_msh_guess_;
         var_msh_in_time_.row(0) =  var_msh_.make_vector();
         rho_msh_in_time_.row(0) =  rho_msh_.transpose();
-        
+        rho_nodes_in_time_.row(0) =  rho_nodes_.transpose();
+
         matrix_t y_now_nodes = y_guess_;
         matrix_t y_next_nodes = matrix_t::Zero(num_nodes, NUM_GASES);
 

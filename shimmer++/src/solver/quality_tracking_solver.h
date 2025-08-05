@@ -165,7 +165,7 @@ public:
                 double val = inc_val * var_msh.flux(pipe_num); 
 
                 double flux_eject  =  std::max(0.0, val);
-                double flux_inject = -std::max(0.0, -val);
+                double flux_inject =  std::max(0.0, -val);
 
                 // 1.1 Compute ejection : LHS
                 lhs_nodes(iN) += flux_eject; 
@@ -229,26 +229,35 @@ public:
                 continue;
 
             auto bnd =  node_prop.node_station->boundary();
-            auto v = bnd.value(at_step);    
 
-            if(node_prop.type == station_type::ENTRY_L_REG || node_prop.type == station_type::PRIVATE_INLET)
-                v =-1;
-
-            if(node_prop.type == station_type::ENTRY_P_REG)
-                v = var_msh.L_rate(node_prop.i_snum);
-
-            // Injection
-            if (v < 0.0)
+            switch (node_prop.type) 
             {
-                for (size_t iC = 0; iC < NUM_GASES; iC++)
+                case station_type::ENTRY_L_REG: 
+                case station_type::PRIVATE_INLET:
                 {
-                    rhs_nodes(node_prop.i_snum, iC) += -v * y_now(node_prop.i_snum, iC);
+                    auto v = std::abs(bnd.value(at_step));                
+                    for (size_t iC = 0; iC < NUM_GASES; iC++)
+                        rhs_nodes(node_prop.i_snum, iC) += v * y_now(node_prop.i_snum, iC);
+                    break;
                 }
-            }    
-            // Ejection
-            else
-                lhs_nodes(node_prop.i_snum) += v;
-        
+                case station_type::ENTRY_P_REG: 
+                {
+                    auto v = std::abs(var_msh.L_rate(node_prop.i_snum));
+                    for (size_t iC = 0; iC < NUM_GASES; iC++)
+                        rhs_nodes(node_prop.i_snum, iC) += v * y_now(node_prop.i_snum, iC);
+                    break;
+                }
+                // Ejection
+                case station_type::EXIT_L_REG: 
+                case station_type::PRIVATE_OUTLET: 
+                {
+                    auto v = std::abs(bnd.value(at_step));                
+                    lhs_nodes(node_prop.i_snum) += v;
+                    break;        
+                }
+                default:
+                    throw std::invalid_argument("QT Error: station is not valid.");
+            }
         }
 #if 0     
 /* if NODE_ACCUMULATES
@@ -294,12 +303,6 @@ public:
             vector_t vel_loc_pipes = velocity(pd, var_msh, rho_msh, area_msh_pipes_);
             assert(vel_loc_pipes.size() == pd.nodelist.size()+2 && "Incorrect size for local velocities");
 
-            // Loop over discretized nodes (primal volume) of the now network pipe
-            /* // Take all discretized pipes on the original pipe
-                vector_t vel_plus_half  = inc_msh_.matrix_in(pd.nodelist)  * vel_local; 
-                vector_t vel_minus_half = inc_msh_.matrix_out(pd.nodelist) * vel_local; 
-                vector_t vel_node   = 0.5 * (vel_plus_half + vel_minus_half);
-            */
 
             // Approx velocity at nodes(primal mesh)
             vector_t vel_loc_nodes = vector_t::Zero( pd.nodelist.size());

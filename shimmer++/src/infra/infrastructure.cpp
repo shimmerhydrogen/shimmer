@@ -1193,10 +1193,7 @@ discretize_pipes(const infrastructure& infrain,
             newnp.i_sfrom = out_setting.i_sfrom;
             newnp.i_sto = out_setting.i_sto;
             auto from_vtx = infraout.s_i2vd[newnp.i_sfrom];
-            auto to_vtx = infraout.s_i2vd[newnp.i_sto];
-            //std::cout << from_vtx << " " << to_vtx << std::endl;
-            boost::add_edge(from_vtx, to_vtx, newnp, infraout.graph);
-            
+            auto to_vtx = infraout.s_i2vd[newnp.i_sto];           
             auto [ed, is_added] = boost::add_edge(from_vtx, to_vtx, newnp, infraout.graph);
             infraout.p_i2ed.push_back(ed);
 

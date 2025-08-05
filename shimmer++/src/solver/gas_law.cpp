@@ -51,6 +51,15 @@ equation_of_state::density(linearized_fluid_solver *lfs) const
 }
 
 
+vector_t 
+equation_of_state::density_nodes(linearized_fluid_solver *lfs) const
+{
+    auto [c2_nodes, c2_pipes] = speed_of_sound(lfs);
+
+    return lfs->pressure_nodes().array() / c2_nodes.array();
+}
+
+
 vector_t
 equation_of_state::compute_R(const vector_t& molar_mass) const
 {

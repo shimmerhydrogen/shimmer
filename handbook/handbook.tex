@@ -6,22 +6,33 @@
 \usepackage{hyperref}
 \usepackage{newpxtext}
 
-\title{Shimmer++ Handbook}
+\usepackage{catchfile}
+\CatchFileDef{\HEAD}{../.git/refs/heads/master}{}
+\newcommand{\gitrevision}{%
+  \StrLeft{\HEAD}{7}%
+}
+
+\title{Shimmer++ Handbook\\{\footnotesize compiled from commit \gitrevision}}
+
 
 \begin{document}
 \maketitle
+\tableofcontents
 
 \section{Model description}
 TODO DENERG
 
 \section{Network Data Files}
-The network data files (NDFs) of Shimmer++ are based on SQLite, which is the
+The Shimmer++ input/output is done entirely via network data files (NDFs). The
+user prepares NDFs specifying the whole network and the code processes them and
+stores simulation solutions in them.
+The NDFs of Shimmer++ are based on SQLite, which is the
 most widely deployed relational database system. This choice guarantees total
 compatibility with any programming language/environment and easy manipulation of
-the network data. On top of the raw SQLite database, Shimmer++ provides a C++
+the network data via standard SQL queries. On top of the raw SQLite database, Shimmer++ provides a C++
 API and a Matlab API specific for the manipulation of the NDFs.
 
-\subsection{Database schema}
+\subsection{Database schema: stations}
 In the following the NDF database schema will be described. The knowledge of
 the database schema is needed to directly modify the NDFs via tools like
 SQLite Browser (\url{https://sqlitebrowser.org/}) or to implement third party
@@ -59,12 +70,41 @@ create table station_types (
 );
 \end{minted}
 
-\begin{itemize}
-    
-\end{itemize}
+This table comes pre-populated to reflect the numeric ids cited above and it
+should not be modified by the user. 
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{c|c|c|c}
+    \texttt{t\_type} & \texttt{t\_descr} & \texttt{t\_limits\_table} & \texttt{t\_profile\_table} \\
+    \hline
+    1 & ReMi station w/o backflow & \texttt{limits\_remi\_wo} & \texttt{profiles\_remi\_wo} \\
+    2 & Injection station w/ pressure control & \texttt{limits\_injection\_w} & \texttt{profiles\_injection\_w} \\
+    3 & Consumption point w/o pressure control & \texttt{limits\_conspoint\_wo} & \texttt{profiles\_conspoint\_wo} \\
+    4 & Junction & NULL & NULL \\
+    10 & Inlet station - private & NULL & NULL \\
+    11 & Outlet station - private & \texttt{limits\_outlet\_priv} & \texttt{profiles\_outlet\_priv}
+    \end{tabular}
+\end{table}
+
+The columns \texttt{t\_limits\_table} and \texttt{t\_profile\_table} contain the table names for the settings of a specific station type. Should the code be modified to support new station types, this table must be updated accordingly.
+
+%\begin{itemize}   
+%\end{itemize}
 
 \subsubsection{Stations}
+The table \texttt{stations} contains thr list of all the stations present in a
+network. A station is uniquely identified by the field \texttt{s\_number} and has
+the following attributes:
+\begin{itemize}
+    \item \texttt{s\_name}: the name of the station
+    \item \texttt{t\_type}: the type of the station, according to the table \texttt{station\_types} 
+    \item \texttt{s\_height}: height of the station
+    \item \texttt{s\_latitude}: latitude of the station
+    \item \texttt{s\_longitude}: longitude of the station
+\end{itemize}
 
+The table is fully specified by the following SQL code:
 \begin{minted}{sql}
 create table stations (
     s_number    INTEGER,
@@ -85,7 +125,7 @@ create table stations (
 );
 \end{minted}
 
-\subsubsection{Limits and profiles - ReMi station}
+\subsubsection{Limits and profiles: ReMi station}
 
 \begin{minted}{sql}
 -- Limits
@@ -121,7 +161,7 @@ create table profiles_remi_wo (
 );
 \end{minted}
 
-\subsubsection{Limits and profiles - Injection station}
+\subsubsection{Limits and profiles: Injection station}
 
 \begin{minted}{sql}
 -- Limits
@@ -160,7 +200,7 @@ create table profiles_injection_w (
 );
 \end{minted}
 
-\subsubsection{Limits and profiles - Consumption station}
+\subsubsection{Limits and profiles: Consumption station}
 
 \begin{minted}{sql}
 -- Limits
@@ -198,4 +238,146 @@ create table profiles_conspoint_wo (
 );
 \end{minted}
 
+\subsection{Database schema: pipelines and non-pipe elements}
+\subsubsection{Pipeline types}
+All the network elements with an inlet and an outled are termed ``pipeline elements''
+inside Shimmer++. As for the stations, Shimmer++ handles different network elements
+each uniquely identified by an integer. Pipeline types are contained in a table
+fully specified by the following SQL code:
+\begin{minted}{sql}
+create table pipeline_types (
+    p_type      INTEGER,
+    t_name      TEXT NOT NULL,
+    PRIMARY KEY (p_type)
+);
+\end{minted}
+
+As for the stations, the above SQL table is pre-populated with the four types
+of stations supported by Shimmer++, summarized in Table~\ref{tbl:pipetypes}.
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{c|c}
+        \texttt{p\_type} & \texttt{t\_name} \\
+        \hline
+        0 & Plain pipe \\
+        1 & Compressor \\
+        2 & Reduction station \\
+        3 & Valve \\
+    \end{tabular}
+    \caption{Pipe-like elements supported by Shimmer++}
+    \label{tbl:pipetypes}
+\end{table}
+
+Each pipeline-like element is uniquely identified by a triple including the pipe
+name \texttt{p\_name}, the originating station \texttt{s\_from} and the destination
+station \texttt{s\_to}. In addition, the type of the pipeline element is stored
+in the \texttt{p\_type} attribute. 
+\begin{minted}{sql}
+create table pipelines (
+    p_name      TEXT NOT NULL,
+    s_from      INTEGER NOT NULL,
+    s_to        INTEGER NOT NULL,    
+    p_type      INTEGER NOT NULL,
+    PRIMARY KEY (p_name, s_from, s_to),
+
+    -- The source station must exist
+    FOREIGN KEY (s_from)
+        REFERENCES stations(s_number),
+    -- The destination station must exist
+    FOREIGN KEY (s_to)
+        REFERENCES stations(s_number),
+    -- The pipeline type must be valid
+    FOREIGN KEY (p_type)
+        REFERENCES pipeline_types(p_type)
+);
+\end{minted}
+
+\subsubsection{Plain pipes}
+
+\begin{minted}{sql}
+create table pipe_parameters (
+    p_name      TEXT NOT NULL,
+    s_from      INTEGER,
+    s_to        INTEGER,
+    diameter    REAL DEFAULT 0.0,
+    length      REAL DEFAULT 0.0,
+    roughness   REAL DEFAULT 0.0,
+    ref_nsegs   INTEGER DEFAULT 0,
+
+    -- The referenced pipeline must exist
+    FOREIGN KEY (p_name, s_from, s_to)
+        REFERENCES pipelines(p_name, s_from, s_to),
+
+    CHECK(ref_nsegs >= 0)
+);
+\end{minted}
+
+\subsubsection{Compressor stations}
+\begin{minted}{sql}
+create table compressor_profile (
+    p_name      TEXT NOT NULL,
+    s_from      INTEGER,
+    s_to        INTEGER,
+
+    prf_time    REAL DEFAULT 0.0,
+    controlmode INTEGER DEFAULT 10, -- default OFF BYPASS
+    power       REAL DEFAULT 0.0,
+    outpress    REAL DEFAULT 0.0,
+    inpress     REAL DEFAULT 0.0,
+    ratio       REAL DEFAULT 0.0,
+    massflow    REAL DEFAULT 0.0,
+
+    -- The referenced pipeline must exist
+    FOREIGN KEY (p_name, s_from, s_to)
+        REFERENCES pipelines(p_name, s_from, s_to)
+);
+\end{minted}
+
+\begin{minted}{sql}
+create table compressor_limits (
+    p_name          TEXT NOT NULL,
+    s_from          INTEGER,
+    s_to            INTEGER,
+
+    max_power       REAL DEFAULT 0.0,
+    max_outpress    REAL DEFAULT 0.0,
+    min_inpress     REAL DEFAULT 0.0,
+    max_ratio       REAL DEFAULT 0.0,
+    min_ratio       REAL DEFAULT 0.0,
+    max_massflow    REAL DEFAULT 0.0,
+
+    PRIMARY KEY (p_name, s_from, s_to),
+
+    -- The referenced pipeline must exist
+    FOREIGN KEY (p_name, s_from, s_to)
+        REFERENCES pipelines(p_name, s_from, s_to)
+);
+\end{minted}
+
+\subsubsection{Valves}
+\begin{minted}{sql}
+create table valve_profile (
+    p_name      TEXT NOT NULL,
+    s_from      INTEGER,
+    s_to        INTEGER,
+
+    prf_time    REAL DEFAULT 0.0,
+    controlmode INTEGER DEFAULT 10, -- default OFF BYPASS
+
+    -- The referenced pipeline must exist
+    FOREIGN KEY (p_name, s_from, s_to)
+        REFERENCES pipelines(p_name, s_from, s_to)
+);
+\end{minted}
+
+\subsection{Database schema: network initial conditions}
+
+\subsection{Database schema: simulation outputs}
+
+\section{Downloading and compiling the code}
+
+\section{Running the code}
+
 \end{document}
+
+

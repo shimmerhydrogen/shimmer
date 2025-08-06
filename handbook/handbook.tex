@@ -12,8 +12,9 @@
   \StrLeft{\HEAD}{7}%
 }
 
-\title{Shimmer++ Handbook\\{\footnotesize compiled from commit \gitrevision}}
-
+\title{Shimmer++ Handbook}
+\author{Politecnico di Torino}
+\date{\today\\{\footnotesize compiled from revision \texttt{\gitrevision}}}
 
 \begin{document}
 \maketitle
@@ -372,7 +373,80 @@ create table valve_profile (
 
 \subsection{Database schema: network initial conditions}
 
+\begin{minted}{sql}
+create table station_initial_conditions (
+    s_number    INTEGER UNIQUE NOT NULL,
+    init_P      REAL DEFAULT 0.0 NOT NULL,
+    init_L      REAL DEFAULT 0.0 NOT NULL,
+
+    FOREIGN KEY (s_number)
+        REFERENCES stations(s_number)
+);
+\end{minted}
+
+\begin{minted}{sql}
+create table pipe_initial_conditions (
+    p_name      TEXT NOT NULL,
+    s_from      INTEGER,
+    s_to        INTEGER,
+    init_G      REAL DEFAULT 0.0 NOT NULL,
+    
+    PRIMARY KEY (p_name, s_from, s_to),
+
+    FOREIGN KEY (p_name, s_from, s_to)
+        REFERENCES pipelines(p_name, s_from, s_to)
+);
+\end{minted}
+
 \subsection{Database schema: simulation outputs}
+
+\begin{minted}{sql}
+create table solution_station_pressures (
+    s_number        INTEGER NOT NULL,
+    timestep        INTEGER NOT NULL,
+    pressure        REAL DEFAULT 0.0 NOT NULL,
+    
+    FOREIGN KEY (s_number)
+        REFERENCES stations(s_number)
+);
+\end{minted}
+
+\begin{minted}{sql}
+create table solution_pipe_flowrates (
+    p_name      TEXT NOT NULL,
+    s_from      INTEGER NOT NULL,
+    s_to        INTEGER NOT NULL,
+    timestep    INTEGER NOT NULL,
+    flowrate    REAL DEFAULT 0.0 NOT NULL,
+
+    FOREIGN KEY (p_name, s_from, s_to)
+        REFERENCES pipelines(p_name, s_from, s_to)
+);
+\end{minted}
+
+\begin{minted}{sql}
+create table solution_station_flowrates (
+    s_number        INTEGER NOT NULL,
+    timestep        INTEGER NOT NULL,
+    pressure        REAL DEFAULT 0.0 NOT NULL,
+    
+    FOREIGN KEY (s_number)
+        REFERENCES stations(s_number)
+);
+\end{minted}
+
+\begin{minted}{sql}
+create table solution_pipe_velocities (
+    p_name      TEXT NOT NULL,
+    s_from      INTEGER NOT NULL,
+    s_to        INTEGER NOT NULL,
+    timestep    INTEGER NOT NULL,
+    velocity    REAL DEFAULT 0.0 NOT NULL,
+
+    FOREIGN KEY (p_name, s_from, s_to)
+        REFERENCES pipelines(p_name, s_from, s_to)
+);
+\end{minted}
 
 \section{Downloading and compiling the code}
 

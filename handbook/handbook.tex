@@ -22,7 +22,9 @@
 
 \section{Model description}
 TODO DENERG
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Network Data Files}
 The Shimmer++ input/output is done entirely via network data files (NDFs). The
 user prepares NDFs specifying the whole network and the code processes them and
@@ -33,12 +35,15 @@ compatibility with any programming language/environment and easy manipulation of
 the network data via standard SQL queries. On top of the raw SQLite database, Shimmer++ provides a C++
 API and a Matlab API specific for the manipulation of the NDFs.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Database schema: stations}
 In the following the NDF database schema will be described. The knowledge of
 the database schema is needed to directly modify the NDFs via tools like
 SQLite Browser (\url{https://sqlitebrowser.org/}) or to implement third party
 tools able to read and write Shimmer++ NDFs.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Station types}
 Shimmer++ handles gas networks with different types of stations, as described
 in Section~\ref{sec:shimmer_model}. Each station type is assigned a specific
@@ -93,6 +98,7 @@ The columns \texttt{t\_limits\_table} and \texttt{t\_profile\_table} contain the
 %\begin{itemize}   
 %\end{itemize}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Stations}
 The table \texttt{stations} contains thr list of all the stations present in a
 network. A station is uniquely identified by the field \texttt{s\_number} and has
@@ -126,16 +132,19 @@ create table stations (
 );
 \end{minted}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Limits and profiles: ReMi station}
-
+Each station of type ReMi has an associated set of user-specified limits on pressure
+and mass flow rate. Limits are specified per station by NDF entries including:
+\begin{itemize}
+    \item \texttt{s\_number}:   number of the station
+    \item \texttt{lim\_Lmin}:   minimum allowed mass flow rate
+    \item \texttt{lim\_Lmax}:   maximum allowed mass flow rate
+    \item \texttt{lim\_Pmin}:   minimum allowed pressure
+    \item \texttt{lim\_Pmax}:   maximum allowed pressure
+\end{itemize}
+The table of the limits for ReMi stations is fully specified by the following SQL code:
 \begin{minted}{sql}
--- Limits
---  s_number:   number of the station
---  lim_Lmin:   minimum allowed mass flow rate
---  lim_Lmax:   maximum allowed mass flow rate
---  lim_Pmin:   minimum allowed pressure
---  lim_Pmax:   maximum allowed pressure
-
 create table limits_remi_wo (
     s_number    INTEGER UNIQUE,
     lim_Lmin    REAL DEFAULT 0.0 NOT NULL,
@@ -146,12 +155,18 @@ create table limits_remi_wo (
     FOREIGN KEY (s_number)
         REFERENCES stations(s_number)
 );
-
--- Profiles
---  s_number:   number of the station
---  prf_time:   relative time of the sample
---  prf_Pset:   pressure setpoint at the specified time
-
+\end{minted}
+In addition to limits, the NDFs allow to store also profiles for the quantity
+controlled by the station. A pressure profile is specified by triples including:
+\begin{itemize}
+    \item \texttt{s\_number}:   number of the station
+    \item \texttt{prf\_time}:   relative time of the sample (seconds)
+    \item \texttt{prf\_Pset}:   pressure setpoint at the specified time
+\end{itemize}
+If a profile for a station includes a single entry, the quantity is held constant
+at the specified value for the whole simulation. The table of the profiles for
+ReMi stations is fully specified by the following SQL code:
+\begin{minted}{sql}
 create table profiles_remi_wo (
     s_number    INTEGER,
     prf_time    REAL DEFAULT 0.0 NOT NULL,
@@ -162,17 +177,20 @@ create table profiles_remi_wo (
 );
 \end{minted}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Limits and profiles: Injection station}
-
+Each station of type Injection has an associated set of user-specified limits on pressure
+and mass flow rate. Limits are specified per station by NDF entries including:
+\begin{itemize}
+    \item \texttt{s\_number}:   number of the station
+    \item \texttt{lim\_Lmin}:   minimum allowed mass flow rate
+    \item \texttt{lim\_Lmax}:   maximum allowed mass flow rate
+    \item \texttt{lim\_Pmin}:   minimum allowed pressure
+    \item \texttt{lim\_Pmax}:   maximum allowed pressure
+    \item \texttt{parm\_f}:     scale factor named "f" in the slides DENERG CLARIFY
+\end{itemize}
+The table of the limits for Injection stations is fully specified by the following SQL code:
 \begin{minted}{sql}
--- Limits
---  s_number:   number of the station
---  lim_Lmin:   minimum allowed mass flow rate
---  lim_Lmax:   maximum allowed mass flow rate
---  lim_Pmin:   minimum allowed pressure
---  lim_Pmax:   maximum allowed pressure
---  parm_f:     scale factor named "f" in the slides
-
 create table limits_injection_w (
     s_number    INTEGER UNIQUE,
     lim_Lmin    REAL DEFAULT 0.0 NOT NULL,
@@ -184,12 +202,19 @@ create table limits_injection_w (
     FOREIGN KEY (s_number)
         REFERENCES stations(s_number)
 );
-
--- Profiles
---  s_number:   number of the station
---  prf_time:   relative time of the sample
---  prf_Lset:   mass flow rate setpoint at the specified time
-
+\end{minted}
+In addition to limits, the NDFs allow to store also profiles for the quantity
+controlled by the station. A profile for Injection stations is specified by quadruples including:
+\begin{itemize}
+    \item \texttt{s\_number}:   number of the station
+    \item \texttt{prf\_time}:   relative time of the sample (seconds)
+    \item \texttt{prf\_Pset}:   pressure setpoint at the specified time
+    \item \texttt{prf\_Lset}:   mass flow rate setpoint at the specified time
+\end{itemize}
+If a profile for a station includes a single entry, the quantity is held constant
+at the specified value for the whole simulation. The table of the profiles for
+Injection stations is fully specified by the following SQL code:
+\begin{minted}{sql}
 create table profiles_injection_w (
     s_number    INTEGER,
     prf_time    REAL DEFAULT 0.0 NOT NULL,
@@ -201,16 +226,21 @@ create table profiles_injection_w (
 );
 \end{minted}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Limits and profiles: Consumption station}
 
+Each station of type Consumption has an associated set of user-specified limits
+on pressure and mass flow rate. Limits are specified per station by NDF entries
+including:
+\begin{itemize}
+    \item \texttt{s\_number}:   number of the station
+    \item \texttt{lim\_Lmin}:   minimum allowed mass flow rate
+    \item \texttt{lim\_Lmax}:   maximum allowed mass flow rate
+    \item \texttt{lim\_Pmin}:   minimum allowed pressure
+    \item \texttt{lim\_Pmax}:   maximum allowed pressure
+\end{itemize}
+The table of the limits for Consumption stations is fully specified by the following SQL code:
 \begin{minted}{sql}
--- Limits
---  s_number:   number of the station
---  lim_Lmin:   minimum allowed mass flow rate
---  lim_Lmax:   maximum allowed mass flow rate
---  lim_Pmin:   minimum allowed pressure
---  lim_Pmax:   maximum allowed pressure
-
 create table limits_conspoint_wo (
     s_number    INTEGER UNIQUE,
     lim_Lmin    REAL DEFAULT 0.0 NOT NULL,
@@ -221,12 +251,18 @@ create table limits_conspoint_wo (
     FOREIGN KEY (s_number)
         REFERENCES stations(s_number)
 );
-
--- Profiles
---  s_number:   number of the station
---  prf_time:   relative time of the sample
---  prf_Lset:   pressure setpoint at the specified time
-
+\end{minted}
+In addition to limits, the NDFs allow to store also profiles for the quantity
+controlled by the station. A mass flow rate profile is specified by triples including:
+\begin{itemize}
+    \item \texttt{s\_number}:   number of the station
+    \item \texttt{prf\_time}:   relative time of the sample (seconds)
+    \item \texttt{prf\_Lset}:   mass flow rate setpoint at the specified time
+\end{itemize}
+If a profile for a station includes a single entry, the quantity is held constant
+at the specified value for the whole simulation. The table of the profiles for
+Consumption stations is fully specified by the following SQL code:
+\begin{minted}{sql}
 create table profiles_conspoint_wo (
     s_number    INTEGER,
     prf_time    REAL DEFAULT 0.0 NOT NULL,
@@ -239,7 +275,10 @@ create table profiles_conspoint_wo (
 );
 \end{minted}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Database schema: pipelines and non-pipe elements}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Pipeline types}
 All the network elements with an inlet and an outled are termed ``pipeline elements''
 inside Shimmer++. As for the stations, Shimmer++ handles different network elements
@@ -292,9 +331,14 @@ create table pipelines (
         REFERENCES pipeline_types(p_type)
 );
 \end{minted}
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Plain pipes}
-
+Plain pipes are uniquely identified by a triple including the pipe
+name \texttt{p\_name}, the originating station \texttt{s\_from} and the destination
+station \texttt{s\_to}. Additional attributes of a pipe are its diameter,
+its length, its roughness and the number of segments in which it will be split
+if mesh refinement is used for quality tracking. The table where the pipes and
+related parameters are stored is fully specified by the following SQL code:
 \begin{minted}{sql}
 create table pipe_parameters (
     p_name      TEXT NOT NULL,
@@ -312,28 +356,17 @@ create table pipe_parameters (
     CHECK(ref_nsegs >= 0)
 );
 \end{minted}
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Compressor stations}
-\begin{minted}{sql}
-create table compressor_profile (
-    p_name      TEXT NOT NULL,
-    s_from      INTEGER,
-    s_to        INTEGER,
+Compressors are uniquely identified by a triple including the pipe
+name \texttt{p\_name}, the originating station \texttt{s\_from} and the destination
+station \texttt{s\_to}. Each compressor has an associated set of limits and an
+associated temporal profile.
 
-    prf_time    REAL DEFAULT 0.0,
-    controlmode INTEGER DEFAULT 10, -- default OFF BYPASS
-    power       REAL DEFAULT 0.0,
-    outpress    REAL DEFAULT 0.0,
-    inpress     REAL DEFAULT 0.0,
-    ratio       REAL DEFAULT 0.0,
-    massflow    REAL DEFAULT 0.0,
+TODO DENERG: describe a bit the engineering meaning of each parameter.
 
-    -- The referenced pipeline must exist
-    FOREIGN KEY (p_name, s_from, s_to)
-        REFERENCES pipelines(p_name, s_from, s_to)
-);
-\end{minted}
-
+The table containing the compressor limits is fully specified by the following
+SQL code:
 \begin{minted}{sql}
 create table compressor_limits (
     p_name          TEXT NOT NULL,
@@ -355,6 +388,29 @@ create table compressor_limits (
 );
 \end{minted}
 
+Each compressor has also an associated temporal profile.
+\begin{minted}{sql}
+create table compressor_profile (
+    p_name      TEXT NOT NULL,
+    s_from      INTEGER,
+    s_to        INTEGER,
+
+    prf_time    REAL DEFAULT 0.0,
+    controlmode INTEGER DEFAULT 10, -- default OFF BYPASS
+    power       REAL DEFAULT 0.0,
+    outpress    REAL DEFAULT 0.0,
+    inpress     REAL DEFAULT 0.0,
+    ratio       REAL DEFAULT 0.0,
+    massflow    REAL DEFAULT 0.0,
+
+    -- The referenced pipeline must exist
+    FOREIGN KEY (p_name, s_from, s_to)
+        REFERENCES pipelines(p_name, s_from, s_to)
+);
+\end{minted}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Valves}
 \begin{minted}{sql}
 create table valve_profile (
@@ -371,8 +427,15 @@ create table valve_profile (
 );
 \end{minted}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Database schema: network initial conditions}
 
+To start a simulation the user must provide the initial conditions of the network,
+in particular the conditions at each node and in each pipe.
+
+Initial conditions for stations are specified in the table \texttt{station\_initial\_conditions}
+as specified by the following SQL code:
 \begin{minted}{sql}
 create table station_initial_conditions (
     s_number    INTEGER UNIQUE NOT NULL,
@@ -383,7 +446,13 @@ create table station_initial_conditions (
         REFERENCES stations(s_number)
 );
 \end{minted}
+For each station an entry composed of the station number, station pressure and
+station mass flow must be provided.
 
+Similarly to stations, also pipe initial conditions must be provided as entries
+in the \texttt{pipe\_initial\_conditions} table. Each entry has to include the
+station name, the start and end node and the initial value of G, as specified
+by the following SQL code.
 \begin{minted}{sql}
 create table pipe_initial_conditions (
     p_name      TEXT NOT NULL,
@@ -397,7 +466,8 @@ create table pipe_initial_conditions (
         REFERENCES pipelines(p_name, s_from, s_to)
 );
 \end{minted}
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Database schema: simulation outputs}
 
 \begin{minted}{sql}
@@ -448,8 +518,14 @@ create table solution_pipe_velocities (
 );
 \end{minted}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Downloading and compiling the code}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Running the code}
 
 \end{document}

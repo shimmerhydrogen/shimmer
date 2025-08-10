@@ -218,7 +218,7 @@ create table pipelines (
     p_name      TEXT NOT NULL,
     s_from      INTEGER NOT NULL,
     s_to        INTEGER NOT NULL,    
-    p_type      INTEGER,
+    p_type      INTEGER NOT NULL,
     PRIMARY KEY (p_name, s_from, s_to),
 
     -- The source station must exist
@@ -404,32 +404,6 @@ create table solution_pipe_velocities (
         REFERENCES pipelines(p_name, s_from, s_to)
 );
 
--- The gases. Which are the parameters associated to each gas?
-create table gases (
-    g_name      TEXT,
-    --g_descr     TEXT,
-    PRIMARY KEY (g_name)
-);
-
-insert into gases(g_name) values ('CH4'), ('N2'), ('CO2'), ('C2H6'),
-    ('C3H8'), ('i_C4H10'), ('n_C4H10'), ('i_C5H12'), ('n_C5H12'),
-    ('C6H14'), ('C7H16'), ('C8H18'), ('C9H20'), ('C10H22'), ('H2'),
-    ('O2'), ('CO'), ('H2O'), ('H2S'), ('He'), ('Ar');
-
-
--- Who injects what
-create table injects (
-    s_number    INTEGER,
-    g_name      TEXT,
-    quantity    REAL,
-
-    -- station number must be valid
-    FOREIGN KEY (s_number)
-        REFERENCES stations(s_number),
-    -- gas name must be valid
-    FOREIGN KEY (g_name)
-        REFERENCES gases(g_name)
-);
 
 --insert into station_parameters values (0, 70.000000000, -75);
 --insert into station_parameters values (1, 70.000000000,  20);
@@ -448,9 +422,9 @@ create table injects (
 
 
 
-select stations.s_name, station_types.t_descr
-    from stations
-    inner join station_types on stations.t_type = station_types.t_type;
+--select stations.s_name, station_types.t_descr
+--    from stations
+--    inner join station_types on stations.t_type = station_types.t_type;
 
 --insert into pipelines values ('pipe1', 1, 2, 0);
 --insert into pipelines values ('pipe2', 1, 3, 0);
@@ -460,7 +434,7 @@ select stations.s_name, station_types.t_descr
 --insert into pipeline_parameters values ('pipe2', 1, 3, 200, 5, 0);
 --insert into pipeline_parameters values ('pipe3', 2, 4, 50, 5, 0);
 
-insert into gases values ('gas1'), ('gas2'), ('gas3');
+--insert into gases values ('gas1'), ('gas2'), ('gas3');
 
 --insert into injects values (1, 'gas1', 0.5); 
 --insert into injects values (1, 'gas2', 0.5); 

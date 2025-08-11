@@ -208,12 +208,7 @@ public:
                 }
             }
         }
-
-
-        /*
-        1.2 Problems
-        A. I do not know if gas_mixture are molar or mass fractions
-        */      
+  
 
         // 1.3 External Injection/Ejection          
         auto v_range = boost::vertices(infra_.graph);
@@ -307,7 +302,7 @@ public:
 
 
     void
-    qt_refine_nodes(size_t it, double dt, const variable& var_msh, const vector_t& rho_msh,
+    qt_refine_nodes(size_t it, double dt, const variable& var_msh,
                     const matrix_t& y_now,matrix_t& y_next)
     {
         // Loop over network (original) pipes
@@ -316,7 +311,7 @@ public:
             auto dtdx =  (dt/pd.dx); 
 
             /// vel [m/s] velocity of the gas within pipes (on dual mesh)
-            vector_t vel_loc_pipes = velocity(pd, var_msh, rho_msh, area_msh_pipes_);
+            vector_t vel_loc_pipes = velocity(pd, var_msh, rho_msh_in_time_[it-1], area_msh_pipes_);
             assert(vel_loc_pipes.size() == pd.nodelist.size()+2 && "Incorrect size for local velocities");
 
 
@@ -465,7 +460,6 @@ public:
 
             // 3. 2. Continuity at discretized nodes 
             qt_refine_nodes( it, dt, var_msh_, 
-                             rho_msh_in_time_.row(it-1).transpose(),
                              y_now_nodes, y_next_nodes);
 
             y_now_nodes = y_next_nodes;

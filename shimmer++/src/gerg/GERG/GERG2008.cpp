@@ -98,6 +98,39 @@ inline double Tanh(double xx){ return (exp(xx) - exp(-xx)) / (exp(xx) + exp(-xx)
 inline double Sinh(double xx){ return (exp(xx) - exp(-xx)) / 2; }
 inline double Cosh(double xx){ return (exp(xx) + exp(-xx)) / 2; }
 
+static void zeroThoseFuckingTables(void)
+{
+    memset(coik, '\0', sizeof(coik));
+    memset(doik, '\0', sizeof(doik));
+    memset(dijk, '\0', sizeof(dijk));
+    memset(mNumb, '\0', sizeof(mNumb));
+    memset(kpol, '\0', sizeof(kpol));
+    memset(kexp, '\0', sizeof(kexp));
+    memset(kpolij, '\0', sizeof(kpolij));
+    memset(kexpij, '\0', sizeof(kexpij));
+    memset(Dc, '\0', sizeof(Dc));
+    memset(Tc, '\0', sizeof(Tc));
+    memset(MMiGERG, '\0', sizeof(MMiGERG));
+    memset(Vc3, '\0', sizeof(Vc3));
+    memset(Tc2, '\0', sizeof(Tc2));
+    memset(noik, '\0', sizeof(noik));
+    memset(toik, '\0', sizeof(toik));
+    memset(cijk, '\0', sizeof(cijk));
+    memset(eijk, '\0', sizeof(eijk));
+    memset(gijk, '\0', sizeof(gijk));
+    memset(nijk, '\0', sizeof(nijk));
+    memset(tijk, '\0', sizeof(tijk));
+    memset(btij, '\0', sizeof(btij));
+    memset(bvij, '\0', sizeof(bvij));
+    memset(gtij, '\0', sizeof(gtij));
+    memset(gvij, '\0', sizeof(gvij));
+    memset(fij, '\0', sizeof(fij));
+    memset(th0i, '\0', sizeof(th0i));
+    memset(n0i, '\0', sizeof(n0i));
+    memset(taup, '\0', sizeof(taup));
+    memset(taupijk, '\0', sizeof(taupijk));
+}
+
 void MolarMassGERG(const std::vector<double> &x, double &Mm)
 {
     // Sub MolarMassGERG(x, Mm)
@@ -658,6 +691,7 @@ void PseudoCriticalPointGERG(const std::vector<double> &x, double &Tcx, double &
 // The following routine must be called once before any other routine.
 void SetupGERG()
 {
+  zeroThoseFuckingTables();
   // Initialize all the constants and parameters in the GERG-2008 model.
   // Some values are modified for calculations that do not depend on T, D, and x in order to speed up the program.
 

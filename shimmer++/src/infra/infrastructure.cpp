@@ -577,66 +577,69 @@ int load(const std::string& db_filename, infrastructure& infra)
     if(rc) {
         std::cerr << "Can't open database '" << db_filename << "': ";
         std::cerr << sqlite3_errmsg(db) << std::endl;
-        sqlite3_close(db);
-        return SHIMMER_DATABASE_PROBLEM;
+        goto load_fail;
     }
 
     if (SHIMMER_SUCCESS != load_station_settings(db, infra)) {
         std::cerr << "Problems detected while loading station settings. ";
         std::cerr << std::endl;
-        return SHIMMER_DATABASE_PROBLEM;
+        goto load_fail;
     }
 
     if (SHIMMER_SUCCESS != load_gas_mass_fractions(db, infra)) {
         std::cerr << "Problems detected while loading gas mass fractions. ";
         std::cerr << std::endl;
-        return SHIMMER_DATABASE_PROBLEM;
+        goto load_fail;
     }
     
     if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.settings_pipe)) {
         std::cerr << "Problems detected while loading pipe settings";
         std::cerr << std::endl;
-        return SHIMMER_DATABASE_PROBLEM;
+        goto load_fail;
     };
     
     if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.settings_compr_stat)) {
         std::cerr << "Problems detected while loading compressor settings";
         std::cerr << std::endl;
-        return SHIMMER_DATABASE_PROBLEM;
+        goto load_fail;
     };
 
     if (SHIMMER_SUCCESS != load_stations(db, infra)) {
         std::cerr << "Problem detected while loading stations";
         std::cerr << std::endl;
-        return SHIMMER_DATABASE_PROBLEM;
+        goto load_fail;
     }
 
     if (SHIMMER_SUCCESS != load_pipelines(db, infra)) {
         std::cerr << "Problem detected while loading pipelines";
         std::cerr << std::endl;
-        return SHIMMER_DATABASE_PROBLEM;
+        goto load_fail;
     }
 
     if (SHIMMER_SUCCESS != check_pipeline_data_consistency(infra)) {
         std::cerr << "Inconsistencies detected in pipeline data";
         std::cerr << std::endl;
-        return SHIMMER_DATABASE_PROBLEM;
+        goto load_fail;
     }
 
     if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.sics) ) {
         std::cerr << "Problem detected while loading initial condition for stations";
         std::cerr << std::endl;
-        return SHIMMER_DATABASE_PROBLEM;
+        goto load_fail;
     }
 
     if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.pics) ) {
         std::cerr << "Problem detected while loading initial condition for pipelines";
         std::cerr << std::endl;
-        return SHIMMER_DATABASE_PROBLEM;
+        goto load_fail;
     }
 
     sqlite3_close(db);
     return SHIMMER_SUCCESS;
+
+load_fail:
+    sqlite3_close(db);
+    return SHIMMER_DATABASE_PROBLEM;
 }
 
 int store(const std::string& db_filename, infrastructure& infra)
@@ -1327,7 +1330,7 @@ int launch_solver(const config& cfg)
     shimmer::matrix_t y_pipes = inc.matrix_in().transpose() * y_nodes;   
     /* END GAS MASS FRACTIONS */
 
-    using time_solver_t = shimmer::time_solver<shimmer::papay,
+    using time_solver_t = shimmer::time_solver<shimmer::gerg_aga,
         shimmer::viscosity_type::Constant>;
 
     time_solver_t ts1(infra.graph, cfg.temperature);

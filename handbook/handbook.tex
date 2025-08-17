@@ -5,6 +5,9 @@
 \usepackage{fullpage}
 \usepackage{hyperref}
 \usepackage{newpxtext}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{float}
+\usepackage{url}
 
 \usepackage{catchfile}
 \CatchFileDef{\HEAD}{../.git/refs/heads/master}{}
@@ -19,6 +22,8 @@
 \begin{document}
 \maketitle
 \tableofcontents
+
+\newcommand{\cred}[1]{\textcolor{red}{{#1}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \input{intro}

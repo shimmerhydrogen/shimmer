@@ -7,7 +7,7 @@ The starting point to model gas fluid dynamics is the Navier-Stokes equations wi
     \caption{Schematic transient gas network model.}
     \label{fig: scheme_model}
 \end{figure}
-The first assumption is unidimensional flow, which implies that radial variations are neglected. Another common simplification concerns long distance gas transport, which it is typically supposed to occur within an isothermal process. This assumption holds in general despite variations due to local weather, due to the stability of the soil temperature where pipelines are normally installed. Additionally, for non-isentropic processes, as such of compressors and turbines, overall this assumption seems to be a trade-off which allows avoiding to solve the energy equation. Some estimations of pressure drop error based on these assumptions are discussed in [Marco Thesis cite 92]. The second main assumption is \cred{creeping flow} (Marco may you check this?) , which derives from the low Reynolds numbers mainly due to the low operational velocity of the transported gas. 
+The first assumption is unidimensional flow, which implies that radial variations are neglected. Another common simplification concerns long distance gas transport, which it is typically supposed to occur within an isothermal process. This assumption holds in general despite variations due to local weather, due to the stability of the soil temperature where pipelines are normally installed. Additionally, for non-isentropic processes, as such of compressors and turbines, overall this assumption seems to be a trade-off which allows avoiding to solve the energy equation. Some estimations of pressure drop error based on these assumptions are discussed in [Marco Thesis cite 92]. The second main assumption is \cred{creeping flow} \cred{[DENERG CHECK REQUIRED]}, which derives from the low Reynolds numbers mainly due to the low operational velocity of the transported gas. 
 s
 The structure of the methodology for the numerical methods stage can be thought as three main nested loops, shown in Fig. \ref{fig: numerical_methods_stage}. The external loop tackles the unsteady time advance, the middle loop the quality tracking and the inner loop the solution of the gas fluid dynamics.  
 \begin{figure}[H]
@@ -24,10 +24,9 @@ The structure of the methodology for the numerical methods stage can be thought 
     \caption{Algebraic system after linearization of the fluid dynamic equations.}
     \label{fig: fluid_system}
 \end{figure}
-where $\bI$ stands for the identity matrix and recall that $\bA$ stands for the incidence matrix.
+where $\bI$ stands for the identity matrix and recall that $\bA$ stands for the incidence matrix, R stands for the resistance matrice. Regarding the later, part of the fluid energy is lost in pipe-wall friction, characterized by the roughness of the metal surface and the Reynolds number. Several relations between the pressure drop and the mass flow rate can be found in the literature. Very well-known examples are the Darcy-Weisbach equations and the Hazen-Williams equations. 
 
-\subsection{Variable}
-The set of variables as pressure and mass flow rate at the nodes, flux over the pipes are all gathered in an structure named variable. 
+The set of variables as pressure $\bp$ and mass flow rate $\bL_{rate}$ at the nodes, and flux over the pipes $\bG$ are all gathered in an structure named variable. 
 \begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm]{cpp}
     struct variable
     {
@@ -40,22 +39,6 @@ The set of variables as pressure and mass flow rate at the nodes, flux over the 
         variable(const vector_t&p, const vector_t&f ,const vector_t&l);
     };
 \end{minted}
-where three data vectors are stored regarding pressure at nodes, mass fluxes on pipes and at nodes.  
-
-\subsection{Resistances matrices $\mathbf{R}$}
-
-Part of the fluid energy is lost in pipe-wall friction, characterized by the roughness of the metal surface and the Reynolds number. Several relations between the pressure drop and the mass flow rate can be found in the literature. Very well-known examples are the Darcy-Weisbach equations and the Hazen-Williams equations. 
-% Check all this: 
-%\[g \sin \theta\]
-%where $\theta$ is the angle of inclination of the pipe, $g$ the gravity constant. 
-%\[ \]
-%which is the frictional force (acting in axial direction, also angular?)
-
-%where the last term accounts for the potential energy due to the inclination of the pipe. Very often in the literature this term is neglected, but for real-world against comparison purposes it is a term to be kept. 
-
-\subsubsection{Hands-on:}
-
-\section{Physical properties}
 
 \subsection{Viscosity}
 
@@ -94,12 +77,8 @@ Industrial have been using modifications to ideal gas state to accommodate to th
 %where Z denotes the compressibility factor aiming to account a correction for real gases. 
 
 
-\section{Fluid solver in action}   
-In this section, we show the implementation of the 
-
-We denote as fluid solver the most internal loop in Fig. , where the Navier-Stokes equations are linearized and discretized. 
-
-Code implementation mimics the system \ref{fig: fluid_system}
+\subsection{Fluid solver}   
+We denote as fluid solver the most internal loop in Fig. \ref{fig: numerical_methods_stage}, where the Navier-Stokes equations are linearized and discretized.  The code  implementation search to mimic the algebraic system in Fig. \ref{fig: fluid_system}. 
 
 \begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm, escapeinside=||]{cpp}
 void linearized_fluid_solver::run(...)
@@ -132,6 +111,7 @@ void linearized_fluid_solver::run(...)
 \end{minted}
 
 \subsubsection{Hands-on:}
+For the complete example check \texttt{unit\_tests/test\_fluid\_solver.cpp}.    
 
 \begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm]{cpp}
    int main()
@@ -161,7 +141,7 @@ void linearized_fluid_solver::run(...)
    }
 \end{minted}
 
-\section{Time solver}
+\subsection{Time solver}
 
 The outer loop of the numerical methods stage aimed to advance in time is implemented in the time solver.
 At the moment of the creation of this time solver object, the viscosity model along with the equation of state  must be provided as template parameter, i.e. at compile time. At the moment of the writing of this document, only two models are available gerg (GERG2008) and papay (Papay model \cite{}). Thus, assuming constant viscosity model, the two  available options are as follows:
@@ -174,8 +154,8 @@ or
 \end{verbatim}
 
 To initialize the object, physical and numerical properties that remain unchanged during the simulation must be provided.
-\subsubsection{Hands-on}
-For a complete example check \texttt{unit\_tests/test\_time\_solver.cpp}.    
+\subsubsection{Hands-on}0
+For the complete example check \texttt{unit\_tests/test\_time\_solver.cpp}.    
 \begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm]{cpp}
     int main()
     {

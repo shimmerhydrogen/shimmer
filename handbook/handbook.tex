@@ -9,6 +9,9 @@
 \usepackage{float}
 \usepackage{url}
 \usepackage{tikz}
+\usepackage{multirow}   
+\usepackage{colortbl} % Allow coloring cells in a table
+\usepackage{xcolor}
 
 \usepackage{catchfile}
 \CatchFileDef{\HEAD}{../.git/refs/heads/master}{}
@@ -24,7 +27,7 @@
 \maketitle
 \tableofcontents
 
-\newcommand{\cred}[1]{\textcolor{red}{{#1}}}
+\input{macros}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \input{intro}
@@ -35,8 +38,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \input{installation}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\input{usage}
+\input{memory_representation}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{usage}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \end{document}

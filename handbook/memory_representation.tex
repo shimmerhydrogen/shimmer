@@ -214,3 +214,202 @@ Recall first to create a graph with the specification, as proposed in the previo
         return 0;
     }
 \end{minted}
+
+\section{Stations}
+They resort in constraints that regulate flux or pressure depending of the nature of the station. For example, as shown in Figure \ref{tab: non_pipe_to_node_scheme_table} an exit station controls that $L\geq 0$, while junctions impose as sole requirement that $L = 0$. As last example, the entry station enforces  flux $L \leq 0 $. There are additional constraints regarding design parameters or user dependant. 
+
+\begin{table}[H]
+    \centering
+    \label{tab: non_pipe_to_node_scheme_table}
+    \begin{tabular}{llcc}
+    \hline
+    & Entry Stations    &  Exit Stations   &  Junctions \\ \hline
+    \centering Scheme & 
+    \includegraphics[scale= 0.7]{img_memory/entry.png}&  \includegraphics[scale= 0.7]{img_memory/exit.png}   & \includegraphics[scale= 0.7]{img_memory/junction.png} \\ \hline
+    Control Mode &1. Pressure & 1. Outflow & \\
+             & \footnotesize{\cred{\quad (Remi St)}}& \footnotesize{\cred{(Consumption)}} & \\
+             &2. Inflow   &         & \\
+             &\footnotesize{\cred{\quad  (Injection)}}&        & \\    \hline
+    \end{tabular} 
+    
+    \caption{Classifications of \cnodes{non-pipe elements} attached to nodes.}
+\end{table}
+
+ %one is dividing by categories related to direction of the flux: exit, entrance or junction as is shown in Fig. \ref{tab: non_pipe_to_node_scheme_table}, pressure- or flux- regulated.   
+
+
+%The taxonomy of the stations can be divided in different manners,
+
+
+In Figure \ref{fig: schematic_remi},  an scheme of the operation of a REMI station its shown.
+
+% Please add the following required packages to your document preamble:
+% \usepackage{multirow}
+\begin{table}[H]
+\centering
+\caption{Taxonomy of None pipe elements classified by type of constraints.}
+\begin{tabular}{llll}
+\hline
+\multicolumn{2}{l}{Constraint type}             & Description        & Action at failure                             \\ \hline
+\multirow{2}{*}{Hard} & Internal                & Intrinsic          & \multirow{2}{*}{Change} \\
+                      & External & Operation limit    &                      \\ \hline
+\multirow{2}{*}{Soft} & Internal                & Intrinsic          & \multirow{2}{*}{Warning/Change}               \\
+                      & External & Working conditions & \\ \hline        
+    \end{tabular}
+    \label{tab: taxonomy station}
+\end{table}
+
+In Fig. an example of a remi station is given.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.5]{img_memory/remi.pdf}
+    \caption{Remi scheme. Courtesy of DENERG.}
+    \label{fig: schematic_remi}
+\end{figure}
+
+
+\cstate{State}: 
+\begin{itemize}
+    \item Boundary
+    \item Hard constraints
+    \item Soft constraints
+\end{itemize}
+
+
+\cred{Remi w/o backflow}: entry station
+
+    \begin{tabular}{|l|c|c|}
+\hline
+             & First \cstate{state}     &  Second \cstate{state} \\ \hline
+    Boundary & $p = Pset$  & $L = 0$\\ 
+    Hard constr.& $L \leq 0 $ & $p \geq Pset$\\ 
+    Soft constr.& $L_{min}\leq L \leq  L_{max}$ & $L'_{min}\leq L \leq  L'_{max}$ \\
+    & $p_{min}\leq p \leq  p_{max}$ & $p'_{min}\leq L \leq  p'_{max}$ \\\hline
+    \end{tabular}
+
+
+One can conclude that the main characteristic of the stations is that they are governed by states, which changes when hard constraints are violated. Each state encapsulates information about the boundary condition to be imposed, as well as the operational constraints and limits.
+\begin{minted}[linenos=false,numbersep=1pt,frame=single,framesep=2mm,escapeinside=||]{cpp}
+class |\textbf{\cred{station}}|
+{
+    std::vector<|\textbf{\cstate{state}}|> states_;
+
+    void set_state(const |\textbf{\cstate{state}}|& s);   
+};
+\end{minted}
+
+\begin{minted}[linenos=false,numbersep=1pt,frame=single,framesep=2mm,escapeinside=||]{cpp}
+struct |\textbf{\cstate{state}}|
+{
+    |\textbf{\cblue{constraint}}|  boundary;  
+    |\textbf{\cblue{constraint}}|  hards;
+    std::vector<|\textbf{\cblue{constraint}}|> softs;
+};
+\end{minted}
+
+\begin{minted}[linenos=false,numbersep=1pt,frame=single,framesep=2mm,escapeinside=||]{cpp}
+class |\textbf{\cblue{constraint}}|
+{
+    hardness_type     hardness_;
+    constraint_type   type_;
+    vector_t          values_;
+};
+\end{minted}
+
+
+In order to add a new kind of station, a function must be created in the file boundary.h using either an object of type \texttt{one\_state\_station} or \texttt{multiple\_states\_station}. 
+
+
+\subsubsection{One state station}
+
+For the sake of simplicity, let us add as an example the \texttt{consumption\_wo\_press}.  Since there are no switch states, this station is defined as a one state station object. Inside the function only a state is defined, which implies a boundary, a hard constraint and the soft constraints.
+The function \texttt{build\_user\_constraints} defines the state components for each of the user-defined constraints, in an analogous manner to what was done for boundary and hard constraint types. The only difference is that \texttt{hardness\_type::SOFT} must be used and multiple constraints are allowed.
+\begin{minted}[linenos=false,numbersep=1pt,frame=single,framesep=2mm,escapeinside=||]{cpp}
+template<typename VALUE>
+one_state_station
+make_consumption_wo_press(const VALUE& vals,
+                        const std::vector<pair_input_t>&user_limits)
+{
+    // Define the state components
+    auto s0_bnd = constraint(hardness_type::BOUNDARY,  // Set as boundary 
+                             constraint_type::L_EQUAL, // Only L_EQUAL or P_EQUAL 
+                             vals);                    // Boundary condition values 
+
+    auto s0_int = constraint(hardness_type::HARD,      // Set as hard constraints             
+                             constraint_type::L_GREATER_EQUAL, // Inequalities 
+                             0.0);                     // Limit of the inequality
+    
+    auto s0_ext = build_user_constraints(user_limits); // Create soft constraints
+
+    // Create the state
+    auto s0 = state(s0_bnd, s0_int, s0_ext);
+    
+    // Define the object consumption_station and give it a name
+    one_state_station    consumption_station("CONSUMPTION_WO_PRESSURE"); 
+    
+    // Add the state to the station
+    consumption_station.set_state(s0);
+
+    return consumption_station;
+}
+    \end{minted}
+
+\subsubsection{Multiple states station}  
+        
+For station with more than one state, you should use \texttt{multiple\_state\_station} class. 
+You are able to define stations with more than 2 states also. Just use  the function {set\_state} to add as many states as you please. \\
+    
+For example a two sate station: 
+\begin{minted}[linenos=false,numbersep=1pt,frame=single,framesep=2mm,escapeinside=||]{cpp}
+    multiple_states_station remi("REMI_WO_BACKFLOW");
+    remi.set_state(s0);
+    remi.set_state(s1);
+\end{minted}
+In the case of an hypothetical 3 states station, the quantity of states must be provided.
+
+\begin{minted}[linenos=false,numbersep=1pt,frame=single,framesep=2mm,escapeinside=||]{cpp}
+    multiple_states_station    hypo("HYPOTHETICAL STATION", 3);
+    hypo.set_state(s0);
+    hypo.set_state(s1);        
+    hypo.set_state(s2);              
+\end{minted}    
+The complete definition of the station is done as shown for the \texttt{one\_state\_station}            
+                 
+\begin{minted}[linenos=false,numbersep=1pt,frame=single,framesep=2mm,escapeinside=||]{cpp}
+template<typename VALUE_TYPE>
+multiple_states_station
+make_remi_wo_backflow(  const VALUE_TYPE& Pset,
+                         const std::vector<pair_input_t>& user_limits_s0,
+                         const std::vector<pair_input_t>& user_limits_s1)
+{
+  using hard_t   = hardness_type;
+  using constr_t = constraint_type;
+  
+   // 1. STATES
+   // 1.1 Define the first state
+  auto s0_bnd = constraint(hard_t::BOUNDARY, constr_t::P_EQUAL, Pset);
+  auto s0_int = constraint(hard_t::HARD,     constr_t::L_LOWER_EQUAL, 0.0); 
+  auto s0_ext = build_user_constraints(user_limits_s0);
+ 
+  // 1.2 Define the second state
+  auto s1_bnd = constraint(hard_t::BOUNDARY, constr_t::L_EQUAL, 0.0); 
+  auto s1_int = constraint(hard_t::HARD,     constr_t::P_GREATER_EQUAL, Pset);
+  auto s1_ext = build_user_constraints(user_limits_s1);
+
+  // 1.3 Create states
+  auto s0 = state(s0_bnd, s0_int, s0_ext);
+  auto s1 = state(s1_bnd, s1_int, s1_ext);
+ 
+  // 2. STATION
+  // 2.1 Create station    
+  multiple_states_station remi("REMI_WO_BACKFLOW");
+  
+  // 2.2 Add states
+  remi.set_state(s0);
+  remi.set_state(s1);
+
+  return remi;
+}
+\end{minted}
+

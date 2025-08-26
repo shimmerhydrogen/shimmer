@@ -1,10 +1,11 @@
-\section{In memory representation}
-Network modelling can be mathematically abstracted into a graph, simplified into nodes and 1D elements, representing the pipes, and their interaction. The neywork graph is implemented using Boost Graph Library, which provides a labeled graph implementation and related algorithms. The network data in particular is stored into the graph labels. Bearing in mind, that pipes are inherently not directional, in contrast to physical variables as velocity or flux. The graph is then set as an \cred{undirected graph} with values in \cpipes{pipes}/\cnodes{nodes} assigned via the graph properties. The definition of the graph type is given below
+\section{Developer zone: In memory representation}
+Network modelling can be mathematically abstracted into a graph of stations (graph nodes) and pipes or active network elements (graph edges). The network graph is implemented using Boost Graph Library, which provides a labeled graph implementation and related algorithms. The network data in particular is stored into the graph labels. Shimmer++ represents the network as an undirected graph, therefore pipes are inherently not directional, in contrast to physical variables as velocity or flux. Using the facilities of the Boost Graph Library, the definition of the graph type is
 \begin{verbatim}
     using infrastructure_graph = adjacency_list< listS, vecS,
                                     undirectedS, vertex_properties, edge_properties>;    
 \end{verbatim}    
-where the \texttt{infrastructure\_graph} type is already defined in \texttt{shimmer++/src/infrastructure\_graph.h} 
+which is found in \texttt{shimmer++/src/infrastructure\_graph.h}. In turn, the graph
+labels have the following types:
 \begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=0.5mm]{cpp}
  using namespace boost;
 
@@ -13,31 +14,43 @@ where the \texttt{infrastructure\_graph} type is already defined in \texttt{shim
  using sptr_pipe_t = std::shared_ptr<edge_station::station>; 
  using uptr_node_t = std::unique_ptr<station>;
  
- struct vertex_properties                       struct edge_properties 
- {                                              {
-    int             u_snum;                         pipe_type   type;
-    int             i_snum;                         int         branch_num;
-    station_type    type;                           double      length;
-    double          height;                         double      diameter;
-    double          latitude;                       double      friction_factor;
-    double          longitude;                      sptr_pipe_t pipe_station;
-    vector_t        gas_mixture;                    std::string name;
-    uptr_node_t     node_station;                   int         i_sfrom;
-                                                    int         i_sto;            
- };                                             };  
+ struct vertex_properties                       
+ {                                              
+    int             u_snum;                     
+    int             i_snum;                     
+    station_type    type;                       
+    double          height;                     
+    double          latitude;                   
+    double          longitude;                  
+    vector_t        gas_mixture;                
+    uptr_node_t     node_station;               
+                                                  
+ };
 
-enum class pipe_type = { pipe, resistor, compressor, regulator,  valve};
+ struct edge_properties 
+ {
+    pipe_type   type;
+    int         branch_num;
+    double      length;
+    double      diameter;
+    double      friction_factor;
+    sptr_pipe_t pipe_station;
+    std::string name;
+    int         i_sfrom;
+    int         i_sto;          
+ };  
+
+ enum class pipe_type = { pipe, resistor, compressor, regulator,  valve};
 \end{minted}
 
     
-\begin{tikzpicture}[remember picture,overlay]
-    \def\a{-0.5}
-    \draw[dpipe] ( 8.0, 2+\a) -- ( 8.0, 7.00) -- (14.5, 7.00) -- (14.5, 2+\a) -- cycle;
-    \draw[dnode] (-0.5, 2+\a) -- (-0.5, 7.00) -- ( 6  , 7.00) -- ( 6 , 2+\a) -- cycle;
-\end{tikzpicture}
+%\begin{tikzpicture}[remember picture,overlay]
+%    \def\a{-0.5}
+%    \draw[dpipe] ( 8.0, 2+\a) -- ( 8.0, 7.00) -- (14.5, 7.00) -- (14.5, 2+\a) -- cycle;
+%    \draw[dnode] (-0.5, 2+\a) -- (-0.5, 7.00) -- ( 6  , 7.00) -- ( 6 , 2+\a) -- cycle;
+%\end{tikzpicture}
 
-\textbf{Hands-on:}
-Network graphs are usually populated via network data files. However, due to testing purposes  the data structures can still be populated manually. For the first option see Section \ref{SectionDatabase}. In the second case, you are asked to introduce pipe and node properties one by one as will explained in what follows. Lets take as example the graph in Fig. \ref{fig: graph_example} of a simplified  gas network. 
+Network graphs are populated via network data files by the user however, from the developer point of view, it could be useful to populate them manually. For the first option see Section \ref{SectionDatabase}. In the second case, you will need to introduce pipe and node properties one by one as will explained in what follows. Lets take as example the graph in Fig. \ref{fig: graph_example} of a simplified  gas network. 
 
 \begin{figure}[H]
     \centering

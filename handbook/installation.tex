@@ -60,10 +60,25 @@ The database schema employed by the NDFs is provided in \texttt{shimmer/sqlite/s
 \begin{verbatim}
     sqlite3 newndf.db < shimmer.sql
 \end{verbatim}
-The file \texttt{newndf.db} will subsequently need to be populated with all the relevant data.
+The file \texttt{newndf.db} will subsequently need to be populated with all the relevant data. Once the database is populated, a small configuration file is needed. For example:
+
+\begin{minted}{lua}
+config.database = "newndf.db"   -- Path of the NDF
+config.steps = 7                -- Timesteps of the simulation
+config.dt = 3600                -- delta-t between timesteps
+config.refine = false           -- refine pipes for quality tracking
+config.dx = 300e3               -- pipe refinement step
+config.tol = 1e-4               -- ?? 
+config.tol_std = 1e-14          -- ??
+\end{minted}
+We save the configuration in a file named, for example, \texttt{config.lua}. Shimmer++ is then
+run as
+\begin{verbatim}
+  ./solver config.lua
+\end{verbatim}
 
 \subsection{Shimmer++ organization}
-The library is mainly organised with sources stored in the \texttt{shimmer/shimmer++/src} folder and unitary tests in the \texttt{shimmer/shimmer++/unit\_tests}. There is an additionally GERG folder which accounts for the interface of shimmer++ with the code regarding GERG computations.
+The Shimmer++ code is mainly organised with sources stored in the \texttt{shimmer/shimmer++/src} folder and unitary tests in the \texttt{shimmer/shimmer++/unit\_tests}. There is an additionally GERG folder which accounts for the interface of shimmer++ with the code regarding GERG computations.
 
 %\begin{tikzpicture}
 %    \node [draw,text width=\linewidth-20pt, inner sep=10 pt]

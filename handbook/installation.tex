@@ -1,20 +1,19 @@
 \section{Installation}
 
-The repository at \url{https://github.com/datafl4sh/shimmer.git} includes shimmer++ library sources, the original matlab code on which shimmer++ is based (not a direct translation) and some documents related to the underlying physical model, along with the github issues that record the developments of shimmer++.  
+The repository at \url{https://github.com/datafl4sh/shimmer.git} includes the Shimmer++ sources, the original matlab code on which Shimmer++ is based (it is not a direct translation) and some documents related to the underlying physical model, along with the github issues that record the developments of Shimmer++.  
 \subsection{Getting your local copy of the repository}
 As first step you should make sure that your system is up-to-date. For Debian-based operating systems: 
     \begin{verbatim}
         sudo apt update
     \end{verbatim}    
-The next step is to install the dependencies which are SQLite, Eigen and the Boost Graph Library (BGL). SQLite is a file-based relational database used to store the gas networks, Eigen is concerned with the linear algebra and the BGL is a graph library used to represent the networks in-memory. The development environment for Shimmer++ is based on CMake and GCC or Clang. Shimmer++ is written in C++20, therefore a relatively recent compiler is needed.
-For Debian-based operational system: 
+The next step is to install the dependencies which are SQLite, Eigen and the Boost Graph Library (BGL). SQLite is a file-based relational database used to store the gas networks, Eigen is concerned with the linear algebra and the BGL is a graph library used to represent the networks in-memory. The development environment for Shimmer++ is based on the CMake build system and GCC or Clang compilers. Shimmer++ is written in C++20, therefore a relatively recent compiler is needed.
+To install the dependencies on Debian-based operating systems:
 \begin{verbatim}
     sudo apt install -y make cmake build-essential git ctest
     sudo apt install -y libsqlite3-dev lua5.4
     sudo apt install -y libeigen3-dev
     sudo apt install -y libboost-graph-dev libboost-dev
 \end{verbatim}
-   
 You can now clone the Shimmer++ repository using
 \begin{verbatim}        
     git clone https://github.com/datafl4sh/shimmer.git
@@ -25,7 +24,7 @@ or, if you have write access
 \end{verbatim}
 
 \subsection{Building shimmer++}
-To build shimmer++ use the standard ccmake/make steps knowing that the CMakeList.txt is in the shimmer++ directory.
+To build Shimmer++ use the standard ccmake/make steps, keeping in mind that the top-level \texttt{CMakeList.txt} is in the \texttt{shimmer++} directory.
 \begin{verbatim}
     ccmake "path_to_shimmer++_directory"         
     make  
@@ -61,7 +60,7 @@ The database schema employed by the NDFs is provided in \texttt{shimmer/sqlite/s
 \begin{verbatim}
     sqlite3 newndf.db < shimmer.sql
 \end{verbatim}
-The file `newndf.db` will subsequently need to be populated with all the relevant data.
+The file \texttt{newndf.db} will subsequently need to be populated with all the relevant data.
 
 \subsection{Shimmer++ organization}
 The library is mainly organised with sources stored in the \texttt{shimmer/shimmer++/src} folder and unitary tests in the \texttt{shimmer/shimmer++/unit\_tests}. There is an additionally GERG folder which accounts for the interface of shimmer++ with the code regarding GERG computations.

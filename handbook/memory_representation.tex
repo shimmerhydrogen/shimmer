@@ -215,81 +215,43 @@ Recall first to create a graph with the specification, as proposed in the previo
     }
 \end{minted}
 
-\section{Stations}
-They resort in constraints that regulate flux or pressure depending of the nature of the station. For example, as shown in Figure \ref{tab: non_pipe_to_node_scheme_table} an exit station controls that $L\geq 0$, while junctions impose as sole requirement that $L = 0$. As last example, the entry station enforces  flux $L \leq 0 $. There are additional constraints regarding design parameters or user dependant. 
+\section{Developer Zone: Stations}
+
+\cred{[DENERG: COMPLETE WITH INTRO TO STATIONS]}.\\
+
+They rely on constraints that regulate either flux or pressure, depending on the nature of the station. As shown in Figure \ref{tab: non_pipe_to_node_scheme_table}, stations can be of the exit/entry type with respect to the flux $L$, while junctions impose the sole requirement that $L = 0$. In what follows, we denote the control mode of a station as a boundary condition that imposes either pressure or flux with values specified by the user or fixed according to the type of station.  Additional constraints regarding design parameters or user defined parameters are also possible. The first ones are denoted henceforth as hard constraints, since a violation leads to a change of the control mode. In the contrast, the user-parameters are denoted as SOFT constraints, since a violation triggers only a warning.
 
 \begin{table}[H]
     \centering
     \label{tab: non_pipe_to_node_scheme_table}
-    \begin{tabular}{llcc}
+    \begin{tabular}{ccc}
     \hline
-    & Entry Stations    &  Exit Stations   &  Junctions \\ \hline
-    \centering Scheme & 
+     Entry Stations    &  Exit Stations   &  Junctions \\ \hline
     \includegraphics[scale= 0.7]{img_memory/entry.png}&  \includegraphics[scale= 0.7]{img_memory/exit.png}   & \includegraphics[scale= 0.7]{img_memory/junction.png} \\ \hline
-    Control Mode &1. Pressure & 1. Outflow & \\
-             & \footnotesize{\cred{\quad (Remi St)}}& \footnotesize{\cred{(Consumption)}} & \\
-             &2. Inflow   &         & \\
-             &\footnotesize{\cred{\quad  (Injection)}}&        & \\    \hline
+    Control by pressure or inflow & Control by outflow & \\ \hline
     \end{tabular} 
     
     \caption{Classifications of \cnodes{non-pipe elements} attached to nodes.}
 \end{table}
 
- %one is dividing by categories related to direction of the flux: exit, entrance or junction as is shown in Fig. \ref{tab: non_pipe_to_node_scheme_table}, pressure- or flux- regulated.   
+%The taxonomy of the stations can be divided in different manners, one is dividing by categories related to direction of the flux: exit, entrance or junction as is shown in Fig. \ref{tab: non_pipe_to_node_scheme_table}, pressure- or flux- regulated.   
+
+%Taxonomy of None pipe elements classified can be classified by type of constraints.
+%\multicolumn{2}{l}{Constraint type}             & Description        & Action at failure                             \\ \hline
+%\multirow{2}{*}{Hard} & Internal                & Intrinsic          & \multirow{2}{*}{Change} \\
+%                      & External & Operation limit    &                      \\ \hline
+%\multirow{2}{*}{Soft} & Internal                & Intrinsic          & \multirow{2}{*}{Warning/Change}               \\
+%                      & External & Working conditions & \\ \hline        
 
 
-%The taxonomy of the stations can be divided in different manners,
-
-
-In Figure \ref{fig: schematic_remi},  an scheme of the operation of a REMI station its shown.
-
-% Please add the following required packages to your document preamble:
-% \usepackage{multirow}
-\begin{table}[H]
-\centering
-\caption{Taxonomy of None pipe elements classified by type of constraints.}
-\begin{tabular}{llll}
-\hline
-\multicolumn{2}{l}{Constraint type}             & Description        & Action at failure                             \\ \hline
-\multirow{2}{*}{Hard} & Internal                & Intrinsic          & \multirow{2}{*}{Change} \\
-                      & External & Operation limit    &                      \\ \hline
-\multirow{2}{*}{Soft} & Internal                & Intrinsic          & \multirow{2}{*}{Warning/Change}               \\
-                      & External & Working conditions & \\ \hline        
-    \end{tabular}
-    \label{tab: taxonomy station}
-\end{table}
-
-In Fig. an example of a remi station is given.
-
+Let us use a hypothetical gate station, whose operation is shown schematically in Figure \ref{fig: schematic_remi}, to aid in the exposition of the representation of a general station. The three boxes represent different types of behaviour, mainly defined by the control mode or boundary condition (BC), along with additional constraints specific to each case. Each of this behaviours is hereafter referred to as a state.  Transitions from one state to another occur when hard constraints are violated. Each state encapsulates information about the condition imposed according to the control type,  as well as the associated operational constraints and limits.
 \begin{figure}[H]
-    \centering
-    \includegraphics[scale=0.5]{img_memory/remi.pdf}
-    \caption{Remi scheme. Courtesy of DENERG.}
+	\centering
+	\input{img_memory/stations}
+    \caption{Shematic operation of a hypothetical 3-state station.}
     \label{fig: schematic_remi}
 \end{figure}
-
-
-\cstate{State}: 
-\begin{itemize}
-    \item Boundary
-    \item Hard constraints
-    \item Soft constraints
-\end{itemize}
-
-
-\cred{Remi w/o backflow}: entry station
-
-    \begin{tabular}{|l|c|c|}
-\hline
-             & First \cstate{state}     &  Second \cstate{state} \\ \hline
-    Boundary & $p = Pset$  & $L = 0$\\ 
-    Hard constr.& $L \leq 0 $ & $p \geq Pset$\\ 
-    Soft constr.& $L_{min}\leq L \leq  L_{max}$ & $L'_{min}\leq L \leq  L'_{max}$ \\
-    & $p_{min}\leq p \leq  p_{max}$ & $p'_{min}\leq L \leq  p'_{max}$ \\\hline
-    \end{tabular}
-
-
-One can conclude that the main characteristic of the stations is that they are governed by states, which changes when hard constraints are violated. Each state encapsulates information about the boundary condition to be imposed, as well as the operational constraints and limits.
+In shimmer++, we defined a station as a collection of states by using a vector container, that allows to add as many states are needed to capture the behaviour of the station.
 \begin{minted}[linenos=false,numbersep=1pt,frame=single,framesep=2mm,escapeinside=||]{cpp}
 class |\textbf{\cred{station}}|
 {
@@ -298,7 +260,7 @@ class |\textbf{\cred{station}}|
     void set_state(const |\textbf{\cstate{state}}|& s);   
 };
 \end{minted}
-
+Each state is defined as a collection of constraints. 
 \begin{minted}[linenos=false,numbersep=1pt,frame=single,framesep=2mm,escapeinside=||]{cpp}
 struct |\textbf{\cstate{state}}|
 {
@@ -321,7 +283,7 @@ class |\textbf{\cblue{constraint}}|
 In order to add a new kind of station, a function must be created in the file boundary.h using either an object of type \texttt{one\_state\_station} or \texttt{multiple\_states\_station}. 
 
 
-\subsubsection{One state station}
+\subsection{One state station}
 
 For the sake of simplicity, let us add as an example the \texttt{consumption\_wo\_press}.  Since there are no switch states, this station is defined as a one state station object. Inside the function only a state is defined, which implies a boundary, a hard constraint and the soft constraints.
 The function \texttt{build\_user\_constraints} defines the state components for each of the user-defined constraints, in an analogous manner to what was done for boundary and hard constraint types. The only difference is that \texttt{hardness\_type::SOFT} must be used and multiple constraints are allowed.
@@ -355,7 +317,7 @@ make_consumption_wo_press(const VALUE& vals,
 }
     \end{minted}
 
-\subsubsection{Multiple states station}  
+\subsection{Multiple states station}  
         
 For station with more than one state, you should use \texttt{multiple\_state\_station} class. 
 You are able to define stations with more than 2 states also. Just use  the function {set\_state} to add as many states as you please. \\

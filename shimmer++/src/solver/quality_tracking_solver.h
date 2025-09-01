@@ -311,7 +311,7 @@ public:
             auto dtdx =  (dt/pd.dx); 
 
             /// vel [m/s] velocity of the gas within pipes (on dual mesh)
-            vector_t vel_loc_pipes = velocity(pd, var_msh, rho_msh_in_time_[it-1], area_msh_pipes_);
+            vector_t vel_loc_pipes = velocity(pd, var_msh, rho_msh_in_time_.row(it-1), area_msh_pipes_);
             assert(vel_loc_pipes.size() == pd.nodelist.size()+2 && "Incorrect size for local velocities");
 
 

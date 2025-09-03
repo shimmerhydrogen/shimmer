@@ -323,14 +323,15 @@ gerg_aga::gerg_aga()
     tolerance_ = 1.e-12;
 
     shimmer_gerg::gerg_functions::setup_GERG();
+
+    mm_component = shimmer_gerg::gerg_functions::component_molar_masses(); 
+
 }
 
 
 void
 gerg_aga::initialization(linearized_fluid_solver *lfs)
-{
-    mm_component = shimmer_gerg::gerg_functions::component_molar_masses(); 
-}
+{}
 
 
 vector_t 
@@ -395,10 +396,10 @@ gerg_aga::molarfrac_2_massfrac(const infrastructure_graph& graph, const incidenc
     matrix_t y_pipes = matrix_t::Zero(boost::num_edges(graph), NUM_GASES ); 
       
     for(size_t iN = 0; iN < boost::num_vertices(graph); iN++)
-        y_nodes.row(iN) =  mm_component.array() * x_nodes.row(iN).array() / mm_nodes_.array(); 
+        y_nodes.row(iN) =  mm_component.transpose().array() * x_nodes.row(iN).array() / mm_nodes_(iN); 
 
     for(size_t iP = 0; iP < boost::num_edges(graph); iP++)
-        y_pipes.row(iP) =  mm_component.array() * x_pipes.row(iP).array() / mm_pipes_.array(); 
+        y_pipes.row(iP) =  mm_component.transpose().array() * x_pipes.row(iP).array() / mm_pipes_(iP); 
 
     return std::make_pair(y_nodes, y_pipes);
 }

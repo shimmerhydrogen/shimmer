@@ -410,7 +410,7 @@ gerg_aga::massfrac_2_molarfrac(const matrix_t&y_nodes, const matrix_t&y_pipes)
     matrix_t x_nodes = matrix_t::Zero(y_nodes.rows(), NUM_GASES ); 
     matrix_t x_pipes = matrix_t::Zero(y_pipes.rows(), NUM_GASES ); 
 
-    for(int iN = 0; iN < NUM_GASES; iN++)
+    for(int iN = 0; iN < y_pipes.rows(); iN++)
     {
         //diag
         matrix_t A =  mm_component.asDiagonal();

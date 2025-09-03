@@ -1203,7 +1203,7 @@ discretize_pipes(const infrastructure& infrain,
             pic.init_G = pipe_ic->init_G;
             infraout.pics.push_back(pic);
 
-            discrpipes[i] = branch_num;
+            discrpipes.at(i-1) = branch_num;
 
             branch_num++;
         }

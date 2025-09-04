@@ -21,7 +21,7 @@ Eigen::VectorXd component_molar_masses()
 {
     Eigen::VectorXd mms = Eigen::VectorXd::Zero(GERG_num_componets);
     for(int iC = 0; iC < GERG_num_componets; iC++)
-        mms(iC) = ComponentMolarMass(iC);
+        mms(iC) = ComponentMolarMass(iC+1);
 
     return mms;
 }

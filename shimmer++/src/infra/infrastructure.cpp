@@ -1135,6 +1135,8 @@ discretize_pipes(const infrastructure& infrain,
 
         // Add discretization nodes for each original pipe
         discrnodes[0] = i_from;
+        vector_t methane = vector_t::Zero(NUM_GASES); 
+        methane(GAS_TYPE::CH4) = 1.0;
         //std:: cout << from_ic->init_P << " -> " << from_ic->init_L << std::endl;
         for (int i = 1; i < numfrags; i++) {
             auto inum = fict_station_ibase + fict_station_counter;
@@ -1145,7 +1147,7 @@ discretize_pipes(const infrastructure& infrain,
             outvp.i_snum = inum;
             outvp.name = nname + std::to_string(unum);
             outvp.type = station_type::FICTITIOUS_JUNCTION;
-            outvp.gas_mixture = vector_t::Zero(NUM_GASES);
+            outvp.gas_mixture = methane;
 
             outvp.latitude = lat_from + i*dlat;
             outvp.longitude = lon_from + i*dlon;

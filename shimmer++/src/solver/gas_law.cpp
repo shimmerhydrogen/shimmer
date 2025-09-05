@@ -410,20 +410,49 @@ gerg_aga::massfrac_2_molarfrac(const matrix_t&y_nodes, const matrix_t&y_pipes)
     matrix_t x_nodes = matrix_t::Zero(y_nodes.rows(), NUM_GASES ); 
     matrix_t x_pipes = matrix_t::Zero(y_pipes.rows(), NUM_GASES ); 
 
+
+    vector_t rhs = vector_t::Zero(NUM_GASES); 
+    // Last row to impose sum x_comp = 1;
+    rhs(NUM_GASES-1) = 1.0;
+
     for(int iN = 0; iN < y_nodes.rows(); iN++)
     {
         //diag
-        matrix_t A =  mm_component.asDiagonal();
+        matrix_t A = mm_component.asDiagonal();
+        A.bottomRows(1) = vector_t::Ones(NUM_GASES).transpose(); 
 
         // off diag
         for(int iComp = 0; iComp < NUM_GASES; iComp++)
         {
-            A.row(iComp) -= y_nodes(iN, iComp) * mm_component;
+            A.row(iComp) -= y_nodes(iN, iComp) * mm_component.transpose();
         }
 
-        x_nodes.row(iN) = A.fullPivLu().solve(vector_t::Zero(NUM_GASES)).transpose();
+        x_nodes.row(iN) = A.fullPivLu().solve(rhs).transpose();
+
+        //std::cout << std::setprecision(4) << " * Matrix A-nodes: \n" << A <<  std::endl ;
+        //std::cout << std::setprecision(4) << " * Vector x-nodes: \n" << x_nodes <<  std::endl ;
+
     }
     
+    for(int iP = 0; iP < y_pipes.rows(); iP++)
+    {
+        //diag
+        matrix_t A = mm_component.asDiagonal();
+        A.bottomRows(1) = vector_t::Ones(NUM_GASES).transpose(); 
+
+        // off diag
+        for(int iComp = 0; iComp < NUM_GASES; iComp++)
+        {
+            A.row(iComp) -= y_nodes(iP, iComp) * mm_component.transpose();
+        }
+
+        x_pipes.row(iP) = A.fullPivLu().solve(rhs).transpose();
+    
+        //std::cout << std::setprecision(4) << " * Matrix A-pipes: \n" << A <<  std::endl ;
+        //std::cout << std::setprecision(4) << " * Vector x-pipes: \n" << x_pipes <<  std::endl ;
+
+    }
+
     // Update molar mixture
     mixture_molar_mass(x_nodes, x_pipes);
 

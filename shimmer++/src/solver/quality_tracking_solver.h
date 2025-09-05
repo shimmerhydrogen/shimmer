@@ -318,18 +318,18 @@ public:
 
             /// vel [m/s] velocity of the gas within pipes (on dual mesh)
             vector_t vel_loc_pipes = velocity(pd, var_msh, rho_msh_in_time_.row(it-1), area_msh_pipes_);
-            assert(vel_loc_pipes.size() == pd.nodelist.size()+2 && "Incorrect size for local velocities");
+            assert(vel_loc_pipes.size()+1  == pd.nodelist.size() && "Incorrect size for local velocities");
 
 
             // Approx velocity at nodes(primal mesh)
             vector_t vel_loc_nodes = vector_t::Zero( pd.nodelist.size());
             // inner points
-            for(int iN = 1; iN < pd.nodelist.size(); iN++)
+            for(int iN = 1; iN < pd.nodelist.size()-1; iN++)
                 vel_loc_nodes(iN) = 0.5 * (vel_loc_pipes[iN] + vel_loc_pipes[iN-1]);
 
             // outer points: I chose to be equal to the first volume value...maybe a finite difference of higher degree could be better
             vel_loc_nodes[0] =  vel_loc_pipes[0];
-            vel_loc_nodes[pd.nodelist.size()-1] =  vel_loc_pipes[pd.nodelist.size()-1];
+            vel_loc_nodes[pd.nodelist.size()-1] =  vel_loc_pipes[pd.pipelist.size()-1];
 
             for (int iN = 1; iN < pd.nodelist.size()-1; iN++)
             {
@@ -480,10 +480,11 @@ public:
     velocity(const pipe_discretization& pd, const variable& var, const vector_t& rho, const vector_t& area) const
     {
         vector_t vel = vector_t::Zero(pd.pipelist.size());
-        
-        for (const auto & pipe_num : pd.pipelist)
+         
+        for (auto iCount = 0;  iCount < pd.pipelist.size(); iCount++)
         {
-            vel(pipe_num) = var.flux(pipe_num) / (rho(pipe_num) * area(pipe_num));
+            auto pipe_num = pd.pipelist[iCount];
+            vel(iCount) = var.flux(pipe_num) / (rho(pipe_num) * area(pipe_num));
         }
 
         return vel;      

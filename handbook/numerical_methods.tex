@@ -1,0 +1,180 @@
+\section{Developer zone: Numerical methods stage}
+\label{sec: numerical_methods}
+The starting point to model gas fluid dynamics is the Navier-Stokes equations with some common model simplifications used in gas pipeline networks analysis. An schematic resume of the modelling is shown in Fig. \ref{fig: scheme_model}. A complete derivation of the modelling system can be found in \cite{Cavana2020}. Here we draw only the more general key points needed for the presentation of the tool. 
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale = 0.5]{img_methods/model_scheme.pdf}
+    \caption{Schematic transient gas network model.}
+    \label{fig: scheme_model}
+\end{figure}
+The first assumption is unidimensional flow, which implies that radial variations are neglected. Another common simplification concerns long distance gas transport, which it is typically supposed to occur within an isothermal process. This assumption holds in general despite variations due to local weather, due to the stability of the soil temperature where pipelines are normally installed. Additionally, for non-isentropic processes, as such of compressors and turbines, overall this assumption seems to be a trade-off which allows avoiding to solve the energy equation. Some estimations of pressure drop error based on these assumptions are discussed in [Marco Thesis cite 92]. The second main assumption is \cred{creeping flow} \cred{[DENERG CHECK REQUIRED]}, which derives from the low Reynolds numbers mainly due to the low operational velocity of the transported gas. 
+s
+The structure of the methodology for the numerical methods stage can be thought as three main nested loops, shown in Fig. \ref{fig: numerical_methods_stage}. The external loop tackles the unsteady time advance, the middle loop the quality tracking and the inner loop the solution of the gas fluid dynamics.  
+\begin{figure}[H]
+    \centering
+    \input{img_methods/numerical_methods_algorithm_pgf}
+    \caption{Schematic algorithm of the numerical stage.}
+    \label{fig: numerical_methods_stage}
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \input{img_methods/fluid_system}
+    \caption{Algebraic system after linearization of the fluid dynamic equations.}
+    \label{fig: fluid_system}
+\end{figure}
+where $\bI$ stands for the identity matrix and recall that $\bA$ stands for the incidence matrix, R stands for the resistance matrice. Regarding the later, part of the fluid energy is lost in pipe-wall friction, characterized by the roughness of the metal surface and the Reynolds number. Several relations between the pressure drop and the mass flow rate can be found in the literature. Very well-known examples are the Darcy-Weisbach equations and the Hazen-Williams equations. 
+
+The set of variables as pressure $\bp$ and mass flow rate $\bL_{rate}$ at the nodes, and flux over the pipes $\bG$ are all gathered in an structure named variable. 
+\begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm]{cpp}
+    struct variable
+    {
+        vector_t pressure;
+        vector_t flux;
+        vector_t L_rate;
+
+        // Constructors
+        variable();
+        variable(const vector_t&p, const vector_t&f ,const vector_t&l);
+    };
+\end{minted}
+
+\subsection{Viscosity}
+
+At the present time, only a  viscosity model accounting for complex composition of gases is supported. It is here labeled in honor to one of the authors, Kukurugya. The alternative for more simplified problems is the constant viscosity model, that cannot be modified at running time and it is set accordingly as $\mu = 1e-5 [\cred{Pa}]$. 
+
+\begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm]{cpp}
+    enum viscosity_type
+    {
+        Kukurugya,
+        Constant,
+    };
+\end{minted}
+
+\subsubsection{Hands-on}
+The type of viscosity is given as a template parameter to the viscosity function as shown hereafter. Notice that the viscosity takes the same temperature for each edge in the graph. This is in agreement with the \cred{isothermal} hypothesis of the gas network. However, straightforward modifications can be done if variations in space for temperature are desired.  
+\begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm]{cpp}
+    int main()
+    {
+        // Average temperature
+        double Tm = 293.15; // [K]  
+
+        // Define graph
+        infrastructure_graph graph;
+        make_init_graph(graph);
+
+        // Compute viscosity
+        std::cout << "mu_k: \n" << viscosity<viscosity_type::Kukurugya>(Tm, graph);
+        std::cout << "mu_c: \n" << viscosity<viscosity_type::Constant>(Tm, graph);
+
+        return 0;
+    }
+\end{minted}
+
+\subsection{Equation of state - Gas dynamics relations}
+Industrial have been using modifications to ideal gas state to accommodate to their applications and constraints. A compilation of this bunch of equations used by industrial operators was gathered in [ref 70 at Marco's Thesis]. Some common formulas are  named under acronyms to identify them, from where the most common ones are AGA-8,  sGERG-88 and GERG-2008. In this work, we use the later, which is a relative recent equation for mixture of natural gas modelling, based in a formulation of the equation of state written in terms of the Helmholtz free energy. It is known to be highly flexible with the number of components considered for the mixture. 
+%where Z denotes the compressibility factor aiming to account a correction for real gases. 
+
+
+\subsection{Fluid solver}   
+We denote as fluid solver the most internal loop in Fig. \ref{fig: numerical_methods_stage}, where the Navier-Stokes equations are linearized and discretized.  The code  implementation search to mimic the algebraic system in Fig. \ref{fig: fluid_system}. 
+
+\begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm, escapeinside=||]{cpp}
+void linearized_fluid_solver::run(...)
+{
+    var_.pressure = var_guess.pressure;
+    var_.flux   = var_guess.flux;
+    var_.L_rate = vector_t::Zero(num_nodes_);
+
+    eos->initialization(this);
+
+    for(size_t iter=0;iter<=MAX_ITERS;iter++)
+    {   
+        press_pipes_ = average(var_.pressure, inc_);
+        auto [c2_nodes, c2_pipes] = eos->speed_of_sound(this); 
+
+        auto mass_system = |\cnodes{continuity}|( ...);
+        auto mom_system  = |\cpipes{momentum}|( ...);
+        auto bnd_system  = |\cbound{boundary}|(...);
+        
+        auto [LHS, rhs]= assemble(mass_system, mom_system, bnd_system);
+
+        Eigen::SparseLU<sparse_matrix_t> solver;
+        solver.compute(LHS);
+        vector_t sol = solver.solve(rhs);
+
+        if (convergence(sol))
+           return;
+    }
+}
+\end{minted}
+
+\subsubsection{Hands-on:}
+For the complete example check \texttt{unit\_tests/test\_fluid\_solver.cpp}.    
+
+\begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm]{cpp}
+   int main()
+   {
+       // 1. Create the arguments needed for the init of the linearized fluid solver
+       // 1.1 Numerical and physical setting
+       bool unsteady = true;
+       double temperature = 293.15; // [K]
+       double dt  = ; // [s]
+       double tol = ; 
+       // 1.2 Graph and derived data
+       infrastructure_graph graph;
+       make_init_graph(graph);
+       incidence inc(graph);
+       auto mu = viscosity<viscosity_type::Kukurugya>(temperature, graph); 
+
+       // 2. Create the arguments needed to run the fluid solver
+       vector_t area_pipes = area(graph);
+       gerg gerg_eos; 
+       gerg_eos.compute_molar_mass(y_nodes, y_pipes);
+        
+       // 3. Fluid dynamics solver
+       linearized_fluid_solver lfs(0, unsteady,tolerance, dt,temperature, mu,inc, graph);
+       lfs.run(area_pipes, var, var, &gerg_eos);
+    
+       return 0;
+   }
+\end{minted}
+
+\subsection{Time solver}
+
+The outer loop of the numerical methods stage aimed to advance in time is implemented in the time solver.
+At the moment of the creation of this time solver object, the viscosity model along with the equation of state  must be provided as template parameter, i.e. at compile time. At the moment of the writing of this document, only two models are available gerg (GERG2008) and papay (Papay model \cite{}). Thus, assuming constant viscosity model, the two  available options are as follows:
+\begin{verbatim}
+    time_solver<gerg,  viscosity_type::Constant> ts(graph, ...);   
+\end{verbatim}
+or
+\begin{verbatim}
+    time_solver<papay, viscosity_type::Constant> ts(graph, ...);   
+\end{verbatim}
+
+To initialize the object, physical and numerical properties that remain unchanged during the simulation must be provided.
+\subsubsection{Hands-on}0
+For the complete example check \texttt{unit\_tests/test\_time\_solver.cpp}.    
+\begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm]{cpp}
+    int main()
+    {
+        infrastructure_graph graph;
+        make_init_graph(graph);
+        
+        auto [y_nodes, y_pipes] = make_mass_fraction(num_nodes, graph);
+
+        //Define the type o time solver: eq of state and viscosity model
+        using time_solver_t = time_solver<papay, viscosity_type::Constant>; 
+        // Initialize time solver object
+        time_solver_t ts(graph, temperature, flux_ext);
+        // Run simulation with steady state
+        ts.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes); 
+        // Run simulation with unsteady state
+        ts.advance(dt, num_steps, tol, y_nodes, y_pipes);
+     
+        return 0;
+    }
+\end{minted}
+    
+

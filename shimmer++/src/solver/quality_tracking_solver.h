@@ -273,6 +273,7 @@ public:
 
         vector_t phi = vector_t::Zero(infra_.num_original_stations);
 
+        size_t count = 0; 
         for(auto itor = v_range.first; itor != v_range.second; itor++)
         {
             const auto & node_prop = infra_.graph[*itor]; 
@@ -280,6 +281,11 @@ public:
             auto rho_now = rho_nodes_in_time_(at_step,node_prop.i_snum);
             auto rho_old = rho_nodes_in_time_(at_step-1,node_prop.i_snum);
             lhs_nodes(node_prop.i_snum) +=volume(*itor, infra_.graph) * (rho_now - rho_old) / dt;
+
+            count++;
+            if(count == infra_.num_original_stations)
+                break;
+
         }
 
         #if 0

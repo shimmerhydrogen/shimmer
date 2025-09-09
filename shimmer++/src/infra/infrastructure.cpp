@@ -1347,8 +1347,8 @@ int launch_solver(const config& cfg)
     std::string outfile = cfg.database;
     if (cfg.refine) {
         fs::path path(cfg.database);
-        std::string dir = path.parent_path();
-        std::string file = path.filename();
+        std::string dir = path.parent_path().string();
+        std::string file = path.filename().string();
         outfile =  "refined_" + file;
         if (initdb(outfile) != 0) {
             std::cerr << "Problem creating output db" << std::endl;

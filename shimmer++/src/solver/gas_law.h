@@ -22,7 +22,9 @@
 #pragma once
 
 #include <Eigen/Dense>
+#ifdef HAVE_MATLAB_GERG
 #include "MATLAB_GERG_functions.hpp"
+#endif /* HAVE_MATLAB_GERG */
 #include "solver/fluid_solver.h"
 #include "gerg/shimmer_gerg_functions.hpp"
 #include "gerg/shimmer_gerg_utilities.hpp"
@@ -83,12 +85,11 @@ public:
 };
 
 
-        
+#ifdef HAVE_MATLAB_GERG 
 typedef GERG::Reducing_parameters<matrix_t>   gerg_reducing_params_t;
 typedef GERG::Pseudo_critical_point<matrix_t> gerg_pseudo_critical_pt_t;
 typedef GERG::Thermodynamic_properties_parameters gerg_thermo_params_t;
 typedef GERG::Thermodynamic_properties<vector_t> gerg_thermo_props_t;
-
 
 struct gerg_params
 {
@@ -102,8 +103,6 @@ struct gerg_params
 
     gerg_params();
 };
-
-
 
 class gerg: public equation_of_state
 {
@@ -132,7 +131,7 @@ public:
     std::pair<vector_t, vector_t>
     speed_of_sound(linearized_fluid_solver *lfs) const;
 };
-
+#endif /* HAVE_MATLAB_GERG  */
 
 
 using namespace shimmer_gerg;

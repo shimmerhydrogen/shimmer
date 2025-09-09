@@ -21,8 +21,9 @@ if(OPT_DISABLE_DEPRECATION_WARNINGS)
 endif()
 #######################################################################
 # GERG
-add_subdirectory(deps/gerg)
-set(LINK_LIBS ${LINK_LIBS} GERG::GERG)
+#add_subdirectory(deps/gerg)
+#set(LINK_LIBS ${LINK_LIBS} GERG::GERG)
+#add_definition(-DHAVE_MATLAB_GERG)
 
 #######################################################################
 # SQLite

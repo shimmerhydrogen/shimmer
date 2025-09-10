@@ -39,7 +39,6 @@
 #include "infrastructure_graph.h"
 #include "verify_test.h"
 #include "network_elements.h"
-#include "MATLAB_GERG_functions.hpp"
 #include "solver/incidence_matrix.h"
 #include "solver/conservation_matrices.h"
 #include "solver/boundary.h"

@@ -95,6 +95,7 @@ papay::speed_of_sound(linearized_fluid_solver *lfs) const
 //                    GERG equation of state
 // ----------------------------------------------------------------------------
 
+#ifdef HAVE_MATLAB_GERG
 gerg_params::gerg_params(const gerg_reducing_params_t&  rp, 
                 const gerg_pseudo_critical_pt_t& psc,
                 const gerg_thermo_params_t& tp): 
@@ -199,6 +200,7 @@ gerg::compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes)
         mm_pipes_ +=  mmi_gerg(i) * y_pipes.col(gas_name_[i]); 
 }
 
+#endif /* HAVE_MATLAB_GERG */
 // ----------------------------------------------------------------------------
 //                    GERG equation of state AGA8CODE
 // ----------------------------------------------------------------------------

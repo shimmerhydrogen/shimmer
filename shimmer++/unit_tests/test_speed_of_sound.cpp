@@ -25,7 +25,9 @@
 #include <string>
 #include <iomanip>
 
+#ifdef HAVE_MATLAB_GERG
 #include "MATLAB_GERG_functions.hpp"
+#endif /* HAVE_MATLAB_GERG */
 #include "infrastructure_graph.h"
 #include "solver/incidence_matrix.h"
 #include "solver/matlab_manip.h"
@@ -43,7 +45,7 @@ make_RR(size_t size)
     return rrb; 
 }
 
-
+#ifdef HAVE_MATLAB_GERG
 gerg_params
 make_gerg(size_t size)
 {
@@ -68,7 +70,7 @@ make_gerg(size_t size)
 
     return gerg;
 }
-
+#endif /* HAVE_MATLAB_GERG */
 
 void
 make_init_graph(infrastructure_graph& g)
@@ -109,7 +111,7 @@ make_init_graph(infrastructure_graph& g)
     boost::add_edge( vds[2], vds[1], ep2, g);
 }
 
-
+#ifdef HAVE_MATLAB_GERG
 bool
 gerg_matlab()
 {
@@ -201,7 +203,7 @@ RR_matlab()
 
     return !(RRp_pass & RRn_pass);
 }
-
+#endif /* HAVE_MATLAB_GERG */
 
 bool
 gerg_aga8code()
@@ -261,10 +263,15 @@ gerg_aga8code()
 
 int main()
 {
+#ifdef HAVE_MATLAB_GERG
     bool pass_RR = RR_matlab();
     bool pass_matlab = gerg_matlab();
+#endif /* HAVE_MATLAB_GERG */
     bool pass_aga8cd = gerg_aga8code();
 
-    
+#ifdef HAVE_MATLAB_GERG
     return !(pass_matlab && pass_RR && pass_aga8cd);
+#else
+    return not pass_aga8cd;
+#endif /* HAVE_MATLAB_GERG */
 }

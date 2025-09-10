@@ -32,7 +32,6 @@
 #include "solver/time_solver.h"
 #include "solver/viscosity.h"
 #include "verify_test.h"
-#include "MATLAB_GERG_functions.hpp"
 
 using triple_t = std::array<double, 3>;
 

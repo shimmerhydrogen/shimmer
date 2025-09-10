@@ -31,8 +31,9 @@
 #include "solver/time_solver.h"
 #include "solver/viscosity.h"
 #include "verify_test.h"
+#ifdef HAVE_MATLAB_GERG
 #include "MATLAB_GERG_functions.hpp"
-
+#endif /* HAVE_MATLAB_GERG */
 using triple_t = std::array<double, 3>;
 
 using namespace shimmer;

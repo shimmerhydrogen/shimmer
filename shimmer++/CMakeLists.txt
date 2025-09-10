@@ -21,8 +21,9 @@ if(OPT_DISABLE_DEPRECATION_WARNINGS)
 endif()
 #######################################################################
 # GERG
-add_subdirectory(deps/gerg)
-set(LINK_LIBS ${LINK_LIBS} GERG::GERG)
+#add_subdirectory(deps/gerg)
+#set(LINK_LIBS ${LINK_LIBS} GERG::GERG)
+#add_definition(-DHAVE_MATLAB_GERG)
 
 #######################################################################
 # SQLite
@@ -36,11 +37,11 @@ set(LINK_LIBS ${LINK_LIBS} Threads::Threads)
 
 #######################################################################
 # Qt stuff
-find_package(Qt6 COMPONENTS Core Widgets)
-if (Qt6Core_FOUND AND Qt6Widgets_FOUND)
-    set(QT_LINK_LIBS ${QT_LINK_LIBS} Qt6::Core Qt6::Widgets)
-    set(HAVE_QT TRUE)
-endif()
+#find_package(Qt6 COMPONENTS Core Widgets)
+#if (Qt6Core_FOUND AND Qt6Widgets_FOUND)
+#    set(QT_LINK_LIBS ${QT_LINK_LIBS} Qt6::Core Qt6::Widgets)
+#    set(HAVE_QT TRUE)
+#endif()
 
 #######################################################################
 # Boost stuff

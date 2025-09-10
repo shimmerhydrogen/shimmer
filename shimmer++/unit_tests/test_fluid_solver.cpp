@@ -31,7 +31,9 @@
 #include "solver/fluid_solver.h"
 #include "solver/viscosity.h"
 #include "verify_test.h"
+#ifdef HAVE_MATLAB_GERG
 #include "MATLAB_GERG_functions.hpp"
+#endif /* HAVE_MATLAB_GERG */
 
 using triple_t = std::array<double, 3>;
 
@@ -111,7 +113,7 @@ make_mass_fraction(size_t size)
 }
 
 
-
+#ifdef HAVE_MATLAB_GERG
 gerg_params
 make_gerg(size_t size)
 {
@@ -136,7 +138,7 @@ make_gerg(size_t size)
 
     return gerg;
 }
-
+#endif /* HAVE_MATLAB_GERG */
 
 
 int main()

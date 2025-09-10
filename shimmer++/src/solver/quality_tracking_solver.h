@@ -334,8 +334,8 @@ public:
             for (int iN = 1; iN < pd.nodelist.size()-1; iN++)
             {
                 // Check the sign with the incidence matrix!
-                double vel_plus_half  = vel_loc_pipes[iN-1]; 
-                double vel_minus_half = vel_loc_pipes[iN]; 
+                double vel_minus_half  = vel_loc_pipes[iN-1]; 
+                double vel_plus_half = vel_loc_pipes[iN]; 
                 double vel_i = vel_loc_nodes[iN];
                 double vel_i_plus  = vel_loc_nodes[iN+1]; 
                 double vel_i_minus = vel_loc_nodes[iN-1]; 
@@ -347,8 +347,8 @@ public:
 
                 // mass fractions
                 auto idx = pd.nodelist[iN];
-                auto idx_plus = pd.nodelist[iN-1];
-                auto idx_minus = pd.nodelist[iN+1];
+                auto idx_minus = pd.nodelist[iN-1];
+                auto idx_plus  = pd.nodelist[iN+1];
 
                 y_next.row(idx) = a_i * y_now.row(idx)
                             + a_plus * y_now.row(idx_plus) 

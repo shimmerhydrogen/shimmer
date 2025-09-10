@@ -3,7 +3,7 @@ close all;
 
 db_schema = fullfile(pwd, "../../sqlite/shimmer.sql");
 
-run_tests = [1,1,1,0,1,1,1];
+run_tests = [0,0,1,0,0,0,0];
 
 %% test_case_1_13
 

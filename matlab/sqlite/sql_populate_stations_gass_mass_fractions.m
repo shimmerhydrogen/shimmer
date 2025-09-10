@@ -11,6 +11,7 @@ stations_tab_variables_name = ["s_number", "frac_CH4"];
 
 %% Gas Mass Fraction
 % Now all the gas fractions are 100% CH4
+% Use YYc_ext for Type Remi e Inj
 
 stations_gas_mass_fractions = cell(num_nodes, num_variables);
 for s = 1:num_nodes

@@ -138,7 +138,16 @@ public:
         rho_nodes_ = eos.density_nodes(&lfs);
     }
 
-    
+
+    std::pair<vector_t, vector_t>
+    LaxWendroff(double dtdx, double A_left, double A_right, const matrix_t&  Flux, size_t i)
+    {
+        vector_t FL = 0.5 * (Flux.row(i-1) + Flux.row(i))  - 0.5 * dtdx * A_left  * (Flux.row(i) - Flux.row(i-1)); 
+        vector_t FR = 0.5 * (Flux.row(i+1) + Flux.row(i))  - 0.5 * dtdx * A_right * (Flux.row(i+1) - Flux.row(i));  
+
+        return std::make_pair(FL, FR);
+    }
+
     bool
     qt_net_nodes(size_t at_step, double dt,  const variable& var_msh,
                  const  matrix_t& y_now, matrix_t& y_next)
@@ -311,49 +320,62 @@ public:
     qt_refine_nodes(size_t it, double dt, const variable& var_msh,
                     const matrix_t& y_now,matrix_t& y_next)
     {
+        /* 
+            Solve: 
+
+                dq/dt + d(v * q)/dx = 0 
+            
+            with 
+                q = rho * Y      and      F = v * q
+            and 
+                A = dF/dq = v
+        */
+        
         // Loop over network (original) pipes
         for(const auto& pd : infra_.pipe_discretizations)
         {
-            auto dtdx =  (dt/pd.dx); 
+            auto dtdx =  dt/pd.dx; 
+            auto num_loc_nodes = pd.nodelist.size();
+            auto num_loc_pipes = pd.pipelist.size();
 
-            /// vel [m/s] velocity of the gas within pipes (on dual mesh)
-            vector_t vel_loc_pipes = velocity(pd, var_msh, rho_msh_in_time_.row(it-1), area_msh_pipes_);
-            assert(vel_loc_pipes.size()+1  == pd.nodelist.size() && "Incorrect size for local velocities");
+            ///0. Prepare variables
 
+            // 0.0 mass flux = density * velocity of the gas, within pipes (on dual mesh)
+            vector_t mass_flux_loc_pipe = pipe_mass_flux(pd, var_msh, area_msh_pipes_);
+            assert(mass_flux_loc_pipe.size()+1  == num_loc_nodes && "Incorrect size for local velocities");
+            
+            // 0. 1 vel [m/s] velocity of the gas within pipes (on dual mesh)
+            vector_t A_pipes = velocity(pd, var_msh, rho_msh_in_time_.row(it-1), area_msh_pipes_);
+            assert(A_pipes.size()+1  == pd.nodelist.size() && "Incorrect size for local velocities");
 
-            // Approx velocity at nodes(primal mesh)
-            vector_t vel_loc_nodes = vector_t::Zero( pd.nodelist.size());
-            // inner points
-            for(int iN = 1; iN < pd.nodelist.size()-1; iN++)
-                vel_loc_nodes(iN) = 0.5 * (vel_loc_pipes[iN] + vel_loc_pipes[iN-1]);
-
-            // outer points: I chose to be equal to the first volume value...maybe a finite difference of higher degree could be better
-            vel_loc_nodes[0] =  vel_loc_pipes[0];
-            vel_loc_nodes[pd.nodelist.size()-1] =  vel_loc_pipes[pd.pipelist.size()-1];
-
-            for (int iN = 1; iN < pd.nodelist.size()-1; iN++)
+            // 1. Built fluxes
+            matrix_t fractions_flux = matrix_t::Zero(num_loc_nodes, NUM_GASES); 
+            // 1.1 inner points
+            for (int iN = 1; iN < num_loc_nodes-1; iN++)
             {
-                // Check the sign with the incidence matrix!
-                double vel_minus_half  = vel_loc_pipes[iN-1]; 
-                double vel_plus_half = vel_loc_pipes[iN]; 
-                double vel_i = vel_loc_nodes[iN];
-                double vel_i_plus  = vel_loc_nodes[iN+1]; 
-                double vel_i_minus = vel_loc_nodes[iN-1]; 
-
-                // Coefficients
-                double a_i = 1.0 - 0.5 * dtdx * dtdx * vel_i * ( vel_plus_half - vel_minus_half);
-                double a_plus =   0.5 * dtdx * vel_i_plus  * (-1.0 + dtdx * vel_plus_half);             
-                double a_minus=   0.5 * dtdx * vel_i_minus * ( 1.0 + dtdx * vel_minus_half);             
-
-                // mass fractions
                 auto idx = pd.nodelist[iN];
-                auto idx_minus = pd.nodelist[iN-1];
-                auto idx_plus  = pd.nodelist[iN+1];
+                auto mass_flux_node_i = 0.5 * (mass_flux_loc_pipe[iN] + mass_flux_loc_pipe[iN-1]);
 
-                y_next.row(idx) = a_i * y_now.row(idx)
-                            + a_plus * y_now.row(idx_plus) 
-                            + a_minus * y_now.row(idx_minus);  // check signs
-            } 
+                fractions_flux.row(iN) = mass_flux_node_i * y_now.row(idx);
+            }
+            // 1.2 outer points: chosen to be equal to the network volume value. Maybe a finite difference of higher degree could be better
+            fractions_flux.row(0) =  mass_flux_loc_pipe[0] * y_now.row(pd.nodelist[0]);
+            fractions_flux.row(num_loc_nodes -1) =  mass_flux_loc_pipe[num_loc_pipes-1] * y_now.row(pd.nodelist[num_loc_nodes -1]);
+
+            // 2. Solve dq/dt + d(vq)/dx = 0 with q = rho * Y
+            for (int iN = 1; iN < num_loc_nodes-1; iN++)
+            {
+                auto idx = pd.nodelist[iN];
+                auto rho_i = rho_nodes_in_time_(it, idx);
+
+                auto [Fright, Fleft] = LaxWendroff( dtdx, A_pipes(iN-1), A_pipes(iN), fractions_flux, iN);
+                vector_t q_now_i  = y_now.row(idx) * rho_i;   
+                vector_t q_next_i = q_now_i - dtdx * (Fright -Fleft);
+
+                // WARNING: Y_next = Qnext / rho_next...but I dont have rho_next 
+                y_next.row(idx) = q_next_i / rho_i; 
+            }
+
         }
     }
 
@@ -470,10 +492,26 @@ public:
 
             y_now_nodes = y_next_nodes;
             
+            std::cout << std::setprecision(4 )<<" * Y_now :" << y_now_nodes << std::endl;
+
             x_in_time_[it] = build_x_nodes(infra_.graph); 
 
         }
         return;
+    }
+
+    vector_t
+    pipe_mass_flux(const pipe_discretization& pd, const variable& var, const vector_t& area) const
+    {
+        vector_t mf = vector_t::Zero(pd.pipelist.size());
+         
+        for (auto iCount = 0;  iCount < pd.pipelist.size(); iCount++)
+        {
+            auto pipe_num = pd.pipelist[iCount];
+            mf(iCount) = var.flux(pipe_num) / area(pipe_num);
+        }
+
+        return mf;      
     }
 
     vector_t

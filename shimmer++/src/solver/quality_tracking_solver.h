@@ -38,6 +38,7 @@
 namespace shimmer{
 
 using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+using vector_row_t = Eigen::Matrix<double, 1, Eigen::Dynamic>;
 using matrix_t = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>;
 
 
@@ -138,15 +139,22 @@ public:
         rho_nodes_ = eos.density_nodes(&lfs);
     }
 
-
-    std::pair<vector_t, vector_t>
-    LaxWendroff(double dtdx, double A_left, double A_right, const matrix_t&  Flux, size_t i)
+    
+    vector_row_t 
+    flux_exact(const vector_row_t& TransportedVariable, const double& Velocity)
     {
-        vector_t FL = 0.5 * (Flux.row(i-1) + Flux.row(i))  - 0.5 * dtdx * A_left  * (Flux.row(i) - Flux.row(i-1)); 
-        vector_t FR = 0.5 * (Flux.row(i+1) + Flux.row(i))  - 0.5 * dtdx * A_right * (Flux.row(i+1) - Flux.row(i));  
-
-        return std::make_pair(FL, FR);
+        return Velocity * TransportedVariable;  
     }
+
+    std::pair<vector_row_t, vector_row_t>
+    LaxWendroff(double dtdx, const matrix_t& Q, const matrix_t&  flux_nodes, size_t i)
+    {
+        vector_row_t QL = 0.5 * (Q.row(i-1) + Q.row(i))  - 0.5 * dtdx * (flux_nodes.row(i) - flux_nodes.row(i-1)); 
+        vector_row_t QR = 0.5 * (Q.row(i+1) + Q.row(i))  - 0.5 * dtdx * (flux_nodes.row(i+1) - flux_nodes.row(i));  
+
+        return std::make_pair(QL, QR);
+    }
+
 
     bool
     qt_net_nodes(size_t at_step, double dt,  const variable& var_msh,
@@ -318,7 +326,7 @@ public:
 
     void
     qt_refine_nodes(size_t it, double dt, const variable& var_msh,
-                    const matrix_t& y_now,matrix_t& y_next)
+                    const matrix_t& y_now, matrix_t& y_next)
     {
         /* 
             Solve: 
@@ -327,8 +335,6 @@ public:
             
             with 
                 q = rho * Y      and      F = v * q
-            and 
-                A = dF/dq = v
         */
         
         // Loop over network (original) pipes
@@ -338,43 +344,57 @@ public:
             auto num_loc_nodes = pd.nodelist.size();
             auto num_loc_pipes = pd.pipelist.size();
 
-            ///0. Prepare variables
+            ///1. Variables at fictitious nodes (primal mesh)/pipes (dual mesh) of the current pipe 
+             
+            matrix_t flux_nodes= mass_fractions_fluxes_in_fictitious_nodes(pd, var_msh,
+                                                              rho_msh_in_time_.row(it-1),
+                                                              y_now);
+            vector_t V_pipes   = velocity_in_fictitious_pipes(pd, var_msh, 
+                                                              rho_msh_in_time_.row(it-1),
+                                                              area_msh_pipes_);
+            vector_t rho_nodes = density_in_fictitious_nodes(pd,    
+                                                             rho_nodes_in_time_.row(it-1));
+            matrix_t q_nodes = matrix_t::Zero(num_loc_nodes, NUM_GASES); 
 
-            // 0.0 mass flux = density * velocity of the gas, within pipes (on dual mesh)
-            vector_t mass_flux_loc_pipe = pipe_mass_flux(pd, var_msh, area_msh_pipes_);
-            assert(mass_flux_loc_pipe.size()+1  == num_loc_nodes && "Incorrect size for local velocities");
-            
-            // 0. 1 vel [m/s] velocity of the gas within pipes (on dual mesh)
-            vector_t A_pipes = velocity(pd, var_msh, rho_msh_in_time_.row(it-1), area_msh_pipes_);
-            assert(A_pipes.size()+1  == pd.nodelist.size() && "Incorrect size for local velocities");
-
-            // 1. Built fluxes
-            matrix_t fractions_flux = matrix_t::Zero(num_loc_nodes, NUM_GASES); 
-            // 1.1 inner points
-            for (int iN = 1; iN < num_loc_nodes-1; iN++)
+            for (int iN = 0; iN < num_loc_nodes; iN++)
             {
                 auto idx = pd.nodelist[iN];
-                auto mass_flux_node_i = 0.5 * (mass_flux_loc_pipe[iN] + mass_flux_loc_pipe[iN-1]);
-
-                fractions_flux.row(iN) = mass_flux_node_i * y_now.row(idx);
+                q_nodes.row(iN) = rho_nodes[iN] * y_now.row(idx);
             }
-            // 1.2 outer points: chosen to be equal to the network volume value. Maybe a finite difference of higher degree could be better
-            fractions_flux.row(0) =  mass_flux_loc_pipe[0] * y_now.row(pd.nodelist[0]);
-            fractions_flux.row(num_loc_nodes -1) =  mass_flux_loc_pipe[num_loc_pipes-1] * y_now.row(pd.nodelist[num_loc_nodes -1]);
 
-            // 2. Solve dq/dt + d(vq)/dx = 0 with q = rho * Y
+            // 2. Solve dq/dt + d(vq)/dx = 0
             for (int iN = 1; iN < num_loc_nodes-1; iN++)
             {
                 auto idx = pd.nodelist[iN];
-                auto rho_i = rho_nodes_in_time_(it, idx);
 
-                auto [Fright, Fleft] = LaxWendroff( dtdx, A_pipes(iN-1), A_pipes(iN), fractions_flux, iN);
-                vector_t q_now_i  = y_now.row(idx) * rho_i;   
-                vector_t q_next_i = q_now_i - dtdx * (Fright -Fleft);
+                // Values on interfaces of the primal mesh (ficts nodes) = dual mesh (fict pipes)
+                auto [QL, QR] = LaxWendroff( dtdx, q_nodes, flux_nodes, iN);
+
+                //auto [QF, QR] = MUSCL(); 
+
+                vector_row_t FL = flux_exact(QL,V_pipes[iN-1]); 
+                vector_row_t FR = flux_exact(QR,V_pipes[iN]);
+
+                vector_row_t add = dtdx * (FR -FL); 
+                vector_row_t q_next_i = q_nodes.row(iN) - dtdx * (FR -FL);
 
                 // WARNING: Y_next = Qnext / rho_next...but I dont have rho_next 
-                y_next.row(idx) = q_next_i / rho_i; 
+                y_next.row(idx) = q_next_i / rho_nodes[iN]; 
+
+                auto sum = 1.0 - y_next.block(idx,0,1, NUM_GASES-1).sum(); 
+
+                if(sum < -1.e-2)
+                {
+                    std::cout << "Problem in QT at node "<< iN << ": 1 - sum_{1}^{N-1} = " << sum << std::endl;
+                    std::cout << y_next << std::endl;
+                    exit(1);
+                }
+                else if( std::abs(sum) < 1.e-2 )
+                    sum = 0.;    
+
+                y_next(idx, NUM_GASES - 1) = sum;
             }
+
 
         }
     }
@@ -452,6 +472,8 @@ public:
         matrix_t y_now_nodes = y_guess_;
         matrix_t y_next_nodes = matrix_t::Zero(num_nodes, NUM_GASES);
 
+        std::cout << std::setprecision(4 )<<" * Y_now :" << y_guess_ << std::endl;
+
         x_in_time_[0] = build_x_nodes(infra_.graph);
 
         EQ_OF_STATE eos;
@@ -462,6 +484,8 @@ public:
             std::cout<<"========================================================"<< std::endl;
             std::cout << "Solving at time ...."<< it <<std::endl;
             std::cout<<"========================================================"<< std::endl;
+
+            std::cout << std::setprecision(16 ) <<  "rho = [" << rho_nodes_in_time_.row(it-1) << "]; "<<std::endl;
 
             // 1. Update molar masses (mm) inside eos and molar frac(x) inside graph
             matrix_t y_now_pipes = inc_msh_.matrix_in().transpose() * y_now_nodes;    
@@ -500,8 +524,73 @@ public:
         return;
     }
 
+/*
+    std::pair<vector_t, vector_t>
+    MUSCL(double dtdx, const matrix_t& Q, size_t i)
+    {
+        auto kappa = 1.0/3.0;
+
+        vector_t QL, QR;
+
+        if(i > 2)        
+           QL =  Q.row(i-1) + 0.25 * (1.0 -kappa) * (Q.row(i-1) + Q.row(i-2)) +  0.25 * (1.0 +kappa) * (Q.row(i) + Q.row(i-1));
+        else
+           QL =  Q.row(i-1) + 0.25 * (1.0 -kappa) * (Q.row(i-1) + Q.row(i-2)) +  0.25 * (1.0 +kappa) * (Q.row(i) + Q.row(i-1));
+
+        if()           
+           QR =  Q.row(i) + 0.25 * (1.0 -kappa) * (Q.row(i) + Q.row(i-1)) +  0.25 * (1.0 +kappa) * (Q.row(i+1) + Q.row(i));
+
+        return std::make_pair(QL, QR);
+    }
+*/ 
+
+    matrix_t
+    mass_fractions_fluxes_in_fictitious_nodes(const pipe_discretization& pd, const variable& var_msh, const vector_t& rho_msh, 
+                        const matrix_t& y_now)
+    {
+        auto num_loc_nodes = pd.nodelist.size();
+        auto num_loc_pipes = pd.pipelist.size();
+
+        // Mass flux within fictitious pipes(dual mesh):
+        //      
+        //       F_mass_j = rho_j * vel_j
+        // 
+        vector_t Fmass = mass_fluxes_in_fictitious_pipes(pd, var_msh, area_msh_pipes_);
+
+        assert(Fmass.size()+1  == num_loc_nodes && "Incorrect size for local velocities");
+
+        // 1. Fluxes on fictitius nodes (primal mesh)
+        //      
+        //       F_i = rho_i * vel_i * Y_i 
+        // 
+        matrix_t F = matrix_t::Zero(num_loc_nodes, NUM_GASES); 
+        for (int iN = 1; iN < num_loc_nodes-1; iN++)
+        {
+            auto idx = pd.nodelist[iN];
+            F.row(iN) = 0.5 * (Fmass(iN) + Fmass(iN-1)) * y_now.row(idx);
+        }
+        // outer points: chosen to be equal to the network volume value. Maybe a finite difference of higher degree could be better
+        F.row(0) =  Fmass(0) * y_now.row(pd.nodelist[0]);
+        F.row(num_loc_nodes -1) =  Fmass(num_loc_pipes-1) * y_now.row(pd.nodelist[num_loc_nodes -1]);
+
+        return F;
+    }
+
+    vector_t 
+    density_in_fictitious_nodes(const pipe_discretization& pd, const vector_t& rho_nodes_all)
+    {
+        vector_t rho =  vector_t::Zero(pd.nodelist.size());
+
+        for (int iN = 0; iN < pd.nodelist.size(); iN++)
+        {
+            auto idx = pd.nodelist[iN];
+            rho(iN) = rho_nodes_all(idx);
+        }
+        return rho;
+    }
+
     vector_t
-    pipe_mass_flux(const pipe_discretization& pd, const variable& var, const vector_t& area) const
+    mass_fluxes_in_fictitious_pipes(const pipe_discretization& pd, const variable& var, const vector_t& area) const
     {
         vector_t mf = vector_t::Zero(pd.pipelist.size());
          
@@ -515,7 +604,7 @@ public:
     }
 
     vector_t
-    velocity(const pipe_discretization& pd, const variable& var, const vector_t& rho, const vector_t& area) const
+    velocity_in_fictitious_pipes(const pipe_discretization& pd, const variable& var, const vector_t& rho, const vector_t& area) const
     {
         vector_t vel = vector_t::Zero(pd.pipelist.size());
          
@@ -528,10 +617,11 @@ public:
         return vel;      
     }
 
-
     matrix_t 
     velocity_full() const
     {
+        // This one cannot be called when doing only steady state 
+
         auto num_nodes = num_vertices(infra_.graph); 
         auto num_pipes = num_edges(infra_.graph); 
         /// vel [m/s] velocity of the gas within pipes.

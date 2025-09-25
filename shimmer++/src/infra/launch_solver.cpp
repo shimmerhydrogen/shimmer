@@ -129,7 +129,7 @@ int launch_solver_qt(const config& cfg)
     shimmer::variable guess = initial_guess(infra);
 
     // Solver
-    using solver_t = shimmer::qt_solver<shimmer::papay,
+    using solver_t = shimmer::qt_solver<shimmer::gerg_aga,
         shimmer::viscosity_type::Constant>;
 
     solver_t qt(infra, cfg.temperature);

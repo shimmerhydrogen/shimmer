@@ -727,6 +727,16 @@ initial_guess(const infrastructure& infra)
     vector_t L = vector_t::Zero(nstations);
     vector_t G = vector_t::Zero(npipes);
 
+    if (infra.sics.size() != nstations) {
+        std::cout << "Wrong number of initial conditions for stations" << std::endl;
+        throw std::invalid_argument("Incomplete database");
+    }
+
+    if (infra.pics.size() != npipes) {
+        std::cout << "Wrong number of initial conditions for pipes" << std::endl;
+        throw std::invalid_argument("Incomplete database");
+    }
+
     for (const auto& sic : infra.sics) {
         if (sic.i_snum >= nstations) {
             throw std::logic_error("station index out of bounds");

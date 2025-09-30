@@ -26,19 +26,19 @@ namespace shimmer{
 
 
 matrix_t
-build_x_nodes(const infrastructure_graph& g)
+build_molfrac_nodes(const infrastructure_graph& g)
 {
     size_t num_nodes = boost::num_vertices(g);
-    Eigen::MatrixXd x(num_nodes, NUM_GASES);
+    Eigen::MatrixXd molfrac(num_nodes, NUM_GASES);
 
     auto index = get(boost::vertex_index, g);
 
     for (auto vp = vertices(g); vp.first != vp.second; ++vp.first) {
         auto idx = index[*vp.first]; 
-        x.row(idx) = g[idx].gas_mixture;
+        molfrac.row(idx) = g[idx].gas_mixture;
     }
 
-    return x;
+    return molfrac;
 }
 
 
@@ -70,10 +70,10 @@ void
 equation_of_state::mixture_molar_mass(const infrastructure_graph& graph, const incidence& inc)
 {
     // Molar frac by comp and by pipe/node
-    matrix_t x_nodes = build_x_nodes(graph);
-    matrix_t x_pipes = inc.matrix_in().transpose() * x_nodes;   
+    matrix_t molfrac_nodes = build_molfrac_nodes(graph);
+    matrix_t molfrac_pipes = inc.matrix_in().transpose() * molfrac_nodes;   
 
-    mixture_molar_mass(x_nodes, x_pipes);
+    mixture_molar_mass(molfrac_nodes, molfrac_pipes);
 }
 
 
@@ -90,10 +90,10 @@ papay::initialization(linearized_fluid_solver *lfs){}
 
 
 void
-papay::mixture_molar_mass(const matrix_t& x_nodes, const matrix_t& x_pipes)
+papay::mixture_molar_mass(const matrix_t& molfrac_nodes, const matrix_t& molfrac_pipes)
 {
-    mm_nodes_ = vector_t::Zero(x_nodes.rows()); 
-    mm_pipes_ = vector_t::Zero(x_pipes.rows()); 
+    mm_nodes_ = vector_t::Zero(molfrac_nodes.rows()); 
+    mm_pipes_ = vector_t::Zero(molfrac_pipes.rows()); 
 
     mm_nodes_.setConstant(16.0);
     mm_pipes_.setConstant(16.0);
@@ -129,33 +129,33 @@ papay::speed_of_sound(linearized_fluid_solver *lfs) const
 
 
 std::pair<matrix_t, matrix_t>
-papay::molarfrac_2_massfrac(const infrastructure_graph& graph, const incidence& inc)
+papay::molfrac_2_massfrac(const infrastructure_graph& graph, const incidence& inc)
 {
-    matrix_t y_nodes = matrix_t::Zero(boost::num_vertices(graph), NUM_GASES ); 
-    matrix_t y_pipes = matrix_t::Zero(boost::num_edges(graph), NUM_GASES ); 
+    matrix_t massfrac_nodes = matrix_t::Zero(boost::num_vertices(graph), NUM_GASES ); 
+    matrix_t massfrac_pipes = matrix_t::Zero(boost::num_edges(graph), NUM_GASES ); 
 
-    y_nodes.col(0) = vector_t::Ones(boost::num_vertices(graph), 1); 
-    y_pipes.col(0) = vector_t::Ones(boost::num_edges(graph), 1 ); 
+    massfrac_nodes.col(0) = vector_t::Ones(boost::num_vertices(graph), 1); 
+    massfrac_pipes.col(0) = vector_t::Ones(boost::num_edges(graph), 1 ); 
 
-    //In order to not define more variable, we use y as input, instead of x, since they are equal. 
-    mixture_molar_mass(y_nodes, y_pipes);
+    //In order to not define more variable, we use y as input, instead of molfrac, since they are equal. 
+    mixture_molar_mass(massfrac_nodes, massfrac_pipes);
 
-    return std::make_pair(y_nodes, y_pipes);
+    return std::make_pair(massfrac_nodes, massfrac_pipes);
 }
 
 
 std::pair<matrix_t, matrix_t> 
-papay::massfrac_2_molarfrac(const matrix_t& y_nodes, const matrix_t& y_pipes)
+papay::massfrac_2_molfrac(const matrix_t& massfrac_nodes, const matrix_t& massfrac_pipes)
 {
-    matrix_t x_nodes = matrix_t::Zero(y_nodes.rows(), NUM_GASES ); 
-    matrix_t x_pipes = matrix_t::Zero(y_pipes.rows(), NUM_GASES ); 
+    matrix_t molfrac_nodes = matrix_t::Zero(massfrac_nodes.rows(), NUM_GASES ); 
+    matrix_t molfrac_pipes = matrix_t::Zero(massfrac_pipes.rows(), NUM_GASES ); 
 
-    x_nodes.col(0) = vector_t::Ones(y_nodes.rows());
-    x_pipes.col(0) = vector_t::Ones(y_pipes.rows() ); 
+    molfrac_nodes.col(0) = vector_t::Ones(massfrac_nodes.rows());
+    molfrac_pipes.col(0) = vector_t::Ones(massfrac_pipes.rows() ); 
 
-    mixture_molar_mass(x_nodes, x_pipes);
+    mixture_molar_mass(molfrac_nodes, molfrac_pipes);
     
-    return std::make_pair(y_nodes, y_pipes);
+    return std::make_pair(massfrac_nodes, massfrac_pipes);
 }
 // ----------------------------------------------------------------------------
 //                    GERG equation of state
@@ -203,10 +203,10 @@ gerg::gerg()
 
 
 gerg_params
-gerg::compute_params(const matrix_t& x)
+gerg::compute_params(const matrix_t& molfrac)
 {
-    auto rp  = GERG::reducing_parameters(x);
-    auto psc = GERG::pseudo_critical_point(x, x.rows());
+    auto rp  = GERG::reducing_parameters(molfrac);
+    auto psc = GERG::pseudo_critical_point(molfrac, molfrac.rows());
     auto tp  = gerg_thermo_params_t();
     tp.Type = gerg_thermo_params_t::Types::Gas_phase;
 
@@ -218,18 +218,18 @@ gerg::compute_params(const matrix_t& x)
 void
 gerg::initialization(linearized_fluid_solver *lfs)
 {
-    params_nodes_ = compute_params(lfs->x_nodes());
-    params_pipes_ = compute_params(lfs->x_pipes());
+    params_nodes_ = compute_params(lfs->molfrac_nodes());
+    params_pipes_ = compute_params(lfs->molfrac_pipes());
 }
 
 
 vector_t 
 gerg::compute_Z( const double& temperature,
                  const vector_t& pressure,
-                 const matrix_t& x,
+                 const matrix_t& molfrac,
                  const gerg_params& gp) const
 {
-    auto eos =  GERG::thermodynamic_properties(pressure, temperature, x,
+    auto eos =  GERG::thermodynamic_properties(pressure, temperature, molfrac,
                                               gp.reducing_params,
                                               gp.pseudo_critical_pt,
                                               gp.params);
@@ -240,8 +240,8 @@ gerg::compute_Z( const double& temperature,
 std::pair<vector_t, vector_t>
 gerg::speed_of_sound(linearized_fluid_solver *lfs) const
 {
-    vector_t Z_nodes = compute_Z(lfs->temperature(), lfs->pressure_nodes(), lfs->x_nodes(), params_nodes_);
-    vector_t Z_pipes = compute_Z(lfs->temperature(), lfs->pressure_pipes(), lfs->x_pipes(), params_pipes_);
+    vector_t Z_nodes = compute_Z(lfs->temperature(), lfs->pressure_nodes(), lfs->molfrac_nodes(), params_nodes_);
+    vector_t Z_pipes = compute_Z(lfs->temperature(), lfs->pressure_pipes(), lfs->molfrac_pipes(), params_pipes_);
 
     vector_t R_nodes = compute_R(mm_nodes_); 
     vector_t R_pipes = compute_R(mm_pipes_); 
@@ -254,44 +254,44 @@ gerg::speed_of_sound(linearized_fluid_solver *lfs) const
 
 
 void
-gerg::mixture_molar_mass(const matrix_t& x_nodes, const matrix_t& x_pipes)
+gerg::mixture_molar_mass(const matrix_t& molfrac_nodes, const matrix_t& molfrac_pipes)
 {
-    mm_nodes_ = vector_t::Zero(x_nodes.rows()); 
-    mm_pipes_ = vector_t::Zero(x_pipes.rows()); 
+    mm_nodes_ = vector_t::Zero(molfrac_nodes.rows()); 
+    mm_pipes_ = vector_t::Zero(molfrac_pipes.rows()); 
 
     for(size_t i = 0; i <= 20; i++)
-        mm_nodes_ +=  mm_component(i) * x_nodes.col(gas_name_[i]); 
+        mm_nodes_ +=  mm_component(i) * molfrac_nodes.col(gas_name_[i]); 
 
     for(size_t i = 0; i <= 20; i++)
-        mm_pipes_ +=  mm_component(i) * x_pipes.col(gas_name_[i]); 
+        mm_pipes_ +=  mm_component(i) * molfrac_pipes.col(gas_name_[i]); 
 }
 
 
 std::pair<matrix_t, matrix_t>
-gerg::molarfrac_2_massfrac(const infrastructure_graph& graph, const incidence& inc)
+gerg::molfrac_2_massfrac(const infrastructure_graph& graph, const incidence& inc)
 {
     // Molar frac by comp and by pipe/node
-    matrix_t x_nodes = build_x_nodes(graph);
-    matrix_t x_pipes = inc.matrix_in().transpose() * x_nodes;      
-    mixture_molar_mass(x_nodes, x_pipes);
+    matrix_t molfrac_nodes = build_molfrac_nodes(graph);
+    matrix_t molfrac_pipes = inc.matrix_in().transpose() * molfrac_nodes;      
+    mixture_molar_mass(molfrac_nodes, molfrac_pipes);
 
-    matrix_t y_nodes = matrix_t::Zero(boost::num_vertices(graph), NUM_GASES ); 
-    matrix_t y_pipes = matrix_t::Zero(boost::num_edges(graph), NUM_GASES ); 
+    matrix_t massfrac_nodes = matrix_t::Zero(boost::num_vertices(graph), NUM_GASES ); 
+    matrix_t massfrac_pipes = matrix_t::Zero(boost::num_edges(graph), NUM_GASES ); 
 
     for(size_t iN = 0; iN < boost::num_vertices(graph); iN++)
-        y_nodes.row(iN) =  mm_component.array() * x_nodes.row(iN).array() / mm_nodes_.array(); 
+        massfrac_nodes.row(iN) =  mm_component.array() * molfrac_nodes.row(iN).array() / mm_nodes_.array(); 
 
     for(size_t iP = 0; iP < boost::num_edges(graph); iP++)
-        y_pipes.row(iP) =  mm_component.array() * x_pipes.row(iP).array() / mm_pipes_.array(); 
+        massfrac_pipes.row(iP) =  mm_component.array() * molfrac_pipes.row(iP).array() / mm_pipes_.array(); 
 
-    return std::make_pair(y_nodes, y_pipes);
+    return std::make_pair(massfrac_nodes, massfrac_pipes);
 }
 
 std::pair<matrix_t, matrix_t> 
-gerg::massfrac_2_molarfrac(const matrix_t&y_nodes, const matrix_t&y_pipes)
+gerg::massfrac_2_molfrac(const matrix_t&massfrac_nodes, const matrix_t&massfrac_pipes)
 {
-    matrix_t x_nodes = matrix_t::Zero(y_nodes.rows(), NUM_GASES ); 
-    matrix_t x_pipes = matrix_t::Zero(y_pipes.rows(), NUM_GASES ); 
+    matrix_t molfrac_nodes = matrix_t::Zero(massfrac_nodes.rows(), NUM_GASES ); 
+    matrix_t molfrac_pipes = matrix_t::Zero(massfrac_pipes.rows(), NUM_GASES ); 
 
     for(int iN = 0; iN < NUM_GASES; iN++)
     {
@@ -301,16 +301,16 @@ gerg::massfrac_2_molarfrac(const matrix_t&y_nodes, const matrix_t&y_pipes)
         // off diag
         for(int iComp = 0; iComp < NUM_GASES; iComp++)
         {
-            A.row(iComp) -= y_nodes(iN, iComp) * mm_component;
+            A.row(iComp) -= massfrac_nodes(iN, iComp) * mm_component;
         }
 
-        x_nodes.row(iN) = A.fullPivLu().solve(vector_t::Zero(NUM_GASES)).transpose();
+        molfrac_nodes.row(iN) = A.fullPivLu().solve(vector_t::Zero(NUM_GASES)).transpose();
     }
     
     // Update mixture molar mass
-    mixture_molar_mass(x_nodes, x_pipes);
+    mixture_molar_mass(molfrac_nodes, molfrac_pipes);
 
-    return std::make_pair(x_nodes, x_pipes);
+    return std::make_pair(molfrac_nodes, molfrac_pipes);
 }
 
 #endif /* HAVE_MATLAB_GERG */
@@ -337,14 +337,14 @@ gerg_aga::initialization(linearized_fluid_solver *lfs)
 vector_t 
 gerg_aga::compute_Z( const vector_t& temperature,
                    const vector_t& pressure,
-                   const matrix_t& x) const
+                   const matrix_t& molfrac) const
 {
     auto type = gerg_aga_thermo_params_t::Types::Gas_phase;
     
     auto eos =  shimmer_gerg::gerg_functions::thermodynamic_properties(
                         temperature,
                         pressure, //[Pa]
-                        x,
+                        molfrac,
                         type,
                         tolerance_);
     return eos.Z;
@@ -360,8 +360,8 @@ gerg_aga::speed_of_sound(linearized_fluid_solver *lfs) const
     T_nodes.setConstant(lfs->temperature());
     T_pipes.setConstant(lfs->temperature());
 
-    vector_t Z_nodes = compute_Z( T_nodes, lfs->pressure_nodes(), lfs->x_nodes());
-    vector_t Z_pipes = compute_Z( T_pipes, lfs->pressure_pipes(), lfs->x_pipes());
+    vector_t Z_nodes = compute_Z( T_nodes, lfs->pressure_nodes(), lfs->molfrac_nodes());
+    vector_t Z_pipes = compute_Z( T_pipes, lfs->pressure_pipes(), lfs->molfrac_pipes());
     vector_t R_nodes = compute_R(mm_nodes_); 
     vector_t R_pipes = compute_R(mm_pipes_); 
 
@@ -373,49 +373,49 @@ gerg_aga::speed_of_sound(linearized_fluid_solver *lfs) const
 
 
 void
-gerg_aga::mixture_molar_mass(const matrix_t& x_nodes, const matrix_t& x_pipes)
+gerg_aga::mixture_molar_mass(const matrix_t& molfrac_nodes, const matrix_t& molfrac_pipes)
 {
-    mm_nodes_ = vector_t::Zero(x_nodes.rows()); 
-    mm_pipes_ = vector_t::Zero(x_pipes.rows()); 
+    mm_nodes_ = vector_t::Zero(molfrac_nodes.rows()); 
+    mm_pipes_ = vector_t::Zero(molfrac_pipes.rows()); 
 
-    shimmer_gerg::gerg_functions::molar_mass(x_nodes, tolerance_, mm_nodes_);
-    shimmer_gerg::gerg_functions::molar_mass(x_pipes, tolerance_, mm_pipes_);
+    shimmer_gerg::gerg_functions::molar_mass(molfrac_nodes, tolerance_, mm_nodes_);
+    shimmer_gerg::gerg_functions::molar_mass(molfrac_pipes, tolerance_, mm_pipes_);
 }
 
 
 std::pair<matrix_t, matrix_t>
-gerg_aga::molarfrac_2_massfrac(const infrastructure_graph& graph, const incidence& inc)
+gerg_aga::molfrac_2_massfrac(const infrastructure_graph& graph, const incidence& inc)
 {
     // Molar frac by comp and by pipe/node
     // Molar frac by comp and by pipe/node
-    matrix_t x_nodes = build_x_nodes(graph);
-    matrix_t x_pipes = inc.matrix_in().transpose() * x_nodes;      
-    mixture_molar_mass(x_nodes, x_pipes);
+    matrix_t molfrac_nodes = build_molfrac_nodes(graph);
+    matrix_t molfrac_pipes = inc.matrix_in().transpose() * molfrac_nodes;      
+    mixture_molar_mass(molfrac_nodes, molfrac_pipes);
 
-    matrix_t y_nodes = matrix_t::Zero(boost::num_vertices(graph), NUM_GASES ); 
-    matrix_t y_pipes = matrix_t::Zero(boost::num_edges(graph), NUM_GASES ); 
+    matrix_t massfrac_nodes = matrix_t::Zero(boost::num_vertices(graph), NUM_GASES ); 
+    matrix_t massfrac_pipes = matrix_t::Zero(boost::num_edges(graph), NUM_GASES ); 
       
     for(size_t iN = 0; iN < boost::num_vertices(graph); iN++)
-        y_nodes.row(iN) =  mm_component.transpose().array() * x_nodes.row(iN).array() / mm_nodes_(iN); 
+        massfrac_nodes.row(iN) =  mm_component.transpose().array() * molfrac_nodes.row(iN).array() / mm_nodes_(iN); 
 
     for(size_t iP = 0; iP < boost::num_edges(graph); iP++)
-        y_pipes.row(iP) =  mm_component.transpose().array() * x_pipes.row(iP).array() / mm_pipes_(iP); 
+        massfrac_pipes.row(iP) =  mm_component.transpose().array() * molfrac_pipes.row(iP).array() / mm_pipes_(iP); 
 
-    return std::make_pair(y_nodes, y_pipes);
+    return std::make_pair(massfrac_nodes, massfrac_pipes);
 }
 
 std::pair<matrix_t, matrix_t> 
-gerg_aga::massfrac_2_molarfrac(const matrix_t&y_nodes, const matrix_t&y_pipes)
+gerg_aga::massfrac_2_molfrac(const matrix_t&massfrac_nodes, const matrix_t&massfrac_pipes)
 {
-    matrix_t x_nodes = matrix_t::Zero(y_nodes.rows(), NUM_GASES ); 
-    matrix_t x_pipes = matrix_t::Zero(y_pipes.rows(), NUM_GASES ); 
+    matrix_t molfrac_nodes = matrix_t::Zero(massfrac_nodes.rows(), NUM_GASES ); 
+    matrix_t molfrac_pipes = matrix_t::Zero(massfrac_pipes.rows(), NUM_GASES ); 
 
 
     vector_t rhs = vector_t::Zero(NUM_GASES); 
     // Last row to impose sum x_comp = 1;
     rhs(NUM_GASES-1) = 1.0;
 
-    for(int iN = 0; iN < y_nodes.rows(); iN++)
+    for(int iN = 0; iN < massfrac_nodes.rows(); iN++)
     {
         //diag
         matrix_t A = mm_component.asDiagonal();
@@ -424,17 +424,13 @@ gerg_aga::massfrac_2_molarfrac(const matrix_t&y_nodes, const matrix_t&y_pipes)
         // off diag
         for(int iComp = 0; iComp < NUM_GASES; iComp++)
         {
-            A.row(iComp) -= y_nodes(iN, iComp) * mm_component.transpose();
+            A.row(iComp) -= massfrac_nodes(iN, iComp) * mm_component.transpose();
         }
 
-        x_nodes.row(iN) = A.fullPivLu().solve(rhs).transpose();
-
-        //std::cout << std::setprecision(4) << " * Matrix A-nodes: \n" << A <<  std::endl ;
-        //std::cout << std::setprecision(4) << " * Vector x-nodes: \n" << x_nodes <<  std::endl ;
-
+        molfrac_nodes.row(iN) = A.fullPivLu().solve(rhs).transpose();
     }
     
-    for(int iP = 0; iP < y_pipes.rows(); iP++)
+    for(int iP = 0; iP < massfrac_pipes.rows(); iP++)
     {
         //diag
         matrix_t A = mm_component.asDiagonal();
@@ -443,20 +439,17 @@ gerg_aga::massfrac_2_molarfrac(const matrix_t&y_nodes, const matrix_t&y_pipes)
         // off diag
         for(int iComp = 0; iComp < NUM_GASES; iComp++)
         {
-            A.row(iComp) -= y_nodes(iP, iComp) * mm_component.transpose();
+            A.row(iComp) -= massfrac_nodes(iP, iComp) * mm_component.transpose();
         }
 
-        x_pipes.row(iP) = A.fullPivLu().solve(rhs).transpose();
+        molfrac_pipes.row(iP) = A.fullPivLu().solve(rhs).transpose();
     
-        //std::cout << std::setprecision(4) << " * Matrix A-pipes: \n" << A <<  std::endl ;
-        //std::cout << std::setprecision(4) << " * Vector x-pipes: \n" << x_pipes <<  std::endl ;
-
     }
 
     // Update molar mixture
-    mixture_molar_mass(x_nodes, x_pipes);
+    mixture_molar_mass(molfrac_nodes, molfrac_pipes);
 
-    return std::make_pair(x_nodes, x_pipes);
+    return std::make_pair(molfrac_nodes, molfrac_pipes);
 }
 
 } //end namespace shimmer

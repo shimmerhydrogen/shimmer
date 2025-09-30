@@ -42,7 +42,7 @@ class gerg;
 using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1>; 
 using matrix_t = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>; 
 
-matrix_t build_x_nodes(const infrastructure_graph& g);
+matrix_t build_molfrac_nodes(const infrastructure_graph& g);
 
 class equation_of_state
 {
@@ -63,8 +63,8 @@ public:
 
     virtual void initialization(linearized_fluid_solver *) = 0; 
     virtual void mixture_molar_mass(const matrix_t&, const matrix_t&) = 0;
-    virtual std::pair<matrix_t, matrix_t> molarfrac_2_massfrac(const infrastructure_graph&, const incidence&) = 0;
-    virtual std::pair<matrix_t, matrix_t> massfrac_2_molarfrac(const matrix_t&, const matrix_t&) = 0;
+    virtual std::pair<matrix_t, matrix_t> molfrac_2_massfrac(const infrastructure_graph&, const incidence&) = 0;
+    virtual std::pair<matrix_t, matrix_t> massfrac_2_molfrac(const matrix_t&, const matrix_t&) = 0;
 
     virtual std::pair<vector_t, vector_t>
     speed_of_sound(linearized_fluid_solver *) const = 0;
@@ -85,9 +85,9 @@ public:
     void initialization(linearized_fluid_solver *lfs); 
     void mixture_molar_mass(const matrix_t&, const matrix_t&);
     std::pair<matrix_t, matrix_t>
-    molarfrac_2_massfrac(const infrastructure_graph&, const incidence&);
+    molfrac_2_massfrac(const infrastructure_graph&, const incidence&);
     std::pair<matrix_t, matrix_t> 
-    massfrac_2_molarfrac(const matrix_t&, const matrix_t&);
+    massfrac_2_molfrac(const matrix_t&, const matrix_t&);
     vector_t
     compute_Z(double temperature, const vector_t& pressure) const;
 
@@ -132,9 +132,9 @@ public:
     void initialization(linearized_fluid_solver *lfs); 
     void mixture_molar_mass(const matrix_t& x_nodes, const matrix_t& x_pipes);
     std::pair<matrix_t, matrix_t>
-    molarfrac_2_massfrac(const infrastructure_graph&, const incidence&);
+    molfrac_2_massfrac(const infrastructure_graph&, const incidence&);
     std::pair<matrix_t, matrix_t> 
-    massfrac_2_molarfrac(const matrix_t&, const matrix_t&);
+    massfrac_2_molfrac(const matrix_t&, const matrix_t&);
 
     vector_t
     compute_Z(const double  & temperature,
@@ -166,9 +166,9 @@ public:
     void initialization(linearized_fluid_solver *lfs); 
     void mixture_molar_mass(const matrix_t& x_nodes, const matrix_t& x_pipes);
     std::pair<matrix_t, matrix_t> 
-    molarfrac_2_massfrac(const infrastructure_graph&, const incidence&);
+    molfrac_2_massfrac(const infrastructure_graph&, const incidence&);
     std::pair<matrix_t, matrix_t> 
-    massfrac_2_molarfrac(const matrix_t&, const matrix_t&);
+    massfrac_2_molfrac(const matrix_t&, const matrix_t&);
 
     vector_t
     compute_Z(const vector_t& temperature,

@@ -50,8 +50,8 @@ linearized_fluid_solver::linearized_fluid_solver(
     a_p_ = 0.0;
 
     // Here the info about the composition is taken from the graph! 
-    x_nodes_ = build_x_nodes(graph_);
-    x_pipes_ = inc_.matrix_in().transpose() * x_nodes_;
+    molfrac_nodes_ = build_molfrac_nodes(graph_);
+    molfrac_pipes_ = inc_.matrix_in().transpose() * molfrac_nodes_;
 }
 
 

@@ -56,8 +56,8 @@ class linearized_fluid_solver
     vector_t c2_nodes_;
     vector_t c2_pipes_;
 
-    matrix_t x_nodes_;
-    matrix_t x_pipes_;
+    matrix_t molfrac_nodes_;
+    matrix_t molfrac_pipes_;
     vector_t press_pipes_;
     vector_t mu_;
 
@@ -133,8 +133,8 @@ public:
     inline double temperature() const {return Tm_;};
     inline vector_t pressure_nodes() const {return var_.pressure;};
     inline vector_t pressure_pipes() const {return press_pipes_;};
-    inline matrix_t x_nodes() const {return x_nodes_;};
-    inline matrix_t x_pipes() const {return x_pipes_;};
+    inline matrix_t molfrac_nodes() const {return molfrac_nodes_;};
+    inline matrix_t molfrac_pipes() const {return molfrac_pipes_;};
     const incidence& get_incidence() const {return inc_;};
     inline const variable& get_variable() const{return var_;}
 };

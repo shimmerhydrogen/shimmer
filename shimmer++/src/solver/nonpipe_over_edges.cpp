@@ -503,8 +503,8 @@ compressor::compute_beta(double p_in,
     bool pass_pout_min = pout_min_constr.check(p_out);
     bool pass_pout_max = pout_max_constr.check(p_out);
 
-    bool pout_min = pout_min_constr.value();
-    bool pout_max = pout_max_constr.value();
+    double pout_min = pout_min_constr.value();
+    double pout_max = pout_max_constr.value();
 
     if (!pass_pout_min)
         p_out = pout_min;

@@ -670,6 +670,11 @@ make_valve(const std::vector<bool>& activate_history,
 template<typename T>
 T reldiff(const T& a, const T& b)
 {
+    T norm = std::max(std::abs(a), std::abs(b));
+
+    if(norm < std::numeric_limits<T>::epsilon())
+        return 0.;
+
     return std::abs(a-b)/std::abs(b);
 }
 

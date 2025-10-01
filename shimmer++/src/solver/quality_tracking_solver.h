@@ -45,6 +45,7 @@ using matrix_t = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>;
 template<typename EQ_OF_STATE, int viscosity_type>
 class qt_solver
 {
+    bool refine_;
     double temperature_;
 
     matrix_t massfrac_guess_;
@@ -65,8 +66,9 @@ class qt_solver
 
 public:
     qt_solver(infrastructure& infrain,
-              double Tm):
-              infra_(infrain), temperature_(Tm)
+              double Tm,
+              const bool& refine):
+              infra_(infrain), temperature_(Tm), refine_(refine)
     {
         inc_msh_ = incidence(infra_.graph);
         area_msh_pipes_ = area(infra_.graph);
@@ -277,10 +279,8 @@ public:
         }
 #if 0     
     // if NODE_ACCUMULATES
-        // 1.3 Time term
-        /*
-        // V/c2 (dpdt) => I would rather do  V*(d(p/c2)/dt)  
-       */
+        // 1.4 Time term
+        // V/c2 (dpdt) => I would rather do  V*(d(p/c2)/dt) thus I would need also c2 in t^{n} 
 
         vector_t phi = vector_t::Zero(infra_.num_original_stations);
 
@@ -298,17 +298,7 @@ public:
                 break;
 
         }
-
-        #if 0
-        Problems:
-        (A) c2:  out of reach here since it depends on the fluid solver, which is out of scope
-            => Options: a. save a lfs/eos when iteration are finished, or save c2
-        (B) V/c2 (dpdt) => I would rather do  V*(d(p/c2)/dt) thus I would need also c2 in t^{n} 
-        (C) global info: num_nodes/num_pipe of the original network are needed.
-        #endif
-//*/
 #endif
-
         // 3. 4 Solve Y^n+1            
         matrix_t lhs_inv =  lhs_nodes.cwiseInverse().asDiagonal();
 
@@ -504,9 +494,12 @@ public:
                          var_msh_, 
                          massfrac_now_nodes, massfrac_next_nodes);
 
-            // 3. 2. Continuity at fictitious nodes 
-            qt_fictitious_nodes( it, dt, var_msh_, 
-                             massfrac_now_nodes, massfrac_next_nodes);
+            //if(refine_)
+            {
+                // 3. 2. Continuity at fictitious nodes 
+                qt_fictitious_nodes( it, dt, var_msh_, 
+                                     massfrac_now_nodes, massfrac_next_nodes);
+            }
 
             massfrac_now_nodes = massfrac_next_nodes;
             

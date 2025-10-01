@@ -132,7 +132,7 @@ int launch_solver_qt(const config& cfg)
     using solver_t = shimmer::qt_solver<shimmer::gerg_aga,
         shimmer::viscosity_type::Constant>;
 
-    solver_t qt(infra, cfg.temperature);
+    solver_t qt(infra, cfg.temperature, cfg.refine);
     qt.initialization(guess, cfg.dt_std, cfg.tol_std);  
     qt.advance(cfg.dt, cfg.steps, cfg.tol);
     auto sol_full  = qt.solution_full();

@@ -668,14 +668,9 @@ make_valve(const std::vector<bool>& activate_history,
 }
 
 template<typename T>
-T reldiff(const T& a, const T& b)
+T releq(const T& a, const T& b, const T& tol)
 {
-    T norm = std::max(std::abs(a), std::abs(b));
-
-    if(norm < std::numeric_limits<T>::epsilon())
-        return 0.;
-
-    return std::abs(a-b)/std::abs(b);
+    return std::abs(a-b) <= tol*std::max(std::abs(a), std::abs(b));
 }
 
 compressor
@@ -728,7 +723,7 @@ make_compressor(size_t num_steps,
             case compressor_mode::ON_IPRESS:
             {
                 std::cout << "Adding mode ON ................ PRESS_IN \n";
-                if ( reldiff(model_value, user_limits[P_IN_MIN].second) > 0.001 ) {
+                if ( not releq(model_value, user_limits[P_IN_MIN].second, 0.001) ) { /* max 0.1% difference */
                     throw std::invalid_argument("Minimun pressure for control != to user limits pressure_in_min");
                 }
 
@@ -739,7 +734,7 @@ make_compressor(size_t num_steps,
             case compressor_mode::ON_OPRESS:
             {
                 std::cout << "Adding mode ON ................ PRESS_OUT \n";
-                if ( reldiff(model_value, user_limits[P_OUT_MAX].second) > 0.001 ) {
+                if ( not releq(model_value, user_limits[P_OUT_MAX].second, 0.001) ) { /* max 0.1% difference */
                     throw std::invalid_argument("Maximun pressure for control != to user limits pressure_out_max");
                 }
                 auto c_press_out = control::make_pressure_out_mode(user_limits[P_OUT_MAX].second);

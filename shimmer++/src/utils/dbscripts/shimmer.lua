@@ -7,7 +7,7 @@ shimmer = {};
 
 function shimmer.create_ndf(filename)
     print(filename);
-    local file = assert(io.open("../../../sqlite/shimmer.sql", "r"));
+    local file = assert(io.open("../../../../sqlite/shimmer.sql", "r"));
     if (not file) then
         return nil;
     end

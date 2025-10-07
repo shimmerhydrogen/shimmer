@@ -1140,7 +1140,7 @@ discretize_pipes(const infrastructure& infrain,
             edge_properties newnp;
             newnp.type = pipe_type::PIPE;
             newnp.branch_num = branch_num;
-            newnp.length = pipe.length;
+            newnp.length = pipe.fraglen;
             newnp.diameter = pipe.diameter;
             newnp.friction_factor = pipe.friction_factor;
             newnp.name = out_setting.name;

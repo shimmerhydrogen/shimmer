@@ -47,6 +47,7 @@ class qt_solver
 {
     bool refine_;
     double temperature_;
+    int MAX_ITERS_STEADY_;
 
     matrix_t massfrac_guess_;
 
@@ -70,6 +71,7 @@ public:
               const bool& refine):
               infra_(infrain), temperature_(Tm), refine_(refine)
     {
+        MAX_ITERS_STEADY_ = 500;
         inc_msh_ = incidence(infra_.graph);
         area_msh_pipes_ = area(infra_.graph);
     }
@@ -277,28 +279,29 @@ public:
                     throw std::invalid_argument("QT Error: station is not valid.");
             }
         }
-#if 0     
-    // if NODE_ACCUMULATES
+        
+        if(unsteady)
+        {
+        // if NODE_ACCUMULATES
         // 1.4 Time term
         // V/c2 (dpdt) => I would rather do  V*(d(p/c2)/dt) thus I would need also c2 in t^{n} 
 
-        vector_t phi = vector_t::Zero(infra_.num_original_stations);
+            vector_t phi = vector_t::Zero(infra_.num_original_stations);
 
-        size_t count = 0; 
-        for(auto itor = v_range.first; itor != v_range.second; itor++)
-        {
-            const auto & node_prop = infra_.graph[*itor]; 
+            size_t count = 0; 
+            for(auto itor = v_range.first; itor != v_range.second; itor++)
+            {
+                const auto & node_prop = infra_.graph[*itor]; 
 
-            auto rho_now = rho_nodes_in_time_(at_step,node_prop.i_snum);
-            auto rho_old = rho_nodes_in_time_(at_step-1,node_prop.i_snum);
-            lhs_nodes(node_prop.i_snum) +=volume(*itor, infra_.graph) * (rho_now - rho_old) / dt;
+                auto rho_now = rho_nodes_in_time_(at_step,node_prop.i_snum);
+                auto rho_old = rho_nodes_in_time_(at_step-1,node_prop.i_snum);
+                lhs_nodes(node_prop.i_snum) +=volume(*itor, infra_.graph) * (rho_now - rho_old) / dt;
 
-            count++;
-            if(count == infra_.num_original_stations)
-                break;
-
+                count++;
+                if(count == infra_.num_original_stations)
+                    break;
+            }
         }
-#endif
         // 3. 4 Solve Y^n+1            
         matrix_t lhs_inv =  lhs_nodes.cwiseInverse().asDiagonal();
 
@@ -494,7 +497,7 @@ public:
                          var_msh_, 
                          massfrac_now_nodes, massfrac_next_nodes);
 
-            //if(refine_)
+            if(refine_)
             {
                 // 3. 2. Continuity at fictitious nodes 
                 qt_fictitious_nodes( it, dt, var_msh_, 

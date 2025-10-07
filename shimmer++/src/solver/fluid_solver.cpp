@@ -317,10 +317,11 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
     eos->initialization(this);
     for(size_t iter = 0; iter <= MAX_ITERS_; iter++)
     {
-        std::cout << "---------------------------------------------------"<< std::endl;
-        std::cout<< "Fluid solver at iteration k ..............."<< iter << std::endl;
-        std::cout << "---------------------------------------------------"<< std::endl;
+        //std::cout << "---------------------------------------------------"<< std::endl;
+        //std::cout<< "Fluid solver at iteration k ..............."<< iter << std::endl;
+        //std::cout << "---------------------------------------------------"<< std::endl;
 
+        std::cout << "\rFluid solver iteration: " << iter << "/" << MAX_ITERS_ << std::flush;
 
         press_pipes_ = average(var_.pressure, inc_);
         auto [c2_nodes, c2_pipes] = eos->speed_of_sound(this);
@@ -362,32 +363,32 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
             exit(1);
         }
 
-        std::ofstream mfs ("inrete_mat_k0.dat");
+        //std::ofstream mfs ("inrete_mat_k0.dat");
 
-        if(!mfs.is_open())
-        {
-            std::cout << "Error openning matrix file" << std::endl;
-            exit(1);
-        }    
+        //if(!mfs.is_open())
+        //{
+        //    std::cout << "Error openning matrix file" << std::endl;
+        //    exit(1);
+        //}    
 
-        size_t count = 0;
-        for (int k = 0; k < LHS.outerSize(); ++k)
-        {
-            for (itor_t it(LHS,k); it; ++it, count++)
-            {
-                mfs << std::setprecision(16) << "" << it.row()
-                            << "  " << it.col() << "  " << it.value()<< std::endl ;
-            }
-        }
+        //size_t count = 0;
+        //for (int k = 0; k < LHS.outerSize(); ++k)
+        //{
+        //    for (itor_t it(LHS,k); it; ++it, count++)
+        //    {
+        //        mfs << std::setprecision(16) << "" << it.row()
+        //                    << "  " << it.col() << "  " << it.value()<< std::endl ;
+        //    }
+        //}
 
-        std::ofstream rfs ("inrete_rhs_k0.dat");
-        if(!rfs.is_open())
-        {
-            std::cout << "Error openning file" << std::endl;
-            exit(1);
-        }    
+        //std::ofstream rfs ("inrete_rhs_k0.dat");
+        //if(!rfs.is_open())
+        //{
+        //    std::cout << "Error openning file" << std::endl;
+        //    exit(1);
+        //}    
 
-        rfs << rhs.transpose() << std::endl;
+        //rfs << rhs.transpose() << std::endl;
         //exit(1);
 
         std::string str_iter =  std::to_string(at_iteration); 
@@ -397,12 +398,12 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
         {
             c2_nodes_ = c2_nodes;
             c2_pipes_ = c2_pipes;
-
+            std::cout << std::endl;
             return true;
         }
 
     }
-
+    std::cout << std::endl;
     std::cout << "Linearized fluid dynamics solver has NOT CONVERGED." << std::endl;
     return false;
 }

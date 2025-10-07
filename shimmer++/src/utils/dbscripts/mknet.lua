@@ -11,7 +11,7 @@ shmr.create_ndf( ndfname );
 -- Open the NDF just created
 local ndf = shmr.open_ndf( ndfname );
 
--- A limit set that we will apply to EXIT stations
+-- A limit set that we will apply to ENTRY stations
 local entry_limits = {};
 entry_limits.Lmax = -300.0;
 entry_limits.Lmin = -10.0;

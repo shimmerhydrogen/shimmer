@@ -161,8 +161,8 @@ public:
 
 
     bool
-    qt_network_nodes(size_t at_step, double dt,  const variable& var_msh,
-                 const  matrix_t& massfrac_now, matrix_t& massfrac_next)
+    qt_network_nodes(bool unsteady, size_t at_step, double dt,  const variable& var_msh,
+                     const  matrix_t& massfrac_now, matrix_t& massfrac_next)
     {
         vector_t lhs_nodes = vector_t::Zero(infra_.num_original_stations);
         matrix_t rhs_nodes = matrix_t::Zero(infra_.num_original_stations, NUM_GASES );
@@ -312,8 +312,9 @@ public:
 
 
     void
-    qt_fictitious_nodes(size_t it, double dt, const variable& var_msh,
-                    const matrix_t& massfrac_now, matrix_t& massfrac_next)
+    qt_fictitious_nodes(double dt, const variable& var_msh,
+                    const matrix_t& massfrac_now, matrix_t& massfrac_next,
+                    const vector_t& rho_msh_previous,const vector_t & rho_nodes_previous)
     {
         /* 
             Solve: 
@@ -334,13 +335,13 @@ public:
             ///1. Variables at fictitious nodes (primal mesh)/pipes (dual mesh) of the current pipe 
              
             matrix_t flux_nodes= massfracflux_fictitious_nodes(pd, var_msh,
-                                                              rho_msh_in_time_.row(it-1),
+                                                              rho_msh_previous,
                                                               massfrac_now);
             vector_t V_pipes   = velocity_fictitious_pipes(pd, var_msh, 
-                                                           rho_msh_in_time_.row(it-1),
+                                                           rho_msh_previous,
                                                            area_msh_pipes_);
             vector_t rho_nodes = density_fictitious_nodes(pd,    
-                                                          rho_nodes_in_time_.row(it-1));
+                                                          rho_nodes_previous);
             matrix_t q_nodes = matrix_t::Zero(num_loc_nodes, NUM_GASES); 
 
             for (int iN = 0; iN < num_loc_nodes; iN++)
@@ -441,6 +442,7 @@ public:
             size_t num_steps,            
             double tol)
     {
+        bool unsteady = true;
         size_t MAX_CONSTRAINT_ITER = 10;
 
         auto num_nodes = num_vertices(infra_.graph); 
@@ -493,15 +495,18 @@ public:
             matrix_t rhs_nodes = matrix_t::Zero(infra_.num_original_pipes, NUM_GASES); 
 
             // 3. 1. Continuity at network nodes 
-            qt_network_nodes(it, dt, 
+            qt_network_nodes(unsteady, it, dt, 
                          var_msh_, 
                          massfrac_now_nodes, massfrac_next_nodes);
 
             if(refine_)
             {
                 // 3. 2. Continuity at fictitious nodes 
-                qt_fictitious_nodes( it, dt, var_msh_, 
-                                     massfrac_now_nodes, massfrac_next_nodes);
+                qt_fictitious_nodes( dt, var_msh_, 
+                                     massfrac_now_nodes, 
+                                     massfrac_next_nodes,
+                                     rho_msh_in_time_.row(it-1),
+                                     rho_nodes_in_time_.row(it-1) );
             }
 
             massfrac_now_nodes = massfrac_next_nodes;

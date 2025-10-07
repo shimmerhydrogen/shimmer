@@ -6,7 +6,6 @@ local sql = require 'lsqlite3';
 shimmer = {};
 
 function shimmer.create_ndf(filename)
-    print(filename);
     local file = assert(io.open("../../../../sqlite/shimmer.sql", "r"));
     if (not file) then
         return nil;

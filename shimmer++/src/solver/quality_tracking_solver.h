@@ -148,10 +148,7 @@ public:
         //Renormalize
         for (int iRow = 0; iRow < mat.rows(); iRow++)
         {
-            double sum = (mat.row(iRow)).sum();
-
-            if(std::abs(sum - 1.0) > TOL_MASSFRAC_)
-                std::cerr<< "ERROR:QT: mass fractions sum are far from 1. " <<std::endl;                
+            double sum = (mat.row(iRow)).sum();            
 
             if(std::abs(sum) < TOL_MASSFRAC_)
                 throw std::invalid_argument("ERROR:QT: mass fractions sum is close to zero ");                
@@ -222,8 +219,10 @@ public:
     qt_network_nodes(bool unsteady, size_t at_step, double dt,  const variable& var_msh,
                      const  matrix_t& massfrac_now, matrix_t& massfrac_next)
     {
-        vector_t lhs_nodes = vector_t::Zero(infra_.num_original_stations);
-        matrix_t rhs_nodes = matrix_t::Zero(infra_.num_original_stations, NUM_GASES );
+        int num_nodes = (unsteady)? infra_.num_original_stations : boost::num_vertices(infra_.graph);
+
+        vector_t lhs_nodes = vector_t::Zero(num_nodes);
+        matrix_t rhs_nodes = matrix_t::Zero(num_nodes, NUM_GASES );
 
         // Mass conservation for network nodes
         auto inc_mat = inc_msh_.matrix();
@@ -235,7 +234,7 @@ public:
 
         // Here, local pipe quantities are needed for network(original) nodes
         auto inc_smat = inc_msh_.matrix();
-        for(size_t iN = 0; iN < infra_.num_original_stations; iN++)
+        for(size_t iN = 0; iN < num_nodes; iN++)
         {
             Eigen::SparseVector<double> inc_node_i = inc_msh_.matrix().row(iN);
             
@@ -363,9 +362,9 @@ public:
         // 3. 4 Solve Y^n+1            
         matrix_t lhs_inv =  lhs_nodes.cwiseInverse().asDiagonal();
 
-        massfrac_next.topRows( infra_.num_original_stations) = lhs_inv * rhs_nodes; 
+        massfrac_next.topRows( num_nodes) = lhs_inv * rhs_nodes; 
         
-        clip_and_renormalize(massfrac_next.topRows( infra_.num_original_stations));
+        clip_and_renormalize(massfrac_next.topRows( num_nodes));
         
         return true;
     }
@@ -409,7 +408,7 @@ public:
                 auto idx = pd.nodelist[iN];
                 q_nodes.row(iN) = rho_nodes[iN] * massfrac_now.row(idx);
             }
-
+            
             // 2. Solve dq/dt + d(vq)/dx = 0
             for (int iN = 1; iN < num_loc_nodes-1; iN++)
             {
@@ -501,6 +500,83 @@ public:
         var_msh_guess_ = var_msh_;
     }
 
+
+    bool
+    initialization_steady( const variable& var_guess,
+                    double dt,
+                    double tolerance)
+    {
+        bool unsteady = false;
+        bool converged = false; 
+
+        EQ_OF_STATE eos;    
+        auto [massfrac_nodes, massfrac_pipes] =  eos.molfrac_2_massfrac(infra_.graph, inc_msh_);
+        // Mass fraction by comp, needs total molar mass. So molar mass has to be updated any time molfrac changes!
+
+        // Viscosity changes with molfrac (stored by comp in the graph).
+        auto mu = viscosity<viscosity_type>(temperature_, infra_.graph);
+
+        size_t iter = 0;
+        auto var_time = variable(vector_t::Zero(num_vertices(infra_.graph)),
+                                 vector_t::Zero(num_edges(infra_.graph)),
+                                 vector_t::Zero(num_vertices(infra_.graph)));
+
+        pipe_stations_activation(iter, var_time);
+
+        variable var_previous = var_guess;
+        variable var_current;
+
+        double t = 0;
+        for(size_t it = 0; it < MAX_ITERS_STEADY_; it++)
+        {
+            // 1. Update molar masses (mm) inside eos and molar frac inside graph
+            auto [molfrac_nodes, molfrac_pipes] =  eos.massfrac_2_molfrac(massfrac_nodes, massfrac_pipes);
+
+            auto index = get(boost::vertex_index, infra_.graph);
+            for (auto vp = vertices(infra_.graph); vp.first != vp.second; ++vp.first) {
+                auto idx = index[*vp.first]; 
+                infra_.graph[idx].gas_mixture = molfrac_nodes.row(idx).transpose();
+            }
+
+            linearized_fluid_solver lfs(iter, unsteady, tolerance, dt, temperature_, mu, inc_msh_, infra_.graph);
+            lfs.run(area_msh_pipes_, var_previous, var_time, &eos);
+            var_current = lfs.get_variable();
+
+            // 3. 1. Continuity at network nodes and fictitious nodes
+            matrix_t massfrac_next_nodes = matrix_t::Zero(boost::num_vertices(infra_.graph) , NUM_GASES);
+
+            qt_network_nodes(unsteady, it, dt, 
+                         var_current, 
+                         massfrac_nodes, massfrac_next_nodes);
+
+
+            auto error_pressure = (var_previous.pressure - var_current.pressure).norm(); 
+            auto error_flux     = (var_previous.flux - var_current.flux).norm(); 
+            auto error_massfrac = (massfrac_nodes - massfrac_next_nodes).norm();
+
+            auto norm_pressure = (var_previous.pressure).norm(); 
+            auto norm_flux   = (var_current.flux).norm(); 
+            auto norm_massfrac = massfrac_nodes.norm();
+            auto residual =  std::max(std::max(error_flux, error_pressure), error_massfrac) 
+                               / std::max(std::max(norm_flux, norm_pressure), norm_massfrac); 
+
+            if(residual < tolerance)
+            {
+                var_msh_guess_ = lfs.get_variable();
+                massfrac_guess_ = massfrac_nodes;
+                rho_msh_ = eos.density(&lfs);
+                rho_nodes_ = eos.density_nodes(&lfs);
+
+                return true;
+            }
+            massfrac_nodes = massfrac_next_nodes;
+            massfrac_pipes = inc_msh_.matrix_in().transpose() * massfrac_nodes;    
+            var_previous = var_current;
+        }
+
+        std::cout << "QUALITY TRACKING - STEADY has NOT CONVERGED." << std::endl;
+        return SHIMMER_GENERIC_FAILURE;
+    }
 
     void
     advance(double dt,

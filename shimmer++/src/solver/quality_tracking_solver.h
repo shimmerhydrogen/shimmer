@@ -48,6 +48,7 @@ class qt_solver
     bool refine_;
     double temperature_;
     int MAX_ITERS_STEADY_;
+    int TOL_MASSFRAC_;
 
     matrix_t massfrac_guess_;
 
@@ -72,6 +73,7 @@ public:
               infra_(infrain), temperature_(Tm), refine_(refine)
     {
         MAX_ITERS_STEADY_ = 500;
+        TOL_MASSFRAC_ = 1.e-4; 
         inc_msh_ = incidence(infra_.graph);
         area_msh_pipes_ = area(infra_.graph);
     }
@@ -103,6 +105,62 @@ public:
         }
     }
 
+
+    template<typename Derived>
+    void 
+    clip_and_renormalize(Eigen::MatrixBase<Derived>&& mat)
+    {
+        if(mat.cols() != NUM_GASES)
+            throw std::invalid_argument("ERROR:QT: block to clip and renormalized must have #cols = NUM_GASES.");
+/*
+        mat.unaryExpr([&](double val){
+
+            if(std::abs(val) < TOL_MASSFRAC_)  
+            {
+                exit(2); 
+                return 0.;
+            }
+            else if(val < 0.) 
+            {
+                std::cerr << "ERROR:QT: Negative mass fractions" << std::endl;
+                exit(1);  
+            }
+            return val;
+        });
+*/
+        for (int iRow = 0; iRow < mat.rows(); iRow++)
+        {
+            for (int iCol = 0; iCol < mat.cols(); iCol++)
+            {
+                if(std::abs(mat(iRow, iCol)) < TOL_MASSFRAC_)  
+                    mat(iRow, iCol) = 0; 
+                else if(mat(iRow, iCol) < 0.) 
+                {
+                    std::cerr<< mat(iRow, iCol) << std::endl;
+                    throw std::invalid_argument("ERROR:QT: Negative mass fractions"); 
+                }
+                else  
+                    continue; 
+            }
+        }
+
+
+        //Renormalize
+        for (int iRow = 0; iRow < mat.rows(); iRow++)
+        {
+            double sum = (mat.row(iRow)).sum();
+
+            if(std::abs(sum - 1.0) > TOL_MASSFRAC_)
+                std::cerr<< "ERROR:QT: mass fractions sum are far from 1. " <<std::endl;                
+
+            if(std::abs(sum) < TOL_MASSFRAC_)
+                throw std::invalid_argument("ERROR:QT: mass fractions sum is close to zero ");                
+
+            mat.row(iRow) /= sum;
+        }
+
+        return;
+    }
 
     void
     set_initialization( const variable& var)
@@ -306,7 +364,9 @@ public:
         matrix_t lhs_inv =  lhs_nodes.cwiseInverse().asDiagonal();
 
         massfrac_next.topRows( infra_.num_original_stations) = lhs_inv * rhs_nodes; 
-
+        
+        clip_and_renormalize(massfrac_next.topRows( infra_.num_original_stations));
+        
         return true;
     }
 
@@ -369,6 +429,9 @@ public:
                 // WARNING: massfrac_next = Qnext / rho_next...but I dont have rho_next 
                 massfrac_next.row(idx) = q_next_i / rho_nodes[iN]; 
 
+                clip_and_renormalize(massfrac_next.row(idx));
+
+                #if 0 
                 auto sum = 1.0 - massfrac_next.block(idx,0,1, NUM_GASES-1).sum(); 
 
                 if(sum < -1.e-2)
@@ -381,6 +444,8 @@ public:
                     sum = 0.;    
 
                 massfrac_next(idx, NUM_GASES - 1) = sum;
+                #endif
+
             }
 
 
@@ -493,6 +558,7 @@ public:
             //matrix_t lhs_nodes = vector_t::Zero(infra_.num_original_stations, NUM_GASES); 
             vector_t lhs_nodes = vector_t::Zero(infra_.num_original_stations); 
             matrix_t rhs_nodes = matrix_t::Zero(infra_.num_original_pipes, NUM_GASES); 
+            massfrac_next_nodes = matrix_t::Zero(num_nodes, NUM_GASES);
 
             // 3. 1. Continuity at network nodes 
             qt_network_nodes(unsteady, it, dt, 

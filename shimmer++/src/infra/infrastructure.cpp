@@ -1335,11 +1335,25 @@ int initdb(const std::string& db_filename)
     char buf[BUFSIZE];
     FILE *fh;
 
-    if ( (fh = fopen("../../sqlite/shimmer.sql", "r")) )
-        goto foundok;
+    const char *schema_paths[] = {
+        "../../sqlite/shimmer.sql",
+        "../sqlite/shimmer.sql",
+        "sqlite/shimmer.sql",
+        "shimmer.sql",
+        nullptr
+    };
 
-    if ( (fh = fopen("shimmer.sql", "r")) )
+    const char *schema_path = schema_paths[0];
+    while (schema_path) {
+        if ( (fh = fopen(schema_path, "r")) ) {
+            goto foundok;
+        }
+    }
+
+    schema_path = getenv("SHIMMER_SCHEMA_FILE");
+    if ( schema_path and (fh = fopen(schema_path, "r")) ) {
         goto foundok;
+    }
 
     std::cerr << "Can't find database schema file. ";
     std::cerr << "Can't proceed." << std::endl;

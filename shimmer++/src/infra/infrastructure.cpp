@@ -1352,8 +1352,9 @@ int initdb(const std::string& db_filename)
     }
 
     schema_path = getenv("SHIMMER_SCHEMA_FILE");
-    if ( schema_path and (fh = fopen(schema_path, "r")) ) {
-
+    if ( schema_path and (fh = fopen(schema_path, "r")) ){
+        goto foundok;
+    }
 
     std::cerr << "Can't find database schema file. ";
     std::cerr << "Can't proceed." << std::endl;

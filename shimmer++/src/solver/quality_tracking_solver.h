@@ -120,22 +120,7 @@ public:
     {
         if(mat.cols() != NUM_GASES)
             throw std::invalid_argument("ERROR:QT: block to clip and renormalized must have #cols = NUM_GASES.");
-/*
-        mat.unaryExpr([&](double val){
 
-            if(std::abs(val) < TOL_MASSFRAC_)  
-            {
-                exit(2); 
-                return 0.;
-            }
-            else if(val < 0.) 
-            {
-                std::cerr << "ERROR:QT: Negative mass fractions" << std::endl;
-                exit(1);  
-            }
-            return val;
-        });
-*/
         for (int iRow = 0; iRow < mat.rows(); iRow++)
         {
             for (int iCol = 0; iCol < mat.cols(); iCol++)
@@ -479,7 +464,6 @@ public:
             std::cout << " Iteration CONSTRAINTS it ..............."<<ic<< " ... at time "<< it << std::endl;
             std::cout<<"****************************************************************"<< std::endl;
 
-            // To be finished when it is clear how molfrac changes and modifies mu.
             auto mu = viscosity<viscosity_type>(temperature_, infra_.graph);
 
             linearized_fluid_solver lfs(it, unsteady, tol, dt, temperature_, mu, inc_all_, infra_.graph);
@@ -756,8 +740,6 @@ public:
     matrix_t 
     velocity_evolution() const
     {
-        // This one cannot be called when doing only steady state 
-
         auto num_nodes = num_vertices(infra_.graph); 
         auto num_pipes = num_edges(infra_.graph); 
         /// vel [m/s] velocity of the gas within pipes.

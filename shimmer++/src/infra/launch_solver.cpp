@@ -147,9 +147,6 @@ int launch_solver_qt(const config& cfg)
     auto x_full  = qt.molar_fractions_full();
 
     // Post-processing
-    std::cout << sol_full << std::endl;
-    std::cout << sol_full.rows() << " " << sol_full.cols() << std::endl;
-
     std::string outfile = cfg.database;
     if (cfg.refine) {
         fs::path path(cfg.database);

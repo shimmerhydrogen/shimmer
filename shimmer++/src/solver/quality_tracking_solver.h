@@ -506,7 +506,7 @@ public:
         }
 
         if(ic == MAX_CONSTRAINT_ITER)
-            std::cout << "ERROR: FAILURE to apply HARD constraints. Max number of iterations has been reached.";
+            std::cerr << "ERROR: FAILURE to apply HARD constraints. Max number of iterations has been reached.";
 
         var_msh_in_time_.row(it) =  var_msh_.make_vector();
         rho_msh_in_time_.row(it) =  rho_msh_;
@@ -609,7 +609,7 @@ public:
         matrix_t massfrac_now_nodes = massfrac_guess_;
         matrix_t massfrac_next_nodes = matrix_t::Zero(num_nodes, NUM_GASES);
 
-        std::cout << std::setprecision(4 )<<" * massfrac_now :" << massfrac_guess_ << std::endl;
+        std::cout << std::setprecision(4 )<<" * massfrac_now : \n" << massfrac_guess_ << std::endl;
 
         molfrac_in_time_[0] = build_molfrac_nodes(infra_.graph);
 
@@ -621,8 +621,6 @@ public:
             std::cout<<"========================================================"<< std::endl;
             std::cout << "Solving at time ...."<< it <<std::endl;
             std::cout<<"========================================================"<< std::endl;
-
-            std::cout << std::setprecision(16 ) <<  "rho = [" << rho_nodes_in_time_.row(it-1) << "]; "<<std::endl;
 
             // 1. Update molar masses (mm) inside eos and molar frac inside graph
             matrix_t massfrac_now_pipes = inc_msh_.matrix_in().transpose() * massfrac_now_nodes;    
@@ -659,11 +657,8 @@ public:
             }
 
             massfrac_now_nodes = massfrac_next_nodes;
-            
-            std::cout << std::setprecision(4 )<<" * massfrac_now :" << massfrac_now_nodes << std::endl;
-
             molfrac_in_time_[it] = build_molfrac_nodes(infra_.graph); 
-
+            std::cout << std::setprecision(4 )<<" * massfrac_now : \n" << massfrac_now_nodes << std::endl;
         }
         return;
     }

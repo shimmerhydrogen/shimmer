@@ -128,7 +128,7 @@ public:
         linearized_fluid_solver lfs(iter, unsteady, tolerance, dt, temperature_, mu, inc_, graph_);
         lfs.run(area_pipes_, var_guess, var_time, &eos);
         var_guess_ = lfs.get_variable();
-        rho_ = eos.density(&lfs);
+        rho_ = eos.density_pipes(&lfs);
     }
 
 
@@ -201,7 +201,7 @@ public:
                 {
                     std::cout<< "++++++++++++++++++**** MODIFIED VARIABLE ****++++++++++++++++++++++ " << std::endl;
                     var_ =  lfs.get_variable();
-                    rho_ =  eos.density(&lfs);  
+                    rho_ =  eos.density_pipes(&lfs);  
 
                     //std::cout<< "VARIABLE : \n";
                     //std::cout<<  var_.make_vector() << std::endl;

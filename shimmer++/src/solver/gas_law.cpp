@@ -42,8 +42,20 @@ build_molfrac_nodes(const infrastructure_graph& g)
 }
 
 
-vector_t 
+/*
+std::pair<vector_t, vector_t>  
 equation_of_state::density(linearized_fluid_solver *lfs) const
+{
+    auto [c2_nodes, c2_pipes] = speed_of_sound(lfs);
+
+    return std::make_pair(lfs->pressure_nodes().array() / c2_nodes.array(),
+                          lfs->pressure_pipes().array() / c2_pipes.array());
+}
+*/
+
+
+vector_t 
+equation_of_state::density_pipes(linearized_fluid_solver *lfs) const
 {
     auto [c2_nodes, c2_pipes] = speed_of_sound(lfs);
 

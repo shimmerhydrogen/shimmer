@@ -53,8 +53,6 @@ class qt_solver
 
     matrix_t massfrac_guess_;
 
-    vector_t rho_all_pipes_;
-    vector_t rho_all_nodes_;
     variable var_all_;
     variable var_all_guess_;
     vector_t area_all_pipes_;
@@ -195,13 +193,11 @@ public:
         lfs.run(area_all_pipes_, var_guess, var_time, &eos);
         var_all_guess_ = lfs.get_variable();
         var_all_   = var_all_guess_;
-        rho_all_pipes_  = eos.density(&lfs);
-        rho_all_nodes_  = eos.density_nodes(&lfs);
         massfrac_guess_ = massfrac_nodes_;
 
         var_all_evol_.row(0) =  var_all_.make_vector();
-        rho_all_pipes_evol_.row(0) =  rho_all_pipes_.transpose();
-        rho_all_nodes_evol_.row(0) =  rho_all_nodes_.transpose();
+        rho_all_pipes_evol_.row(0) =  eos.density_pipes(&lfs);
+        rho_all_nodes_evol_.row(0) =  eos.density_nodes(&lfs);
     }
 
     
@@ -496,21 +492,18 @@ public:
             {
                 std::cout<< "++++++++++++++++++**** MODIFIED VARIABLE ****++++++++++++++++++++++ " << std::endl;
                 var_all_ =  lfs.get_variable();
-                rho_all_pipes_ =  eos.density(&lfs);  // needed for the computation of the velocity
-                rho_all_nodes_ =  eos.density_nodes(&lfs);  // needed for the mass balance on network nodes 
+                var_all_guess_ = var_all_;
 
-                break;
+                var_all_evol_.row(it) =  var_all_.make_vector();
+                rho_all_pipes_evol_.row(it) =  eos.density_pipes(&lfs); // needed for the computation of the velocity
+                rho_all_nodes_evol_.row(it) =  eos.density_nodes(&lfs);// needed for the mass balance on network nodes
+
+                return;
             }
         }
 
-        if(ic == MAX_CONSTRAINT_ITER)
-            std::cerr << "ERROR: FAILURE to apply HARD constraints. Max number of iterations has been reached.";
-
-        var_all_evol_.row(it) =  var_all_.make_vector();
-        rho_all_pipes_evol_.row(it) =  rho_all_pipes_;
-        rho_all_nodes_evol_.row(it) =  rho_all_nodes_;
-
-        var_all_guess_ = var_all_;
+        std::cerr << "ERROR: FAILURE to apply HARD constraints. Max number of iterations has been reached.";
+        throw SHIMMER_GENERIC_FAILURE;
     }
 
 
@@ -576,7 +569,7 @@ public:
             if(residual < tolerance)
             {
                 var_all_evol_.row(0) =  lfs.get_variable().make_vector();
-                rho_all_pipes_evol_.row(0) =  eos.density(&lfs);
+                rho_all_pipes_evol_.row(0) =  eos.density_pipes(&lfs);
                 rho_all_nodes_evol_.row(0) =  eos.density_nodes(&lfs);
 
                 massfrac_pipes = inc_all_.matrix_in().transpose() * massfrac_nodes;    

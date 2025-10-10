@@ -99,7 +99,8 @@ struct config {
     double          tol;
     bool            refine;
     double          dx;
-    bool            do_quality_tracking;    
+    bool            quality_tracking;
+    bool            qt_steady;    
     config();
 };
 

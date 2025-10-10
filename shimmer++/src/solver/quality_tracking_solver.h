@@ -47,6 +47,7 @@ class qt_solver
 {
     bool refine_;
     double temperature_;
+    int num_time_steps_; 
     int MAX_ITERS_STEADY_;
     int TOL_MASSFRAC_;
 
@@ -69,13 +70,22 @@ class qt_solver
 public:
     qt_solver(infrastructure& infrain,
               double Tm,
-              const bool& refine):
-              infra_(infrain), temperature_(Tm), refine_(refine)
+              const bool& refine, 
+              int num_steps):
+              infra_(infrain), temperature_(Tm), refine_(refine), num_time_steps_(num_steps)
     {
         MAX_ITERS_STEADY_ = 500;
         TOL_MASSFRAC_ = 1.e-4; 
         inc_msh_ = incidence(infra_.graph);
         area_msh_pipes_ = area(infra_.graph);
+
+        auto num_nodes = num_vertices(infra_.graph); 
+        auto num_pipes = num_edges(infra_.graph); 
+
+        var_msh_in_time_ = matrix_t::Zero(num_steps, num_pipes + 2 * num_nodes);
+        rho_msh_in_time_ = matrix_t::Ones(num_steps, num_pipes);
+        rho_nodes_in_time_ = matrix_t::Ones(num_steps, num_nodes);
+        molfrac_in_time_ = std::vector<matrix_t>(num_steps);
     }
 
 
@@ -193,9 +203,14 @@ public:
         linearized_fluid_solver lfs(iter, unsteady, tolerance, dt, temperature_, mu, inc_msh_, infra_.graph);
         lfs.run(area_msh_pipes_, var_guess, var_time, &eos);
         var_msh_guess_ = lfs.get_variable();
-        massfrac_guess_ = massfrac_nodes_;
-        rho_msh_ = eos.density(&lfs);
+        var_msh_   = var_msh_guess_;
+        rho_msh_   = eos.density(&lfs);
         rho_nodes_ = eos.density_nodes(&lfs);
+        massfrac_guess_ = massfrac_nodes_;
+
+        var_msh_in_time_.row(0) =  var_msh_.make_vector();
+        rho_msh_in_time_.row(0) =  rho_msh_.transpose();
+        rho_nodes_in_time_.row(0) =  rho_nodes_.transpose();
     }
 
     
@@ -502,7 +517,7 @@ public:
 
 
     bool
-    initialization_steady( const variable& var_guess,
+    steady_state( const variable& var_guess,
                     double dt,
                     double tolerance)
     {
@@ -562,10 +577,13 @@ public:
 
             if(residual < tolerance)
             {
-                var_msh_guess_ = lfs.get_variable();
-                massfrac_guess_ = massfrac_nodes;
-                rho_msh_ = eos.density(&lfs);
-                rho_nodes_ = eos.density_nodes(&lfs);
+                var_msh_in_time_.row(0) =  lfs.get_variable().make_vector();
+                rho_msh_in_time_.row(0) =  eos.density(&lfs);
+                rho_nodes_in_time_.row(0) =  eos.density_nodes(&lfs);
+
+                massfrac_pipes = inc_msh_.matrix_in().transpose() * massfrac_nodes;    
+                auto pair_molfrac = eos.massfrac_2_molfrac(massfrac_nodes, massfrac_pipes);
+                molfrac_in_time_[0] = pair_molfrac.first; 
 
                 return true;
             }
@@ -579,8 +597,7 @@ public:
     }
 
     void
-    advance(double dt,
-            size_t num_steps,            
+    advance(double dt,        
             double tol)
     {
         bool unsteady = true;
@@ -588,16 +605,6 @@ public:
 
         auto num_nodes = num_vertices(infra_.graph); 
         auto num_pipes = num_edges(infra_.graph); 
-
-        var_msh_in_time_ = matrix_t::Zero(num_steps, num_pipes + 2 * num_nodes);
-        rho_msh_in_time_ = matrix_t::Ones(num_steps, num_pipes);
-        rho_nodes_in_time_ = matrix_t::Ones(num_steps, num_nodes);
-        molfrac_in_time_ = std::vector<matrix_t>(num_steps);
-
-        var_msh_ = var_msh_guess_;
-        var_msh_in_time_.row(0) =  var_msh_.make_vector();
-        rho_msh_in_time_.row(0) =  rho_msh_.transpose();
-        rho_nodes_in_time_.row(0) =  rho_nodes_.transpose();
 
         matrix_t massfrac_now_nodes = massfrac_guess_;
         matrix_t massfrac_next_nodes = matrix_t::Zero(num_nodes, NUM_GASES);
@@ -609,7 +616,7 @@ public:
         EQ_OF_STATE eos;
 
         double t = 0;
-        for(size_t it = 1; it < num_steps; it++, t+=dt)
+        for(size_t it = 1; it < num_time_steps_; it++, t+=dt)
         {
             std::cout<<"========================================================"<< std::endl;
             std::cout << "Solving at time ...."<< it <<std::endl;

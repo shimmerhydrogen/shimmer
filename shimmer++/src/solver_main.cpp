@@ -49,7 +49,8 @@ register_usertypes(sol::state& lua)
     config_ut["tol"] = &config::tol;
     config_ut["refine"] = &config::refine;
     config_ut["dx"] = &config::dx;
-    config_ut["do_quality_tracking"] = &config::do_quality_tracking;
+    config_ut["quality_tracking"] = &config::quality_tracking;
+    config_ut["qt_steady"] = &config::qt_steady;
 }
 
 static int
@@ -99,7 +100,8 @@ int main(int argc, char **argv)
     shimmer::config cfg;
     cfg.refine = false;
     cfg.dx = 100e3;
-    cfg.do_quality_tracking = false;
+    cfg.quality_tracking = false;
+    cfg.qt_steady = false;
     lua["config"] = &cfg;
 
     auto sresult = lua.safe_script_file(argv[1], sol::script_pass_on_error);
@@ -111,7 +113,10 @@ int main(int argc, char **argv)
 
     //parse_cmdline(argc, argv, cfg);
 
-    if (cfg.do_quality_tracking)
+    if (cfg.qt_steady)
+        cfg.steps = 1; 
+
+    if (cfg.quality_tracking)
         return launch_solver_qt(cfg);
     else
         return launch_solver(cfg);

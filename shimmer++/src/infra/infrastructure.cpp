@@ -1174,7 +1174,7 @@ discretize_pipes(const infrastructure& infrain,
             sic.i_snum = inum;
             sic.init_P = interp(x, in_setting.length, from_ic->init_P, to_ic->init_P);
             sic.init_L = 0.0;//interp(x, in_setting.length, from_ic->init_L, to_ic->init_L);
-            //std::cout << x << " -> " << sic.init_P << " -> " << sic.init_L << std::endl;
+            //std::cout<< "Segment ("<< i <<") = " << x << " -> " << sic.init_P << " -> " << sic.init_L << std::endl;
             infraout.sics.push_back(sic);
 
             fict_station_counter++;
@@ -1198,7 +1198,7 @@ discretize_pipes(const infrastructure& infrain,
             edge_properties newnp;
             newnp.type = pipe_type::PIPE;
             newnp.branch_num = branch_num;
-            newnp.length = fraglen;
+            newnp.length = fraglen;//pipe.length;
             newnp.diameter = pipe.diameter;
             newnp.friction_factor = pipe.friction_factor;
             newnp.name = out_setting.name;
@@ -1343,6 +1343,7 @@ int initdb(const std::string& db_filename)
         nullptr
     };
 
+
     const char *schema_path = schema_paths[0];
     while (schema_path) {
         if ( (fh = fopen(schema_path, "r")) ) {
@@ -1352,8 +1353,7 @@ int initdb(const std::string& db_filename)
 
     schema_path = getenv("SHIMMER_SCHEMA_FILE");
     if ( schema_path and (fh = fopen(schema_path, "r")) ) {
-        goto foundok;
-    }
+
 
     std::cerr << "Can't find database schema file. ";
     std::cerr << "Can't proceed." << std::endl;

@@ -53,18 +53,18 @@ class qt_solver
 
     matrix_t massfrac_guess_;
 
-    vector_t rho_msh_;
-    vector_t rho_nodes_;
-    variable var_msh_;
-    variable var_msh_guess_;
-    vector_t area_msh_pipes_;
+    vector_t rho_all_pipes_;
+    vector_t rho_all_nodes_;
+    variable var_all_;
+    variable var_all_guess_;
+    vector_t area_all_pipes_;
 
-    matrix_t rho_msh_in_time_;
-    matrix_t rho_nodes_in_time_;
-    matrix_t var_msh_in_time_;
-    std::vector<matrix_t> molfrac_in_time_;
+    matrix_t rho_all_pipes_evol_;
+    matrix_t rho_all_nodes_evol_;
+    matrix_t var_all_evol_;
+    std::vector<matrix_t> molfrac_all_evol_;
 
-    incidence inc_msh_;
+    incidence inc_all_;
     infrastructure& infra_;
 
 public:
@@ -76,16 +76,16 @@ public:
     {
         MAX_ITERS_STEADY_ = 500;
         TOL_MASSFRAC_ = 1.e-4; 
-        inc_msh_ = incidence(infra_.graph);
-        area_msh_pipes_ = area(infra_.graph);
+        inc_all_ = incidence(infra_.graph);
+        area_all_pipes_ = area(infra_.graph);
 
         auto num_nodes = num_vertices(infra_.graph); 
         auto num_pipes = num_edges(infra_.graph); 
 
-        var_msh_in_time_ = matrix_t::Zero(num_steps, num_pipes + 2 * num_nodes);
-        rho_msh_in_time_ = matrix_t::Ones(num_steps, num_pipes);
-        rho_nodes_in_time_ = matrix_t::Ones(num_steps, num_nodes);
-        molfrac_in_time_ = std::vector<matrix_t>(num_steps);
+        var_all_evol_ = matrix_t::Zero(num_steps, num_pipes + 2 * num_nodes);
+        rho_all_pipes_evol_ = matrix_t::Ones(num_steps, num_pipes);
+        rho_all_nodes_evol_ = matrix_t::Ones(num_steps, num_nodes);
+        molfrac_all_evol_ = std::vector<matrix_t>(num_steps);
     }
 
 
@@ -169,15 +169,6 @@ public:
         return;
     }
 
-    void
-    set_initialization( const variable& var)
-    {
-        var_msh_guess_ = var;
-        //Alternatively, rho should be given when setting initialization
-        rho_msh_ = vector_t::Ones(boost::num_edges(infra_.graph));
-        rho_nodes_ = vector_t::Ones(boost::num_vertices(infra_.graph));
-    }
-
 
     void
     initialization( const variable& var_guess,
@@ -187,7 +178,7 @@ public:
         bool unsteady = false;
 
         EQ_OF_STATE eos;    
-        auto [massfrac_nodes_, massfrac_pipes_] =  eos.molfrac_2_massfrac(infra_.graph, inc_msh_);
+        auto [massfrac_nodes_, massfrac_pipes_] =  eos.molfrac_2_massfrac(infra_.graph, inc_all_);
         // Mass fraction by comp, needs total molar mass. So molar mass has to be updated any time molfrac changes!
 
         // Viscosity changes with molfrac (stored by comp in the graph).
@@ -200,17 +191,17 @@ public:
 
         pipe_stations_activation(iter, var_time);
 
-        linearized_fluid_solver lfs(iter, unsteady, tolerance, dt, temperature_, mu, inc_msh_, infra_.graph);
-        lfs.run(area_msh_pipes_, var_guess, var_time, &eos);
-        var_msh_guess_ = lfs.get_variable();
-        var_msh_   = var_msh_guess_;
-        rho_msh_   = eos.density(&lfs);
-        rho_nodes_ = eos.density_nodes(&lfs);
+        linearized_fluid_solver lfs(iter, unsteady, tolerance, dt, temperature_, mu, inc_all_, infra_.graph);
+        lfs.run(area_all_pipes_, var_guess, var_time, &eos);
+        var_all_guess_ = lfs.get_variable();
+        var_all_   = var_all_guess_;
+        rho_all_pipes_  = eos.density(&lfs);
+        rho_all_nodes_  = eos.density_nodes(&lfs);
         massfrac_guess_ = massfrac_nodes_;
 
-        var_msh_in_time_.row(0) =  var_msh_.make_vector();
-        rho_msh_in_time_.row(0) =  rho_msh_.transpose();
-        rho_nodes_in_time_.row(0) =  rho_nodes_.transpose();
+        var_all_evol_.row(0) =  var_all_.make_vector();
+        rho_all_pipes_evol_.row(0) =  rho_all_pipes_.transpose();
+        rho_all_nodes_evol_.row(0) =  rho_all_nodes_.transpose();
     }
 
     
@@ -231,8 +222,12 @@ public:
 
 
     bool
-    qt_network_nodes(bool unsteady, size_t at_step, double dt,  const variable& var_msh,
-                     const  matrix_t& massfrac_now, matrix_t& massfrac_next)
+    admixing(bool unsteady, 
+            size_t at_step, 
+            double dt,  
+            const variable& var_all,
+            const matrix_t& massfrac_now,
+            matrix_t& massfrac_next)
     {
         int num_nodes = (unsteady)? infra_.num_original_stations : boost::num_vertices(infra_.graph);
 
@@ -240,7 +235,7 @@ public:
         matrix_t rhs_nodes = matrix_t::Zero(num_nodes, NUM_GASES );
 
         // Mass conservation for network nodes
-        auto inc_mat = inc_msh_.matrix();
+        auto inc_mat = inc_all_.matrix();
 
 
         // 1. Pipes Injection/Ejection
@@ -248,10 +243,10 @@ public:
         using svec_itor_t = Eigen::SparseVector<double>::InnerIterator;
 
         // Here, local pipe quantities are needed for network(original) nodes
-        auto inc_smat = inc_msh_.matrix();
+        auto inc_smat = inc_all_.matrix();
         for(size_t iN = 0; iN < num_nodes; iN++)
         {
-            Eigen::SparseVector<double> inc_node_i = inc_msh_.matrix().row(iN);
+            Eigen::SparseVector<double> inc_node_i = inc_all_.matrix().row(iN);
             
             // Loop by face
             for(svec_itor_t it(inc_node_i); it; ++it)
@@ -259,7 +254,7 @@ public:
                 auto  pipe_num = it.row();
 
                 double inc_val = it.value();
-                double val = inc_val * var_msh.flux(pipe_num); 
+                double val = inc_val * var_all.flux(pipe_num); 
 
                 double flux_eject  =  std::max(0.0, val);
                 double flux_inject =  std::max(0.0, -val);
@@ -334,7 +329,7 @@ public:
                 }
                 case station_type::ENTRY_P_REG: 
                 {
-                    auto v = std::abs(var_msh.L_rate(node_prop.i_snum));
+                    auto v = std::abs(var_all.L_rate(node_prop.i_snum));
                     for (size_t iC = 0; iC < NUM_GASES; iC++)
                         rhs_nodes(node_prop.i_snum, iC) += v * massfrac_now(node_prop.i_snum, iC);
                     break;
@@ -365,8 +360,8 @@ public:
             {
                 const auto & node_prop = infra_.graph[*itor]; 
 
-                auto rho_now = rho_nodes_in_time_(at_step,node_prop.i_snum);
-                auto rho_old = rho_nodes_in_time_(at_step-1,node_prop.i_snum);
+                auto rho_now = rho_all_nodes_evol_(at_step,node_prop.i_snum);
+                auto rho_old = rho_all_nodes_evol_(at_step-1,node_prop.i_snum);
                 lhs_nodes(node_prop.i_snum) +=volume(*itor, infra_.graph) * (rho_now - rho_old) / dt;
 
                 count++;
@@ -386,9 +381,12 @@ public:
 
 
     void
-    qt_fictitious_nodes(double dt, const variable& var_msh,
-                    const matrix_t& massfrac_now, matrix_t& massfrac_next,
-                    const vector_t& rho_msh_previous,const vector_t & rho_nodes_previous)
+    quality_tracking(double dt, 
+                    const variable& var_all,
+                    const matrix_t & massfrac_now, 
+                    matrix_t& massfrac_next,
+                    const vector_t & rho_all_previous, 
+                    const vector_t & rho_nodes_previous)
     {
         /* 
             Solve: 
@@ -408,12 +406,12 @@ public:
 
             ///1. Variables at fictitious nodes (primal mesh)/pipes (dual mesh) of the current pipe 
              
-            matrix_t flux_nodes= massfracflux_fictitious_nodes(pd, var_msh,
-                                                              rho_msh_previous,
+            matrix_t flux_nodes= massfracflux_fictitious_nodes(pd, var_all,
+                                                              rho_all_previous,
                                                               massfrac_now);
-            vector_t V_pipes   = velocity_fictitious_pipes(pd, var_msh, 
-                                                           rho_msh_previous,
-                                                           area_msh_pipes_);
+            vector_t V_pipes   = velocity_fictitious_pipes(pd, var_all, 
+                                                           rho_all_previous,
+                                                           area_all_pipes_);
             vector_t rho_nodes = density_fictitious_nodes(pd,    
                                                           rho_nodes_previous);
             matrix_t q_nodes = matrix_t::Zero(num_loc_nodes, NUM_GASES); 
@@ -468,7 +466,7 @@ public:
 
 
     void
-    transmission(size_t it, 
+    fluid_dynamics(size_t it, 
                  double tol,
                  double dt,         // Most of this should be passed in a config struct 
                  size_t MAX_CONSTRAINT_ITER,
@@ -476,7 +474,7 @@ public:
     {
         bool unsteady = true;
 
-        pipe_stations_activation(it, var_msh_);
+        pipe_stations_activation(it, var_all_);
 
         size_t ic;
         for(ic = 0; ic <= MAX_CONSTRAINT_ITER; ic++)
@@ -488,8 +486,8 @@ public:
             // To be finished when it is clear how molfrac changes and modifies mu.
             auto mu = viscosity<viscosity_type>(temperature_, infra_.graph);
 
-            linearized_fluid_solver lfs(it, unsteady, tol, dt, temperature_, mu, inc_msh_, infra_.graph);
-            lfs.run(area_msh_pipes_, var_msh_guess_, var_msh_, &eos, ic);
+            linearized_fluid_solver lfs(it, unsteady, tol, dt, temperature_, mu, inc_all_, infra_.graph);
+            lfs.run(area_all_pipes_, var_all_guess_, var_all_, &eos, ic);
 
             bool pass_constr = lfs.check_constraints(it); 
             bool pass_control= lfs.check_controls(it);
@@ -497,9 +495,9 @@ public:
             if(pass_constr && pass_control)
             {
                 std::cout<< "++++++++++++++++++**** MODIFIED VARIABLE ****++++++++++++++++++++++ " << std::endl;
-                var_msh_ =  lfs.get_variable();
-                rho_msh_ =  eos.density(&lfs);  // needed for the computation of the velocity
-                rho_nodes_ =  eos.density_nodes(&lfs);  // needed for the mass balance on network nodes 
+                var_all_ =  lfs.get_variable();
+                rho_all_pipes_ =  eos.density(&lfs);  // needed for the computation of the velocity
+                rho_all_nodes_ =  eos.density_nodes(&lfs);  // needed for the mass balance on network nodes 
 
                 break;
             }
@@ -508,24 +506,24 @@ public:
         if(ic == MAX_CONSTRAINT_ITER)
             std::cerr << "ERROR: FAILURE to apply HARD constraints. Max number of iterations has been reached.";
 
-        var_msh_in_time_.row(it) =  var_msh_.make_vector();
-        rho_msh_in_time_.row(it) =  rho_msh_;
-        rho_nodes_in_time_.row(it) =  rho_nodes_;
+        var_all_evol_.row(it) =  var_all_.make_vector();
+        rho_all_pipes_evol_.row(it) =  rho_all_pipes_;
+        rho_all_nodes_evol_.row(it) =  rho_all_nodes_;
 
-        var_msh_guess_ = var_msh_;
+        var_all_guess_ = var_all_;
     }
 
 
     bool
-    steady_state( const variable& var_guess,
-                    double dt,
-                    double tolerance)
+    steady_state(const variable& var_guess,
+                 double dt,
+                 double tolerance)
     {
         bool unsteady = false;
         bool converged = false; 
 
         EQ_OF_STATE eos;    
-        auto [massfrac_nodes, massfrac_pipes] =  eos.molfrac_2_massfrac(infra_.graph, inc_msh_);
+        auto [massfrac_nodes, massfrac_pipes] =  eos.molfrac_2_massfrac(infra_.graph, inc_all_);
         // Mass fraction by comp, needs total molar mass. So molar mass has to be updated any time molfrac changes!
 
         // Viscosity changes with molfrac (stored by comp in the graph).
@@ -553,14 +551,14 @@ public:
                 infra_.graph[idx].gas_mixture = molfrac_nodes.row(idx).transpose();
             }
 
-            linearized_fluid_solver lfs(iter, unsteady, tolerance, dt, temperature_, mu, inc_msh_, infra_.graph);
-            lfs.run(area_msh_pipes_, var_previous, var_time, &eos);
+            linearized_fluid_solver lfs(iter, unsteady, tolerance, dt, temperature_, mu, inc_all_, infra_.graph);
+            lfs.run(area_all_pipes_, var_previous, var_time, &eos);
             var_current = lfs.get_variable();
 
             // 3. 1. Continuity at network nodes and fictitious nodes
             matrix_t massfrac_next_nodes = matrix_t::Zero(boost::num_vertices(infra_.graph) , NUM_GASES);
 
-            qt_network_nodes(unsteady, it, dt, 
+            admixing(unsteady, it, dt, 
                          var_current, 
                          massfrac_nodes, massfrac_next_nodes);
 
@@ -577,22 +575,22 @@ public:
 
             if(residual < tolerance)
             {
-                var_msh_in_time_.row(0) =  lfs.get_variable().make_vector();
-                rho_msh_in_time_.row(0) =  eos.density(&lfs);
-                rho_nodes_in_time_.row(0) =  eos.density_nodes(&lfs);
+                var_all_evol_.row(0) =  lfs.get_variable().make_vector();
+                rho_all_pipes_evol_.row(0) =  eos.density(&lfs);
+                rho_all_nodes_evol_.row(0) =  eos.density_nodes(&lfs);
 
-                massfrac_pipes = inc_msh_.matrix_in().transpose() * massfrac_nodes;    
+                massfrac_pipes = inc_all_.matrix_in().transpose() * massfrac_nodes;    
                 auto pair_molfrac = eos.massfrac_2_molfrac(massfrac_nodes, massfrac_pipes);
-                molfrac_in_time_[0] = pair_molfrac.first; 
+                molfrac_all_evol_[0] = pair_molfrac.first; 
 
                 return true;
             }
             massfrac_nodes = massfrac_next_nodes;
-            massfrac_pipes = inc_msh_.matrix_in().transpose() * massfrac_nodes;    
+            massfrac_pipes = inc_all_.matrix_in().transpose() * massfrac_nodes;    
             var_previous = var_current;
         }
 
-        std::cout << "QUALITY TRACKING - STEADY has NOT CONVERGED." << std::endl;
+        std::cerr << "Admixing - Steady has NOT CONVERGED." << std::endl;
         return SHIMMER_GENERIC_FAILURE;
     }
 
@@ -611,7 +609,7 @@ public:
 
         std::cout << std::setprecision(4 )<<" * massfrac_now : \n" << massfrac_guess_ << std::endl;
 
-        molfrac_in_time_[0] = build_molfrac_nodes(infra_.graph);
+        molfrac_all_evol_[0] = build_molfrac_nodes(infra_.graph);
 
         EQ_OF_STATE eos;
 
@@ -623,7 +621,7 @@ public:
             std::cout<<"========================================================"<< std::endl;
 
             // 1. Update molar masses (mm) inside eos and molar frac inside graph
-            matrix_t massfrac_now_pipes = inc_msh_.matrix_in().transpose() * massfrac_now_nodes;    
+            matrix_t massfrac_now_pipes = inc_all_.matrix_in().transpose() * massfrac_now_nodes;    
             auto [molfrac_nodes, molfrac_pipes] =  eos.massfrac_2_molfrac(massfrac_now_nodes, massfrac_now_pipes);
 
             auto index = get(boost::vertex_index, infra_.graph);
@@ -633,7 +631,7 @@ public:
             }
 
             // 2. Fluid solver
-            transmission(it, tol, dt, MAX_CONSTRAINT_ITER, eos);
+            fluid_dynamics(it, tol, dt, MAX_CONSTRAINT_ITER, eos);
 
             // 3. [massfrac_nodes, massfrac_pipes] = quality_tracking();
             //matrix_t lhs_nodes = vector_t::Zero(infra_.num_original_stations, NUM_GASES); 
@@ -641,24 +639,24 @@ public:
             matrix_t rhs_nodes = matrix_t::Zero(infra_.num_original_pipes, NUM_GASES); 
             massfrac_next_nodes = matrix_t::Zero(num_nodes, NUM_GASES);
 
-            // 3. 1. Continuity at network nodes 
-            qt_network_nodes(unsteady, it, dt, 
-                         var_msh_, 
+            // 3. 1. Continuity at network nodes
+            admixing(unsteady, it, dt, 
+                         var_all_, 
                          massfrac_now_nodes, massfrac_next_nodes);
 
             if(refine_)
             {
                 // 3. 2. Continuity at fictitious nodes 
-                qt_fictitious_nodes( dt, var_msh_, 
-                                     massfrac_now_nodes, 
-                                     massfrac_next_nodes,
-                                     rho_msh_in_time_.row(it-1),
-                                     rho_nodes_in_time_.row(it-1) );
+                quality_tracking(dt, var_all_, 
+                                 massfrac_now_nodes, 
+                                 massfrac_next_nodes,
+                                 rho_all_pipes_evol_.row(it-1),
+                                 rho_all_nodes_evol_.row(it-1) );
             }
 
             massfrac_now_nodes = massfrac_next_nodes;
-            molfrac_in_time_[it] = build_molfrac_nodes(infra_.graph); 
-            std::cout << std::setprecision(4 )<<" * massfrac_now : \n" << massfrac_now_nodes << std::endl;
+            molfrac_all_evol_[it] = build_molfrac_nodes(infra_.graph); 
+            //std::cout << std::setprecision(4 )<<" * massfrac_now : \n" << massfrac_now_nodes << std::endl;
         }
         return;
     }
@@ -684,8 +682,10 @@ public:
 */ 
 
     matrix_t
-    massfracflux_fictitious_nodes(const pipe_discretization& pd, const variable& var_msh, const vector_t& rho_msh, 
-                        const matrix_t& massfrac_now)
+    massfracflux_fictitious_nodes(const pipe_discretization& pd, 
+                                  const variable& var_all, 
+                                  const vector_t& rho_all, 
+                                  const matrix_t& massfrac_now)
     {
         auto num_loc_nodes = pd.nodelist.size();
         auto num_loc_pipes = pd.pipelist.size();
@@ -694,7 +694,7 @@ public:
         //      
         //       F_mass_j = rho_j * vel_j
         // 
-        vector_t Fmass = massflux_fictitious_pipes(pd, var_msh, area_msh_pipes_);
+        vector_t Fmass = massflux_fictitious_pipes(pd, var_all, area_all_pipes_);
 
         assert(Fmass.size()+1  == num_loc_nodes && "Incorrect size for local velocities");
 
@@ -761,25 +761,25 @@ public:
     }
 
     matrix_t 
-    velocity_full() const
+    velocity_evolution() const
     {
         // This one cannot be called when doing only steady state 
 
         auto num_nodes = num_vertices(infra_.graph); 
         auto num_pipes = num_edges(infra_.graph); 
         /// vel [m/s] velocity of the gas within pipes.
-        matrix_t flux_in_time = var_msh_in_time_.middleCols(num_nodes, num_pipes);
-        matrix_t arho_in_time = rho_msh_in_time_;
+        matrix_t flux_evol = var_all_evol_.middleCols(num_nodes, num_pipes);
+        matrix_t arho_evol = rho_all_pipes_evol_;
 
         for(auto iP = 0; iP < num_pipes; iP++)
-            arho_in_time.col(iP) *= area_msh_pipes_(iP);  
-        return flux_in_time.array() / arho_in_time.array();       
+            arho_evol.col(iP) *= area_all_pipes_(iP);  
+        return flux_evol.array() / arho_evol.array();       
     }
 
-    vector_t solution() const {return var_msh_.make_vector();}
-    vector_t guess() const {return var_msh_guess_.make_vector();}
-    matrix_t solution_full() const{ return var_msh_in_time_; }
-    std::vector<matrix_t> molar_fractions_full() const{ return molfrac_in_time_;}
+    vector_t solution() const {return var_all_.make_vector();}
+    vector_t guess() const {return var_all_guess_.make_vector();}
+    matrix_t solution_evolution() const{ return var_all_evol_; }
+    std::vector<matrix_t> molar_fractions_evolution() const{ return molfrac_all_evol_;}
 
 };
 

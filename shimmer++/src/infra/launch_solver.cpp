@@ -142,9 +142,9 @@ int launch_solver_qt(const config& cfg)
         qt.advance(cfg.dt, cfg.tol);
     }
 
-    auto sol_full  = qt.solution_full();
-    auto vel_full  = qt.velocity_full();
-    auto x_full  = qt.molar_fractions_full();
+    auto sol_evol  = qt.solution_evolution();
+    auto vel_evol  = qt.velocity_evolution();
+    auto mlf_evol  = qt.molar_fractions_evolution();
 
     // Post-processing
     std::string outfile = cfg.database;
@@ -164,24 +164,24 @@ int launch_solver_qt(const config& cfg)
     auto Pbegin = 0;
     auto Plen = num_stations(infra);
     shimmer::save_pressures(outfile, infra,
-        sol_full.block(0, Pbegin, sol_full.rows(), Plen)
+        sol_evol.block(0, Pbegin, sol_evol.rows(), Plen)
     );
 
     auto Gbegin = num_stations(infra);
     auto Glen = num_pipes(infra);
     shimmer::save_flowrates(outfile, infra,
-        sol_full.block(0, Gbegin, sol_full.rows(), Glen)
+        sol_evol.block(0, Gbegin, sol_evol.rows(), Glen)
     );
 
     auto Lbegin = Gbegin + Glen;
     auto Llen = num_stations(infra);
     shimmer::save_flowrates_stations(outfile, infra,
-        sol_full.block(0, Lbegin, sol_full.rows(), Llen)
+        sol_evol.block(0, Lbegin, sol_evol.rows(), Llen)
     );
 
-    shimmer::save_velocities(outfile, infra, vel_full);
+    shimmer::save_velocities(outfile, infra, vel_evol);
 
-    shimmer::save_molar_fractions(outfile, infra, x_full);
+    shimmer::save_molar_fractions(outfile, infra, mlf_evol);
 
     return 0;
 }

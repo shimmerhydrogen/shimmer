@@ -683,8 +683,6 @@ make_compressor(size_t num_steps,
                                         std::pair<control::constraint_type,
                                         double>> & user_limits)                                                   
 {
-    assert(activate_history.size() == num_steps && "Activate history has inconsistent size with respect to number of steps.");
-
     auto flux_limit = control::constraint(control::hardness_type::HARD,
                                          control::constraint_type::GREATER_EQUAL,
                                          0.0);

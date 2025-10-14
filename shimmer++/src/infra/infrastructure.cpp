@@ -320,6 +320,12 @@ populate_type_dependent_pipe_data(infrastructure& infra,
             auto num_steps = setting.profile.size();
             std::vector<bool> activate_history (num_steps, true); 
 
+            if(activate_history.size() == num_steps)
+            {
+                std::cerr << "Activate history has inconsistent size with respect to number of steps.\n";
+                throw SHIMMER_INVALID_DATA;
+            }
+
             auto comp = edge_station::make_compressor(num_steps, 
                                                       setting.ramp_coeff,
                                                       setting.efficiency, 

@@ -45,6 +45,23 @@ struct pipe_discretization {
     }
 };
 
+
+struct config {
+    std::string     database;
+    size_t          steps;
+    double          dt_std;
+    double          dt;
+    double          temperature;
+    double          tol_std;
+    double          tol;
+    bool            refine;
+    double          dx;
+    bool            quality_tracking;
+    bool            qt_steady;    
+    config();
+};
+
+
 struct infrastructure {
     infrastructure_graph                    graph;
 
@@ -70,6 +87,10 @@ struct infrastructure {
 
     int num_original_stations;
     int num_original_pipes;
+
+    config cfg;
+    infrastructure(const config&cfg);
+    infrastructure(){};
 };
 
 int load(const std::string&, infrastructure&);
@@ -88,21 +109,6 @@ int save_flowrates_stations(const std::string&, const infrastructure&, const mat
 int save_molar_fractions(const std::string&, const infrastructure&, std::vector<matrix_t>&);
 
 int refine_pipes(const infrastructure&, infrastructure&, double);
-
-struct config {
-    std::string     database;
-    size_t          steps;
-    double          dt_std;
-    double          dt;
-    double          temperature;
-    double          tol_std;
-    double          tol;
-    bool            refine;
-    double          dx;
-    bool            quality_tracking;
-    bool            qt_steady;    
-    config();
-};
 
 int initdb(const std::string&);
 int save_velocities(const std::string&, const infrastructure&, const matrix_t&);

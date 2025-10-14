@@ -11,10 +11,10 @@ namespace shimmer {
 
 int launch_solver(const config& cfg)
 {
-    shimmer::infrastructure infra;
+    shimmer::infrastructure infra(cfg);
     
     if(cfg.refine) {
-        shimmer::infrastructure infrain;
+        shimmer::infrastructure infrain(cfg);
         int err = shimmer::load(cfg.database, infrain);
         if (err != SHIMMER_SUCCESS) {
             std::cerr << "Problem detected while loading DB" << std::endl;
@@ -96,10 +96,10 @@ int launch_solver(const config& cfg)
 
 int launch_solver_qt(const config& cfg)
 {
-    shimmer::infrastructure infra;
+    shimmer::infrastructure infra(cfg);
     
     if(cfg.refine) {
-        shimmer::infrastructure infrain;
+        shimmer::infrastructure infrain(cfg);
         int err = shimmer::load(cfg.database, infrain);
         if (err != SHIMMER_SUCCESS) {
             std::cerr << "Problem detected while loading DB" << std::endl;

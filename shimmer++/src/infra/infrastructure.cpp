@@ -27,6 +27,9 @@ namespace fs = std::filesystem;
 
 namespace shimmer {
 
+infrastructure::infrastructure(const config&cfgin): cfg(cfgin){};
+
+
 static int
 populate_entry_p_reg(const std::vector<setting_entry_p_reg>& settings,
     vertex_properties& vp)
@@ -317,16 +320,18 @@ populate_type_dependent_pipe_data(infrastructure& infra,
                 [](const compressor_profile_sample& cps){ return cps.value_bymode(); }
             );
 
-            auto num_steps = setting.profile.size();
+            auto num_steps =infra.cfg.steps;
+
+            //WARNING: this has to be solved. Either it is read from database or it is erased
             std::vector<bool> activate_history (num_steps, true); 
 
-            if(activate_history.size() == num_steps)
+            if(activate_history.size() != num_steps)
             {
                 std::cerr << "Activate history has inconsistent size with respect to number of steps.\n";
                 throw SHIMMER_INVALID_DATA;
             }
 
-            auto comp = edge_station::make_compressor(num_steps, 
+            auto comp = edge_station::make_compressor(
                                                       setting.ramp_coeff,
                                                       setting.efficiency, 
                                                       activate_history,
@@ -1042,6 +1047,7 @@ transfer_original_stations(const infrastructure& infrain,
     infraout.s_i2u = infrain.s_i2u;
     infraout.s_u2vd.resize( infrain.s_u2vd.size() );
     infraout.s_i2vd.resize( infrain.s_i2vd.size() );
+    infraout.cfg = infrain.cfg;
 
     int incomplete_stations = 0;
     auto [vbegin, vend] = vertices(infrain.graph);

@@ -42,6 +42,15 @@ def convert_nodes_solution(db_path, features, nodes_map):
         node_id = row[0]
         node_index = nodes_map[node_id]
         features[node_index]["properties"]["pressure"] = row[2]
+    
+    cur = conn.cursor()
+    cur.execute("SELECT s_number, timestep, g_name, molarfrac FROM solution_station_molarfrac WHERE timestep = 0")    
+
+    for row in cur.fetchall():
+        node_id = row[0]
+        node_index = nodes_map[node_id]
+        gas_number = row[2]
+        features[node_index]["properties"]["gas_" + gas_number] = row[3]        
 
     conn.close()
 
@@ -76,6 +85,15 @@ def convert_pipes_solution(db_path, features, pipes_map):
         pipe_index = pipes_map[pipe_id]
         features[pipe_index]["properties"]["flowrate"] = row[2]
 
+    cur = conn.cursor()
+    cur.execute("SELECT ROW_NUMBER() OVER() AS NoId, P.p_name, SSMF.timestep, SSMF.g_name, SSMF.molarfrac FROM pipelines AS P LEFT JOIN solution_station_molarfrac as SSMF ON P.s_from = SSMF.s_number WHERE SSMF.timestep = 0")
+
+    for row in cur.fetchall():
+        pipe_id = int(row[1])
+        pipe_index = pipes_map[pipe_id]
+        gas_number = row[3]
+        features[pipe_index]["properties"]["gas_" + gas_number] = row[4]
+
     conn.close()
 
 def write_geojson(json_path, features):
@@ -100,7 +118,8 @@ def generate_geojson(db_path, json_folder_path):
 
 if __name__ == "__main__":
     db_path = "../graphs/test_gasco/test_gasco.db"
-    db_path = "/home/geoscore/Desktop/GEO++/shimmer/shimmer++/debug/refined_test_gasco.db"
+    db_path = "./test_gasco_admixing.db"
+    #db_path = "/home/geoscore/Desktop/GEO++/shimmer/shimmer++/debug/refined_test_gasco.db"
     #db_path = "../graphs/test_inrete/test_inrete.db"
     #db_path = "../graphs/test_sicilia/test_sicilia.db"
     json_path = "."

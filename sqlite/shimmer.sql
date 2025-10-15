@@ -428,3 +428,34 @@ create table solution_station_molarfrac (
 );
 
 
+create table gases (
+    g_num       INTEGER,
+    g_formula   TEXT NOT NULL,
+    g_name      TEXT NOT NULL,
+
+    PRIMARY KEY (g_num)
+
+);
+
+insert into gases(g_name) values
+    ( 0, 'CH4',     'Methane'),
+    ( 1, 'N2',      'Nitrogen'),
+    ( 2, 'CO2',     'Carbon dioxide'),
+    ( 3, 'C2H6',    'Ethane'),
+    ( 4, 'C3H8',    'Propane'),
+    ( 5, 'i_C4H10', 'i-butane'),
+    ( 6, 'n_C4H10', 'n-butane'),
+    ( 7, 'i_C5H12', 'i-pentane'),
+    ( 8, 'n_C5H12', 'n-pentane'),
+    ( 9, 'C6H14',   'Hexane'),
+    (10, 'C7H16',   'Heptane'),
+    (11, 'C8H18',   'Octane'),
+    (12, 'C9H20',   'Nonane'),
+    (13, 'C10H22',  'Decane'),
+    (14, 'H2',      'Hydrogen'),
+    (15, 'O2'       'Oxygen'),
+    (16, 'CO',      'Carbon oxide'),
+    (17, 'H2O',     'Water'),
+    (18, 'H2S'      'Hydrogen sulfide'),
+    (19, 'He',      'Helium'),
+    (20, 'Ar',      'Argon');

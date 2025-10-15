@@ -200,23 +200,9 @@ make_init_graph(infrastructure_graph& g)
 }
 
 
-std::pair<matrix_t, matrix_t> 
-make_mass_fraction(size_t size, const infrastructure_graph& graph)
-{
-    incidence inc(graph);
-
-    matrix_t y_nodes(size, 21);
-    y_nodes.col(0).setConstant(1);
-
-    matrix_t y_pipes = inc.matrix_in().transpose() * y_nodes;    
-
-    return  std::make_pair(y_nodes, y_pipes); 
-}
-
-
 
 variable
-make_guess_steady(size_t num_nodes, size_t num_pipes)
+make_guess_steady()
 {
     vector_t Gguess(num_pipes), Pguess(num_nodes);
     Gguess.setConstant(50);
@@ -239,7 +225,7 @@ make_guess_steady(size_t num_nodes, size_t num_pipes)
 
 
 variable
-make_guess_unsteady(size_t num_nodes, size_t num_pipes)
+make_guess_unsteady()
 {
     vector_t Gguess(num_pipes), Pguess(num_nodes);
     Pguess << 70.000000000000000, 66.142581067404251, 66.329787615521283,
@@ -281,7 +267,7 @@ make_guess_unsteady(size_t num_nodes, size_t num_pipes)
 
 
 std::pair<vector_t, matrix_t>
-make_bnd_cond(size_t num_nodes, size_t num_pipes, size_t num_steps)
+make_bnd_cond()
 {
     size_t num_outlet = 9;    
 
@@ -325,7 +311,7 @@ make_bnd_cond(size_t num_nodes, size_t num_pipes, size_t num_steps)
 
 
 std::pair<std::vector<double>, std::vector<double>>
-make_reference(size_t num_nodes, size_t num_pipes)
+make_reference()
 {
     std::vector<double> ref_sol_unsteady = {7000000, 
         6934772.559942949, 6951327.384841953, 
@@ -345,7 +331,7 @@ make_reference(size_t num_nodes, size_t num_pipes)
         25, 20,0, 0,20,30,0, 50,20, 16.5,50,12.5};
 
 
-    variable var = make_guess_unsteady(num_nodes, num_pipes);
+    variable var = make_guess_unsteady();
     vector_t vec = var.make_vector();
 
     std::vector<double> ref_sol_steady(num_nodes*2 + num_pipes);
@@ -358,11 +344,6 @@ make_reference(size_t num_nodes, size_t num_pipes)
 
 int main()
 {
-    size_t num_steps = 25;
-    size_t num_inlet = 1;
-    size_t num_pipes = 15;
-    size_t num_nodes = 13;
-
     size_t num_bcnd = num_nodes;
     size_t system_size = num_nodes + num_pipes;
 
@@ -378,39 +359,38 @@ int main()
     vector_t inlet_nodes(num_inlet);
     inlet_nodes << 0; 
 
-    variable guess_unstd = make_guess_unsteady(num_nodes, num_pipes);
-    variable guess_std   = make_guess_steady(num_nodes, num_pipes);
-    auto [Pset, flux_ext] = make_bnd_cond(num_nodes, num_pipes, num_steps);
+    variable guess_unstd = make_guess_unsteady();
+    variable guess_std   = make_guess_steady();
+    auto [Pset, flux_ext] = make_bnd_cond();
     //---------------------------------------------------------------
 
     infrastructure_graph graph;
     make_init_graph(graph);
 
-    auto [y_nodes, y_pipes] = make_mass_fraction(num_nodes, graph);
 
     using time_solver_t = time_solver<papay, viscosity_type::Constant>; 
 
     /*
     time_solver_t ts0(graph, temperature, flux_ext);
-    ts0.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);    
+    ts0.initialization(guess_std, dt_std, tol_std);    
     auto sol_std =  ts0.guess();
     */
     
     
     time_solver_t ts1(graph, temperature);
     ts1.set_initialization(guess_unstd);    
-    ts1.advance(dt, num_steps, tol, y_nodes, y_pipes);
+    ts1.advance(dt, num_steps, tol);
     auto sol_set_unstd  = ts1.solution();
     
    
     time_solver_t ts2(graph, temperature);
-    ts2.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes);    
-    ts2.advance(dt, num_steps, tol, y_nodes, y_pipes);
+    ts2.initialization(guess_std, dt_std, tol_std);    
+    ts2.advance(dt, num_steps, tol);
     auto sol_init_unstd = ts2.solution();
    
     //---------------------------------------------------------------
     std::cout << __FILE__ << std::endl; 
-    auto [ref_std, ref_unstd] = make_reference(num_nodes, num_pipes);
+    auto [ref_std, ref_unstd] = make_reference();
     //bool pass0 = verify_test("time initialization", sol_std,  ref_std); 
     bool pass1 = verify_test("time solver with given init", sol_set_unstd, ref_unstd); 
     bool pass2 = verify_test("time solver computing  init", sol_init_unstd, ref_unstd); 

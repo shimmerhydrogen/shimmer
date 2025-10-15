@@ -27,6 +27,9 @@ namespace fs = std::filesystem;
 
 namespace shimmer {
 
+infrastructure::infrastructure(const config&cfgin): cfg(cfgin){};
+
+
 static int
 populate_entry_p_reg(const std::vector<setting_entry_p_reg>& settings,
     vertex_properties& vp)
@@ -184,11 +187,11 @@ load_stations(sqlite3 *db, infrastructure& infra)
         vp.name = (char *) sqlite3_column_text(stmt, 1);
         vp.type = static_cast<station_type>(sqlite3_column_int(stmt,2));
 
-        if ( s_in >= infra.mass_fractions.size() ) {
+        if ( s_in >= infra.molar_fractions.size() ) {
             std::cerr << "No mass fractions for station " << s_un << std::endl;
             return SHIMMER_MISSING_DATA;
         }
-        const auto& mfs = infra.mass_fractions.at(s_in).fractions;
+        const auto& mfs = infra.molar_fractions.at(s_in).fractions;
         vp.gas_mixture = vector_t::Zero(mfs.size());
         assert(vp.gas_mixture.size() == NUM_GASES);
         std::copy(mfs.begin(), mfs.end(), vp.gas_mixture.begin());
@@ -317,10 +320,18 @@ populate_type_dependent_pipe_data(infrastructure& infra,
                 [](const compressor_profile_sample& cps){ return cps.value_bymode(); }
             );
 
-            auto num_steps = setting.profile.size();
+            auto num_steps =infra.cfg.steps;
+
+            //WARNING: this has to be solved. Either it is read from database or it is erased
             std::vector<bool> activate_history (num_steps, true); 
 
-            auto comp = edge_station::make_compressor(num_steps, 
+            if(activate_history.size() != num_steps)
+            {
+                std::cerr << "Activate history has inconsistent size with respect to number of steps.\n";
+                throw SHIMMER_INVALID_DATA;
+            }
+
+            auto comp = edge_station::make_compressor(
                                                       setting.ramp_coeff,
                                                       setting.efficiency, 
                                                       activate_history,
@@ -501,13 +512,13 @@ store_station_settings(sqlite3 *db, infrastructure& infra)
 }
 
 static int
-load_gas_mass_fractions(sqlite3 *db, infrastructure& infra)
+load_gas_molar_fractions(sqlite3 *db, infrastructure& infra)
 {
-    if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.mass_fractions)) {
+    if (SHIMMER_SUCCESS != database::load(db, infra.s_u2i, infra.molar_fractions)) {
         return SHIMMER_DATABASE_PROBLEM;
     }
     
-    if (infra.mass_fractions.size() != infra.s_i2u.size()) {
+    if (infra.molar_fractions.size() != infra.s_i2u.size()) {
         std::cerr << "Incorrect number of mass fractions in the DB. ";
         std::cerr << "There should be as many mass fractions as stations.";
         std::cerr << std::endl;
@@ -515,7 +526,7 @@ load_gas_mass_fractions(sqlite3 *db, infrastructure& infra)
     }
     
     for (int i = 0; i < infra.s_i2u.size(); i++) {
-        if (infra.mass_fractions[i].i_snum != i) {
+        if (infra.molar_fractions[i].i_snum != i) {
             std::cerr << "Incoherent mass fraction data. Check that ";
             std::cerr << "there is 1:1 correspondence between stations ";
             std::cerr << "and mass fraction data" << std::endl;
@@ -586,8 +597,8 @@ int load(const std::string& db_filename, infrastructure& infra)
         goto load_fail;
     }
 
-    if (SHIMMER_SUCCESS != load_gas_mass_fractions(db, infra)) {
-        std::cerr << "Problems detected while loading gas mass fractions. ";
+    if (SHIMMER_SUCCESS != load_gas_molar_fractions(db, infra)) {
+        std::cerr << "Problems detected while loading gas molar fractions. ";
         std::cerr << std::endl;
         goto load_fail;
     }
@@ -659,7 +670,7 @@ int store(const std::string& db_filename, infrastructure& infra)
         return SHIMMER_DATABASE_PROBLEM;
     }
 
-    //if (SHIMMER_SUCCESS != load_gas_mass_fractions(db, infra)) {
+    //if (SHIMMER_SUCCESS != load_gas_molar_fractions(db, infra)) {
     //    std::cerr << "Problems detected while loading gas mass fractions. ";
     //    std::cerr << std::endl;
     //    return SHIMMER_DATABASE_PROBLEM;
@@ -726,6 +737,16 @@ initial_guess(const infrastructure& infra)
     vector_t P = vector_t::Zero(nstations);
     vector_t L = vector_t::Zero(nstations);
     vector_t G = vector_t::Zero(npipes);
+
+    if (infra.sics.size() != nstations) {
+        std::cout << "Wrong number of initial conditions for stations" << std::endl;
+        throw std::invalid_argument("Incomplete database");
+    }
+
+    if (infra.pics.size() != npipes) {
+        std::cout << "Wrong number of initial conditions for pipes" << std::endl;
+        throw std::invalid_argument("Incomplete database");
+    }
 
     for (const auto& sic : infra.sics) {
         if (sic.i_snum >= nstations) {
@@ -967,6 +988,57 @@ int save_velocities(const std::string& db_filename, const infrastructure& infra,
     return SHIMMER_SUCCESS;
 }
 
+int save_molar_fractions(const std::string& db_filename, const infrastructure& infra, std::vector<matrix_t>& molar_fractions)
+{
+    assert(boost::num_vertices(infra.graph) == infra.s_i2u.size());
+
+    sqlite3 *db = nullptr;
+    int rc = sqlite3_open_v2(db_filename.c_str(), &db, SQLITE_OPEN_READWRITE, nullptr);
+    if(rc) {
+        std::cerr << "Can't open database '" << db_filename << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
+        sqlite3_close(db);
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+
+    sqlite3_stmt *stmt = nullptr;
+
+    std::string q =
+        "INSERT INTO solution_station_molarfrac VALUES (?, ?, ?, ?)";
+
+    rc = sqlite3_prepare_v2(db, q.c_str(), q.length(), &stmt, nullptr);
+    if (rc) {
+        std::cerr << "SQL error on query '" << q << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+    
+    rc = sqlite3_exec(db, "DELETE FROM solution_station_molarfrac", nullptr, nullptr, nullptr);
+    rc = sqlite3_exec(db, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
+
+    
+    for (int ts = 0; ts < molar_fractions.size(); ts++) {
+        for (int i_snum = 0; i_snum < molar_fractions[ts].rows(); i_snum++) {
+            for (int comp = 0; comp < molar_fractions[ts].cols(); comp++) {
+                rc = sqlite3_bind_int(stmt, 1, convert_i2u(infra.s_i2u, i_snum));
+                rc = sqlite3_bind_int(stmt, 2, ts);
+                rc = sqlite3_bind_int(stmt, 3, comp);
+                rc = sqlite3_bind_double(stmt, 4, molar_fractions[ts](i_snum, comp));
+                rc = sqlite3_step(stmt);
+                rc = sqlite3_clear_bindings(stmt);
+                rc = sqlite3_reset(stmt);
+            }
+        }
+    }
+    rc = sqlite3_exec(db, "COMMIT", nullptr, nullptr, nullptr);
+
+    rc = sqlite3_finalize(stmt);
+
+    sqlite3_close(db);
+    return SHIMMER_SUCCESS;
+}
+
+
 static void
 transfer_original_stations(const infrastructure& infrain,
     infrastructure& infraout)
@@ -975,6 +1047,7 @@ transfer_original_stations(const infrastructure& infrain,
     infraout.s_i2u = infrain.s_i2u;
     infraout.s_u2vd.resize( infrain.s_u2vd.size() );
     infraout.s_i2vd.resize( infrain.s_i2vd.size() );
+    infraout.cfg = infrain.cfg;
 
     int incomplete_stations = 0;
     auto [vbegin, vend] = vertices(infrain.graph);
@@ -1024,6 +1097,8 @@ discretize_pipes(const infrastructure& infrain,
 
     int branch_num = 0;
     auto [ebegin, eend] = boost::edges(infrain.graph);
+
+    // Pipe elements
     for (auto edgeitor = ebegin; edgeitor != eend; edgeitor++)
     {
         auto pipe = infrain.graph[*edgeitor];
@@ -1080,7 +1155,10 @@ discretize_pipes(const infrastructure& infrain,
             return x*(q2 - q1)/x2 + q1;
         };
 
+        // Add discretization nodes for each original pipe
         discrnodes[0] = i_from;
+        vector_t methane = vector_t::Zero(NUM_GASES); 
+        methane(GAS_TYPE::CH4) = 1.0;
         //std:: cout << from_ic->init_P << " -> " << from_ic->init_L << std::endl;
         for (int i = 1; i < numfrags; i++) {
             auto inum = fict_station_ibase + fict_station_counter;
@@ -1091,7 +1169,7 @@ discretize_pipes(const infrastructure& infrain,
             outvp.i_snum = inum;
             outvp.name = nname + std::to_string(unum);
             outvp.type = station_type::FICTITIOUS_JUNCTION;
-            outvp.gas_mixture = vector_t::Zero(NUM_GASES);
+            outvp.gas_mixture = methane;
 
             outvp.latitude = lat_from + i*dlat;
             outvp.longitude = lon_from + i*dlon;
@@ -1108,7 +1186,7 @@ discretize_pipes(const infrastructure& infrain,
             sic.i_snum = inum;
             sic.init_P = interp(x, in_setting.length, from_ic->init_P, to_ic->init_P);
             sic.init_L = 0.0;//interp(x, in_setting.length, from_ic->init_L, to_ic->init_L);
-            //std::cout << x << " -> " << sic.init_P << " -> " << sic.init_L << std::endl;
+            //std::cout<< "Segment ("<< i <<") = " << x << " -> " << sic.init_P << " -> " << sic.init_L << std::endl;
             infraout.sics.push_back(sic);
 
             fict_station_counter++;
@@ -1116,6 +1194,8 @@ discretize_pipes(const infrastructure& infrain,
         discrnodes[numfrags] = i_to;
         //std:: cout << to_ic->init_P << " -> " << to_ic->init_L << std::endl;
 
+        // Add discretization pipes for each original pipe
+        std::vector<int> discrpipes(numfrags);
         for (int i = 1; i < discrnodes.size(); i++) {
             setting_pipe out_setting;
             out_setting.name = pipe.name + "_seg_" + std::to_string(i);
@@ -1130,22 +1210,25 @@ discretize_pipes(const infrastructure& infrain,
             edge_properties newnp;
             newnp.type = pipe_type::PIPE;
             newnp.branch_num = branch_num;
-            newnp.length = pipe.length;
+            newnp.length = fraglen;//pipe.length;
             newnp.diameter = pipe.diameter;
             newnp.friction_factor = pipe.friction_factor;
             newnp.name = out_setting.name;
             newnp.i_sfrom = out_setting.i_sfrom;
             newnp.i_sto = out_setting.i_sto;
             auto from_vtx = infraout.s_i2vd[newnp.i_sfrom];
-            auto to_vtx = infraout.s_i2vd[newnp.i_sto];
-            //std::cout << from_vtx << " " << to_vtx << std::endl;
-            boost::add_edge(from_vtx, to_vtx, newnp, infraout.graph);
+            auto to_vtx = infraout.s_i2vd[newnp.i_sto];           
+            auto [ed, is_added] = boost::add_edge(from_vtx, to_vtx, newnp, infraout.graph);
+            infraout.p_i2ed.push_back(ed);
 
             pipe_initial_condition pic;
             pic.i_sfrom = discrnodes[i-1];
             pic.i_sto = discrnodes[i];
             pic.init_G = pipe_ic->init_G;
             infraout.pics.push_back(pic);
+
+            discrpipes.at(i-1) = branch_num;
+
             branch_num++;
         }
 
@@ -1154,6 +1237,7 @@ discretize_pipes(const infrastructure& infrain,
         discr.parent_ito = i_to;
         discr.dx = fraglen;
         discr.nodelist = std::move(discrnodes);
+        discr.pipelist = std::move(discrpipes); 
 
         infraout.pipe_discretizations.push_back( std::move(discr) );
     }
@@ -1167,6 +1251,7 @@ discretize_pipes(const infrastructure& infrain,
 
     }
 
+    // Non-pipe elements
     for (auto edgeitor = ebegin; edgeitor != eend; edgeitor++)
     {
         auto pipe = infrain.graph[*edgeitor];
@@ -1186,8 +1271,9 @@ discretize_pipes(const infrastructure& infrain,
         populate_type_dependent_pipe_data(infraout, newnp, newnp.i_sfrom, newnp.i_sto);
         auto from_vtx = infraout.s_i2vd[newnp.i_sfrom];
         auto to_vtx = infraout.s_i2vd[newnp.i_sto];
-        //std::cout << from_vtx << " " << to_vtx << std::endl;
-        boost::add_edge(from_vtx, to_vtx, newnp, infraout.graph);
+        //std::cout << from_vtx << " " << to_vtx << std::endl;       
+        auto [ed, is_added] = boost::add_edge(from_vtx, to_vtx, newnp, infraout.graph);
+        infraout.p_i2ed.push_back(ed);
 
         branch_num++;
     }
@@ -1199,7 +1285,7 @@ discretize_pipes(const infrastructure& infrain,
 }
 
 int
-preprocess_for_quality_tracking(const infrastructure& infrain,
+refine_pipes(const infrastructure& infrain,
     infrastructure& infraout, double dx)
 {
     /* load_station_settings() */
@@ -1208,9 +1294,12 @@ preprocess_for_quality_tracking(const infrastructure& infrain,
     infraout.settings_entry_l_reg = infrain.settings_entry_l_reg;
     infraout.settings_exit_l_reg = infrain.settings_exit_l_reg;
     infraout.sics = infrain.sics;
+    infraout.num_original_stations = num_stations(infrain);
+    infraout.num_original_pipes = num_pipes(infrain);
+
     //infraout.pics = infrain.pics;
     /* This has to be recomputed:
-     * load_gas_mass_fractions() */
+     * load_gas_molar_fractions() */
 
     /* load_stations() */
     transfer_original_stations(infrain, infraout);
@@ -1258,11 +1347,26 @@ int initdb(const std::string& db_filename)
     char buf[BUFSIZE];
     FILE *fh;
 
-    if ( (fh = fopen("../../sqlite/shimmer.sql", "r")) )
-        goto foundok;
+    const char *schema_paths[] = {
+        "../../sqlite/shimmer.sql",
+        "../sqlite/shimmer.sql",
+        "sqlite/shimmer.sql",
+        "shimmer.sql",
+        nullptr
+    };
 
-    if ( (fh = fopen("shimmer.sql", "r")) )
+
+    const char *schema_path = schema_paths[0];
+    while (schema_path) {
+        if ( (fh = fopen(schema_path, "r")) ) {
+            goto foundok;
+        }
+    }
+
+    schema_path = getenv("SHIMMER_SCHEMA_FILE");
+    if ( schema_path and (fh = fopen(schema_path, "r")) ){
         goto foundok;
+    }
 
     std::cerr << "Can't find database schema file. ";
     std::cerr << "Can't proceed." << std::endl;
@@ -1289,97 +1393,5 @@ foundok:
     
     return sqlite_ret;
 }
-
-int launch_solver(const config& cfg)
-{
-    shimmer::infrastructure infra;
-    
-    if(cfg.refine) {
-        shimmer::infrastructure infrain;
-        int err = shimmer::load(cfg.database, infrain);
-        if (err != SHIMMER_SUCCESS) {
-            std::cerr << "Problem detected while loading DB" << std::endl;
-            return 1;
-        }
-        preprocess_for_quality_tracking(infrain, infra, cfg.dx);
-    } else {
-        int err = shimmer::load(cfg.database, infra);
-        if (err != SHIMMER_SUCCESS) {
-            std::cerr << "Problem detected while loading DB" << std::endl;
-            return 1;
-        }
-    }
-
-    assert( num_stations(infra) != 0 );
-    assert( num_pipes(infra) != 0 );
-
-    shimmer::variable guess = initial_guess(infra);
-
-    /* BEGIN GAS MASS FRACTIONS */
-    int nstations = num_stations(infra);
-    shimmer::matrix_t y_nodes = shimmer::matrix_t::Zero(nstations, NUM_GASES);
-    for (size_t i = 0; i < infra.mass_fractions.size(); i++) {
-        const auto& mf = infra.mass_fractions[i];
-        assert(mf.i_snum < nstations);
-        shimmer::vector_t y = shimmer::vector_t::Zero(NUM_GASES);
-        std::copy(mf.fractions.begin(), mf.fractions.end(), y.begin());
-        y_nodes.row(i) = y;
-    }
-
-    shimmer::incidence inc(infra.graph);
-    shimmer::matrix_t y_pipes = inc.matrix_in().transpose() * y_nodes;   
-    /* END GAS MASS FRACTIONS */
-
-     using time_solver_t = shimmer::time_solver<shimmer::papay,
-         shimmer::viscosity_type::Constant>;
-    //using time_solver_t = shimmer::time_solver<shimmer::gerg_aga,
-    //    shimmer::viscosity_type::Constant>;
-
-    time_solver_t ts1(infra.graph, cfg.temperature);
-    ts1.initialization(guess, cfg.dt_std, cfg.tol_std, y_nodes, y_pipes);  
-    ts1.advance(cfg.dt, cfg.steps, cfg.tol, y_nodes, y_pipes);
-    auto sol_full  = ts1.solution_full();
-    auto vel_full  = ts1.velocity_full();
-    std::cout << sol_full << std::endl;
-
-    std::cout << sol_full.rows() << " " << sol_full.cols() << std::endl;
-
-    std::string outfile = cfg.database;
-    if (cfg.refine) {
-        fs::path path(cfg.database);
-        std::string dir = path.parent_path().string();
-        std::string file = path.filename().string();
-        outfile =  "refined_" + file;
-        if (initdb(outfile) != 0) {
-            std::cerr << "Problem creating output db" << std::endl;
-            return -1;
-        }
-
-        shimmer::store(outfile, infra);
-    }
-
-    auto Pbegin = 0;
-    auto Plen = num_stations(infra);
-    shimmer::save_pressures(outfile, infra,
-        sol_full.block(0, Pbegin, sol_full.rows(), Plen)
-    );
-
-    auto Gbegin = num_stations(infra);
-    auto Glen = num_pipes(infra);
-    shimmer::save_flowrates(outfile, infra,
-        sol_full.block(0, Gbegin, sol_full.rows(), Glen)
-    );
-
-    auto Lbegin = Gbegin + Glen;
-    auto Llen = num_stations(infra);
-    shimmer::save_flowrates_stations(outfile, infra,
-        sol_full.block(0, Lbegin, sol_full.rows(), Llen)
-    );
-
-    shimmer::save_velocities(outfile, infra, vel_full);
-
-    return 0;
-}
-
 
 } // namespace shimmer

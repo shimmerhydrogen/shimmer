@@ -39,6 +39,8 @@ namespace gerg_functions
                const double& tolerance,
                Eigen::VectorXd &Mm);
     // *********************************************************
+    Eigen::VectorXd component_molar_masses();
+    // *********************************************************
     gerg_data::Reducing_parameters<double> 
     reducing_parameters(const std::vector<double>& x,
                         const double& tolerance);

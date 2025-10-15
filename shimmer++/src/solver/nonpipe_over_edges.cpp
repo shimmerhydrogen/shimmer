@@ -503,8 +503,8 @@ compressor::compute_beta(double p_in,
     bool pass_pout_min = pout_min_constr.check(p_out);
     bool pass_pout_max = pout_max_constr.check(p_out);
 
-    bool pout_min = pout_min_constr.value();
-    bool pout_max = pout_max_constr.value();
+    double pout_min = pout_min_constr.value();
+    double pout_max = pout_max_constr.value();
 
     if (!pass_pout_min)
         p_out = pout_min;
@@ -667,10 +667,14 @@ make_valve(const std::vector<bool>& activate_history,
     return;
 }
 
+template<typename T>
+T releq(const T& a, const T& b, const T& tol)
+{
+    return std::abs(a-b) <= tol*std::max(std::abs(a), std::abs(b));
+}
 
 compressor
-make_compressor(size_t num_steps,
-                double ramp,
+make_compressor(double ramp,
                 double efficiency,
                 const std::vector<bool>& activate_history,
                 const std::vector<std::pair<compressor_mode,double>>& modes_type_vec,
@@ -678,8 +682,6 @@ make_compressor(size_t num_steps,
                                         std::pair<control::constraint_type,
                                         double>> & user_limits)                                                   
 {
-    assert(activate_history.size() == num_steps && "Activate history has inconsistent size with respect to number of steps.");
-
     auto flux_limit = control::constraint(control::hardness_type::HARD,
                                          control::constraint_type::GREATER_EQUAL,
                                          0.0);
@@ -718,8 +720,9 @@ make_compressor(size_t num_steps,
             case compressor_mode::ON_IPRESS:
             {
                 std::cout << "Adding mode ON ................ PRESS_IN \n";
-                if(model_value != user_limits[P_IN_MIN].second)
+                if ( not releq(model_value, user_limits[P_IN_MIN].second, 0.001) ) { /* max 0.1% difference */
                     throw std::invalid_argument("Minimun pressure for control != to user limits pressure_in_min");
+                }
 
                 auto c_press_in  = control::make_pressure_in_mode(user_limits[P_IN_MIN].second);
                 cmp.add_mode_on(c_press_in);
@@ -728,8 +731,9 @@ make_compressor(size_t num_steps,
             case compressor_mode::ON_OPRESS:
             {
                 std::cout << "Adding mode ON ................ PRESS_OUT \n";
-                if(model_value != user_limits[P_OUT_MAX].second)
+                if ( not releq(model_value, user_limits[P_OUT_MAX].second, 0.001) ) { /* max 0.1% difference */
                     throw std::invalid_argument("Maximun pressure for control != to user limits pressure_out_max");
+                }
                 auto c_press_out = control::make_pressure_out_mode(user_limits[P_OUT_MAX].second);
                 cmp.add_mode_on(c_press_out);
                 break;

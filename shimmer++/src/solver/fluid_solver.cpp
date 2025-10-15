@@ -49,8 +49,9 @@ linearized_fluid_solver::linearized_fluid_solver(
     a_G_ = 0.0;
     a_p_ = 0.0;
 
-    x_nodes_ = build_x_nodes(graph_);
-    x_pipes_ = inc_.matrix_in().transpose() * x_nodes_;
+    // Here the info about the composition is taken from the graph! 
+    molfrac_nodes_ = build_molfrac_nodes(graph_);
+    molfrac_pipes_ = inc_.matrix_in().transpose() * molfrac_nodes_;
 }
 
 
@@ -318,10 +319,11 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
     eos->initialization(this);
     for(size_t iter = 0; iter <= MAX_ITERS_; iter++)
     {
-        std::cout << "---------------------------------------------------"<< std::endl;
-        std::cout<< "Fluid solver at iteration k ..............."<< iter << std::endl;
-        std::cout << "---------------------------------------------------"<< std::endl;
+        //std::cout << "---------------------------------------------------"<< std::endl;
+        //std::cout<< "Fluid solver at iteration k ..............."<< iter << std::endl;
+        //std::cout << "---------------------------------------------------"<< std::endl;
 
+        std::cout << "\rFluid solver iteration: " << iter << "/" << MAX_ITERS_ << std::flush;
 
         press_pipes_ = average(var_.pressure, inc_);
         auto [c2_nodes, c2_pipes] = eos->speed_of_sound(this);
@@ -363,43 +365,32 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
             exit(1);
         }
 
-        std::ofstream mfs (export_folder + "inrete_mat_t" + std::to_string(at_step_) + "_k" + std::to_string(iter) + ".csv");
+        //std::ofstream mfs ("inrete_mat_k0.dat");
 
-        if(!mfs.is_open())
-        {
-            std::cout << "Error openning matrix file" << std::endl;
-            exit(1);
-        }    
+        //if(!mfs.is_open())
+        //{
+        //    std::cout << "Error openning matrix file" << std::endl;
+        //    exit(1);
+        //}    
 
-        mfs << std::setprecision(16) << "" << "row"
-                    << "," << "col" << "," << "value"<< std::endl ;
+        //size_t count = 0;
+        //for (int k = 0; k < LHS.outerSize(); ++k)
+        //{
+        //    for (itor_t it(LHS,k); it; ++it, count++)
+        //    {
+        //        mfs << std::setprecision(16) << "" << it.row()
+        //                    << "  " << it.col() << "  " << it.value()<< std::endl ;
+        //    }
+        //}
 
-        size_t count = 0;
-        for (int k = 0; k < LHS.outerSize(); ++k)
-        {
-            for (itor_t it(LHS,k); it; ++it, count++)
-            {
-                mfs<< std::scientific << std::setprecision(16) << "" << it.row() + 1
-                            << "," << it.col() + 1 << "," << it.value()<< std::endl ;
-            }
-        }
+        //std::ofstream rfs ("inrete_rhs_k0.dat");
+        //if(!rfs.is_open())
+        //{
+        //    std::cout << "Error openning file" << std::endl;
+        //    exit(1);
+        //}    
 
-        mfs.close();
-
-        std::ofstream rfs (export_folder + "inrete_rhs_t" + std::to_string(at_step_) + "_k" + std::to_string(iter) + ".csv");
-        if(!rfs.is_open())
-        {
-            std::cout << "Error openning file" << std::endl;
-            exit(1);
-        }    
-
-        rfs << "rhs" << std::endl;
-        for (int k = 0; k < rhs.size(); ++k)
-        {
-          rfs<< std::scientific << std::setprecision(16) << "" << rhs[k]<< std::endl ;
-        }
-        rfs.close();
-
+        //rfs << rhs.transpose() << std::endl;
         //exit(1);
 
         std::string str_iter =  std::to_string(at_iteration); 
@@ -409,27 +400,12 @@ linearized_fluid_solver::run(const vector_t& area_pipes,
         {
             c2_nodes_ = c2_nodes;
             c2_pipes_ = c2_pipes;
-
-            std::ofstream graph_file (export_folder + "inrete_graph_t" + std::to_string(at_step_) + ".csv");
-            if(!graph_file.is_open())
-            {
-                std::cout << "Error openning file" << std::endl;
-                exit(1);
-            }
-
-            graph_file << "network_data" << std::endl;
-            graph_file<< std::scientific << std::setprecision(16) << "" << num_nodes_<< std::endl ;
-            graph_file<< std::scientific << std::setprecision(16) << "" << num_pipes_<< std::endl ;
-            graph_file<< std::scientific << std::setprecision(16) << "" << at_step_<< std::endl ;
-            graph_file<< std::scientific << std::setprecision(16) << "" << iter<< std::endl ;
-            graph_file.close();
-
-
+            std::cout << std::endl;
             return true;
         }
 
     }
-
+    std::cout << std::endl;
     std::cout << "Linearized fluid dynamics solver has NOT CONVERGED." << std::endl;
     return false;
 }

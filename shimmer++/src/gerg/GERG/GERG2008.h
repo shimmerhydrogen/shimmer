@@ -13,6 +13,7 @@ void PressureGERG(const double T, const double D, const std::vector<double> &x, 
 void DensityGERG(const int iflag, const double T, const double P, const std::vector<double> &x, double &D, int &ierr, std::string &herr);
 void PropertiesGERG(const double T, const double D, const std::vector<double> &x, double &P, double &Z, double &dPdD, double &d2PdD2, double &d2PdTD, double &dPdT, double &U, double &H, double &S, double &Cv, double &Cp, double &W, double &G, double &JT, double &Kappa, double &A);
 void SetupGERG();
+double ComponentMolarMass(int index);
 
 // those functions where mode for testing
 void ReducingParametersGERG(const std::vector<double> &x, double &Tr, double &Dr);

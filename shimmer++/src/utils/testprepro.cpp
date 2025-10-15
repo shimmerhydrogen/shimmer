@@ -38,7 +38,7 @@ int main(int argc, char **argv)
     }
 
     shimmer::infrastructure infraqt;
-    preprocess_for_quality_tracking(infra, infraqt, 5000);
+    refine_pipes(infra, infraqt, 5000);
 
     return 0;
 }

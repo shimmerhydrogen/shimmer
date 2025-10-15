@@ -8,6 +8,8 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g -Wshadow -Wnarrowing")
 set(CMAKE_CXX_FLAGS_DEBUGSANITIZED "-g -fsanitize=address")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASENATIVE "-O3 -DNDEBUG -march=native")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wfloat-equal")
+
 
 option(BUILD_SHIMMER_UNIT_TESTS "Build SHIMMER++ unitary tests" ON)
 
@@ -93,10 +95,10 @@ target_include_directories(shimmer_dbio PUBLIC src)
 set(SHIMMER_SOURCES
     src/infrastructure_graph.cpp src/solver/geometry_properties.cpp src/solver/gas_law.cpp
     src/solver/conservation_matrices.cpp src/solver/incidence_matrix.cpp
-    src/solver/matrix_manipulations.cpp src/solver/pipe_calculator.cpp src/solver/matlab_manip.cpp
+    src/solver/matrix_manipulations.cpp src/solver/pipe_calculator.cpp
     src/solver/fluid_solver.cpp src/solver/nonpipe_over_edges.cpp
     src/solver/variable.cpp src/solver/boundary.cpp
-    src/infra/infrastructure.cpp
+    src/infra/infrastructure.cpp src/infra/launch_solver.cpp
 )
 
 add_library(shimmer SHARED ${SHIMMER_SOURCES})

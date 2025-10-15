@@ -344,8 +344,7 @@ make_valve( double velocity_limit,
 
 
 compressor
-make_compressor(size_t num_steps, 
-                double ramp,
+make_compressor(double ramp,
                 double efficiency,
                 const std::vector<bool>& activate_history,
                 const std::vector<std::pair<compressor_mode, double>>& modes_type_vec,

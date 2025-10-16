@@ -32,7 +32,7 @@ infrastructure::infrastructure(const config&cfgin): cfg(cfgin){};
 
 static int
 populate_entry_p_reg(const std::vector<setting_entry_p_reg>& settings,
-    vertex_properties& vp)
+    vertex_properties& vp, double dt, size_t steps)
 {
     auto itor = lookup(settings, vp.i_snum);
     if ( itor == settings.end() ) {
@@ -43,9 +43,18 @@ populate_entry_p_reg(const std::vector<setting_entry_p_reg>& settings,
     }
     const setting_entry_p_reg &setting = *itor;
     assert((setting.u_snum == vp.u_snum) and (setting.i_snum == vp.i_snum));
-
+    
+    Eigen::VectorXd Pset;
+    if (setting.Pprofile.size() > 1) {
+        Pset = Eigen::VectorXd::Zero(steps);
+        for (size_t i = 0; i < steps; i++) {
+            Pset[i] = interp(setting.Pprofile, i*dt); 
+        }
+    } else {
+        Pset = convert_Pprof(setting);
+    }
+    
     auto limits = convert_limits(setting);
-    auto Pset = convert_Pprof(setting);
     auto remi = make_station_entry_p_reg(Pset, limits, limits);
     vp.node_station = std::make_unique<multiple_states_station>(remi);          
     return SHIMMER_SUCCESS;
@@ -53,7 +62,7 @@ populate_entry_p_reg(const std::vector<setting_entry_p_reg>& settings,
 
 static int
 populate_entry_l_reg(const std::vector<setting_entry_l_reg>& settings,
-    vertex_properties& vp)
+    vertex_properties& vp, double dt, size_t steps)
 {
     auto itor = lookup(settings, vp.i_snum);
     if ( itor == settings.end() ) {
@@ -64,10 +73,23 @@ populate_entry_l_reg(const std::vector<setting_entry_l_reg>& settings,
     }
     const setting_entry_l_reg &setting = *itor;
     assert((setting.u_snum == vp.u_snum) and (setting.i_snum == vp.i_snum));
+    assert(setting.Pprofile.size() == setting.Lprofile.size());
+
+    Eigen::VectorXd Pset;
+    Eigen::VectorXd Lset;
+    if (setting.Pprofile.size() > 1) {
+        Pset = Eigen::VectorXd::Zero(steps);
+        Lset = Eigen::VectorXd::Zero(steps);
+        for (size_t i = 0; i < steps; i++) {
+            Pset[i] = interp(setting.Pprofile, i*dt); 
+            Lset[i] = interp(setting.Lprofile, i*dt); 
+        }
+    } else {
+        Pset = convert_Pprof(setting);
+        Lset = convert_Lprof(setting);
+    }
 
     auto limits = convert_limits(setting);
-    auto Pset = convert_Pprof(setting);
-    auto Lset = convert_Lprof(setting);
     auto f = setting.f;
     auto inj_station = make_station_entry_l_reg(f, Pset, Lset,
                                         limits,
@@ -78,7 +100,7 @@ populate_entry_l_reg(const std::vector<setting_entry_l_reg>& settings,
 
 static int
 populate_exit_l_reg(const std::vector<setting_exit_l_reg>& settings,
-    vertex_properties& vp)
+    vertex_properties& vp, double dt, size_t steps)
 {
     auto itor = lookup(settings, vp.i_snum);
     if ( itor == settings.end() ) {
@@ -90,8 +112,17 @@ populate_exit_l_reg(const std::vector<setting_exit_l_reg>& settings,
     const setting_exit_l_reg &setting = *itor;
     assert((setting.u_snum == vp.u_snum) and (setting.i_snum == vp.i_snum));
 
+    Eigen::VectorXd Lset;
+    if (setting.Lprofile.size() > 1) {
+        Lset = Eigen::VectorXd::Zero(steps);
+        for (size_t i = 0; i < steps; i++) {
+            Lset[i] = interp(setting.Lprofile, i*dt); 
+        }
+    } else {
+        Lset = convert_Lprof(setting);
+    }
+
     auto limits = convert_limits(setting);
-    auto Lset = convert_Lprof(setting);
     auto consumption = make_station_exit_l_reg(Lset, limits);
     vp.node_station = std::make_unique<one_state_station>(consumption);
     return SHIMMER_SUCCESS;
@@ -131,15 +162,18 @@ populate_type_dependent_station_data(const infrastructure& infra,
             break;
 
         case(station_type::ENTRY_P_REG):
-            err = populate_entry_p_reg(infra.settings_entry_p_reg, vp);
+            err = populate_entry_p_reg(infra.settings_entry_p_reg, vp,
+                infra.cfg.dt, infra.cfg.steps);
             break;
             
         case(station_type::ENTRY_L_REG):
-            err = populate_entry_l_reg(infra.settings_entry_l_reg, vp);
+            err = populate_entry_l_reg(infra.settings_entry_l_reg, vp,
+                infra.cfg.dt, infra.cfg.steps);
             break;
 
         case(station_type::EXIT_L_REG):
-            err = populate_exit_l_reg(infra.settings_exit_l_reg, vp);
+            err = populate_exit_l_reg(infra.settings_exit_l_reg, vp,
+                infra.cfg.dt, infra.cfg.steps);
             break;
         
         

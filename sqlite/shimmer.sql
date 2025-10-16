@@ -437,7 +437,7 @@ create table gases (
 
 );
 
-insert into gases(g_name) values
+insert into gases values
     ( 0, 'CH4',     'Methane'),
     ( 1, 'N2',      'Nitrogen'),
     ( 2, 'CO2',     'Carbon dioxide'),
@@ -453,9 +453,10 @@ insert into gases(g_name) values
     (12, 'C9H20',   'Nonane'),
     (13, 'C10H22',  'Decane'),
     (14, 'H2',      'Hydrogen'),
-    (15, 'O2'       'Oxygen'),
+    (15, 'O2',       'Oxygen'),
     (16, 'CO',      'Carbon oxide'),
     (17, 'H2O',     'Water'),
-    (18, 'H2S'      'Hydrogen sulfide'),
+    (18, 'H2S',      'Hydrogen sulfide'),
     (19, 'He',      'Helium'),
     (20, 'Ar',      'Argon');
+

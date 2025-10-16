@@ -720,9 +720,9 @@ make_compressor(double ramp,
             case compressor_mode::ON_IPRESS:
             {
                 std::cout << "Adding mode ON ................ PRESS_IN \n";
-                if ( not releq(model_value, user_limits[P_IN_MIN].second, 0.001) ) { /* max 0.1% difference */
-                    throw std::invalid_argument("Minimun pressure for control != to user limits pressure_in_min");
-                }
+                //if ( not releq(model_value, user_limits[P_IN_MIN].second, 0.001) ) { /* max 0.1% difference */
+                //    throw std::invalid_argument("Minimun pressure for control != to user limits pressure_in_min");
+                //}
 
                 auto c_press_in  = control::make_pressure_in_mode(user_limits[P_IN_MIN].second);
                 cmp.add_mode_on(c_press_in);
@@ -731,9 +731,9 @@ make_compressor(double ramp,
             case compressor_mode::ON_OPRESS:
             {
                 std::cout << "Adding mode ON ................ PRESS_OUT \n";
-                if ( not releq(model_value, user_limits[P_OUT_MAX].second, 0.001) ) { /* max 0.1% difference */
-                    throw std::invalid_argument("Maximun pressure for control != to user limits pressure_out_max");
-                }
+                //if ( not releq(model_value, user_limits[P_OUT_MAX].second, 0.001) ) { /* max 0.1% difference */
+                //    throw std::invalid_argument("Maximun pressure for control != to user limits pressure_out_max");
+                //}
                 auto c_press_out = control::make_pressure_out_mode(user_limits[P_OUT_MAX].second);
                 cmp.add_mode_on(c_press_out);
                 break;

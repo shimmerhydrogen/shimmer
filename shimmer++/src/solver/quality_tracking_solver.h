@@ -49,7 +49,7 @@ class qt_solver
     double temperature_;
     int num_time_steps_; 
     int MAX_ITERS_STEADY_;
-    int TOL_MASSFRAC_;
+    double TOL_MASSFRAC_;
 
     matrix_t massfrac_guess_;
 

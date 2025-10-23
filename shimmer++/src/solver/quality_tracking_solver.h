@@ -50,6 +50,7 @@ class qt_solver
     int num_time_steps_; 
     int MAX_ITERS_STEADY_;
     double TOL_MASSFRAC_;
+    double CFL_MAX_;
 
     matrix_t massfrac_guess_;
 
@@ -74,6 +75,7 @@ public:
     {
         MAX_ITERS_STEADY_ = 500;
         TOL_MASSFRAC_ = 1.e-4; 
+        CFL_MAX_= 1.0;
         inc_all_ = incidence(infra_.graph);
         area_all_pipes_ = area(infra_.graph);
 
@@ -407,6 +409,9 @@ public:
             for (int iN = 1; iN < num_loc_nodes-1; iN++)
             {
                 auto idx = pd.nodelist[iN];
+
+                if( dtdx * V_pipes[iN] > CFL_MAX_ )
+                    throw std::invalid_argument("CFL conditions is not being respected");  
 
                 // Values on interfaces of the primal mesh (ficts nodes) = dual mesh (fict pipes)
                 auto [QL, QR] = LaxWendroff( dtdx, q_nodes, flux_nodes, iN);

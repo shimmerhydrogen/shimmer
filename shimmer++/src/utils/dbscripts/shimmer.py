@@ -1,3 +1,22 @@
+# This is the SHIMMER gas network simulator.
+# Copyright (C) 2023-2024-2025 Politecnico di Torino
+# 
+# Dipartimento di Matematica "G. L. Lagrange" - DISMA
+# Dipartimento di Energia "G. Ferraris" - DENERG
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+# 
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import sqlite3
 def create_ndf(filename):
@@ -208,6 +227,44 @@ def set_pipe_params(conn, from_station, to_station, diam, length, rough):
         print(f"SQLite error in set_pipe_params: {e}")
         conn.rollback()
 
+def add_compressor(conn, from_station, to_station):
+    pname = f"pipe_{from_station}_{to_station}"
+    COMPR_STAT = 1
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO pipelines(p_name, s_from, s_to, p_type) VALUES (?, ?, ?, ?)",
+            (pname, from_station, to_station, COMPR_STAT)
+        )
+        conn.commit()
+    except sqlite3.Error as e:
+        print(f"SQLite error in add_compressor: {e}")
+        conn.rollback()
+
+ON_POWER    =  0
+ON_OPRESS   =  1
+ON_IPRESS   =  2
+ON_RATIO    =  3
+ON_MASSFLOW =  4
+OFF_BYPASS  = 10
+OFF_CLOSED  = 11
+
+def set_compressor_limits(conn, from_station, to_station, limits):
+    pname = f"pipe_{from_station}_{to_station}"
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO compressor_limits VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (pname, from_station, to_station, limits['max_power'],
+                limits['max_outpress'], limits['min_inpress'],
+                limits['max_ratio'], limits['min_ratio'],
+                limits['max_massflow']
+            )
+        )
+        conn.commit()
+    except sqlite3.Error as e:
+        print(f"SQLite error in set_compressor_limits: {e}")
+        conn.rollback()
 
 def set_pic(conn, from_station, to_station, G):
     pname = f"pipe_{from_station}_{to_station}"

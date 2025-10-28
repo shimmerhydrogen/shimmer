@@ -71,13 +71,13 @@ def add_station(conn, station, type, height):
             (station, f"station_{station}", type, height)
         )
 
-        cursor.execute(
-            """
-            INSERT INTO gas_molar_fractions (s_number, frac_CH4)
-            VALUES (?, ?)
-            """,
-            (station, 1.0)
-        )
+        #cursor.execute(
+        #    """
+        #    INSERT INTO gas_molar_fractions (s_number, frac_CH4)
+        #    VALUES (?, ?)
+        #    """,
+        #    (station, 1.0)
+        #)
 
         conn.commit()
 
@@ -211,16 +211,15 @@ def add_pipe(conn, from_station, to_station):
         conn.rollback()
 
 
-def set_pipe_params(conn, from_station, to_station, diam, length, rough):
+def set_pipe_params(conn, from_station, to_station, diam, length, rough, ref_nsegs = 0):
     pname = f"pipe_{from_station}_{to_station}"
     try:
         cursor = conn.cursor()
         cursor.execute(
             """
-            INSERT INTO pipe_parameters(p_name, s_from, s_to, diameter, length, roughness)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO pipe_parameters VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (pname, from_station, to_station, diam, length, rough)
+            (pname, from_station, to_station, diam, length, rough, ref_nsegs)
         )
         conn.commit()
     except sqlite3.Error as e:
@@ -277,4 +276,19 @@ def set_pic(conn, from_station, to_station, G):
         conn.commit()
     except sqlite3.Error as e:
         print(f"SQLite error in set_pic: {e}")
+        conn.rollback()
+
+def set_gmf(conn, station, gmf):
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO gas_molar_fractions(s_number,frac_CH4,
+                frac_N2,frac_CO2,frac_H2) VALUES (?, ?, ?, ?, ?)
+            """,
+            (station, gmf['CH4'], gmf['N2'], gmf['CO2'], gmf['H2'])
+        )
+        conn.commit()
+    except sqlite3.Error as e:
+        print(f"SQLite error in set_gmf: {e}")
         conn.rollback()

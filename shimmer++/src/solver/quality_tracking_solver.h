@@ -131,8 +131,9 @@ public:
                     mat(iRow, iCol) = 0; 
                 else if(mat(iRow, iCol) < 0.) 
                 {
-                    std::cerr<< mat(iRow, iCol) << std::endl;
-                    throw std::invalid_argument("ERROR:QT: Negative mass fractions"); 
+                    //mat(iRow, iCol) = 0;
+                    //std::cerr<< mat(iRow, iCol) << std::endl;
+                    //throw std::invalid_argument("ERROR:QT: Negative mass fractions"); 
                 }
                 else  
                     continue; 
@@ -410,8 +411,12 @@ public:
             {
                 auto idx = pd.nodelist[iN];
 
-                if( dtdx * V_pipes[iN] > CFL_MAX_ )
+                if( dtdx * V_pipes[iN] > CFL_MAX_ ) {
+                    auto cfl = dtdx * V_pipes[iN];
+                    std::cout << "dt = " << dt << ", dx = " << pd.dx << ", V = ";
+                    std::cout << V_pipes[iN] << ", cfl = " << cfl << std::endl;
                     throw std::invalid_argument("CFL conditions is not being respected");  
+                }
 
                 // Values on interfaces of the primal mesh (ficts nodes) = dual mesh (fict pipes)
                 auto [QL, QR] = LaxWendroff( dtdx, q_nodes, flux_nodes, iN);

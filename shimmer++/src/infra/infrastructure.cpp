@@ -1395,6 +1395,7 @@ int initdb(const std::string& db_filename)
         if ( (fh = fopen(schema_path, "r")) ) {
             goto foundok;
         }
+        schema_path++;
     }
 
     schema_path = getenv("SHIMMER_SCHEMA_FILE");

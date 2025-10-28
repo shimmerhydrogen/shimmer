@@ -1,7 +1,7 @@
 import shimmer as shmr
 import graphviz
 
-ndfname = "refined.db"
+ndfname = "refined_gasco_autogen.db"
 
 
 ndf = shmr.open_ndf(ndfname)

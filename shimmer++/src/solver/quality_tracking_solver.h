@@ -566,14 +566,20 @@ public:
                 rho_all_pipes_evol_.row(0) =  eos.density_pipes(&lfs);
                 rho_all_nodes_evol_.row(0) =  eos.density_nodes(&lfs);
 
+
+                matrix_t mf_in  = inc_all_.matrix_in().transpose()  * massfrac_nodes;
+                matrix_t mf_out = inc_all_.matrix_out().transpose() * massfrac_nodes;
+                matrix_t massfrac_now_pipes = 0.5 * (mf_in + mf_out); 
                 massfrac_pipes = inc_all_.matrix_in().transpose() * massfrac_nodes;    
                 auto pair_molfrac = eos.massfrac_2_molfrac(massfrac_nodes, massfrac_pipes);
                 molfrac_all_evol_[0] = pair_molfrac.first; 
 
                 return true;
             }
-            massfrac_nodes = massfrac_next_nodes;
-            massfrac_pipes = inc_all_.matrix_in().transpose() * massfrac_nodes;    
+            matrix_t mf_in  = inc_all_.matrix_in().transpose()  * massfrac_nodes;
+            matrix_t mf_out = inc_all_.matrix_out().transpose() * massfrac_nodes;
+            matrix_t massfrac_pipes = 0.5 * (mf_in + mf_out); 
+
             var_previous = var_current;
         }
 
@@ -608,7 +614,11 @@ public:
             std::cout<<"========================================================"<< std::endl;
 
             // 1. Update molar masses (mm) inside eos and molar frac inside graph
-            matrix_t massfrac_now_pipes = inc_all_.matrix_in().transpose() * massfrac_now_nodes;    
+            //matrix_t massfrac_now_pipes = inc_all_.matrix_in().transpose() * massfrac_now_nodes;    
+            matrix_t mf_in  = inc_all_.matrix_in().transpose()  * massfrac_now_nodes;
+            matrix_t mf_out = inc_all_.matrix_out().transpose() * massfrac_now_nodes;
+            matrix_t massfrac_now_pipes = 0.5 * (mf_in + mf_out); 
+
             auto [molfrac_nodes, molfrac_pipes] =  eos.massfrac_2_molfrac(massfrac_now_nodes, massfrac_now_pipes);
 
             auto index = get(boost::vertex_index, infra_.graph);
@@ -648,25 +658,7 @@ public:
         return;
     }
 
-/*
-    std::pair<vector_t, vector_t>
-    MUSCL(double dtdx, const matrix_t& Q, size_t i)
-    {
-        auto kappa = 1.0/3.0;
 
-        vector_t QL, QR;
-
-        if(i > 2)        
-           QL =  Q.row(i-1) + 0.25 * (1.0 -kappa) * (Q.row(i-1) + Q.row(i-2)) +  0.25 * (1.0 +kappa) * (Q.row(i) + Q.row(i-1));
-        else
-           QL =  Q.row(i-1) + 0.25 * (1.0 -kappa) * (Q.row(i-1) + Q.row(i-2)) +  0.25 * (1.0 +kappa) * (Q.row(i) + Q.row(i-1));
-
-        if()           
-           QR =  Q.row(i) + 0.25 * (1.0 -kappa) * (Q.row(i) + Q.row(i-1)) +  0.25 * (1.0 +kappa) * (Q.row(i+1) + Q.row(i));
-
-        return std::make_pair(QL, QR);
-    }
-*/ 
 
     matrix_t
     massfracflux_fictitious_nodes(const pipe_discretization& pd, 

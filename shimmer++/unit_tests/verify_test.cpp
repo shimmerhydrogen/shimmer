@@ -35,7 +35,6 @@ bool verify_test(const std::string & name,
    
     for (int k = 0; k < vals.size(); ++k)
     {
-        std::cout << std::setprecision(16) << vals[k]  <<  std::endl ;
         double e_val;
         if(std::abs(ref.at(k)) > 1.e-12)
             e_val = std::abs((vals[k] - ref.at(k))) /  std::abs(ref.at(k));
@@ -43,6 +42,8 @@ bool verify_test(const std::string & name,
             e_val = vals[k];
         if(e_val > 1.e-3)
         {
+            std::cout << "Fail at "<< k << "with (ref, val) = ("<< std::setprecision(16)
+                      <<ref.at(k) << " , " << vals[k]<< ")."  <<  std::endl ;
             pass = false;
             break;  
         }

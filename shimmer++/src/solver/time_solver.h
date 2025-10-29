@@ -164,11 +164,7 @@ public:
             ofs.close();
 
             std::cout<<"========================================================"<< std::endl;
-            std::cout<<"========================================================"<< std::endl;
-            std::cout<<"========================================================"<< std::endl;
-            std::cout << "Solving at time ...."<< it <<std::endl;
-            std::cout<<"========================================================"<< std::endl;
-            std::cout<<"========================================================"<< std::endl;
+            std::cout<<" Solving at time ................................"<< it  <<std::endl;
             std::cout<<"========================================================"<< std::endl;
 
             pipe_stations_activation(it, var_);
@@ -182,11 +178,9 @@ public:
                 ofs << " * Iteration it ..."<<ic<< std::endl;
                 ofs.close();
 
-                std::cout<<"****************************************************************"<< std::endl;
-                std::cout<<"****************************************************************"<< std::endl;
-                std::cout << " Iteration CONSTRAINTS it ..............."<<ic<< " ... at time "<< it << std::endl;
-                std::cout<<"****************************************************************"<< std::endl;
-                std::cout<<"****************************************************************"<< std::endl;
+                std::cout<<"----------------------------------------------------"<< std::endl;
+                std::cout<<"    CONSTRAINT iteration ("<<ic<< ") ......... at time.. "<< it << std::endl;
+                std::cout<<"----------------------------------------------------"<< std::endl;
 
                 // To be finish when it is clear how x changes and modifies mu.
                 auto mu = viscosity<viscosity_type>(temperature_, graph_);
@@ -199,7 +193,7 @@ public:
 
                 if(pass_constr && pass_control)
                 {
-                    std::cout<< "++++++++++++++++++**** MODIFIED VARIABLE ****++++++++++++++++++++++ " << std::endl;
+                    std::cout<< "++++++++++++++++++ MODIFIED VARIABLE ++++++++++++++++++++++ " << std::endl;
                     var_ =  lfs.get_variable();
                     rho_ =  eos.density_pipes(&lfs);  
 

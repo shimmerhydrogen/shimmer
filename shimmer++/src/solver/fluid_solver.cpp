@@ -418,7 +418,8 @@ linearized_fluid_solver::check_hard_constraints(size_t step)
     for(auto itor = v_range.first; itor != v_range.second; itor++, i++)
     {
         bool pass = graph_[*itor].node_station->check_hard(var_.pressure[i], var_.L_rate[i], step);
-        std::cout<< " * Hard ("<< i << ") : "<< pass << std::endl;
+        if(!pass)
+            std::cout<< " * Hard ("<< i << ") : "<< pass << std::endl;
         pass_all = pass_all && pass;
     }
 
@@ -483,7 +484,8 @@ linearized_fluid_solver::check_hard_controls(size_t step)
             idx++;
         }
         // =================================================================
-        std::cout << " * Hard (" << pipe_num << ") : " << pass << std::endl;
+        if(!pass)
+            std::cout << " * Hard (" << pipe_num << ") : " << pass << std::endl;
 
         pass_all = pass_all && pass;
     }

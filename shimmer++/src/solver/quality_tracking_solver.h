@@ -470,9 +470,9 @@ public:
         size_t ic;
         for(ic = 0; ic <= MAX_CONSTRAINT_ITER; ic++)
         {
-            std::cout<<"****************************************************************"<< std::endl;
-            std::cout << " Iteration CONSTRAINTS it ..............."<<ic<< " ... at time "<< it << std::endl;
-            std::cout<<"****************************************************************"<< std::endl;
+            std::cout<<"----------------------------------------------------"<< std::endl;
+            std::cout<<"    CONSTRAINT iteration ("<<ic<< ") ......... at time.. "<< it << std::endl;
+            std::cout<<"----------------------------------------------------"<< std::endl;
 
             auto mu = viscosity<viscosity_type>(temperature_, infra_.graph);
 
@@ -484,7 +484,7 @@ public:
 
             if(pass_constr && pass_control)
             {
-                std::cout<< "++++++++++++++++++**** MODIFIED VARIABLE ****++++++++++++++++++++++ " << std::endl;
+                std::cout<< "++++++++++++++++++ MODIFIED VARIABLE ++++++++++++++++++++++ " << std::endl;
                 var_all_ =  lfs.get_variable();
                 var_all_guess_ = var_all_;
 
@@ -610,7 +610,7 @@ public:
         for(size_t it = 1; it < num_time_steps_; it++, t+=dt)
         {
             std::cout<<"========================================================"<< std::endl;
-            std::cout << "Solving at time ...."<< it <<std::endl;
+            std::cout<<" Solving at time ................................"<< it  <<std::endl;
             std::cout<<"========================================================"<< std::endl;
 
             // 1. Update molar masses (mm) inside eos and molar frac inside graph

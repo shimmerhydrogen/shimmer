@@ -204,6 +204,14 @@ public:
         return std::make_pair(QL, QR);
     }
 
+    matrix_t
+    Lax_Wendroff_sol(double dtdx, const matrix_t& Q, const matrix_t&  flux_nodes)
+    {
+        auto Nx = Q.rows();
+        return 0.5 * (Q.middleRows(1,Nx-1) + Q.topRows(Nx-1))
+             - 0.5 * dtdx * (flux_nodes.middleRows(1,Nx-1) - flux_nodes.topRows(Nx-1)); 
+    }
+
 
     bool
     admixing(bool unsteady, 
@@ -404,6 +412,9 @@ public:
                 q_nodes.row(iN) = rho_nodes[iN] * massfrac_now.row(idx);
             }
             
+            // Numerical flux
+            matrix_t Qlw = Lax_Wendroff_sol(dtdx, q_nodes, flux_nodes); 
+
             // 2. Solve dq/dt + d(vq)/dx = 0
             for (int iN = 1; iN < num_loc_nodes-1; iN++)
             {
@@ -416,13 +427,11 @@ public:
                     throw std::invalid_argument("CFL conditions is not being respected");  
                 }
 
-                // Values on interfaces of the primal mesh (ficts nodes) = dual mesh (fict pipes)
-                auto [QL, QR] = LaxWendroff( dtdx, q_nodes, flux_nodes, iN);
+                // Values on interfaces of the primal mesh (ficts nodes) = dual mesh (fict pipes)    
+                //auto [QL, QR] = LaxWendroff( dtdx, q_nodes, flux_nodes, iN);
 
-                //auto [QF, QR] = MUSCL(); 
-
-                vector_row_t FL = flux_exact(QL,V_pipes[iN-1]); 
-                vector_row_t FR = flux_exact(QR,V_pipes[iN]);
+                vector_row_t FL = flux_exact(Qlw.row(iN-1),V_pipes[iN-1]); 
+                vector_row_t FR = flux_exact(Qlw.row(iN),V_pipes[iN]);
 
                 vector_row_t add = dtdx * (FR -FL); 
                 vector_row_t q_next_i = q_nodes.row(iN) - dtdx * (FR -FL);

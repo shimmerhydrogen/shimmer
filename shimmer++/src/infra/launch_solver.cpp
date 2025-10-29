@@ -9,10 +9,9 @@ namespace fs = std::filesystem;
 
 namespace shimmer {
 
-int launch_solver(const config& cfg)
+int
+prepare_infrastructure(const config& cfg, shimmer::infrastructure& infra)
 {
-    shimmer::infrastructure infra(cfg);
-    
     if(cfg.refine) {
         shimmer::infrastructure infrain(cfg);
         int err = shimmer::load(cfg.database, infrain);
@@ -32,13 +31,24 @@ int launch_solver(const config& cfg)
 
         auto edge_range = boost::edges(infra.graph);
         for (auto itor = edge_range.first; itor != edge_range.second; itor++){
+            edge_descriptor ed = *itor;
             infra.p_i2ed.push_back(*itor);
         }
+
     }
 
     assert( num_stations(infra) != 0 );
     assert( num_pipes(infra) != 0 );
 
+    return 0;
+}
+
+int launch_solver(const config& cfg)
+{
+    shimmer::infrastructure infra(cfg);  
+    int success = shimmer::prepare_infrastructure(cfg, infra); 
+    if(!success)
+        return success;
     shimmer::variable guess = initial_guess(infra);
 
     /* END GAS MASS FRACTIONS */
@@ -97,34 +107,9 @@ int launch_solver(const config& cfg)
 int launch_solver_qt(const config& cfg)
 {
     shimmer::infrastructure infra(cfg);
-    
-    if(cfg.refine) {
-        shimmer::infrastructure infrain(cfg);
-        int err = shimmer::load(cfg.database, infrain);
-        if (err != SHIMMER_SUCCESS) {
-            std::cerr << "Problem detected while loading DB" << std::endl;
-            return 1;
-        }
-        refine_pipes(infrain, infra, cfg.dx);
-    } else {
-        int err = shimmer::load(cfg.database, infra);
-        if (err != SHIMMER_SUCCESS) {
-            std::cerr << "Problem detected while loading DB" << std::endl;
-            return 1;
-        }
-        infra.num_original_stations = num_stations(infra);
-        infra.num_original_pipes = num_pipes(infra);
-
-        auto edge_range = boost::edges(infra.graph);
-        for (auto itor = edge_range.first; itor != edge_range.second; itor++){
-            edge_descriptor ed = *itor;
-            infra.p_i2ed.push_back(ed);
-        }
-
-    }
-
-    assert( num_stations(infra) != 0 );
-    assert( num_pipes(infra) != 0 );
+    int success = shimmer::prepare_infrastructure(cfg, infra); 
+    if(!success)
+        return success;
 
     shimmer::variable guess = initial_guess(infra);
 

@@ -29,6 +29,9 @@
 
 namespace shimmer {
 
+int prepare_infrastructure(const config& cfg, 
+                           shimmer::infrastructure& infra);
+
 int launch_solver(const config&);
 
 int launch_solver_qt(const config&);

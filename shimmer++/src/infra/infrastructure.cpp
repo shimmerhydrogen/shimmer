@@ -22,6 +22,7 @@
 #include <filesystem>
 #include "infra/infrastructure.h"
 #include "errors.h"
+#include "config.h"
 
 namespace fs = std::filesystem;
 
@@ -1382,10 +1383,11 @@ int initdb(const std::string& db_filename)
     FILE *fh;
 
     const char *schema_paths[] = {
-        "../../sqlite/shimmer.sql",
-        "../sqlite/shimmer.sql",
-        "sqlite/shimmer.sql",
+#ifdef SHIMMER_SCHEMA_INSTALL_PATH
+        SHIMMER_SCHEMA_INSTALL_PATH,
+#endif /* SHIMMER_SCHEMA_INSTALL_PATH */
         "shimmer.sql",
+        "sqlite/shimmer.sql",
         nullptr
     };
 
@@ -1403,8 +1405,8 @@ int initdb(const std::string& db_filename)
         goto foundok;
     }
 
-    std::cerr << "Can't find database schema file. ";
-    std::cerr << "Can't proceed." << std::endl;
+    std::cerr << "Can't find NDF schema file, perhaps your Shimmer ";
+    std::cerr << "installation is corrupt. Exiting." << std::endl;
     return -1;
 
 foundok:

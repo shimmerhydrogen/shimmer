@@ -46,9 +46,10 @@ prepare_infrastructure(const config& cfg, shimmer::infrastructure& infra)
 int launch_solver(const config& cfg)
 {
     shimmer::infrastructure infra(cfg);  
-    int success = shimmer::prepare_infrastructure(cfg, infra); 
-    if(success)
-        return success;
+    int err = shimmer::prepare_infrastructure(cfg, infra);
+    if(err) {
+        return err;
+    }
     shimmer::variable guess = initial_guess(infra);
 
     /* END GAS MASS FRACTIONS */
@@ -104,9 +105,10 @@ int launch_solver(const config& cfg)
 int launch_solver_qt(const config& cfg)
 {
     shimmer::infrastructure infra(cfg);
-    int success = shimmer::prepare_infrastructure(cfg, infra); 
-    if(!success)
-        return success;
+    int err = shimmer::prepare_infrastructure(cfg, infra); 
+    if(err) {
+        return err;
+    }
 
     shimmer::variable guess = initial_guess(infra);
 

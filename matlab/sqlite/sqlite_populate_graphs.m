@@ -1,7 +1,7 @@
 clear all;
 close all;
 
-db_schema = fullfile(pwd, "../../sqlite/shimmer.sql");
+db_schema = fullfile(pwd, "../../shimmer++/share/shimmer.sql");
 
 run_tests = [1,1,1,0,1,1,1];
 

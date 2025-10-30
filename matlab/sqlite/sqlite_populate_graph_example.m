@@ -2,7 +2,7 @@ clear all;
 close all;
 
 %% DB schema path
-db_schema = fullfile(pwd, "../../sqlite/shimmer.sql");
+db_schema = fullfile(pwd, "../../shimmer++/share/shimmer.sql");
 
 %% Load NDF Matlab
 graph_path = fullfile(pwd, "graph_example.mat");

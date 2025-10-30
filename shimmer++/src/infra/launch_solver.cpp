@@ -47,7 +47,7 @@ int launch_solver(const config& cfg)
 {
     shimmer::infrastructure infra(cfg);  
     int success = shimmer::prepare_infrastructure(cfg, infra); 
-    if(!success)
+    if(success)
         return success;
     shimmer::variable guess = initial_guess(infra);
 
@@ -64,9 +64,6 @@ int launch_solver(const config& cfg)
     auto vel_full  = ts1.velocity_full();
 
     // Post-processing
-    std::cout << sol_full << std::endl;
-    std::cout << sol_full.rows() << " " << sol_full.cols() << std::endl;
-
     std::string outfile = cfg.database;
     if (cfg.refine) {
         fs::path path(cfg.database);

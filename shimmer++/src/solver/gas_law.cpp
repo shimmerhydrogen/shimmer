@@ -451,7 +451,7 @@ gerg_aga::massfrac_2_molfrac(const matrix_t&massfrac_nodes, const matrix_t&massf
         // off diag
         for(int iComp = 0; iComp < NUM_GASES; iComp++)
         {
-            A.row(iComp) -= massfrac_nodes(iP, iComp) * mm_component.transpose();
+            A.row(iComp) -= massfrac_pipes(iP, iComp) * mm_component.transpose();
         }
 
         molfrac_pipes.row(iP) = A.fullPivLu().solve(rhs).transpose();

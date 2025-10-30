@@ -78,7 +78,7 @@ shmr.add_cons_limit(ndf, 5, exit_limits)
 shmr.add_cons_profile(ndf, 5, cons_profile_5)
 
 # ------------------------------------------------------------------
-refinement_segs = 20
+refinement_segs = 40
 shmr.add_pipe(ndf, 3, 4)
 shmr.set_pipe_params(ndf, 3, 4, 0.9664, 619000.0, 1.4e-05, refinement_segs)
 
@@ -123,17 +123,17 @@ for pic in pipe_ics:
 # ------------------------------------------------------------------
 # Gas molar fractions
 gmf1 = {}
-gmf1['CH4'] = 1.0
+gmf1['CH4'] = 0.8
 gmf1['N2'] = 0.0
 gmf1['CO2'] = 0.0
-gmf1['H2'] = 0.0
+gmf1['H2'] = 0.2
 shmr.set_gmf(ndf, 1, gmf1)
 
 gmf2 = {}
-gmf2['CH4'] = 0.0
+gmf2['CH4'] = 0.9
 gmf2['N2'] = 0.0
-gmf2['CO2'] = 1.0
-gmf2['H2'] = 0.0
+gmf2['CO2'] = 0.0
+gmf2['H2'] = 0.1
 shmr.set_gmf(ndf, 2, gmf2)
 
 gmf3 = {}

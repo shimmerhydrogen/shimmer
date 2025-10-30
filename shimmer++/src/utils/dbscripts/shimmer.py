@@ -25,7 +25,7 @@ def create_ndf(filename):
         return False
 
     try:
-        with open("../../../../sqlite/shimmer.sql", "r") as file:
+        with open("shimmer.sql", "r") as file:
             sql_content = file.read()
     except FileNotFoundError:
         print("Could not find database schema")

@@ -1011,9 +1011,9 @@ int save_velocities(const std::string& db_filename, const infrastructure& infra,
     rc = sqlite3_exec(db, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
 
     for (int ts = 0; ts < vels.rows(); ts++) {
-        std::cout << ts << ": ";
+        //std::cout << ts << ": ";
         for (int branch_num = 0; branch_num < vels.cols(); branch_num++) {
-            std::cout << branch_num << " ";
+            //std::cout << branch_num << " ";
             auto edge_itor = std::next(edge_begin, branch_num);
             auto ep = infra.graph[*edge_itor];
             rc = sqlite3_bind_text(stmt, 1, ep.name.c_str(), -1, nullptr);
@@ -1025,7 +1025,7 @@ int save_velocities(const std::string& db_filename, const infrastructure& infra,
             rc = sqlite3_clear_bindings(stmt);
             rc = sqlite3_reset(stmt);
         }
-        std::cout << std::endl;
+        //std::cout << std::endl;
     }
     rc = sqlite3_exec(db, "COMMIT", nullptr, nullptr, nullptr);
 

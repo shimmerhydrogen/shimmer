@@ -763,6 +763,13 @@ int num_pipes(const infrastructure& infra)
     return num_edges(infra.graph);
 }
 
+station_type
+station_type_from_inum(const infrastructure& infra, int s_inum)
+{
+    auto vd = infra.s_i2vd.at(s_inum);
+    return infra.graph[vd].type;
+}
+
 variable
 initial_guess(const infrastructure& infra)
 {
@@ -788,9 +795,14 @@ initial_guess(const infrastructure& infra)
             throw std::logic_error("station index out of bounds");
         }
 
+        /* Yes, this "==0" on a FP quantity is what we want. Just check
+         * if the user put a zero in the DB and warn. */
         if (sic.init_P == 0 or sic.init_L == 0) {
-            std::cout << "Warning: zero initial guess for station ";
-            std::cout << infra.s_i2u.at(sic.i_snum) << std::endl;
+            auto st = station_type_from_inum(infra, sic.i_snum);
+            if (st != station_type::FICTITIOUS_JUNCTION) {
+                std::cout << "Warning: zero initial guess for station ";
+                std::cout << infra.s_i2u.at(sic.i_snum) << std::endl;
+            }
         }
 
         P(sic.i_snum) = sic.init_P;

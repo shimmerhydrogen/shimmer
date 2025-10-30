@@ -113,4 +113,6 @@ int refine_pipes(const infrastructure&, infrastructure&, double);
 int initdb(const std::string&);
 int save_velocities(const std::string&, const infrastructure&, const matrix_t&);
 
+station_type station_type_from_inum(const infrastructure&, int);
+
 } //namespace shimmer

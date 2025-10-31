@@ -276,12 +276,16 @@ public:
         auto Nx = Q.rows();
         matrix_t diff_flux = flux.middleRows(1,Nx-1) - flux.topRows(Nx-1);
 
+        matrix_t mean_Q = 0.5 * (Q.middleRows(1, Nx-1) + Q.topRows(Nx-1));
         matrix_t vDiag = velocity.asDiagonal();
-        matrix_t dfdq = vDiag.block(0,0, Nx-1, Nx-1);
+        matrix_t dfdq  = vDiag.block(0,0, Nx-1, Nx-1) * mean_Q;
+
+        matrix_t Ones = matrix_t::Ones( Nx-1, Nx-1);
+        matrix_t FH_FL = 0.5 * diff_flux.array() * ( 1.0 - 0.5 * dtdx * dfdq.array());
+
         matrix_t lim = slope_limiter(Q); 
 
-        return flux.topRows(Nx-1).array()
-                + 0.5 * diff_flux.array() * ( 1.0 - 0.5 * dtdx * dfdq.array()) * lim.array(); 
+        return flux.topRows(Nx-1).array() + FH_FL.array() * lim.middleRows(0, Nx-1).array(); 
     }
 
 

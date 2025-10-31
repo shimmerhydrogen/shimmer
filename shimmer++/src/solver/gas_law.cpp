@@ -83,7 +83,10 @@ equation_of_state::mixture_molar_mass(const infrastructure_graph& graph, const i
 {
     // Molar frac by comp and by pipe/node
     matrix_t molfrac_nodes = build_molfrac_nodes(graph);
-    matrix_t molfrac_pipes = inc.matrix_in().transpose() * molfrac_nodes;   
+    
+    matrix_t mf_in  = inc.matrix_in().transpose()  * molfrac_nodes;
+    matrix_t mf_out = inc.matrix_out().transpose() * molfrac_nodes;
+    matrix_t molfrac_pipes = 0.5 * (mf_in + mf_out); 
 
     mixture_molar_mass(molfrac_nodes, molfrac_pipes);
 }
@@ -284,7 +287,9 @@ gerg::molfrac_2_massfrac(const infrastructure_graph& graph, const incidence& inc
 {
     // Molar frac by comp and by pipe/node
     matrix_t molfrac_nodes = build_molfrac_nodes(graph);
-    matrix_t molfrac_pipes = inc.matrix_in().transpose() * molfrac_nodes;      
+    matrix_t mf_in  = inc.matrix_in().transpose()  * molfrac_nodes;
+    matrix_t mf_out = inc.matrix_out().transpose() * molfrac_nodes;
+    matrix_t molfrac_pipes = 0.5 * (mf_in + mf_out);   
     mixture_molar_mass(molfrac_nodes, molfrac_pipes);
 
     matrix_t massfrac_nodes = matrix_t::Zero(boost::num_vertices(graph), NUM_GASES ); 
@@ -401,7 +406,9 @@ gerg_aga::molfrac_2_massfrac(const infrastructure_graph& graph, const incidence&
     // Molar frac by comp and by pipe/node
     // Molar frac by comp and by pipe/node
     matrix_t molfrac_nodes = build_molfrac_nodes(graph);
-    matrix_t molfrac_pipes = inc.matrix_in().transpose() * molfrac_nodes;      
+    matrix_t mf_in  = inc.matrix_in().transpose()  * molfrac_nodes;
+    matrix_t mf_out = inc.matrix_out().transpose() * molfrac_nodes;
+    matrix_t molfrac_pipes = 0.5 * (mf_in + mf_out); 
     mixture_molar_mass(molfrac_nodes, molfrac_pipes);
 
     matrix_t massfrac_nodes = matrix_t::Zero(boost::num_vertices(graph), NUM_GASES ); 

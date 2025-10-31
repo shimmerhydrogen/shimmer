@@ -274,21 +274,10 @@ public:
     Lax_Wendroff_flux(double dtdx, const matrix_t& Q, const matrix_t& flux,  const vector_t& velocity)
     {
         auto Nx = Q.rows();
-
-        //std::cout << "Nx = "<< Nx << std::endl;
-        //std::cout << "vDiag size: "<< velocity.size() << std::endl;
+        matrix_t diff_flux = flux.middleRows(1,Nx-1) - flux.topRows(Nx-1);
 
         matrix_t vDiag = velocity.asDiagonal();
-
-        //std::cout << "vDiag: \n"<< vDiag << std::endl;
-    
-        matrix_t diff_flux = flux.middleRows(1,Nx-1) - flux.topRows(Nx-1);
-        matrix_t mean_Q = 0.5 * (Q.middleRows(1, Nx-1) + Q.topRows(Nx-1));
-        matrix_t diff_Q = (Q.middleRows(1, Nx-1) - Q.topRows(Nx-1));
-
-        diff_Q += 1.e-10 * matrix_t::Ones(diff_Q.rows(), diff_Q.cols());
-
-        matrix_t dfdq = diff_flux.cwiseQuotient(diff_Q);
+        matrix_t dfdq = vDiag.block(0,0, Nx-1, Nx-1);
         matrix_t lim = slope_limiter(Q); 
 
         return flux.topRows(Nx-1).array()

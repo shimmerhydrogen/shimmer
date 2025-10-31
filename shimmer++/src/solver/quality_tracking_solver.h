@@ -131,7 +131,7 @@ public:
                     mat(iRow, iCol) = 0; 
                 else if(mat(iRow, iCol) < 0.) 
                 {
-                    //mat(iRow, iCol) = 0;
+                    mat(iRow, iCol) = 0;
                     //std::cerr<< mat(iRow, iCol) << std::endl;
                     //throw std::invalid_argument("ERROR:QT: Negative mass fractions"); 
                 }

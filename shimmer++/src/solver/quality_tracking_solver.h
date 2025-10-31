@@ -189,10 +189,67 @@ public:
     }
 
     
+    double
+    minmod(double val)
+    {
+        return std::max(0.0, std::min(1.0,val));
+    }
+
+
+    double
+    vanLeer(double val)
+    {
+        double a = std::abs(val); 
+        return (a + val)/(1.0 + a) ;        
+    }
+
+    double 
+    barth_jespersen(double val)
+    {
+        double a = val + 1.0;
+        double b = std::min(1.0, 4.0 * val / a);
+        double c = std::min(1.0, 4.0 / a);
+        return 0.5 * a * std::min(b, c);  
+    }
+
+    double 
+    superbee(double val)
+    {
+        return std::max({0.0, std::min(2.0 * val, 1.0), std::min(val,2.0)});
+    }
+
+
+
     vector_row_t 
     flux_exact(const vector_row_t& TransportedVariable, const double& Velocity)
     {
         return Velocity * TransportedVariable;  
+    }
+
+    matrix_t
+    slope_limiter(const matrix_t& Q)
+    {
+        matrix_t slope = matrix_t::Zero( Q.rows(), Q.cols());
+        vector_row_t eps = 1.e-10 * vector_row_t::Ones( Q.cols());
+
+        for (int iN = 1; iN < Q.rows()-1; iN++)
+        {
+            // Limiter
+            // inner points except num_loc_nodes-1 
+            vector_row_t num = Q.row(iN) - Q.row(iN-1);
+            vector_row_t den = Q.row(iN+1) - Q.row(iN);
+    
+            //if(std::abs(num_i) < 1.e-14)
+            //    num_i = 0.;
+
+            vector_row_t theta = num.cwiseQuotient(den + eps);
+            for (int iG = 1; iG < Q.cols()-1; iG++)
+            {
+                slope(iN, iG) = superbee(theta(iG));
+            }
+        }
+
+        return slope;
     }
 
     std::pair<vector_row_t, vector_row_t>
@@ -210,6 +267,32 @@ public:
         auto Nx = Q.rows();
         return 0.5 * (Q.middleRows(1,Nx-1) + Q.topRows(Nx-1))
              - 0.5 * dtdx * (flux_nodes.middleRows(1,Nx-1) - flux_nodes.topRows(Nx-1)); 
+    }
+
+
+    matrix_t
+    Lax_Wendroff_flux(double dtdx, const matrix_t& Q, const matrix_t& flux,  const vector_t& velocity)
+    {
+        auto Nx = Q.rows();
+
+        //std::cout << "Nx = "<< Nx << std::endl;
+        //std::cout << "vDiag size: "<< velocity.size() << std::endl;
+
+        matrix_t vDiag = velocity.asDiagonal();
+
+        //std::cout << "vDiag: \n"<< vDiag << std::endl;
+    
+        matrix_t diff_flux = flux.middleRows(1,Nx-1) - flux.topRows(Nx-1);
+        matrix_t mean_Q = 0.5 * (Q.middleRows(1, Nx-1) + Q.topRows(Nx-1));
+        matrix_t diff_Q = (Q.middleRows(1, Nx-1) - Q.topRows(Nx-1));
+
+        diff_Q += 1.e-10 * matrix_t::Ones(diff_Q.rows(), diff_Q.cols());
+
+        matrix_t dfdq = diff_flux.cwiseQuotient(diff_Q);
+        matrix_t lim = slope_limiter(Q); 
+
+        return flux.topRows(Nx-1).array()
+                + 0.5 * diff_flux.array() * ( 1.0 - 0.5 * dtdx * dfdq.array()) * lim.array(); 
     }
 
 
@@ -414,6 +497,7 @@ public:
             
             // Numerical flux
             matrix_t Qlw = Lax_Wendroff_sol(dtdx, q_nodes, flux_nodes); 
+            matrix_t Flw = Lax_Wendroff_flux(dtdx, q_nodes, flux_nodes, V_pipes); 
 
             // 2. Solve dq/dt + d(vq)/dx = 0
             for (int iN = 1; iN < num_loc_nodes-1; iN++)
@@ -430,8 +514,8 @@ public:
                 // Values on interfaces of the primal mesh (ficts nodes) = dual mesh (fict pipes)    
                 //auto [QL, QR] = LaxWendroff( dtdx, q_nodes, flux_nodes, iN);
 
-                vector_row_t FL = flux_exact(Qlw.row(iN-1),V_pipes[iN-1]); 
-                vector_row_t FR = flux_exact(Qlw.row(iN),V_pipes[iN]);
+                vector_row_t FL = Flw.row(iN-1);//flux_exact(Qlw.row(iN-1),V_pipes[iN-1]); 
+                vector_row_t FR = Flw.row(iN);//flux_exact(Qlw.row(iN),V_pipes[iN]);
 
                 vector_row_t add = dtdx * (FR -FL); 
                 vector_row_t q_next_i = q_nodes.row(iN) - dtdx * (FR -FL);
@@ -606,7 +690,7 @@ public:
         matrix_t massfrac_now_nodes = massfrac_guess_;
         matrix_t massfrac_next_nodes = matrix_t::Zero(num_nodes, NUM_GASES);
 
-        std::cout << std::setprecision(4 )<<" * massfrac_now : \n" << massfrac_guess_ << std::endl;
+        //std::cout << std::setprecision(4 )<<" * massfrac_now : \n" << massfrac_guess_ << std::endl;
 
         molfrac_all_evol_[0] = build_molfrac_nodes(infra_.graph);
 
@@ -663,7 +747,6 @@ public:
         }
         return;
     }
-
 
 
     matrix_t

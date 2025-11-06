@@ -1,5 +1,7 @@
+\clearpage
 \section{Network Data Files}
-\label{SectionDatabase}
+\label{sec:database}
+
 The Shimmer++ input/output is done entirely via network data files (NDFs). The
 user prepares NDFs specifying the whole network and the code processes them and
 stores simulation solutions in them.
@@ -11,7 +13,7 @@ API and a Matlab API specific for the manipulation of the NDFs.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Database schema: stations}
+\subsection{Database schema: nodal elements \textit{(stations)}}
 In the following the NDF database schema will be described. The knowledge of
 the database schema is needed to directly modify the NDFs via tools like
 SQLite Browser (\url{https://sqlitebrowser.org/}) or to implement third party
@@ -20,7 +22,7 @@ tools able to read and write Shimmer++ NDFs.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Station types}
 Shimmer++ handles gas networks with different types of stations, as described
-in Section~\ref{sec:shimmer_model}. Each station type is assigned a specific
+in Section~\ref{sec:ModelDescr_NodeSt}. Each station type is assigned a specific
 numeric identifier in order to be appropriately handled by the code. Currently
 implemented station types are visible in \texttt{network\_elements.hpp} and
 summarized in the following code snippet: 
@@ -53,9 +55,10 @@ create table station_types (
 This table comes pre-populated to reflect the numeric ids cited above and it
 should not be modified by the user. 
 
-\begin{table}[ht]
+\begin{table}[H]
     \centering
-    \begin{tabular}{c|c|c|c}
+    \begin{tabular}{|c|c|c|c|}
+    \hline 
     \texttt{t\_type} & \texttt{t\_descr} & \texttt{t\_limits\_table} & \texttt{t\_profile\_table} \\
     \hline
     1 & ReMi station w/o backflow & \texttt{limits\_remi\_wo} & \texttt{profiles\_remi\_wo} \\
@@ -63,8 +66,9 @@ should not be modified by the user.
     3 & Consumption point w/o pressure control & \texttt{limits\_conspoint\_wo} & \texttt{profiles\_conspoint\_wo} \\
     4 & Junction & NULL & NULL \\
     10 & Inlet station - private & NULL & NULL \\
-    11 & Outlet station - private & \texttt{limits\_outlet\_priv} & \texttt{profiles\_outlet\_priv}
+    11 & Outlet station - private & \texttt{limits\_outlet\_priv} & \texttt{profiles\_outlet\_priv} \\ \hline
     \end{tabular}
+    \caption{List of possible nodal station types.}
 \end{table}
 
 The columns \texttt{t\_limits\_table} and \texttt{t\_profile\_table} contain the table names for the settings of a specific station type. Should the code be modified to support new station types, this table must be updated accordingly.
@@ -73,14 +77,15 @@ The columns \texttt{t\_limits\_table} and \texttt{t\_profile\_table} contain the
 %\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsubsection{Stations}
-The table \texttt{stations} contains thr list of all the stations present in a
+
+\subsubsection{Stations List}
+The table \texttt{stations} contains the list of all the stations present in a
 network. A station is uniquely identified by the field \texttt{s\_number} and has
 the following attributes:
 \begin{itemize}
     \item \texttt{s\_name}: the name of the station
     \item \texttt{t\_type}: the type of the station, according to the table \texttt{station\_types} 
-    \item \texttt{s\_height}: height of the station
+    \item \texttt{s\_height}: altitude of the station
     \item \texttt{s\_latitude}: latitude of the station
     \item \texttt{s\_longitude}: longitude of the station
 \end{itemize}
@@ -107,16 +112,17 @@ create table stations (
 \end{minted}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsubsection{Limits and profiles: ReMi station}
-Each station of type ReMi has an associated set of user-specified limits on pressure
+\subsubsection{Limits and profiles: Pressure regulated entry station w/o backflow \textit{(ReMi station)}}
+Each station of type \textit{"ReMi"} has an associated set of user-specified limits on pressure
 and mass flow rate. Limits are specified per station by NDF entries including:
 \begin{itemize}
     \item \texttt{s\_number}:   number of the station
-    \item \texttt{lim\_Lmin}:   minimum allowed mass flow rate
-    \item \texttt{lim\_Lmax}:   maximum allowed mass flow rate
-    \item \texttt{lim\_Pmin}:   minimum allowed pressure
-    \item \texttt{lim\_Pmax}:   maximum allowed pressure
+    \item \texttt{lim\_Lmin}:   minimum allowed mass flow rate ( \textit{soft limit} )
+    \item \texttt{lim\_Lmax}:   maximum allowed mass flow rate ( \textit{soft limit} )
+    \item \texttt{lim\_Pmin}:   minimum allowed pressure ( \textit{soft limit} )
+    \item \texttt{lim\_Pmax}:   maximum allowed pressure ( \textit{soft limit} )
 \end{itemize}
+As described in Section~\ref{sec:ModelDescr_NodeSt}, the \textit{hard limit} regarding the avoidance of the \textit{reverse gas flow} is built-in the station control mode and the user is not requested to specify it. 
 The table of the limits for ReMi stations is fully specified by the following SQL code:
 \begin{minted}{sql}
 create table limits_remi_wo (
@@ -131,7 +137,8 @@ create table limits_remi_wo (
 );
 \end{minted}
 In addition to limits, the NDFs allow to store also profiles for the quantity
-controlled by the station. A pressure profile is specified by triples including:
+controlled by the station (the pressure, in this case). 
+A pressure profile is specified by triples including:
 \begin{itemize}
     \item \texttt{s\_number}:   number of the station
     \item \texttt{prf\_time}:   relative time of the sample (seconds)
@@ -152,16 +159,16 @@ create table profiles_remi_wo (
 \end{minted}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsubsection{Limits and profiles: Injection station}
-Each station of type Injection has an associated set of user-specified limits on pressure
+\subsubsection{Limits and profiles: Mass flow regulated entry station w/ pressure control \textit{(Injection station)}}
+Each station of type \textit{"Injection"} has an associated set of user-specified limits on pressure
 and mass flow rate. Limits are specified per station by NDF entries including:
 \begin{itemize}
     \item \texttt{s\_number}:   number of the station
-    \item \texttt{lim\_Lmin}:   minimum allowed mass flow rate
-    \item \texttt{lim\_Lmax}:   maximum allowed mass flow rate
-    \item \texttt{lim\_Pmin}:   minimum allowed pressure
-    \item \texttt{lim\_Pmax}:   maximum allowed pressure
-    \item \texttt{parm\_f}:     scale factor named "f" in the slides \textcolor{red}{DENERG CLARIFY}
+    \item \texttt{lim\_Lmin}:   minimum allowed mass flow rate ( \textit{soft limit} )
+    \item \texttt{lim\_Lmax}:   maximum allowed mass flow rate ( \textit{soft limit} )
+    \item \texttt{lim\_Pmin}:   minimum allowed pressure ( \textit{soft limit} )
+    \item \texttt{lim\_Pmax}:   maximum allowed pressure ( \textit{soft limit} )
+    \item \texttt{parm\_f}:     \textit{relative threshold factor} with respect to the pressure setpoint value ($f \in [0, 1]$) - see Section~\ref{sec:ModelDescr_NodeSt}.
 \end{itemize}
 The table of the limits for Injection stations is fully specified by the following SQL code:
 \begin{minted}{sql}
@@ -182,8 +189,8 @@ controlled by the station. A profile for Injection stations is specified by quad
 \begin{itemize}
     \item \texttt{s\_number}:   number of the station
     \item \texttt{prf\_time}:   relative time of the sample (seconds)
-    \item \texttt{prf\_Pset}:   pressure setpoint at the specified time
-    \item \texttt{prf\_Lset}:   mass flow rate setpoint at the specified time
+    \item \texttt{prf\_Pset}:   pressure setpoint at the specified time ( \textit{hard limit} and secondary set-point in case of change of control mode )
+    \item \texttt{prf\_Lset}:   mass flow rate setpoint at the specified time - the primary set-point of the station: injected mass flow rate.
 \end{itemize}
 If a profile for a station includes a single entry, the quantity is held constant
 at the specified value for the whole simulation. The table of the profiles for
@@ -249,13 +256,128 @@ create table profiles_conspoint_wo (
 );
 \end{minted}
 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Gases}
+The \texttt{gases} table lists the gases supported by the Equation of state described in Section \ref{sec:eos}.  They can be employed in simulations, either as pure substances or as components of mixtures.  
+Each gas is identified by thefollowing attributes
+\begin{itemize}
+    \item \texttt{g\_num}: number id of the gas
+    \item \texttt{g\_formula}: as the name indicates, it corresponds to the gas formula (in capital letters)
+    \item \texttt{g\_name}: the name of the corresponding gas
+\end{itemize}
+
+The table is fully specified by the following SQL code
+\begin{minted}{sql}
+create table gases (
+    g_num      INTEGER PRIMARY KEY,
+    g_formula  TEXT NOT NULL,
+    g_name     TEXT NOT NULL
+);
+\end{minted}
+
+This table comes pre-populated to reflect the numeric IDs listed below and should not be modified by the user.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|}
+    \hline
+    \texttt{g\_num} & \texttt{g\_formula} & \texttt{g\_name} \\
+    \hline
+    0  & CH4      & Methane \\
+    1  & N2       & Nitrogen \\
+    2  & CO2      & Carbon dioxide \\
+    3  & C2H6     & Ethane \\
+    4  & C3H8     & Propane \\
+    5  & i\_C4H10 & i-butane \\
+    6  & n\_C4H10 & n-butane \\
+    7  & i\_C5H12 & i-pentane \\
+    8  & n\_C5H12 & n-pentane \\
+    9  & C6H14    & Hexane \\
+    10 & C7H16    & Heptane \\
+    11 & C8H18    & Octane \\
+    12 & C9H20    & Nonane \\
+    13 & C10H22   & Decane \\
+    14 & H2       & Hydrogen \\
+    15 & O2       & Oxygen \\
+    16 & CO       & Carbon oxide \\
+    17 & H2O      & Water \\
+    18 & H2S      & Hydrogen sulfide \\
+    19 & He       & Helium \\
+    20 & Ar       & Argon \\
+    \hline
+    \end{tabular}
+    \caption{List of gases with their formula and corresponding names.}
+\end{table}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Gas molar fractions}
+The table \texttt{gas\_molar\_fraction} contains the molar fraction of each gas species at a given station (node) in the network.  
+Each record identifies a specific gas component within a node and is uniquely identified by the combination of \texttt{s\_number} and \texttt{frac\_<gas\_name>}, denoting the following attributes:
+\begin{itemize}
+    \item \texttt{s\_number}: identifier of the station (node)
+    \item \texttt{frac\_<gas\_name>}: molar fraction of each gas species (between 0 and 1), where \texttt{<gas\_name>} refers to the abbreviations listed in the \texttt{gases} table (e.g., \texttt{frac\_CH4}, \texttt{frac\_CO2}, \texttt{frac\_H2}, etc.) shown in the previous section.
+\end{itemize}
+
+ The specification of the molar composition for a gas entry node (pressure regulated node or injection node) allows for the simulation of a multi-gas scenario where different gas sources can have different gas composition. Thus, a quality-tracking based simulation can be consequently performed. In other words, it is here that the user should define the composition of the injected gas which is to be tracked.
+
+This setting is used for both the table \texttt{gas\_molar\_fraction} and \texttt{solution\_gas\_molarfrac}: the first stores the initial gas composition, while the latter stores the updated concentrations throughout the simulation. As for other variables output, in the \texttt{solution\_gas\_molarfrac}, there will be an additional column regarding the \texttt{timestep}.
+
+\begin{minted}{sql}
+create table gas_molar_fraction (
+    s_number     INTEGER NOT NULL,
+
+    frac_CH4     REAL DEFAULT 0.0 NOT NULL,
+    frac_N2      REAL DEFAULT 0.0 NOT NULL,
+    frac_CO2     REAL DEFAULT 0.0 NOT NULL,
+    frac_C2H6    REAL DEFAULT 0.0 NOT NULL,
+    frac_C3H8    REAL DEFAULT 0.0 NOT NULL,
+    frac_i_C4H10 REAL DEFAULT 0.0 NOT NULL,
+    frac_n_C4H10 REAL DEFAULT 0.0 NOT NULL,
+    frac_i_C5H12 REAL DEFAULT 0.0 NOT NULL,
+    frac_n_C5H12 REAL DEFAULT 0.0 NOT NULL,
+    frac_C6H14   REAL DEFAULT 0.0 NOT NULL,
+    frac_C7H16   REAL DEFAULT 0.0 NOT NULL,
+    frac_C8H18   REAL DEFAULT 0.0 NOT NULL,
+    frac_C9H20   REAL DEFAULT 0.0 NOT NULL,
+    frac_C10H22  REAL DEFAULT 0.0 NOT NULL,
+    frac_H2      REAL DEFAULT 0.0 NOT NULL,
+    frac_O2      REAL DEFAULT 0.0 NOT NULL,
+    frac_CO      REAL DEFAULT 0.0 NOT NULL,
+    frac_H2O     REAL DEFAULT 0.0 NOT NULL,
+    frac_H2S     REAL DEFAULT 0.0 NOT NULL,
+    frac_He      REAL DEFAULT 0.0 NOT NULL,
+    frac_Ar      REAL DEFAULT 0.0 NOT NULL,
+
+    PRIMARY KEY (s_number),
+
+    -- Each row must correspond to an existing station
+    FOREIGN KEY (s_number)
+        REFERENCES stations(s_number),
+
+    CHECK (
+        frac_CH4    BETWEEN 0.0 AND 1.0 AND
+        frac_N2     BETWEEN 0.0 AND 1.0 AND
+        frac_CO2    BETWEEN 0.0 AND 1.0 AND
+        frac_C2H6   BETWEEN 0.0 AND 1.0 AND
+        frac_C3H8   BETWEEN 0.0 AND 1.0 AND
+        frac_H2     BETWEEN 0.0 AND 1.0
+        -- ... (additional checks can be added for all gases)
+    )
+);
+\end{minted}
+
+The sum of all \texttt{molar\_fraction} values associated with the same \texttt{s\_number} must be equal to~1.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Database schema: pipelines and non-pipe elements}
+\clearpage
+\subsection{Database schema: branch elements \textit{(pipelines and non-pipe elements)}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsubsection{Pipeline types}
-All the network elements with an inlet and an outled are termed ``pipeline elements''
-inside Shimmer++. As for the stations, Shimmer++ handles different network elements
+\subsubsection{Branch element types}
+All the network elements with an inlet and an outled are termed \textit{``pipeline elements''}
+inside Shimmer++ (indeed they are branch elements comprising pipeline and non-pipeline elements). As for the stations, Shimmer++ handles different network elements, 
 each uniquely identified by an integer. Pipeline types are contained in a table
 fully specified by the following SQL code:
 \begin{minted}{sql}
@@ -270,13 +392,14 @@ As for the stations, the above SQL table is pre-populated with the four types
 of stations supported by Shimmer++, summarized in Table~\ref{tbl:pipetypes}.
 \begin{table}[ht]
     \centering
-    \begin{tabular}{c|c}
+    \begin{tabular}{|c|c|}
+        \hline
         \texttt{p\_type} & \texttt{t\_name} \\
         \hline
         0 & Plain pipe \\
         1 & Compressor \\
         2 & Reduction station \\
-        3 & Valve \\
+        3 & Valve \\ \hline
     \end{tabular}
     \caption{Pipe-like elements supported by Shimmer++}
     \label{tbl:pipetypes}
@@ -330,14 +453,15 @@ create table pipe_parameters (
     CHECK(ref_nsegs >= 0)
 );
 \end{minted}
+
+The \texttt{ref\_nsegs} variable here specifies the refinement parameter when quality tracking is employed. If the value is zero, the pipe is refined according the \texttt{config.dx} parameter, in particular the segments will be at most \texttt{config.dx} long. Otherwise, it specifies the exact number of segments in which the pipe has to be refined.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Compressor stations}
 Compressors are uniquely identified by a triple including the pipe
 name \texttt{p\_name}, the originating station \texttt{s\_from} and the destination
 station \texttt{s\_to}. Each compressor has an associated set of limits and an
 associated temporal profile.
-
-\textcolor{red}{TODO DENERG}: describe a bit the engineering meaning of each parameter.
+The physical/engineering meaning of these parameters are described in \ref{sec:ModelDescr_BranchSt}. 
 
 The table containing the compressor limits is fully specified by the following
 SQL code:
@@ -361,8 +485,25 @@ create table compressor_limits (
         REFERENCES pipelines(p_name, s_from, s_to)
 );
 \end{minted}
-
-Each compressor has also an associated temporal profile.
+where the control mode is an integer defined following Table \ref{tab:compressor:controlmode}. 
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lccl}
+    \hline 
+    Name & controlmode & Active &Description 
+    \\ \hline
+    ON\_POWER    & 0 &  On& Control mode power driver \\
+    ON\_OPRESS   & 1 &  On& Control mode outlet pressure \\
+    ON\_IPRESS   & 2 &  On& Control mode inlet pressure \\
+    ON\_RATIO    & 3  &  On& Control mode compression ratio \\ 
+    ON\_MASSFLOW & 4  &  On& Control mode mass flow \\
+    OFF\_BYPASS  & 10 & Off& Bypass \\ 
+    OFF\_CLOSED  & 11 & Off& Closed \\ \hline
+    \end{tabular}
+    \caption{Control modes supported by Shimmer++ for the compressor station.}
+    \label{tab:compressor:controlmode}
+\end{table}
+Each compressor also has an associated CONSTANT temporal profile.
 \begin{minted}{sql}
 create table compressor_profile (
     p_name      TEXT NOT NULL,
@@ -385,6 +526,8 @@ create table compressor_profile (
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{comment}
+ 
 \subsubsection{Valves}
 \begin{minted}{sql}
 create table valve_profile (
@@ -400,15 +543,17 @@ create table valve_profile (
         REFERENCES pipelines(p_name, s_from, s_to)
 );
 \end{minted}
-
+   
+\end{comment}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Database schema: network initial conditions}
 
-To start a simulation the user must provide the initial conditions of the network,
-in particular the conditions at each node and in each pipe.
+To start a simulation the user must provide the initial \textbf{guessed} conditions of the network, especially for the nodes and pipes in which no boundary conditions are given.
+Thus, the conditions at each node (guessed pressures) and in each pipe (guessed mass flow) are required.
 
-Initial conditions for stations are specified in the table \texttt{station\_initial\_conditions}
+\subsubsection{Initial conditions for nodes}
+The initial conditions for the stations are specified in the table \texttt{station\_initial\_conditions}
 as specified by the following SQL code:
 \begin{minted}{sql}
 create table station_initial_conditions (
@@ -420,13 +565,14 @@ create table station_initial_conditions (
         REFERENCES stations(s_number)
 );
 \end{minted}
-For each station an entry composed of the station number, station pressure and
-station mass flow must be provided.
+For each station, an entry composed of the station number, the station pressure, and the
+station mass flow exchanged with the external environment must be provided.
 
-Similarly to stations, also pipe initial conditions must be provided as entries
+\subsubsection{Initial conditions for branches}
+
+Similarly to stations, branches initial conditions must also be provided as entries
 in the \texttt{pipe\_initial\_conditions} table. Each entry has to include the
-station name, the start and end node and the initial value of G, as specified
-by the following SQL code.
+station name, the start and end node and the initial value of guessed mass flow G, as specified by the following SQL code.
 \begin{minted}{sql}
 create table pipe_initial_conditions (
     p_name      TEXT NOT NULL,
@@ -444,9 +590,15 @@ create table pipe_initial_conditions (
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Database schema: simulation outputs}
 
-The solution of the model implemented by Shimmer++ is stored in three separate
+The solution of the model implemented by Shimmer++ is stored in five separate
 tables of the Network Data Files.
-
+\begin{remark}
+If the \texttt{pipe refinement} option is enabled, Shimmer++ automatically generates a new 
+Network Database (NDB) within the \texttt{build} directory. 
+The file will be named \texttt{refined\_<database\_name>.db}, and it will contain also the updated 
+information on \textbf{stations} and \textbf{pipes} corresponding to the additional units 
+created during the refinement process.
+\end{remark}
 The table \texttt{solution\_station\_pressures} stores for each row the pressure
 at a given time and a given station.
 \begin{minted}{sql}
@@ -488,7 +640,7 @@ create table solution_station_flowrates (
 );
 \end{minted}
 
-Finally, the table \texttt{solution\_pipe\_velocities} stores for each row the gas velocity
+The table \texttt{solution\_pipe\_velocities} stores for each row the gas velocity
 in the pipe identified by \texttt{p\_name, s\_from, s\_to} at a specific timestep.
 \begin{minted}{sql}
 
@@ -504,4 +656,89 @@ create table solution_pipe_velocities (
 );
 \end{minted}
 
+Finally, the table \texttt{solution\_station\_molarfrac} stores for each row the molar fraction for each \texttt{g\_name} component of the gas mixture in the node identified by \texttt{s\_number} at a specific timestep.
 
+\begin{minted}{sql}
+
+create table solution_station_molfrac (
+    s_number      TEXT NOT NULL,
+    timestep      INTEGER NOT NULL,
+    g_name        INTEGER NOT NULL,
+    molarfrac     REAL DEFAULT 0.0 NOT NULL,
+
+    FOREIGN KEY (s_number)
+        REFERENCES stations(s_number)
+);
+\end{minted}
+
+\clearpage
+\subsection{Automatic NDF Creation: sample code in Matlab environment} \label{sec:matlabtool}
+%
+
+After the NDF is created, see Section~\ref{sec:database} for more details, it remains empty.
+The user is required to populate it with the relevant data prior to executing the simulation.
+This section presents a simple MATLAB tool capable of populating the NDF from a MATLAB graph network, as well as generating the network back from the NDF. 
+\begin{remark}
+The reader should consider this file as templates for the construction of further codes based on other programming languages for the database population procedure 
+\end{remark}
+
+\begin{listing}[H]
+\begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=0.5mm]{Matlab}
+%% DB schema path
+db_schema = fullfile(pwd, "../../shimmer++/share/shimmer.sql");
+
+%% Load NDF Matlab
+graph_path = fullfile(pwd, "graph_example.mat");
+graph = load(graph_path);
+graph = graph.graph;
+
+%% Load NDF SQlite
+db_path = fullfile(pwd, "/graph_example.db");
+if exist(db_path, 'file') == 2
+    delete(db_path);
+end
+
+%% Fill NDF from graph Matlab to SQlite
+sql_create(db_path, db_schema);
+sql_populate_from_graph(db_path, graph);
+
+%% Fill NDF from SQlite to Matlab
+converted_graph = graph_populate_from_sql(db_path);
+\end{minted}
+\caption{Example of NDF creation from Matlab code \texttt{sqlite\_populate\_graph\_example.m}}
+\label{lst:ndf_matlab}
+\end{listing}
+%
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale = 0.4]{img_matlab/graph.png}  
+    \caption{Graph example.}
+    \label{fig:graph_example}
+\end{figure}
+%
+
+Listing~\ref{lst:ndf_matlab} shows the functions to be called for generating an NDF SQLite file from MATLAB code and viceversa.
+The complete example is available in the \texttt{matlab/sqlite} directory of the \texttt{shimmer++} Git repository.
+\begin{remark}
+MATLAB version~R2024b or later is required to run all the codes.
+\end{remark}
+
+In the example, we propose the creation of a NDF made by $5$ stations and $5$ pipes, see Figure~\ref{fig:graph_example}.
+
+The MATLAB function \texttt{sql\_create} is used to create a new NDF file at the location specified by \texttt{db\_path}, based on the SQLite schema provided at \texttt{db\_schema}.  
+Once the NDF file has been created, it can be populated using the function \texttt{sql\_populate\_from\_graph}.  
+This function fills the SQLite database using the MATLAB structure \texttt{graph}, which consists of the following fields:
+
+\begin{itemize}
+    \item \texttt{Nodes}: a structure containing NDF station information, such as station types (\texttt{Types}), boundary and initial conditions (\texttt{PRESSURES}, \texttt{G\_EXE}, \texttt{Pset\_bc} and \texttt{Lset\_bc}), and initial and boundary gas molar compositions (\texttt{YYc} and \texttt{YY\_ext\_in});
+    \item \texttt{Edges}: a structure containing NDF pipe information, including pipe endpoints (\texttt{EndNodes}), pipe description (\texttt{Length}, \texttt{Epsi}, and \texttt{Diameter}) , and initial flow conditions (\texttt{FLOWRATES}).
+\end{itemize}
+
+An example of the MATLAB NDF structure is provided in the file \texttt{graph\_example.mat}.
+
+The inverse operation, that is converting the SQLite NDF database back into the corresponding MATLAB structure, is performed using the MATLAB function \texttt{graph\_populate\_from\_sql}.  
+This function takes as input the path to the SQLite database and generates the corresponding MATLAB structure, as shown in the last line of Code~\ref{lst:ndf_matlab}.
+
+\begin{remark}
+If the user is creating an NDF file in this way and attempting to read it through the desktop version of DB Browser for SQLite, it is suggested to update/refresh the database structure after uploading of the .db file, as otherwise it might not be possible to see the actual content of the file.
+\end{remark}

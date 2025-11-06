@@ -1,7 +1,8 @@
+\clearpage
 \section{Installation}
-
-The repository at \url{https://github.com/datafl4sh/shimmer.git} includes the Shimmer++ sources, the original matlab code on which Shimmer++ is based (it is not a direct translation) and some documents related to the underlying physical model, along with the github issues that record the developments of Shimmer++.  
-\subsection{Getting your local copy of the repository}
+\label{sec:installation}
+The repository at \url{https://github.com/shimmerhydrogen/shimmer} includes the Shimmer++ sources, the original matlab code on which Shimmer++ is based (it is not a direct translation) and some documents related to the underlying physical model, along with the github issues that record the developments of Shimmer++.  
+\subsection{Preparing a Linux environment}
 As first step you should make sure that your system is up-to-date. For Debian-based operating systems: 
     \begin{verbatim}
         sudo apt update
@@ -14,71 +15,120 @@ To install the dependencies on Debian-based operating systems:
     sudo apt install -y libeigen3-dev
     sudo apt install -y libboost-graph-dev libboost-dev
 \end{verbatim}
-You can now clone the Shimmer++ repository using
-\begin{verbatim}        
-    git clone https://github.com/datafl4sh/shimmer.git
-\end{verbatim}
-or, if you have write access
+
+\subsection{Preparing a Windows environment}
+Shimmer++ does work on Windows, however it is not the preferential platform. On Windows, Shimmer++ can be compiled via MSYS2, available for download at \url{https://www.msys2.org/}.
+
+Once you have MSYS2 set up, launch the ``MSYS2 UCRT64'' shell and install the Shimmer++ prerequisites:
 \begin{verbatim}
-    git clone git@github.com:datafl4sh/shimmer.git
+    pacman -S --needed base-devel
+    pacman -S --needed mingw-w64-ucrt-x86_64-toolchain
+    pacman -S --needed mingw-w64-ucrt-x86_64-boost
+    pacman -S --needed mingw-w64-ucrt-x86_64-lua
+    pacman -S --needed mingw-w64-ucrt-x86_64-eigen3
+    pacman -S --needed mingw-w64-ucrt-x86_64-make
+    pacman -S --needed mingw-w64-ucrt-x86_64-cmake
+    pacman -S --needed mingw-w64-ucrt-x86_64-ninja
+    pacman -S --needed git sqlite
 \end{verbatim}
 
 \subsection{Building shimmer++}
-To build Shimmer++ use the standard ccmake/make steps, keeping in mind that the top-level \texttt{CMakeList.txt} is in the \texttt{shimmer++} directory.
+You can now clone the shimmer++ repository using
+\begin{verbatim}        
+    git clone https://github.com/shimmerhydrogen/shimmer.git
+\end{verbatim}
+or, if you have access to edit:
 \begin{verbatim}
-    ccmake "path_to_shimmer++_directory"         
-    make  
+    git clone git@github.com:shimmerhydrogen/shimmer.git
+\end{verbatim}
+Some submodules need to be installed. To do that run:
+\begin{verbatim}        
+    git submodule init
+    git submodule update
+\end{verbatim}
+Now you need to change directory and go into the directory \texttt{shimmer++}
+
+\begin{verbatim}
+    cd shimmer/shimmer++
 \end{verbatim}
 
-
-\begin{tikzpicture}
-    \node [draw,text width=\linewidth-20pt, inner sep=10 pt]%
-{
-\textbf{Linux tip:}
-\vspace{5mm} \\
-We advise to create the \texttt{build} directory inside your working copy and build Shimmer++ from there:
+To build Shimmer++ we advise to create the \texttt{build} directory inside your working copy and build Shimmer++ from there:
 \begin{verbatim}
-    mkdir shimmer/shimmer++/build
+    mkdir build
 \end{verbatim}
 enter inside the directory build
 \begin{verbatim}
-    cd shimmmer/shimmer++/build
+    cd build
 \end{verbatim}
-and then run ccmake to create the CMake files
+and then run cmake to create the CMake files
 \begin{verbatim}
-    ccmake ..
+    cmake ..
 \end{verbatim}
-and run \texttt{make} to compile the library
+and finally build the code using
 \begin{verbatim}
-    make -j $(nproc)
+    cmake --build .
 \end{verbatim}
-};
-\end{tikzpicture}
+
+The commands above will produce, among others, an executable named \texttt{shimmer\_solver} in the directory \texttt{shimmmer/shimmer++/build}.
+
+Shimmer++ can be installed in the system by running
+\begin{verbatim}
+    make install
+\end{verbatim}
+from the build directory. By default, Shimmer++ is installed in \texttt{/usr/local}, in particular the solver executable will be installed in \texttt{/usr/local/bin}, the libraries in \texttt{/usr/local/lib} and the database schema plus an example configuration file will be placed in \texttt{/usr/local/share}. The installation prefix can be changed by setting appropriately the \texttt{CMAKE\_INSTALL\_PREFIX} variable when running CMake.
 
 \subsection{Running Shimmer++}
-The database schema employed by the NDFs is provided in \texttt{shimmer/sqlite/shimmer.sql}. Assuming that you want to create a new NDF named \texttt{newndf.db} and that you have the NDF schema in the current folder, to initialize a new database:
+Shimmer++ input/output is done via NDFs, which are SQLite databases with a specific structure. The database schema employed by the NDFs is provided in the source tree at \texttt{shimmer/shimmer++/share/shimmer.sql}.
+
+The first step to interact with Shimmer++ is therefore initializing appropriately a NDFs, and this can be done in two ways.
+
+The first way is to use directly the Shimmer++ solver as following:
+\begin{verbatim}
+    shimmer_solver --init-db newndf.db
+\end{verbatim}
+The last command initializes an empty NDF file named \texttt{newndf.db}.
+\vspace{5mm}
+
+The second way is to use directly the \texttt{sqlite3} tool and the provided \texttt{shimmer.sql} file. Therefore, assuming that you want to create a new, empty NDF named \texttt{newndf.db} and that you have the NDF schema file \texttt{shimmer.sql} in the current folder, to initialize a new database:
 \begin{verbatim}
     sqlite3 newndf.db < shimmer.sql
 \end{verbatim}
-The file \texttt{newndf.db} will subsequently need to be populated with all the relevant data. Once the database is populated, a small configuration file is needed. For example:
+
+\begin{remark}
+Once the NDF is created, it remains empty. The user must fill in all relevant data tables before running the simulation.
+The NDF can be populated either manually using an SQLite graphical frontend (e.g., SQLite Browser, \url{https://sqlitebrowser.org/}
+), directly through SQL statements with the \texttt{sqlite3} tool, or programmatically via different programming languages. Manual manipulation of the database is strongly discouraged, as it is a tedious and error-prone process. Except for debug situations, interaction with NDFs should always happen via custom scripts or third party tools. 
+In the \texttt{shimmer++} git repository, we provide an example of a simple MATLAB tool that populates the NDF from a MATLAB graph network.  In addition, in \texttt{shimmer/shimmer++/src/utils/dbscripts} some Python script to aid filling the NDFs are provided.
+See Section~\ref{sec:matlabtool} for more details.
+\end{remark}
+
+\begin{remark}
+The file \texttt{shimmer.sql} must be present in \texttt{\$\{CMAKE\_INSTALL\_PREFIX\}/share}, in the current work directory or in a subdirectory named \texttt{sqlite} inside the current work directory. Alternatively, it is possible to specify the fully-qualified path of \texttt{shimmer.sql} via the \texttt{SHIMMER\_SCHEMA\_FILE} environment variable.
+\end{remark}
+
+Once the database is ready, a small configuration file is needed. Shimmer++ configuration files are written in the Lua programming language. For example:
 
 \begin{minted}{lua}
 config.database = "newndf.db"   -- Path of the NDF
 config.steps = 7                -- Timesteps of the simulation
 config.dt = 3600                -- delta-t between timesteps
-config.refine = false           -- refine pipes for quality tracking
 config.dx = 300e3               -- pipe refinement step
-config.tol = 1e-4               -- ?? 
-config.tol_std = 1e-14          -- ??
+config.tol = 1e-4               -- fluid-dynamic solver tolerance - unsteady cycle 
+config.tol_std = 1e-14          -- fluid-dynamic solver tolerance - steady cycle 
+config.refine = false           -- refine pipes
+config.quality_tracking = false -- Use quality tracking solver
+config.qt_steady= false         -- Do unsteady quality tracking run 
 \end{minted}
+The variables \texttt{config.refine}, \texttt{config.quality\_tracking}, and \texttt{config.qt\_steady} are set to \texttt{false} by default, so it is not necessary to include them if they are not used in the setup. The variable \texttt{config.qt\_steady}  is only used in case \texttt{config.quality\_tracking} = \texttt{true}.
+
 We save the configuration in a file named, for example, \texttt{config.lua}. Shimmer++ is then
 run as
 \begin{verbatim}
-  ./solver config.lua
+  ./shimmer_solver config.lua
 \end{verbatim}
 
 \subsection{Shimmer++ organization}
-The Shimmer++ code is mainly organised with sources stored in the \texttt{shimmer/shimmer++/src} folder and unitary tests in the \texttt{shimmer/shimmer++/unit\_tests}. There is an additionally GERG folder which accounts for the interface of shimmer++ with the code regarding GERG computations.
+The Shimmer++ code is mainly organised with sources stored in the \texttt{shimmer/shimmer++/src} folder and unitary tests in the \texttt{shimmer/shimmer++/unit\_tests}. There is an additionally GERG folder which accounts for the interface of shimmer++ with the code regarding GERG-2008 equation computations.
 
 %\begin{tikzpicture}
 %    \node [draw,text width=\linewidth-20pt, inner sep=10 pt]
@@ -93,5 +143,4 @@ The Shimmer++ code is mainly organised with sources stored in the \texttt{shimme
 %\end{verbatim}
 %};
 %\end{tikzpicture}
-
 

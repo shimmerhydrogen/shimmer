@@ -1,0 +1,140 @@
+\subsection{Quality tracking} \label{sec:quality_tracking}
+This section is devoted to the description of the model and the numerical discretization of the flow of a mixture of various gaseous species, notably the quality tracking.  %\input{img_quality/QualityTracking}
+A Lagrangian coordinates approach was proposed in \cite{Chaczykowski2018}. Despite its novelty and its ability to capture discontinuities, the method is prone to cumulative errors, as is pointed out in \cite{Zhang2022}.
+
+We consider a gas mixture composed of $N_\alpha$ ideal gas constituents. Each constituent is modeled as an ideal compressible gas. In addition, they are assumed to be inviscid and chemically inert. Vaccum is not allowed in any part of the pipeline. We additionally assumed thermal equilibrium.   Let $\rho$ and $p$ denote the density and pressure of the mixture, respectively, with the later computed from the equation of state. Let $v$ denote the one-dimensional velocity of the mixture in a pipe and also the individual velocity of each species, as the effects of molecular diffusion are neglected \cite{LarrouturouFezoui1989}. Let $\rho_\alpha$ denote the individual material density and the partial density $\drho$ of the $\alpha$-th gas component. The latter is defined as an additive partial density such the global mixture density can be expressed as follows  
+\[ 
+ \rho=\sum_{\alpha =1}^{N_\alpha} \drho  \qquad\text{ and }\qquad  1=\sum_{i=1}^{N_\alpha} \frac{\drho}{\rho}. 
+\]
+Here, the second assertion is just a direct consequence of the first. The partial density of the gas is related to the individual material density $\crho$, as $\drho = \crho \cdot \volfrac$, where $\volfrac := V_{\alpha}/V$ denotes the volumetric fraction acting here as correction factor. 
+
+\subsubsection{The model for transport of gas species}
+Henceforth, the governing equations we consider are the one-dimensional mass and momentum Euler equations, where    chemical reactions sources are not taken into account since the gas components are chemically inert. A well-known presentation of the mass conservations is written in terms of the mass fraction quantities:
+\begin{equation}
+    \left\lbrace
+    \begin{aligned}
+    & \frac{\partial \rho \massfrac}{\partial t} + \frac{\partial }{\partial x} ( \rho \massfrac v)= 0,  & \alpha \in \{1, \cdots, N_\alpha \}\\           
+    & \frac{\partial \rho v }{\partial t} + \frac{\partial }{\partial x} (\rho v^2 + p)= 0.         
+    \end{aligned}
+    \right. \label{eq:euler:full}
+\end{equation}
+In \cite{LarrouturouFezoui1989}, it was also shown that the system \eqref{eq:euler:full} can be rewritten using the density additive property as follows
+\begin{equation}
+    \left\lbrace
+    \begin{aligned}
+        & \frac{\partial \rho }{\partial t} + \frac{\partial }{\partial x} ( \rho  v)= 0,  & \\  
+        & \frac{\partial \rho \massfrac}{\partial t} + \frac{\partial }{\partial x} ( \rho \massfrac v)= 0,  & \alpha \in \{1, \cdots, N_\alpha-1 \},\\  
+        & \frac{\partial \rho v }{\partial t} + \frac{\partial }{\partial x} (\rho v^2 + p)= 0,          
+    \end{aligned}
+    \right. \label{eq:transport_molarfrac:conservative_form:system}
+\end{equation}
+but also that the first and the second equations result in the non-conservative mass fraction equation
+\begin{equation}
+    \frac{\partial \massfrac}{\partial t} + v \frac{\partial \massfrac}{\partial x} = 0, \qquad  \alpha \in \{1, \cdots, N_\alpha-1 \},
+    \label{eq:transport_massfrac:non_conservative}
+\end{equation}
+implying that mass fractions $\massfrac$ are being transported. This is found in the literature as passive transport, see \cite{BouchutBook2004}. 
+\subsubsection{Discretization: transport through pipes}
+Let us consider as model problem the one-dimensional conservation law for a quantity $q(x,t)$ with flux $f(q(x,t))$
+\begin{equation}
+    \frac{\partial q}{\partial t}+ \frac{\partial f}{\partial x}=0.
+    \label{eq:general:continuous}
+\end{equation}
+Let $\bigcup I_i $ be the partitioning of a generic pipe domain $L$, where $I_i = ] x_{i-1/2}, x_{i+1/2}[$ denotes the interval with size $\dx_i = x_{i+1/2} - x_{i-1/2}$ and barycenter $x_i = (x_{i+1/2} + x_{i-1/2}) /2$.  The time horizon is denoted by  $T>0$
+Let 
+\[
+    Q_i^n=\frac{1}{\Delta x_i} \int_{I_i} q(x, t^n) d x.
+\]
+using the Lax-Wendroff second order scheme to solve hyperbolic equations, the general discretized form is
+\begin{equation}
+    \frac{Q_i^{n+1}-Q_i^n}{\Delta t}+\frac{F_{i+1/2}^{n+1/2}-F_{i-1/2}^{n+1/2}}{\Delta x}=0.    
+\label{eq:general:discretized}
+\end{equation}
+The Lax-Wendroff method was introduced in the seminal work \cite{LaxWendroff1960} in 1960 for hyperbolic conservation laws and named after the two authors. Upon defining the quantities
+\[ 
+    \begin{aligned}
+     Q_{i-1/2}^{n+1/2}&=\frac{1}{2}  \left(Q_{i-1}^n+Q_i^n\right)-\frac{1}{2} \frac{\dt}{\dx}  \left(F_{i}^n-F_{i-1}^n\right), \\
+    Q_{i+1/2}^{n+1/2}&=\frac{1}{2}  \left(Q_{i+1}^n+Q_i^n\right)-\frac{1}{2} \frac{\dt}{\dx}  \left(F_{i+1}^n-F_{i}^n\right), \\
+     \end{aligned}
+\]
+and using $F^{n-1/2}_{i-1/2} = F(Q_{i-1/2}^{n-1/2})$ and $F_{i+1/2}^{n+1/2} = F(Q_{i+1/2}^{n+1/2})$, the Lax-Wendroff method can be implemented in two steps avoiding the standard formulation which requires the computation of $\partial_q f(q(x,t))$. 
+
+The Lax-Wendroff method is derived for conservative equations. Thus, we do not use the non-conservative transport equation \eqref{eq:transport_massfrac:non_conservative} and instead we solve the system in a decoupled fashion \eqref{eq:transport_molarfrac:conservative_form:system}. 
+
+\subsubsection{Nodal mass balance}
+
+For the quality tracking, we assume nodes with volume. Thus, accumulation of mass, momentum or energy can happen. We also assume perfect mixing, so with all input flows a homogeneous mixture is created and it is distributed proportionally to all output pipes. Let $\volnode$ be a node domain with boundary $\Gamma^\bullet$, which can be further seen as $\Gamma^\bullet = \GammaIn \cup \GammaOut$, being the cross section inlet and outlet boundaries of the pipe, respectively. 
+\begin{equation}
+    \int_{\volnode} \frac{\partial \rho \massfrac}{\partial t}+\int_{\volnode} \mathrm{div}(\rho \mathbf{v} \massfrac) =0,
+\end{equation}
+The second term can be reformulated by the Divergence Theorem on the $\alpha$-th mass fraction flux. As the boundary of a pipe domain can be seen has the collection of faces $f$, the previous equation can be easily reformulated as 
+\begin{equation*}
+    \sum_{\face \subset \Gamma^\bullet} (\rho \mathbf{v} \massfrac A)_{|\face} \cdot \normal_\face=\sum_{\face \subset \GammaIn} (\phi \massfrac A)_{|\face}-\sum_{\face \subset \GammaOut} (\phi \massfrac A)_{\face} 
+\end{equation*}
+with $\rho \mathbf{v} \cdot \normal = \phi n$ with $n$ unitary value positive and negative on $\GammaIn$ and $\GammaOut$, respectively.
+\begin{align*}
+    \sum_{\face \in \GammaIn} {(\phi  \massfrac A) }_{\face}  & = \massfrac[\alpha|\faceInject]\dot{m}_{\bullet \leftarrow} + \sum_{\face \subset \GammaIn\setminus \GammaInject} (\phi \massfrac A)_{|\face},  \\
+    \sum_{\face \subset \GammaOut} (\phi \massfrac A)_{|\face} &=\massfrac[\alpha|\faceEject]\dot{m}_{\bullet \rightarrow}+  \sum_{\face \subset \GammaOut\setminus \GammaEject}  (\phi \massfrac A)_{|\face},
+\end{align*}
+Since we assume perfect mixing at all outputs the same  mixture is provided. Therefore, $\massfrac[\alpha|\faceEject] = \massfrac[\alpha, \bullet]$ as well as $ \massfrac[\alpha,|\face] = \massfrac[\alpha, \bullet]$ for all $\face \subset \GammaOut\setminus \GammaEject$.
+
+Let us now address the temporal term.  We assume $\frac{\partial \massfrac}{\partial t} = 0$. Hence, using the chain rule and the relation  $\partial_t \rho = (1/c^2)\partial_x p$, we obtain
+\begin{equation*}
+    \int_{\volnode} \frac{\partial \rho \massfrac}{\partial t} =   \int_{\volnode} \frac{\massfrac}{c^2} \frac{\partial p}{\partial t}.
+\end{equation*}
+
+\begin{remark}[Variation in time of $c^2$]
+    Using gas relations, the  variation  in time $\frac{\partial \rho}{\partial t}$  could  be reformulated as $\partial_t \rho = \partial_x (p/c^2)$. Hence,  
+    \[
+     \int_{\volnode} \massfrac \frac{\partial \rho}{\partial t} \approx  \frac{\volnode}{\dt} \massfrac[\alpha, \bullet] \left( \Big(\frac{p_\bullet}{c_{\bullet}^2}\Big)^{n+1} - \Big(\frac{p_\bullet}{c_{\bullet}^2} \Big)^{n}\right). 
+    \]
+\end{remark}
+
+Thus, putting all together
+\[
+ \left(\volnode \left(\frac{\rho_\bullet^{n+1} - \rho_\bullet^{n}}{\dt}\right) + \dot{m}_{\bullet \rightarrow}  + \sum_{\face \subset \GammaOut\setminus \GammaEject}  (\phi A) _{|\face}   \right)  \massfrac[\alpha, \bullet]^{n+1}=  \massfrac[\alpha|\faceInject]^n\dot{m}_{\bullet \leftarrow}  + \sum_{\face \subset \GammaIn\setminus \GammaInject} (\phi \massfrac A)^n_{|\face}. 
+\]
+
+\subsubsection{Quality tracking solver}
+
+The solver for the quality tracking is similarly defined as the time solver shown in Section \ref{sec:time_solver}.  Thus, an equation of state and a viscosity law (Section \ref{sec:viscosity}) must be chosen to define the quality tracking type.  
+\begin{verbatim}
+    using solver_t = shimmer::qt_solver<shimmer::gerg_aga,shimmer::viscosity_type::Constant>;    
+\end{verbatim}
+To create the quality tracking object, 4 arguments are needed: 
+\begin{itemize}
+    \item infrastructure with the whole information of the network 
+    \item temperature of the network
+    \item a boolean specifying if pipes must be refined, default \texttt{false}.
+    \item number of time steps to run an unsteady state 
+\end{itemize}
+It is important to distinguish steady and transient runs. In the first one, only admixing is made on each node, independently of refinement settings. The steady solver iterates until convergence with each iteration made of a fluid-dynamic run followed by a computation of the mass fractions. In the second case, the steady case is only intended to find the fluid-dynamics variables on the network as an initial condition. The initial mass fraction state is set as only methane; therefore, during the transient run, the mixture of gasses injected into the network will transport and the fluid-dynamics will change accordingly.
+\begin{verbatim}
+  solver_t qt(infrastructure, temperature, do_refine, num_steps);
+\end{verbatim}
+Recall that  \texttt{config.quality\_tracking} must be set \texttt{true} and \texttt{config.qt\_steady} is set to \texttt{false} by default. The variable \texttt{config.qt\_steady}  is only used in case \texttt{config.quality\_tracking} = \texttt{true}.
+
+See the unitary test for the 
+quality tracking solver denoted as \texttt{/unit\_tests/test\_qt}. 
+\begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm]{cpp}
+    //Define the type o time solver: eq of state and viscosity model
+    using solver_t = shimmer::qt_solver<shimmer::gerg_aga, 
+                                        shimmer::viscosity_type::Constant>;
+    // Initialize quality solver object
+    solver_t qt(infra, temperature, refine, num_steps);
+
+    if(steady)
+    {
+        // Run simulation with only admixing
+        qt.steady_state(guess, dt_std, tol_std);         
+    }
+    else
+    {
+        // Run Fluid dynamics steady state
+        qt.initialization(guess, dt_std, tol_std);  
+        // Run unsteady state
+        qt.advance(dt, tol);
+    }
+\end{minted}
+
+\clearpage

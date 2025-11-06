@@ -1,5 +1,8 @@
-\section{Developer zone: In memory representation}
-Network modelling can be mathematically abstracted into a graph of stations (graph nodes) and pipes or active network elements (graph edges). The network graph is implemented using Boost Graph Library, which provides a labeled graph implementation and related algorithms. The network data in particular is stored into the graph labels. Shimmer++ represents the network as an undirected graph, therefore pipes are inherently not directional, in contrast to physical variables as velocity or flux. Using the facilities of the Boost Graph Library, the definition of the graph type is
+\clearpage
+\section{Developer zone} \label{sec: developer_zone}
+
+\subsection{In memory representation} \label{sec:memory}
+Network modelling can be mathematically abstracted into a graph of stations (graph nodes) and pipes an non-pipes network elements (graph edges, also called \textit{branches}). The network graph is implemented using Boost Graph Library, which provides a labeled graph implementation and related algorithms. The network data in particular is stored into the graph labels. Shimmer++ represents the network as an undirected graph, therefore pipes are inherently not directional, in contrast to physical variables as velocity or flux. Using the facilities of the Boost Graph Library, the definition of the graph type is
 \begin{verbatim}
     using infrastructure_graph = adjacency_list< listS, vecS,
                                     undirectedS, vertex_properties, edge_properties>;    
@@ -50,7 +53,7 @@ labels have the following types:
 %    \draw[dnode] (-0.5, 2+\a) -- (-0.5, 7.00) -- ( 6  , 7.00) -- ( 6 , 2+\a) -- cycle;
 %\end{tikzpicture}
 
-Network graphs are populated via network data files by the user however, from the developer point of view, it could be useful to populate them manually. For the first option see Section \ref{SectionDatabase}. In the second case, you will need to introduce pipe and node properties one by one as will explained in what follows. Lets take as example the graph in Fig. \ref{fig: graph_example} of a simplified  gas network. 
+Network graphs are typically populated using network data files provided by the user. We refer the reader to Section~\ref{sec:database} for the structure of these data files and Section \ref{sec:matlabtool}. However, for the sake of completeness in presenting the numerical stage, it is also shown how to manually introduce pipes and nodes properties in the graph. This approach can be found in the unitary tests (shimmer++/unit\_tests) designated to assess different modules of the code separately. We emphasize once again that using the network data file is the recommended approach. Nevertheless, manual input could be useful from the developer's perspective.  Let's take as example the graph in Fig. \ref{fig: graph_example} of a simplified  gas network. 
 
 \begin{figure}[H]
     \centering
@@ -59,9 +62,8 @@ Network graphs are populated via network data files by the user however, from th
     \label{fig: graph_example}
 \end{figure}
 
-\subsection{Define the graph}
+\subsubsection{Define the graph}
 In the main function add the definition of the graph. For the sake of clearness, let us proceed step by step and introduce two functions aimed to add first the vertex, \texttt{make\_init\_vertex} and later on the pipes properties, \texttt{make\_init\_pipes}. 
-
 \begin{minted}[linenos=true,numbersep=5pt,frame=lines,framesep=0.5mm ]{cpp}
     int main()
     {
@@ -74,8 +76,7 @@ In the main function add the definition of the graph. For the sake of clearness,
     }
 \end{minted}   
 
-
-\subsection{Add nodes specification}
+\subsubsection{Add nodes specification}
 Let us suppose that the data shown in Tab. \ref{tab: node_data} is attached to the network vertices. For this example, no specification about mixture composition is  taken into account. Nonetheless, this functionality is supported and can be easily added.
 
 \begin{table}[H]
@@ -133,7 +134,7 @@ make_init_vertex(infrastructure_graph& igraph, std::vector<vertex_descriptor>& v
 }
 \end{minted}
 
-\subsection{Add pipes specification}
+\subsubsection{Add pipes specification}
 Let us now continue with the \cpipes{pipes} specification using the values in Tab. \ref{tab: pipe_specification}. 
 
 
@@ -175,8 +176,8 @@ make_init_pipes(infrastructure_graph& igraph, std::vector<vertex_descriptor>& vd
 }
 \end{minted}
 
-\subsection{Incidence matrix A}
-The incidence matrix, as well as the graph, carries information about the connection between nodes and pipes. Hence, it is directly built from graph and used in the linear system on section \ref{}. See also Fig. \ref{fig: graph_example}.  It is also used to exploit vectorization in some parts of the code, instead of calling the graph. The complete implementation is written in \texttt{Incidence.h}.   
+\subsubsection{Incidence matrix A} \label{sec:incidence}
+The incidence matrix, as well as the graph, carries information about the connection between nodes and pipes. Hence, it is directly built from graph and used in the linear system on Section \ref{sec: numerical_methods}. See also Fig. \ref{fig: graph_example}.  It is also used to exploit vectorization in some parts of the code, instead of calling the graph. The complete implementation is written in \texttt{Incidence.h}.   
 
 \begin{table}[H]
     \centering
@@ -194,7 +195,7 @@ The incidence matrix, as well as the graph, carries information about the connec
     \caption{Incidence matrix based on the graph in Fig. \ref{fig: graph_example}.}
 \end{table}
 
-\subsubsection{Hands-on:}
+\textbf{Hands-on:}
 Recall first to create a graph with the specification, as proposed in the previous examples. For this case, an slightly modification is done to summarize all in a unique function \texttt{make\_init\_graph}. 
 \begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm]{cpp}
     int main()
@@ -215,11 +216,16 @@ Recall first to create a graph with the specification, as proposed in the previo
     }
 \end{minted}
 
-\section{Developer Zone: Stations}
 
-\cred{[DENERG: COMPLETE WITH INTRO TO STATIONS]}.\\
+\subsection{Stations}
 
-They rely on constraints that regulate either flux or pressure, depending on the nature of the station. As shown in Figure \ref{tab: non_pipe_to_node_scheme_table}, stations can be of the exit/entry type with respect to the flux $L$, while junctions impose the sole requirement that $L = 0$. In what follows, we denote the control mode of a station as a boundary condition that imposes either pressure or flux with values specified by the user or fixed according to the type of station.  Additional constraints regarding design parameters or user defined parameters are also possible. The first ones are denoted henceforth as hard constraints, since a violation leads to a change of the control mode. In the contrast, the user-parameters are denoted as SOFT constraints, since a violation triggers only a warning.
+The nodes  referred to as \textit{"stations"} are those ones on which a external boundary condition is imposed. They rely on constraints that regulate either flux or pressure, depending on the nature of the station. A detailed description of the possible nodal station types is given in \ref{sec:ModelDescr_NodeSt}. The list there provided is not exhaustive and developers can in principle add further stations with their control modes.
+As shown in Figure \ref{tab: non_pipe_to_node_scheme_table}, stations can be of the exit/entry type with respect to the flux $L$, while junctions (not defined as stations) impose the sole requirement that $L = 0$ which is not exogenous but embedded in their definition as \textit{"junction"}. 
+
+In what follows, we denote the control mode of a station as a boundary condition that imposes either pressure or flux with values specified by the user or fixed according to the type of station.  Additional constraints regarding design parameters, user-defined set-points or user-defined parameters are also possible. 
+The design parameters and the user-defined set-points are denoted henceforth as \textit{"hard constraints"}, since a violation leads to a change of the control mode. In contrast, the user-parameters are denoted as \textit{"soft constraints"}, since a violation triggers only a warning. These might represent the desired operating ranges thus the warning message returns an message about this "non critical" violation.
+
+Nodal station which are able to change its control mode upon a violation of an hard constraint are  modelled as multi-state stations.
 
 \begin{table}[H]
     \centering
@@ -229,9 +235,8 @@ They rely on constraints that regulate either flux or pressure, depending on the
      Entry Stations    &  Exit Stations   &  Junctions \\ \hline
     \includegraphics[scale= 0.7]{img_memory/entry.png}&  \includegraphics[scale= 0.7]{img_memory/exit.png}   & \includegraphics[scale= 0.7]{img_memory/junction.png} \\ \hline
     Control by pressure or inflow & Control by outflow & \\ \hline
-    \end{tabular} 
-    
-    \caption{Classifications of \cnodes{non-pipe elements} attached to nodes.}
+    \end{tabular}     
+    \caption{Classification of nodes by the direction of the external mass flow rate}
 \end{table}
 
 %The taxonomy of the stations can be divided in different manners, one is dividing by categories related to direction of the flux: exit, entrance or junction as is shown in Fig. \ref{tab: non_pipe_to_node_scheme_table}, pressure- or flux- regulated.   
@@ -283,7 +288,7 @@ class |\textbf{\cblue{constraint}}|
 In order to add a new kind of station, a function must be created in the file boundary.h using either an object of type \texttt{one\_state\_station} or \texttt{multiple\_states\_station}. 
 
 
-\subsection{One state station}
+\subsubsection{One state station}
 
 For the sake of simplicity, let us add as an example the \texttt{consumption\_wo\_press}.  Since there are no switch states, this station is defined as a one state station object. Inside the function only a state is defined, which implies a boundary, a hard constraint and the soft constraints.
 The function \texttt{build\_user\_constraints} defines the state components for each of the user-defined constraints, in an analogous manner to what was done for boundary and hard constraint types. The only difference is that \texttt{hardness\_type::SOFT} must be used and multiple constraints are allowed.
@@ -317,7 +322,7 @@ make_consumption_wo_press(const VALUE& vals,
 }
     \end{minted}
 
-\subsection{Multiple states station}  
+\subsubsection{Multiple states station}  
         
 For station with more than one state, you should use \texttt{multiple\_state\_station} class. 
 You are able to define stations with more than 2 states also. Just use  the function {set\_state} to add as many states as you please. \\
@@ -374,4 +379,3 @@ make_remi_wo_backflow(  const VALUE_TYPE& Pset,
   return remi;
 }
 \end{minted}
-

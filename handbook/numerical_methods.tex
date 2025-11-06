@@ -1,32 +1,21 @@
-\section{Developer zone: Numerical methods stage}
+\subsection{Numerical methods stage}
 \label{sec: numerical_methods}
-The starting point to model gas fluid dynamics is the Navier-Stokes equations with some common model simplifications used in gas pipeline networks analysis. An schematic resume of the modelling is shown in Fig. \ref{fig: scheme_model}. A complete derivation of the modelling system can be found in \cite{Cavana2020}. Here we draw only the more general key points needed for the presentation of the tool. 
-\begin{figure}[H]
+The starting point for modelling gas fluid dynamics is the Navier-Stokes equations, along with some common model simplifications used in gas pipeline networks analysis.  Here, we draw only the more general key points needed for the presentation of the tool. Let $(v,p)$ be the velocity and pressure, then the standard model describing a fluid flow through a gas network is given by
+\begin{equation}
+    \begin{cases}
+        \displaystyle \frac{\partial \rho}{\partial t} + \frac{\partial (v\rho)}{\partial x} =0, \\
+        \\\displaystyle\frac{\partial \rho v}{\partial t} + \frac{\partial}{\partial x}\left( \rho v^2 + p\right) + \frac{\lambda}{2D}\rho v |v| + \rho g\sin \alpha =0.
+    \end{cases}
+\end{equation}
+where $D$ denotes the diameter and $\alpha$ the inclination angle of the pipe.
+The first assumption used is unidimensional (1-D) flow through the pipes, which implies that radial variations are neglected. Another common simplification concerns gas transport and distribution, which it is typically supposed to occur within an isothermal process. This assumption holds in general due to the stability of the soil temperature where pipelines are normally installed. Situations in which the isothermicity assumpion is weaker are cases of open-air pipelines  which are exposed to local weather, the proximity of an outlet section of a compression or a gas regulation station and underwater gasducts. However, overall this assumption seems to be a trade-off which allows avoiding to solve the energy equation leaving the problem of gas flow simulation as a pressure-velocity coupled problem, based on the coupled solution of the continuity equation (mass conservation equation) and of the momentum equation. The second main assumption is the creeping motion one, which derives from the low gas velocity within the pipeline with respect to the gas speed of sound (generally: $ 25 m/s $ vs $\approx400 m/s$). This allows to neglect the convective term. Some estimations of pressure drop error based on these assumptions are discussed in \cite{Cavana2020}.
+A schematic resume of the modelling is shown in Fig. \ref{fig: scheme_model}. The assumption above applied on the flow equation, that is applied to a pipeline (or a pipeline section) whose length is $ \Delta x $. The continuity equation is instead applied to each node of the network, where the mass balance is performed over the volume $V_i$.  A complete derivation of the modelling system can be found in \cite{Cavana2020}. \begin{figure}[H]
     \centering
-    \includegraphics[scale = 0.5]{img_methods/model_scheme.pdf}
+    \includegraphics[scale = 0.3]{img_methods/model_scheme.pdf}
     \caption{Schematic transient gas network model.}
     \label{fig: scheme_model}
 \end{figure}
-The first assumption is unidimensional flow, which implies that radial variations are neglected. Another common simplification concerns long distance gas transport, which it is typically supposed to occur within an isothermal process. This assumption holds in general despite variations due to local weather, due to the stability of the soil temperature where pipelines are normally installed. Additionally, for non-isentropic processes, as such of compressors and turbines, overall this assumption seems to be a trade-off which allows avoiding to solve the energy equation. Some estimations of pressure drop error based on these assumptions are discussed in [Marco Thesis cite 92]. The second main assumption is \cred{creeping flow} \cred{[DENERG CHECK REQUIRED]}, which derives from the low Reynolds numbers mainly due to the low operational velocity of the transported gas. 
-s
-The structure of the methodology for the numerical methods stage can be thought as three main nested loops, shown in Fig. \ref{fig: numerical_methods_stage}. The external loop tackles the unsteady time advance, the middle loop the quality tracking and the inner loop the solution of the gas fluid dynamics.  
-\begin{figure}[H]
-    \centering
-    \input{img_methods/numerical_methods_algorithm_pgf}
-    \caption{Schematic algorithm of the numerical stage.}
-    \label{fig: numerical_methods_stage}
-\end{figure}
-
-
-\begin{figure}[H]
-    \centering
-    \input{img_methods/fluid_system}
-    \caption{Algebraic system after linearization of the fluid dynamic equations.}
-    \label{fig: fluid_system}
-\end{figure}
-where $\bI$ stands for the identity matrix and recall that $\bA$ stands for the incidence matrix, R stands for the resistance matrice. Regarding the later, part of the fluid energy is lost in pipe-wall friction, characterized by the roughness of the metal surface and the Reynolds number. Several relations between the pressure drop and the mass flow rate can be found in the literature. Very well-known examples are the Darcy-Weisbach equations and the Hazen-Williams equations. 
-
-The set of variables as pressure $\bp$ and mass flow rate $\bL_{rate}$ at the nodes, and flux over the pipes $\bG$ are all gathered in an structure named variable. 
+The resulting variables after linearization and discretization are pressure $\bp$ and mass flow rate $\bL_{rate}$ ($G_{ext}$ in the scheme) attached to the node volumes, and flux $\bG$ attached to pipe volumes. In Shimmer++, these set of variables are all gathered in an structure named "variable" as follows 
 \begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm]{cpp}
     struct variable
     {
@@ -39,11 +28,67 @@ The set of variables as pressure $\bp$ and mass flow rate $\bL_{rate}$ at the no
         variable(const vector_t&p, const vector_t&f ,const vector_t&l);
     };
 \end{minted}
+The structure of the methodology for the numerical methods stage can be seen as an outer loop that handles the unsteady (transient) time advancement, an inner loop solving the gas fluid dynamics, and a step dedicated to the quality tracking (see also Fig. \ref{modeldescr:flowchart}) .
 
-\subsection{Viscosity}
+In Fig.\ref{fig: scheme_model}, the friction-losses term in the flow equation (the fourth term from the left) has been modeled through the Darcy-Weisbach equation, as it is evident form the expression. This equation express the pressure losses due to the pipe-wall friction as a function of the fluid density, the squared of its velocity, some geometrical parameters and a so-called \textit{friction factor} $\lambda$. This term is in general a function of the pipeline inner wall roughness $\varepsilon_i$, the inner diameter $D_i$, and the Reynolds Number $Re$, denoting the regime of the fluid flow. The Reynolds number is in turn a function of the fluid density, its velocity, the pipe diameter and the dynamic viscosity $\mu$.
 
-At the present time, only a  viscosity model accounting for complex composition of gases is supported. It is here labeled in honor to one of the authors, Kukurugya. The alternative for more simplified problems is the constant viscosity model, that cannot be modified at running time and it is set accordingly as $\mu = 1e-5 [\cred{Pa}]$. 
+Consequently, besides the coupled mass-momentum equations, further relations are needed, specifically
+\begin{itemize}
+    \item the friction factor correlation
+    \item the viscosity correlation for a gas-mixture
+    \item the Equation of State for the determination of the compressibility factor.
+\end{itemize}
+As for the latter, the need for an Equation of States emerges to set a correlation between gas pressure and density, as it is schematically displayed in Fig.\ref{fig: scheme_model}.
+\begin{remark}
+The gas network transport solver, hereafter referred as the time solver and defined in Section~\ref{sec:time_solver}, is designed to  take as C++ template parameters the equation of state and the viscosity, thereby enabling the use of different formulations for each. The friction factor might adopt a similar template-approach, instead of a solely function.  Future developments may easily extend this methodology to achieve a more flexible and consistent framework.    
+\end{remark}
+In the next sections, these correlation are briefly illustrated, enabling the user/developer to possibly modify them.
 
+\subsubsection{Friction factor}
+
+In the literature, there is a wide range of mathematical models to describe the friction factor. Shimmer++ relies on the Cheng formula correlation \cite{CHENG}, written as follows
+\begin{equation*}
+\label{cheng}
+\frac{1}{\lambda} =
+\left( \frac{Re}{64} \right)^{\alpha}
+\left[ 1.8 \, \log\!\left( \frac{Re}{6.8} \right) \right]^{2(1-\alpha)\beta}
+\left[ 2.0 \, \log\!\left( \frac{3.7D}{\varepsilon} \right) \right]^{2(1-\alpha)(1-\beta)},
+\end{equation*}
+with shorthand notation:
+\begin{equation*}
+\alpha = \left(1 + \left( \dfrac{Re}{2720} \right)^{9}\right)^{-1},
+\qquad
+\beta = \left(1 + \left( \dfrac{Re \, \varepsilon}{160 D} \right)^{2}\right)^{-1}.
+\label{eq:cheng_ab}
+\end{equation*}
+where $Re$ is the Reynolds number, $D$ the inner diameter and of the pipe and $\varepsilon$ is the internal roughness of the pipe-wall.
+
+Extensions to other models (e.g. HOFER, Colebrook-White etc.) can be easily added by substitution of the implementation of the Cheng formula shown here below. \\
+See the pipe configuration file 
+\texttt{shimmer/shimmer++/src/solver/pipe\_calculator.cpp}.
+\begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm]{cpp}
+double
+friction_factor_average(const edge_properties& pipe, const double & Temperature,
+                        const double & flux, const double & mu)
+{
+    auto Re = std::abs(flux) * pipe.diameter / (pipe.area() * mu) ; 
+
+    auto eps_over_d = pipe.friction_factor / pipe.diameter;
+    auto a = 1.0 / (1.0 + std::pow( Re  / 2720.0, 9));
+    auto b = 1.0 / (1.0 +  std::pow(Re * eps_over_d/160.0, 2.0) );
+
+    auto t0 = 3.7 / eps_over_d;
+    auto t1 = std::pow( 64.0 / Re, a) ;
+    auto t2 = std::pow( 1.8 * std::log10(Re/6.8),  2.0 * (a -1.0) * b);
+    auto t3 = std::pow( 2.0 * std::log10(t0), 2.0 * (a - 1.0) * (1.0 - b));
+        
+    return t1 * t2 * t3; 
+}
+\end{minted} 
+
+\subsubsection{Viscosity} \label{sec:viscosity}
+
+At the present time, only a  viscosity model accounting for complex composition of gases is supported. It is here labeled in honor to one of the authors, Kukurugya. The alternative for more simplified problems is the constant viscosity model, that cannot be modified at running time and it is set accordingly as $\mu = 1e-5~[Pa \cdot s]$. See the pipe configuration file \texttt{shimmer/shimmer++/src/solver/viscosity.cpp}.
 \begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm]{cpp}
     enum viscosity_type
     {
@@ -52,8 +97,8 @@ At the present time, only a  viscosity model accounting for complex composition 
     };
 \end{minted}
 
-\subsubsection{Hands-on}
-The type of viscosity is given as a template parameter to the viscosity function as shown hereafter. Notice that the viscosity takes the same temperature for each edge in the graph. This is in agreement with the \cred{isothermal} hypothesis of the gas network. However, straightforward modifications can be done if variations in space for temperature are desired.  
+\textbf{Hands-on:}
+The type of viscosity is given as a template parameter to the viscosity function as shown hereafter. Notice that the viscosity takes the same temperature for each edge in the graph. This is in agreement with the isothermal hypothesis of the gas network. However, straightforward modifications can be done if variations in space for temperature are desired.  
 \begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm]{cpp}
     int main()
     {
@@ -72,14 +117,73 @@ The type of viscosity is given as a template parameter to the viscosity function
     }
 \end{minted}
 
-\subsection{Equation of state - Gas dynamics relations}
-Industrial have been using modifications to ideal gas state to accommodate to their applications and constraints. A compilation of this bunch of equations used by industrial operators was gathered in [ref 70 at Marco's Thesis]. Some common formulas are  named under acronyms to identify them, from where the most common ones are AGA-8,  sGERG-88 and GERG-2008. In this work, we use the later, which is a relative recent equation for mixture of natural gas modelling, based in a formulation of the equation of state written in terms of the Helmholtz free energy. It is known to be highly flexible with the number of components considered for the mixture. 
-%where Z denotes the compressibility factor aiming to account a correction for real gases. 
+\subsubsection{Equation of state - Gas dynamics relations} \label{sec:eos}
+Industry have been using modifications to ideal gas state to accommodate to their applications and constraints. A compilation of this bunch of equations used by industrial operators was gathered in \cite{Guillot2015}. Some common formulas are named under acronyms to identify them, from where the most common ones are PAPAY, AGA-8,  sGERG-88 and GERG-2008. In this work, we use the PAPAY formula and the GERG-2008 equation.
 
+The PAPAY formula \cite{Papay1968} indeed is a correlation for the compressibility factor $Z$ known to be valid for pressure up to 150~ $[bar_g]$. The formulation is as follows
+\begin{equation*}
+Z = 1 - 3.52 \left( \frac{p}{p_c} \right) \exp\left[-2.260 \left( \frac{T}{T_c} \right)\right] + 0.274 \left( \frac{p}{p_c} \right)^2 \exp\left[-1.878 \left( \frac{T}{T_c} \right)\right],
+\end{equation*}
+where $p_c$ and $T_c$ are the critical pressure and critical temperature of the mono-component gas, respectively. Extensions of the PAPAY correlation to multicomponent gas mixtures are possible by using the pseudo-critical pressures and temperatures for the gas mixtures. In Shimmer++, only the equation for methane ($CH_4$) is provided, as other complex gases can be modelled using the GERG-2008. 
 
+The GERG-2008 equation is instead the correct equation to be adopted in case of multi-component based natural gas modelling. It is a relative recent equation of state written in terms of the Helmholtz free energy. It is used as an ISO standard and it is known to be highly flexible with the number of components considered for the mixture. The full description of the equation is given in \cite{GERG}.
+The standard implementation is provided by the \href{https://github.com/usnistgov/AGA8}{AGA8} repository maintained by NIST and has been adapted for our purposes.
+
+To review the available equations of state or to include a new one, refer to the project file \\
+\texttt{shimmer/shimmer++/src/solver/gas\_law.h}.
+
+\textbf{Hands-on:}
+To include a new equation of state, a derived class inheriting from the base class \texttt{equation\_of\_ state}, must be implemented. Here below, we show only some guidelines of the base class, to see the complete/accurate implementation we refer the reader to the file \texttt{shimmer/shimmer++/src/solver/gas\_law.h}.
+  
+\begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm]{cpp}
+class equation_of_state
+{
+    virtual void initialization(linearized_fluid_solver *) = 0; 
+    virtual void mixture_molar_mass(const matrix_t&, const matrix_t&) = 0;
+    virtual auto molfrac_2_massfrac(const infrastructure_graph&, const incidence&) = 0;
+    virtual auto massfrac_2_molfrac(const matrix_t&, const matrix_t&) = 0;
+    virtual auto speed_of_sound(linearized_fluid_solver *) const = 0;
+};
+\end{minted}
+Example of the derived class for the PAPAY equation of state 
+\begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm]{cpp}
+class papay: public equation_of_state
+{
+public:
+    papay();
+    
+    void initialization(linearized_fluid_solver *lfs); 
+    void mixture_molar_mass(const matrix_t&, const matrix_t&);
+    auto molfrac_2_massfrac(const infrastructure_graph&, const incidence&);
+    auto massfrac_2_molfrac(const matrix_t&, const matrix_t&);
+    vector_t compute_Z(double temperature, const vector_t& pressure) const;
+
+    auto speed_of_sound(linearized_fluid_solver *lfs) const;
+};
+\end{minted}
 \subsection{Fluid solver}   
-We denote as fluid solver the most internal loop in Fig. \ref{fig: numerical_methods_stage}, where the Navier-Stokes equations are linearized and discretized.  The code  implementation search to mimic the algebraic system in Fig. \ref{fig: fluid_system}. 
-
+We denote as fluid solver the innermost iteration loop where the Navier-Stokes equations are  solved following the ideas presented in \cite{Cavana2020}, Section \ref{sec:ModelDescr} and schematized in Fig.\ref{fig: scheme_model}. The  resulting pair of discretized equations are shown in Fig. \ref{fig:flow_solver:flowchart}.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{img_methods/fluid_solver_flow.pdf}
+    \caption{Discretized mass and momentum equations.}
+    \label{fig:flow_solver:flowchart}
+\end{figure}
+The linear system resulting after linearization and discretization of the Navier-Stokes equations can be represented as in Fig.\ref{fig: fluid_system}. 
+%\begin{figure}[H]
+%    \centering
+%    \input{img_methods/numerical_methods_algorithm_pgf}
+%    \caption{Schematic algorithm of the numerical stage.}
+%    \label{fig: numerical_methods_stage}
+%\end{figure}
+\begin{figure}[H]
+    \centering
+    \input{img_methods/fluid_system}
+    \caption{Algebraic system after linearization of the fluid dynamic equations.}
+    \label{fig: fluid_system}
+\end{figure}
+where $\bI$ stands for the identity matrix and recall that $\bA$ stands for the incidence matrix, $\mathbf{R}$ stands for the resistance matrix which incorporates both the fluid-dynamic resistance $R_f$ and the inertia resistance $R_I$, which is relevant for unsteady (transient) simulation problems, while it is zero when the steady-state simulation is addressed. See Fig.\ref{fig: scheme_model} for the specific definition of the two terms for the resistance and \cite{Cavana2020} for the step-by-step matrices construction. 
+The code  implementation search to mimic the algebraic system in Fig. \ref{fig: fluid_system}. 
 \begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm, escapeinside=||]{cpp}
 void linearized_fluid_solver::run(...)
 {
@@ -109,8 +213,29 @@ void linearized_fluid_solver::run(...)
     }
 }
 \end{minted}
+The fluid solver accommodates steady and unsteady runs, depending on the setting of the input parameters. The object is constructed using
+\begin{verbatim}
+    linearized_fluid_solver lfs(n, unsteady, tol, dt, temperature, mu, inc, graph);
+\end{verbatim}
+The input parameters are listed here below
+\begin{itemize}
+    \item Integer \texttt{n}: denotes the time interval $t^n$. For steady runs $n=0$.
+    \item timestep $\dt$: only needed in case of transient runs.
+    \item unsteady: \texttt{false} if steady state, \texttt{true} in unsteady state. 
+    \item tolerance: set the tolerance for the convergence of the iterative solver
+    \item temperature: constant network temperature
+    \item viscosity \texttt{mu}: see Section \ref{sec:viscosity}
+    \item incidence \texttt{inc}: see Section \ref{sec:incidence}
+    \item graph: see Section \ref{sec:memory}
+\end{itemize} 
+To find the variables for the fluid flow in an steady state, make \texttt{timestep=0} and \texttt{unsteady=false}. 
+The iterative solver is performed by the fluid solver run function
+\begin{verbatim}
+    lfs.run(area_pipes, var0, var, &eos);
+\end{verbatim}
+It requires an initial object \texttt{variable var0},  that acts either as an initial condition in the unsteady or as a guess variable  in the steady state.
 
-\subsubsection{Hands-on:}
+\textbf{Hands-on:}
 For the complete example check \texttt{unit\_tests/test\_fluid\_solver.cpp}.    
 
 \begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm]{cpp}
@@ -120,8 +245,9 @@ For the complete example check \texttt{unit\_tests/test\_fluid\_solver.cpp}.
        // 1.1 Numerical and physical setting
        bool unsteady = true;
        double temperature = 293.15; // [K]
-       double dt  = ; // [s]
-       double tol = ; 
+       double dt  = 180.0; // [s]
+       double tol = 1.E-04; 
+       
        // 1.2 Graph and derived data
        infrastructure_graph graph;
        make_init_graph(graph);
@@ -130,48 +256,47 @@ For the complete example check \texttt{unit\_tests/test\_fluid\_solver.cpp}.
 
        // 2. Create the arguments needed to run the fluid solver
        vector_t area_pipes = area(graph);
-       gerg gerg_eos; 
-       gerg_eos.compute_molar_mass(y_nodes, y_pipes);
+    
+       gerg_aga gerg_eos; 
+       gerg_eos.mixture_molar_mass(graph, inc);
         
        // 3. Fluid dynamics solver
-       linearized_fluid_solver lfs(0, unsteady,tolerance, dt,temperature, mu,inc, graph);
+       linearized_fluid_solver lfs(0, unsteady, tol, dt, temperature, mu, inc, graph);
        lfs.run(area_pipes, var, var, &gerg_eos);
     
        return 0;
    }
 \end{minted}
 
-\subsection{Time solver}
-
-The outer loop of the numerical methods stage aimed to advance in time is implemented in the time solver.
-At the moment of the creation of this time solver object, the viscosity model along with the equation of state  must be provided as template parameter, i.e. at compile time. At the moment of the writing of this document, only two models are available gerg (GERG2008) and papay (Papay model \cite{}). Thus, assuming constant viscosity model, the two  available options are as follows:
+\subsection{Time solver} \label{sec:time_solver}
+The advance in time is implemented in the time solver, see \textit{time\_solver.hpp}, which allows for the steady and unsteady (transient) state. It corresponds to the outer loop of the numerical methods stage.
+At the moment of the creation of this time solver object, the viscosity model along with the equation of state  must be provided as template parameter, i.e. at compile time. At the moment of the writing of this document, only two models are available GERG-2008 and PAPAY  \cite{Papay1968}, the latter for pure methane only. Thus, assuming constant viscosity model, the two available options are as follows:
 \begin{verbatim}
-    time_solver<gerg,  viscosity_type::Constant> ts(graph, ...);   
+    time_solver<gerg_aga,  viscosity_type::Constant> ts(graph, ...);   
 \end{verbatim}
 or
 \begin{verbatim}
     time_solver<papay, viscosity_type::Constant> ts(graph, ...);   
 \end{verbatim}
 
-To initialize the object, physical and numerical properties that remain unchanged during the simulation must be provided.
-\subsubsection{Hands-on}0
+To initialize the object, physical and numerical properties that remain unchanged during the simulation must be provided, as  the temperature of the network which is assumed to be constant. The time solver is divided into: the initialization and the advancement steps. The first aims at solving a physical initial condition by solving a steady fluid-dynamic iteration, provided a guess solution and a tolerance (\texttt{tol\_std}) are given. The second step is devoted to evolution in time and therefore the number of steps \texttt{num\_steps}, the timestep \texttt{dt} and the tolerance \texttt{tol} for the transient fluid-dynamic iterations must be provided.\\
+
+\textbf{Hands-on:}
 For the complete example check \texttt{unit\_tests/test\_time\_solver.cpp}.    
 \begin{minted}[linenos=true,numbersep=1pt,frame=lines,framesep=2mm]{cpp}
     int main()
     {
         infrastructure_graph graph;
         make_init_graph(graph);
-        
-        auto [y_nodes, y_pipes] = make_mass_fraction(num_nodes, graph);
 
         //Define the type o time solver: eq of state and viscosity model
         using time_solver_t = time_solver<papay, viscosity_type::Constant>; 
         // Initialize time solver object
-        time_solver_t ts(graph, temperature, flux_ext);
+        time_solver_t ts(graph, temperature);
         // Run simulation with steady state
-        ts.initialization(guess_std, dt_std, tol_std, y_nodes, y_pipes); 
+        ts.initialization(guess_std, dt_std, tol_std); 
         // Run simulation with unsteady state
-        ts.advance(dt, num_steps, tol, y_nodes, y_pipes);
+        ts.advance(dt, num_steps, tol);
      
         return 0;
     }

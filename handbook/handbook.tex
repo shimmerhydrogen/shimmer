@@ -12,23 +12,33 @@
 \usepackage{multirow}   
 \usepackage{colortbl} % Allow coloring cells in a table
 \usepackage{xcolor}
-
+\usepackage{comment}
 \usepackage{catchfile}
-\CatchFileDef{\HEAD}{../.git/refs/heads/master}{}
-\newcommand{\gitrevision}{%
-  \StrLeft{\HEAD}{7}%
-}
+%\CatchFileDef{\HEAD}{../.git/refs/heads/master}{}
+%\newcommand{\gitrevision}{%
+%  \StrLeft{\HEAD}{7}%
+%}
+\usepackage{amsthm}
+\usepackage{amsmath} 
+\usepackage{macros}
+\usepackage{booktabs}
+\usepackage{array}
+
+
 
 \title{Shimmer++ Handbook}
-\author{Politecnico di Torino}
-\date{\today\\{\footnotesize compiled from revision \texttt{\gitrevision}}}
+\author{Politecnico di Torino \\ 
+\\
+Stefano Berrone, Karol Cascavita, Marco Cavana, Matteo Cicuttin,\\ Pierluigi Leone, Angelo Spadavecchia, Fabio Vicini}
+\date{\today}%\\{\footnotesize for internal revision}}
 
 \begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \maketitle
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\clearpage
 \tableofcontents
-
-\input{macros}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \input{intro}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -42,8 +52,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \input{numerical_methods}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{quality_tracking}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %---------------------------------------
-\bibliographystyle{plain}
+\bibliographystyle{ieeetr}
 \bibliography{biblio.bib}
 %---------------------------------------
 

@@ -641,8 +641,8 @@ public:
             auto norm_pressure = (var_previous.pressure).norm(); 
             auto norm_flux   = (var_current.flux).norm(); 
             auto norm_massfrac = massfrac_nodes.norm();
-            auto residual =  std::max(std::max(error_flux, error_pressure), error_massfrac) 
-                               / std::max(std::max(norm_flux, norm_pressure), norm_massfrac); 
+            auto residual =  std::max(std::max(error_flux/norm_flux, error_pressure/norm_pressure), 
+                               error_massfrac/norm_massfrac); 
 
             if(residual < tolerance)
             {

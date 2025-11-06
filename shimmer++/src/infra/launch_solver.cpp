@@ -130,6 +130,8 @@ int launch_solver_qt(const config& cfg)
     auto vel_evol  = qt.velocity_evolution();
     auto mlf_evol  = qt.molar_fractions_evolution();
 
+    std::cout << "Begin init db"  << std::endl;
+
     // Post-processing
     std::string outfile = cfg.database;
     if (cfg.refine) {

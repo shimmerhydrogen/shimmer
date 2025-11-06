@@ -650,18 +650,18 @@ public:
                 rho_all_pipes_evol_.row(0) =  eos.density_pipes(&lfs);
                 rho_all_nodes_evol_.row(0) =  eos.density_nodes(&lfs);
 
-                matrix_t mf_in  = inc_all_.matrix_in().transpose()  * massfrac_nodes;
-                matrix_t mf_out = inc_all_.matrix_out().transpose() * massfrac_nodes;
-                matrix_t massfrac_now_pipes = 0.5 * (mf_in + mf_out); 
-                massfrac_pipes = inc_all_.matrix_in().transpose() * massfrac_nodes;    
+                matrix_t mf_in  = inc_all_.matrix_in().transpose()  * massfrac_next_nodes;
+                matrix_t mf_out = inc_all_.matrix_out().transpose() * massfrac_next_nodes;
+                massfrac_pipes = 0.5 * (mf_in + mf_out);  
                 auto pair_molfrac = eos.massfrac_2_molfrac(massfrac_nodes, massfrac_pipes);
                 molfrac_all_evol_[0] = pair_molfrac.first; 
 
                 return true;
             }
-            matrix_t mf_in  = inc_all_.matrix_in().transpose()  * massfrac_nodes;
-            matrix_t mf_out = inc_all_.matrix_out().transpose() * massfrac_nodes;
+            matrix_t mf_in  = inc_all_.matrix_in().transpose()  * massfrac_next_nodes;
+            matrix_t mf_out = inc_all_.matrix_out().transpose() * massfrac_next_nodes;
             massfrac_pipes = 0.5 * (mf_in + mf_out); 
+            massfrac_nodes = massfrac_next_nodes;
 
             var_previous = var_current;
         }

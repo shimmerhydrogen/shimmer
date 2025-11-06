@@ -1403,18 +1403,15 @@ int initdb(const std::string& db_filename)
         nullptr
     };
 
-
-    const char *schema_path = schema_paths[0];
-    while (schema_path) {
-        if ( (fh = fopen(schema_path, "r")) ) {
-            goto foundok;
-        }
-        schema_path++;
-    }
-
-    schema_path = getenv("SHIMMER_SCHEMA_FILE");
+    const char *schema_path = getenv("SHIMMER_SCHEMA_FILE");
     if ( schema_path and (fh = fopen(schema_path, "r")) ){
         goto foundok;
+    }
+
+    for (const char **sp = schema_paths; *sp; sp++) {
+        if ( (fh = fopen(*sp, "r")) ) {
+            goto foundok;
+        }
     }
 
     std::cerr << "Can't find NDF schema file, perhaps your Shimmer ";

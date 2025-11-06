@@ -32,6 +32,7 @@ namespace compr_stat {
 
 /* Define indices of columns in profile table */
 enum class limits_col : int {
+    p_name          = 0,
     s_from          = 1,
     s_to            = 2,
     max_power       = 3,
@@ -94,6 +95,7 @@ load(sqlite3 *db, const optvector<int>& s_u2i,
             std::cerr << "s_u2i: invalid station numbers. Inconsistent data in DB?" << std::endl;
             return SHIMMER_DATABASE_PROBLEM;
         }
+        setting.p_name = (char *) sqlite3_column_text(stmt, +limits_col::p_name);
         setting.u_sfrom = u_from;
         setting.u_sto = u_to;
         setting.i_sfrom = i_sfrom_opt.value();
@@ -163,7 +165,43 @@ int
 store(sqlite3 *db, const std::vector<int>& s_i2u,
     std::vector<setting_compr_stat>& settings)
 {
-    return SHIMMER_MISSING_DATA;
+    sqlite3_stmt *stmt = nullptr;
+
+    std::string q = "INSERT INTO compressor_limits "
+        "VALUES (?,?,?,?,?,?,?,?,?)";
+
+    int rc = sqlite3_prepare_v2(db, q.c_str(), q.length(), &stmt, nullptr);
+    if (rc) {
+        std::cerr << "SQL error on query '" << q << "': ";
+        std::cerr << sqlite3_errmsg(db) << std::endl;
+        return SHIMMER_DATABASE_PROBLEM;
+    }
+    
+    rc = sqlite3_exec(db, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
+
+    for (auto& setting : settings)
+    {
+        auto from = convert_i2u(s_i2u, setting.i_sfrom);
+        auto to = convert_i2u(s_i2u, setting.i_sto);
+
+        rc = sqlite3_bind_text(stmt, 1, setting.p_name.c_str(), setting.p_name.length(), nullptr);
+        rc = sqlite3_bind_int(stmt, 2, from);
+        rc = sqlite3_bind_int(stmt, 3, to);
+        rc = sqlite3_bind_double(stmt, 4, setting.max_power);
+        rc = sqlite3_bind_double(stmt, 5, setting.max_outpress);
+        rc = sqlite3_bind_double(stmt, 6, setting.min_inpress);
+        rc = sqlite3_bind_int(stmt, 7, setting.max_ratio);
+        rc = sqlite3_bind_int(stmt, 8, setting.min_ratio);
+        rc = sqlite3_bind_int(stmt, 9, setting.max_massflow);
+        rc = sqlite3_step(stmt);
+        rc = sqlite3_clear_bindings(stmt);
+        rc = sqlite3_reset(stmt);
+    }
+
+    rc = sqlite3_exec(db, "COMMIT", nullptr, nullptr, nullptr);
+    rc = sqlite3_finalize(stmt);
+
+    return SHIMMER_SUCCESS;
 }
 
 } //namespace database

@@ -1414,8 +1414,10 @@ int initdb(const std::string& db_filename)
         }
     }
 
-    std::cerr << "Can't find NDF schema file, perhaps your Shimmer ";
-    std::cerr << "installation is corrupt. Exiting." << std::endl;
+    std::cerr << "The NDF schema 'shimmer.sql' is not present ";
+    std::cerr << "in the installation directory or in the current ";
+    std::cerr << "work directory. Perhaps you are running the code ";
+    std::cerr << "directly from the source tree?" << std::endl;
     return -1;
 
 foundok:

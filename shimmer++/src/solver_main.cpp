@@ -23,13 +23,14 @@
 
 #include <iostream>
 #include <unistd.h>
+#include <getopt.h>
 
 #include "sol/sol.hpp"
 
 
 #include "infra/infrastructure.h"
 #include "errors.h"
-
+#include "infra/launch_solver.h"
 
 
 static void
@@ -49,40 +50,45 @@ register_usertypes(sol::state& lua)
     config_ut["tol"] = &config::tol;
     config_ut["refine"] = &config::refine;
     config_ut["dx"] = &config::dx;
-}
-
-static int
-parse_cmdline(int& argc, char**&argv, std::string& luafn,
-    shimmer::config& cfg)
-{
-    int opt;
-    while ( (opt = getopt(argc, argv, "i:")) != -1) {
-        switch (opt) {
-        case 'i':
-            cfg.database = optarg;
-            break;
-        default:
-            std::cerr << "Error parsing cmdline" << std::endl;
-            return -1;
-            break;
-        }
-    }
-
-    if (cfg.database == "") {
-        std::cerr << "Database not specified (either with ";
-        std::cerr << "-i flag or from config file)";
-        std::cerr << std::endl;
-        return -1;
-    }
-
-    return 0;
+    config_ut["quality_tracking"] = &config::quality_tracking;
+    config_ut["qt_steady"] = &config::qt_steady;
 }
 
 int main(int argc, char **argv)
 {
     _MM_SET_EXCEPTION_MASK(_MM_GET_EXCEPTION_MASK() & ~_MM_MASK_INVALID);
 
-    if (argc < 2) {
+
+    int c;
+    while (1) {
+        int option_index = 0;
+        static struct option long_options[] = {
+            {"init-db",     required_argument, 0,  'i'},
+            {0,             0,                 0,   0 }
+        };
+
+        c = getopt_long(argc, argv, "i:",
+                        long_options, &option_index);
+        if (c == -1)
+            break;
+
+        switch (c) {
+            //case 0:
+            case 'i':
+                std::cout << "Initializing database file '";
+                std::cout << optarg << "'" << std::endl;
+                return shimmer::initdb(optarg);
+                break;
+
+            default:
+                std::cout << "Unknown option specified" << std::endl;
+                exit(1);
+        }
+    }
+    argc -= optind;
+    argv += optind;
+
+    if (argc < 1) {
         std::cerr << "Please specify configuration file name" << std::endl;
         return 1;
     }
@@ -98,16 +104,22 @@ int main(int argc, char **argv)
     shimmer::config cfg;
     cfg.refine = false;
     cfg.dx = 100e3;
+    cfg.quality_tracking = false;
+    cfg.qt_steady = false;
     lua["config"] = &cfg;
 
-    auto sresult = lua.safe_script_file(argv[1], sol::script_pass_on_error);
+    auto sresult = lua.safe_script_file(argv[0], sol::script_pass_on_error);
     if (!sresult.valid()) {
         sol::error err = sresult;
         std::cerr << "Solver configuration: " << err.what() << std::endl;
         return 1;
     }
 
-    //parse_cmdline(argc, argv, cfg);
+    if (cfg.qt_steady)
+        cfg.steps = 1; 
 
-    return launch_solver(cfg);
+    if (cfg.quality_tracking)
+        return launch_solver_qt(cfg);
+    else
+        return launch_solver(cfg);
 }

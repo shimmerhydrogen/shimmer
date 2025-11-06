@@ -106,18 +106,16 @@ public:
     void
     initialization( const variable& var_guess,
                     double dt,
-                    double tolerance,
-                    const matrix_t& y_nodes,
-                    const matrix_t& y_pipes)
+                    double tolerance)
     {
 
         bool unsteady = false;
-
+ 
 
         EQ_OF_STATE eos;
-        eos.compute_molar_mass(y_nodes, y_pipes);
+        eos.mixture_molar_mass(graph_, inc_);
 
-        // To be finish when it is clear how x changes and modifies mu.
+        // mu(x): if composition of gas changes, mu changes accordingly
         auto mu = viscosity<viscosity_type>(temperature_, graph_);
 
         size_t iter = 0;
@@ -130,20 +128,15 @@ public:
         linearized_fluid_solver lfs(iter, unsteady, tolerance, dt, temperature_, mu, inc_, graph_);
         lfs.run(area_pipes_, var_guess, var_time, &eos);
         var_guess_ = lfs.get_variable();
-        rho_ = eos.density(&lfs);
+        rho_ = eos.density_pipes(&lfs);
     }
 
 
     void
     advance(double dt,
             size_t num_steps,
-            double tol,
-            const matrix_t& y_nodes,
-            const matrix_t& y_pipes)
+            double tol)
     {
-        //matrix_t y_nodes = make_mass_fraction(num_nodes);
-        //matrix_t y_pipes = inc_.matrix_in().transpose() * y_nodes;
-
         size_t MAX_CONSTRAINT_ITER = 10;
 
         bool unsteady = true;
@@ -157,6 +150,9 @@ public:
 
         std::ofstream ofs("warnings.txt");
 
+        EQ_OF_STATE eos;
+        eos.mixture_molar_mass(graph_, inc_);
+
         double t = 0;
         for(size_t it = 1; it < num_steps; it++, t+=dt)
         {
@@ -168,15 +164,8 @@ public:
             ofs.close();
 
             std::cout<<"========================================================"<< std::endl;
+            std::cout<<" Solving at time ................................"<< it  <<std::endl;
             std::cout<<"========================================================"<< std::endl;
-            std::cout<<"========================================================"<< std::endl;
-            std::cout << "Solving at time ...."<< it <<std::endl;
-            std::cout<<"========================================================"<< std::endl;
-            std::cout<<"========================================================"<< std::endl;
-            std::cout<<"========================================================"<< std::endl;
-
-            EQ_OF_STATE eos;
-            eos.compute_molar_mass(y_nodes, y_pipes);
 
             pipe_stations_activation(it, var_);
 
@@ -189,11 +178,9 @@ public:
                 ofs << " * Iteration it ..."<<ic<< std::endl;
                 ofs.close();
 
-                std::cout<<"****************************************************************"<< std::endl;
-                std::cout<<"****************************************************************"<< std::endl;
-                std::cout << " Iteration CONSTRAINTS it ..............."<<ic<< " ... at time "<< it << std::endl;
-                std::cout<<"****************************************************************"<< std::endl;
-                std::cout<<"****************************************************************"<< std::endl;
+                std::cout<<"----------------------------------------------------"<< std::endl;
+                std::cout<<"    CONSTRAINT iteration ("<<ic<< ") ......... at time.. "<< it << std::endl;
+                std::cout<<"----------------------------------------------------"<< std::endl;
 
                 // To be finish when it is clear how x changes and modifies mu.
                 auto mu = viscosity<viscosity_type>(temperature_, graph_);
@@ -206,9 +193,9 @@ public:
 
                 if(pass_constr && pass_control)
                 {
-                    std::cout<< "++++++++++++++++++**** MODIFIED VARIABLE ****++++++++++++++++++++++ " << std::endl;
+                    std::cout<< "++++++++++++++++++ MODIFIED VARIABLE ++++++++++++++++++++++ " << std::endl;
                     var_ =  lfs.get_variable();
-                    rho_ =  eos.density(&lfs);  
+                    rho_ =  eos.density_pipes(&lfs);  
 
                     //std::cout<< "VARIABLE : \n";
                     //std::cout<<  var_.make_vector() << std::endl;

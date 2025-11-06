@@ -21,16 +21,19 @@
 
 #pragma once
 
-#include <Eigen/Dense>
-#include "solver/incidence_matrix.h"
-#include "infrastructure_graph.h"
-
-namespace shimmer{
-
-using matrix_t = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>;
-
-matrix_t
-build_x_nodes(const infrastructure_graph& g);
+#include "sqlite/sqlite.hpp"
+#include "infra/infrastructure.h"
+#include "solver/time_solver.h"
+#include "solver/quality_tracking_solver.h"
 
 
-} // namespace shimmer
+namespace shimmer {
+
+int prepare_infrastructure(const config& cfg, 
+                           shimmer::infrastructure& infra);
+
+int launch_solver(const config&);
+
+int launch_solver_qt(const config&);
+
+}

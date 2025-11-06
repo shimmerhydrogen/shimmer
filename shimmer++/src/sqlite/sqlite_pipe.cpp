@@ -122,7 +122,6 @@ int store(sqlite3 *db, const std::vector<int>& s_i2u,
     for (int i = 0; i < settings.size(); i++) {
         auto from = convert_i2u(s_i2u, settings[i].i_sfrom);
         auto to = convert_i2u(s_i2u, settings[i].i_sto);
-        std::string pipe_name = "pipe-" + std::to_string(from) + "-" + std::to_string(to);
 
         rc = sqlite3_bind_text(stmt, 1, settings[i].name.c_str(), settings[i].name.length(), nullptr);
         rc = sqlite3_bind_int(stmt, 2, from);

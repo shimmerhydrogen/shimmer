@@ -30,8 +30,8 @@ if num_remi_stations > 0
     for r = 1:num_remi_stations
         s = remi_stations(r);
         limits_remi{r, 1} = graph.Nodes.Nodes_ID(s);
-        limits_remi{r, 2} = -300.0;
-        limits_remi{r, 3} = -10.0;
+        limits_remi{r, 2} = -10.0;
+        limits_remi{r, 3} = -300.0;
         limits_remi{r, 4} = 60.0e5;
         limits_remi{r, 5} = 80.0e5;
     end
@@ -63,8 +63,8 @@ if num_inj_stations > 0
     for r = 1:num_inj_stations
         s = inj_stations(r);
         limits_inj{r, 1} = graph.Nodes.Nodes_ID(s);
-        limits_inj{r, 2} = -300.0;
-        limits_inj{r, 3} = -10.0;
+        limits_inj{r, 2} = -10.0;
+        limits_inj{r, 3} = -300.0;
         limits_inj{r, 4} = 60.0e5;
         limits_inj{r, 5} = 80.0e5;
         limits_inj{r, 6} = 1.0;
@@ -96,8 +96,8 @@ if num_cons_stations > 0
     for r = 1:num_cons_stations
         s = cons_stations(r);
         limits_cons{r, 1} = graph.Nodes.Nodes_ID(s);
-        limits_cons{r, 2} = -300.0;
-        limits_cons{r, 3} = -10.0;
+        limits_cons{r, 2} = 10.0;
+        limits_cons{r, 3} = 300.0;
         limits_cons{r, 4} = 60.0e5;
         limits_cons{r, 5} = 80.0e5;
     end

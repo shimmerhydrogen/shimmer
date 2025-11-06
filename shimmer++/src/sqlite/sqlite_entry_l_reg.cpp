@@ -96,6 +96,15 @@ load_limits(sqlite3 *db, const optvector<int>& s_u2i,
         setting.Pmin = sqlite3_column_double(stmt, +limits_col::lim_Pmin);
         setting.Pmax = sqlite3_column_double(stmt, +limits_col::lim_Pmax);
         setting.f    = sqlite3_column_double(stmt, +limits_col::parm_f);
+
+        if (setting.Lmin > 0) {
+            std::cout << "Station " << setting.u_snum << " warning: Lmin > 0" << std::endl;
+        }
+
+        if (setting.Lmax > setting.Lmin) {
+            std::cout << "Station " << setting.u_snum << " warning: Lmax > Lmin" << std::endl;
+        }
+
         settings.push_back( std::move(setting) );
     }
     rc = sqlite3_finalize(stmt);

@@ -25,6 +25,8 @@
 #ifdef HAVE_MATLAB_GERG
 #include "MATLAB_GERG_functions.hpp"
 #endif /* HAVE_MATLAB_GERG */
+#include "solver/incidence_matrix.h"
+#include "infrastructure_graph.h"
 #include "solver/fluid_solver.h"
 #include "gerg/shimmer_gerg_functions.hpp"
 #include "gerg/shimmer_gerg_utilities.hpp"
@@ -35,11 +37,12 @@ class equation_of_state;
 class linearized_fluid_solver;
 class gerg;
 
-
+#define NUM_GASES 21
 
 using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1>; 
 using matrix_t = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>; 
 
+matrix_t build_molfrac_nodes(const infrastructure_graph& g);
 
 class equation_of_state
 {
@@ -53,11 +56,16 @@ protected:
 
 public:
     equation_of_state(){};
-    vector_t density(linearized_fluid_solver *) const;
+    vector_t density_pipes(linearized_fluid_solver *) const;
+    vector_t density_nodes(linearized_fluid_solver *) const;
     vector_t compute_R(const vector_t& molar_mass) const;
+    void mixture_molar_mass(const infrastructure_graph&, const incidence&);
 
     virtual void initialization(linearized_fluid_solver *) = 0; 
-    virtual void compute_molar_mass(const matrix_t&, const matrix_t&) = 0;
+    virtual void mixture_molar_mass(const matrix_t&, const matrix_t&) = 0;
+    virtual std::pair<matrix_t, matrix_t> molfrac_2_massfrac(const infrastructure_graph&, const incidence&) = 0;
+    virtual std::pair<matrix_t, matrix_t> massfrac_2_molfrac(const matrix_t&, const matrix_t&) = 0;
+
     virtual std::pair<vector_t, vector_t>
     speed_of_sound(linearized_fluid_solver *) const = 0;
     inline vector_t mm_nodes() const {return mm_nodes_;};
@@ -73,10 +81,13 @@ class papay: public equation_of_state
 public:
     papay();
     
+    using equation_of_state::mixture_molar_mass;
     void initialization(linearized_fluid_solver *lfs); 
-
-    void compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes);
-
+    void mixture_molar_mass(const matrix_t&, const matrix_t&);
+    std::pair<matrix_t, matrix_t>
+    molfrac_2_massfrac(const infrastructure_graph&, const incidence&);
+    std::pair<matrix_t, matrix_t> 
+    massfrac_2_molfrac(const matrix_t&, const matrix_t&);
     vector_t
     compute_Z(double temperature, const vector_t& pressure) const;
 
@@ -109,7 +120,7 @@ class gerg: public equation_of_state
     gerg_params params_nodes_;
     gerg_params params_pipes_;
 
-    vector_t mmi_gerg;
+    vector_t mm_component;
     std::vector<int> gas_name_;
     gerg_params compute_params(const matrix_t& x);
 
@@ -117,9 +128,13 @@ public:
 
     gerg();
 
-    void compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes);
-
+    using equation_of_state::mixture_molar_mass;
     void initialization(linearized_fluid_solver *lfs); 
+    void mixture_molar_mass(const matrix_t& x_nodes, const matrix_t& x_pipes);
+    std::pair<matrix_t, matrix_t>
+    molfrac_2_massfrac(const infrastructure_graph&, const incidence&);
+    std::pair<matrix_t, matrix_t> 
+    massfrac_2_molfrac(const matrix_t&, const matrix_t&);
 
     vector_t
     compute_Z(const double  & temperature,
@@ -141,14 +156,19 @@ typedef gerg_data::Thermodynamic_properties<vector_t> gerg_aga_thermo_props_t;
 class gerg_aga: public equation_of_state
 {
     double tolerance_;
+    vector_t mm_component;
 
 public:
 
     gerg_aga();
 
-    void compute_molar_mass(const matrix_t& y_nodes, const matrix_t& y_pipes);
-
+    using equation_of_state::mixture_molar_mass;
     void initialization(linearized_fluid_solver *lfs); 
+    void mixture_molar_mass(const matrix_t& x_nodes, const matrix_t& x_pipes);
+    std::pair<matrix_t, matrix_t> 
+    molfrac_2_massfrac(const infrastructure_graph&, const incidence&);
+    std::pair<matrix_t, matrix_t> 
+    massfrac_2_molfrac(const matrix_t&, const matrix_t&);
 
     vector_t
     compute_Z(const vector_t& temperature,

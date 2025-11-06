@@ -15,6 +15,21 @@ option(BUILD_SHIMMER_UNIT_TESTS "Build SHIMMER++ unitary tests" ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+## RPATH settings
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+set(SHIMMER_SCHEMA_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/share/shimmer.sql")
+
+configure_file (
+    "${PROJECT_SOURCE_DIR}/config.h.in"
+    "${PROJECT_BINARY_DIR}/config.h"
+)
+
+include_directories("${PROJECT_BINARY_DIR}")
+
 ######################################################################
 ## Compiler reporting: disable deprecation warnings
 option(OPT_DISABLE_DEPRECATION_WARNINGS "Disable deprecation warnings" OFF)
@@ -56,7 +71,7 @@ include_directories("${LUA_INCLUDE_DIR}")
 set(LINK_LIBS ${LINK_LIBS} ${LUA_LIBRARIES})
 set(BUILD_TESTING OFF CACHE BOOL "")
 set(SOL2_BUILD_LUA OFF CACHE BOOL "")
-add_subdirectory(deps/sol2)
+add_subdirectory(deps/sol2 EXCLUDE_FROM_ALL)
 set(LINK_LIBS ${LINK_LIBS} sol2::sol2)
 ######################################################################
 ## Eigen3
@@ -95,10 +110,10 @@ target_include_directories(shimmer_dbio PUBLIC src)
 set(SHIMMER_SOURCES
     src/infrastructure_graph.cpp src/solver/geometry_properties.cpp src/solver/gas_law.cpp
     src/solver/conservation_matrices.cpp src/solver/incidence_matrix.cpp
-    src/solver/matrix_manipulations.cpp src/solver/pipe_calculator.cpp src/solver/matlab_manip.cpp
+    src/solver/matrix_manipulations.cpp src/solver/pipe_calculator.cpp
     src/solver/fluid_solver.cpp src/solver/nonpipe_over_edges.cpp
     src/solver/variable.cpp src/solver/boundary.cpp
-    src/infra/infrastructure.cpp
+    src/infra/infrastructure.cpp src/infra/launch_solver.cpp
 )
 
 add_library(shimmer SHARED ${SHIMMER_SOURCES})
@@ -107,20 +122,20 @@ target_link_libraries(shimmer shimmer_dbio shimmer_gerg ${LINK_LIBS})
 target_include_directories(shimmer PUBLIC src)
 
 # The solver, cmd line version
-add_executable(solver src/solver_main.cpp)
-target_link_libraries(solver shimmer ${LINK_LIBS})
-target_include_directories(solver PUBLIC src)
+add_executable(shimmer_solver src/solver_main.cpp)
+target_link_libraries(shimmer_solver shimmer ${LINK_LIBS})
+target_include_directories(shimmer_solver PUBLIC src)
 
 # GUI for the solver: not official, not maintained, nothing
-if (HAVE_QT)
-    add_executable(solver_gui src/solver_guimain.cpp
-        src/gui/CShimmerMainWindow.cpp)
-    set_property(TARGET solver_gui PROPERTY AUTOMOC ON)
-    set_property(TARGET solver_gui PROPERTY AUTORCC ON)
-    set_property(TARGET solver_gui PROPERTY AUTOUIC ON)
-    target_link_libraries(solver_gui shimmer ${LINK_LIBS} ${QT_LINK_LIBS})
-    target_include_directories(solver_gui PUBLIC src)
-endif()
+#if (HAVE_QT)
+#    add_executable(solver_gui src/solver_guimain.cpp
+#        src/gui/CShimmerMainWindow.cpp)
+#    set_property(TARGET solver_gui PROPERTY AUTOMOC ON)
+#    set_property(TARGET solver_gui PROPERTY AUTORCC ON)
+#    set_property(TARGET solver_gui PROPERTY AUTOUIC ON)
+#    target_link_libraries(solver_gui shimmer ${LINK_LIBS} ${QT_LINK_LIBS})
+#    target_include_directories(solver_gui PUBLIC src)
+#endif()
 
 # Utilities
 add_subdirectory(src/utils)
@@ -129,3 +144,7 @@ if (BUILD_SHIMMER_UNIT_TESTS)
     include(CTest)
     add_subdirectory(unit_tests)
 endif()
+
+install(TARGETS shimmer_solver RUNTIME DESTINATION bin)
+install(TARGETS shimmer shimmer_dbio shimmer_gerg LIBRARY DESTINATION lib)
+install(FILES share/shimmer_example_config.lua share/shimmer.sql DESTINATION share)

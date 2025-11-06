@@ -377,10 +377,10 @@ int initialize_test_db(void)
     database::store(st.db, {}, {node12_set});
     }
 
-    /* Gas mass fractions */
-    std::vector<gas_mass_fractions> gmfs;
+    /* Gas molar fractions */
+    std::vector<gas_molar_fractions> gmfs;
     for (int i = 0; i < station_types.size(); i++) {
-        gas_mass_fractions gmf;
+        gas_molar_fractions gmf;
         gmf.i_snum = i;
         for (int ig = 0; ig < NUM_GASES; ig++)
             gmf.fractions[ig] = 0.0;

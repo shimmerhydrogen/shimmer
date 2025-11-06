@@ -104,7 +104,7 @@ make_init_graph(infrastructure_graph& g)
 
 
 matrix_t 
-make_mass_fraction(size_t size)
+make_molar_fractions(size_t size)
 {
     matrix_t mass_frac(size, 21);
     mass_frac.col(0).setConstant(1);
@@ -175,17 +175,13 @@ int main()
     infrastructure_graph graph;
     make_init_graph(graph);
 
-    incidence inc(graph);
-   
-    matrix_t y_nodes = make_mass_fraction(num_nodes);
-    matrix_t y_pipes = inc.matrix_in().transpose() * y_nodes;    
-
+    incidence inc(graph);  
     vector_t area_pipes = area(graph);
 
     bool unsteady = true;
 
     gerg_aga gerg_eos; 
-    gerg_eos.compute_molar_mass(y_nodes, y_pipes);
+    gerg_eos.mixture_molar_mass(graph, inc);
 
     auto mu = viscosity<viscosity_type::Kukurugya>(temperature, graph); 
 

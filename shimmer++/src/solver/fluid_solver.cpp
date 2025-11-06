@@ -49,8 +49,9 @@ linearized_fluid_solver::linearized_fluid_solver(
     a_G_ = 0.0;
     a_p_ = 0.0;
 
-    x_nodes_ = build_x_nodes(graph_);
-    x_pipes_ = inc_.matrix_in().transpose() * x_nodes_;
+    // Here the info about the composition is taken from the graph! 
+    molfrac_nodes_ = build_molfrac_nodes(graph_);
+    molfrac_pipes_ = inc_.matrix_in().transpose() * molfrac_nodes_;
 }
 
 
@@ -417,7 +418,8 @@ linearized_fluid_solver::check_hard_constraints(size_t step)
     for(auto itor = v_range.first; itor != v_range.second; itor++, i++)
     {
         bool pass = graph_[*itor].node_station->check_hard(var_.pressure[i], var_.L_rate[i], step);
-        std::cout<< " * Hard ("<< i << ") : "<< pass << std::endl;
+        if(!pass)
+            std::cout<< " * Hard ("<< i << ") : "<< pass << std::endl;
         pass_all = pass_all && pass;
     }
 
@@ -482,7 +484,8 @@ linearized_fluid_solver::check_hard_controls(size_t step)
             idx++;
         }
         // =================================================================
-        std::cout << " * Hard (" << pipe_num << ") : " << pass << std::endl;
+        if(!pass)
+            std::cout << " * Hard (" << pipe_num << ") : " << pass << std::endl;
 
         pass_all = pass_all && pass;
     }

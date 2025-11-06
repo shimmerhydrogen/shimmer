@@ -30,7 +30,6 @@
 #endif /* HAVE_MATLAB_GERG */
 #include "infrastructure_graph.h"
 #include "solver/incidence_matrix.h"
-#include "solver/matlab_manip.h"
 #include "solver/gas_law.h"
 #include "verify_test.h"
 
@@ -145,18 +144,18 @@ gerg_matlab()
     gerg_params gerg_nodes = make_gerg(num_nodes); 
     gerg_params gerg_pipes = make_gerg(num_pipes); 
 
-    Eigen::MatrixXd  x_nodes = build_x_nodes(graph);
-    Eigen::MatrixXd  x_pipes = inc.matrix_in().transpose() * x_nodes;
+    Eigen::MatrixXd  molfrac_nodes = build_molfrac_nodes(graph);
+    Eigen::MatrixXd  molfrac_pipes = inc.matrix_in().transpose() * molfrac_nodes;
 
     gerg gerg_eos; 
 
-    gerg_eos.compute_molar_mass(x_nodes, x_pipes);
+    gerg_eos.mixture_molar_mass(molfrac_nodes, molfrac_pipes);
 
     vector_t RRp = gerg_eos.compute_R(gerg_eos.mm_pipes()); 
     vector_t RRn = gerg_eos.compute_R(gerg_eos.mm_nodes()); 
     
-    auto Z_nodes = gerg_eos.compute_Z(Temp, pressure_nodes, x_nodes, gerg_nodes);
-    auto Z_pipes = gerg_eos.compute_Z(Temp, pressure_pipes, x_pipes, gerg_pipes);
+    auto Z_nodes = gerg_eos.compute_Z(Temp, pressure_nodes, molfrac_nodes, gerg_nodes);
+    auto Z_pipes = gerg_eos.compute_Z(Temp, pressure_pipes, molfrac_pipes, gerg_pipes);
 
     vector_t c2_nodes = Z_nodes.array() * RRn.array() * Temp; 
     vector_t c2_pipes = Z_pipes.array() * RRp.array() * Temp; 
@@ -187,12 +186,12 @@ RR_matlab()
 
     incidence inc(graph);
 
-    Eigen::MatrixXd  x_nodes = build_x_nodes(graph);
-    Eigen::MatrixXd  x_pipes = inc.matrix_in().transpose() * x_nodes;
+    Eigen::MatrixXd  molfrac_nodes = build_molfrac_nodes(graph);
+    Eigen::MatrixXd  molfrac_pipes = inc.matrix_in().transpose() * molfrac_nodes;
 
     gerg gerg_eos; 
 
-    gerg_eos.compute_molar_mass(x_nodes, x_pipes);
+    gerg_eos.mixture_molar_mass(molfrac_nodes, molfrac_pipes);
 
     vector_t RRp = gerg_eos.compute_R(gerg_eos.mm_pipes()); 
     vector_t RRn = gerg_eos.compute_R(gerg_eos.mm_nodes()); 
@@ -236,18 +235,18 @@ gerg_aga8code()
 
     incidence inc(graph);
 
-    matrix_t  x_nodes = build_x_nodes(graph);
-    matrix_t  x_pipes = inc.matrix_in().transpose() * x_nodes;
+    matrix_t  molfrac_nodes = build_molfrac_nodes(graph);
+    matrix_t  molfrac_pipes = inc.matrix_in().transpose() * molfrac_nodes;
 
     gerg_aga gerg_eos; 
 
-    gerg_eos.compute_molar_mass(x_nodes, x_pipes);
+    gerg_eos.mixture_molar_mass(molfrac_nodes, molfrac_pipes);
 
     vector_t RRp = gerg_eos.compute_R(gerg_eos.mm_pipes()); 
     vector_t RRn = gerg_eos.compute_R(gerg_eos.mm_nodes()); 
 
-    auto Z_pipes = gerg_eos.compute_Z(temperature_pipes, pressure_pipes, x_pipes);
-    auto Z_nodes = gerg_eos.compute_Z(temperature_nodes, pressure_nodes, x_nodes);
+    auto Z_pipes = gerg_eos.compute_Z(temperature_pipes, pressure_pipes, molfrac_pipes);
+    auto Z_nodes = gerg_eos.compute_Z(temperature_nodes, pressure_nodes, molfrac_nodes);
 
     vector_t c2_pipes = Z_pipes.array() * RRp.array() * temperature_pipes.array(); 
     vector_t c2_nodes = Z_nodes.array() * RRn.array() * temperature_nodes.array(); 

@@ -13,6 +13,15 @@ from pyproj import Transformer
 transformer = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True) # EU standard
 transformer = Transformer.from_crs("EPSG:4326", "EPSG:4326", always_xy=True) # WGS 84
 
+def chk_conn(db_path):
+     try:
+        conn = sqlite3.connect(db_path)
+        conn.cursor()
+        conn.close()
+        return True
+     except Exception as ex:
+        return False
+
 def convert_nodes(db_path, features, nodes_map):
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
@@ -33,10 +42,10 @@ def convert_nodes(db_path, features, nodes_map):
     conn.close()
     print('Imported', node_index, 'nodes')
 
-def convert_nodes_solution(db_path, features, nodes_map):
+def convert_nodes_solution(db_path, features, nodes_map, time_step):
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
-    cur.execute("SELECT s_number, timestep, pressure FROM solution_station_pressures WHERE timestep = 0")
+    cur.execute("SELECT s_number, timestep, pressure FROM solution_station_pressures WHERE timestep = {0}".format(time_step))
 
     for row in cur.fetchall():
         node_id = row[0]
@@ -44,7 +53,7 @@ def convert_nodes_solution(db_path, features, nodes_map):
         features[node_index]["properties"]["pressure"] = row[2]
     
     cur = conn.cursor()
-    cur.execute("SELECT s_number, timestep, g_name, molarfrac FROM solution_station_molarfrac WHERE timestep = 0")    
+    cur.execute("SELECT s_number, timestep, g_name, molarfrac FROM solution_station_molarfrac WHERE timestep = {0}".format(time_step))    
 
     for row in cur.fetchall():
         node_id = row[0]
@@ -75,10 +84,10 @@ def convert_pipes(db_path, features, pipes_map):
     conn.close()
     print('Imported', pipe_index, 'pipes')
 
-def convert_pipes_solution(db_path, features, pipes_map):
+def convert_pipes_solution(db_path, features, pipes_map, time_step):
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
-    cur.execute("SELECT ROW_NUMBER() OVER() AS NoId, timestep, flowrate FROM solution_pipe_flowrates WHERE timestep = 0")
+    cur.execute("SELECT ROW_NUMBER() OVER() AS NoId, timestep, flowrate FROM solution_pipe_flowrates WHERE timestep = {0}".format(time_step))
 
     for row in cur.fetchall():
         pipe_id = row[0]
@@ -86,10 +95,12 @@ def convert_pipes_solution(db_path, features, pipes_map):
         features[pipe_index]["properties"]["flowrate"] = row[2]
 
     cur = conn.cursor()
-    cur.execute("SELECT ROW_NUMBER() OVER() AS NoId, P.p_name, SSMF.timestep, SSMF.g_name, SSMF.molarfrac FROM pipelines AS P LEFT JOIN solution_station_molarfrac as SSMF ON P.s_from = SSMF.s_number WHERE SSMF.timestep = 0")
+    cur.execute("SELECT ROW_NUMBER() OVER() AS NoId, P.p_name, SSMF.timestep, SSMF.g_name, SSMF.molarfrac FROM pipelines AS P LEFT JOIN solution_station_molarfrac as SSMF ON P.s_from = SSMF.s_number WHERE SSMF.timestep = {0}".format(time_step))
 
     for row in cur.fetchall():
-        pipe_id = int(row[1])
+        pipe_name = row[1]
+        res_split = pipe_name.split('_')
+        pipe_id = int(res_split[2])
         pipe_index = pipes_map[pipe_id]
         gas_number = row[3]
         features[pipe_index]["properties"]["gas_" + gas_number] = row[4]
@@ -103,25 +114,31 @@ def write_geojson(json_path, features):
         json.dump(geojson_data, f)
     print(json_path + " file generated")
 
-def generate_geojson(db_path, json_folder_path):
+def generate_geojson(db_path, json_folder_path, time_step):
     nodes = []
     nodes_map = {}
     convert_nodes(db_path, nodes, nodes_map)
-    convert_nodes_solution(db_path, nodes, nodes_map)
-    write_geojson(json_folder_path + "/nodes.json", nodes)
+    convert_nodes_solution(db_path, nodes, nodes_map, time_step)
+    write_geojson(json_folder_path + "/nodes_T{0}.json".format(time_step), nodes)
 
     pipes = []
     pipes_map = {}
     convert_pipes(db_path, pipes, pipes_map)
-    convert_pipes_solution(db_path, pipes, pipes_map)
-    write_geojson(json_folder_path + "/pipes.json", pipes)
+    convert_pipes_solution(db_path, pipes, pipes_map, time_step)
+    write_geojson(json_folder_path + "/pipes_T{0}.json".format(time_step), pipes)
 
 if __name__ == "__main__":
     db_path = "../graphs/test_gasco/test_gasco.db"
-    db_path = "./test_gasco_admixing.db"
-    #db_path = "/home/geoscore/Desktop/GEO++/shimmer/shimmer++/debug/refined_test_gasco.db"
-    #db_path = "../graphs/test_inrete/test_inrete.db"
-    #db_path = "../graphs/test_sicilia/test_sicilia.db"
+    db_path = "./example.db"
     json_path = "."
-    generate_geojson(db_path, json_path)
+
+    if not chk_conn(db_path):
+        print("ERROR on connection to DB {0}".format(db_path))
+        exit()
+    
+    generate_geojson(db_path, json_path, 0)
+    generate_geojson(db_path, json_path, 100)
+    generate_geojson(db_path, json_path, 250)
+    generate_geojson(db_path, json_path, 500)
+    generate_geojson(db_path, json_path, 1000)
 

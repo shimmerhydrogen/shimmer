@@ -366,7 +366,7 @@ public:
         }
   
 
-        // 1.3 External Injection/Ejection          
+        // 2. External Injection/Ejection          
         auto v_range = boost::vertices(infra_.graph);
         for(auto itor = v_range.first; itor != v_range.second; itor++)
         {
@@ -414,11 +414,10 @@ public:
                     throw std::invalid_argument("QT Error: station is not valid.");
             }
         }
-        
+
+        // 3. Time term Vol(drhodt): NODE_ACCUMULATES
         if(unsteady)
         {
-        // 1.4 Time term Vol(drhodt): NODE_ACCUMULATES
-
             vector_t phi = vector_t::Zero(infra_.num_original_stations);
 
             size_t count = 0; 
@@ -435,10 +434,29 @@ public:
                     break;
             }
         }
-        // 3. 4 Solve Y^n+1            
-        matrix_t lhs_inv =  lhs_nodes.cwiseInverse().asDiagonal();
 
-        massfrac_next.topRows( num_nodes) = lhs_inv * rhs_nodes; 
+
+        // Solve Y^n+1                   
+        for(size_t i = 0; i < num_nodes; i++)
+        {
+            if(std::abs(lhs_nodes(i)) < 1.e-12)  
+            {
+                std::string message = R"(ERROR:QT +
+                    The mass fraction Y_ig at node i of a gas g is solve by doing lhs * Y_ig = rhs.\n
+                    The lhs is filled with the therms of
+                    1. pipe ejection
+                    2. external ejection
+                    3. density variation
+
+                    If all three are zero, lhs = 0, so Y_ig is undetermined!
+                    This can be cause by isolated chunks of network at zero flowrate
+                    and negligable density variation (for example in steady case).)";
+                std::invalid_argument(message.c_str());
+            }
+        }
+
+        matrix_t lhs_inv =  lhs_nodes.cwiseInverse().asDiagonal();
+        massfrac_next = lhs_inv * rhs_nodes; 
         
         clip_and_renormalize(massfrac_next.topRows( num_nodes));
         
@@ -539,6 +557,49 @@ public:
         }
     }
 
+    void
+    check_zero_flow_pipes(variable& var)
+    {   
+        std::vector<int> zero_flux_pipes;
+
+        for(auto branch_num = 0; branch_num < var.flux.size(); branch_num++)
+        {
+            if(var.flux(branch_num) < 1.e-12)
+            {                        
+                var.flux(branch_num) = 1.e-8;
+                zero_flux_pipes.push_back(branch_num);
+            }
+        }
+
+        if(zero_flux_pipes.size() == 0)
+            return;
+
+        std::string message = R"(
+        "WARNING: Flux at PIPE list is close to zero!!" 
+        "            Null flowrates are not allowed, because they might lead to undetermination of mass fractions."
+        "            Thus, this pipe is likely isolated from the network. To continue solving the remaining network"
+        "            a value of 1.e-8 is set for the flux. 
+        "  PIPE List: )";
+        std::cout<< message << std::endl;
+
+        auto edge_range = boost::edges(infra_.graph);
+        auto edge_begin = edge_range.first;
+
+        for(auto branch_num : zero_flux_pipes)        
+        {
+            auto edge_itor = std::next(edge_begin, branch_num);
+            auto ep = infra_.graph[*edge_itor]; 
+            std::cout << ep.name.c_str() << " ";
+        }
+        std::cout << std::endl;
+
+        system("pause");
+
+        std::cout<< "Continuing ..." << std::endl;        
+
+        return;
+    }
+
 
     void
     fluid_dynamics(size_t it, 
@@ -575,6 +636,8 @@ public:
                 var_all_evol_.row(it) =  var_all_.make_vector();
                 rho_all_pipes_evol_.row(it) =  eos.density_pipes(&lfs); // needed for the computation of the velocity
                 rho_all_nodes_evol_.row(it) =  eos.density_nodes(&lfs);// needed for the mass balance on network nodes
+
+                check_zero_flow_pipes(var_all_);
 
                 return;
             }

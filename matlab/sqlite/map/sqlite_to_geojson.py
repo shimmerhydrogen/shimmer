@@ -53,7 +53,7 @@ def convert_nodes_solution(db_path, features, nodes_map, time_step):
         features[node_index]["properties"]["pressure"] = row[2]
     
     cur = conn.cursor()
-    cur.execute("SELECT s_number, timestep, g_name, molarfrac FROM solution_station_molarfrac WHERE timestep = {0}".format(time_step))    
+    cur.execute("SELECT SM.s_number, SM.timestep, G.g_formula, SM.molarfrac FROM solution_station_molarfrac AS SM LEFT JOIN gases as G ON SM.g_name = G.g_num WHERE molarfrac > 1e-4 AND timestep = {0}".format(time_step))    
 
     for row in cur.fetchall():
         node_id = row[0]
@@ -94,17 +94,6 @@ def convert_pipes_solution(db_path, features, pipes_map, time_step):
         pipe_index = pipes_map[pipe_id]
         features[pipe_index]["properties"]["flowrate"] = row[2]
 
-    # cur = conn.cursor()
-    # cur.execute("SELECT ROW_NUMBER() OVER() AS NoId, P.p_name, SSMF.timestep, SSMF.g_name, SSMF.molarfrac FROM pipelines AS P LEFT JOIN solution_station_molarfrac as SSMF ON P.s_from = SSMF.s_number WHERE SSMF.timestep = {0}".format(time_step))
-
-    # for row in cur.fetchall():
-    #     pipe_name = row[1]
-    #     res_split = pipe_name.split('_')
-    #     pipe_id = int(res_split[2])
-    #     pipe_index = pipes_map[pipe_id]
-    #     gas_number = row[3]
-    #     features[pipe_index]["properties"]["gas_" + gas_number] = row[4]
-
     conn.close()
 
 def write_geojson(json_path, features):
@@ -128,7 +117,6 @@ def generate_geojson(db_path, json_folder_path, time_step):
     write_geojson(json_folder_path + "/pipes_T{0}.json".format(time_step), pipes)
 
 if __name__ == "__main__":
-    db_path = "../graphs/test_gasco/test_gasco.db"
     db_path = "./inRete.db"
     json_path = "."
 

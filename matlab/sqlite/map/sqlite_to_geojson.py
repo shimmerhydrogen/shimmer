@@ -11,7 +11,7 @@ from pyproj import Transformer
 # 6706	RDN2008	Geographic (Lat/Lon)	Replacement for Monte Mario
 
 transformer = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True) # EU standard
-transformer = Transformer.from_crs("EPSG:4326", "EPSG:4326", always_xy=True) # WGS 84
+#transformer = Transformer.from_crs("EPSG:4326", "EPSG:4326", always_xy=True) # WGS 84
 
 def chk_conn(db_path):
      try:
@@ -94,16 +94,16 @@ def convert_pipes_solution(db_path, features, pipes_map, time_step):
         pipe_index = pipes_map[pipe_id]
         features[pipe_index]["properties"]["flowrate"] = row[2]
 
-    cur = conn.cursor()
-    cur.execute("SELECT ROW_NUMBER() OVER() AS NoId, P.p_name, SSMF.timestep, SSMF.g_name, SSMF.molarfrac FROM pipelines AS P LEFT JOIN solution_station_molarfrac as SSMF ON P.s_from = SSMF.s_number WHERE SSMF.timestep = {0}".format(time_step))
+    # cur = conn.cursor()
+    # cur.execute("SELECT ROW_NUMBER() OVER() AS NoId, P.p_name, SSMF.timestep, SSMF.g_name, SSMF.molarfrac FROM pipelines AS P LEFT JOIN solution_station_molarfrac as SSMF ON P.s_from = SSMF.s_number WHERE SSMF.timestep = {0}".format(time_step))
 
-    for row in cur.fetchall():
-        pipe_name = row[1]
-        res_split = pipe_name.split('_')
-        pipe_id = int(res_split[2])
-        pipe_index = pipes_map[pipe_id]
-        gas_number = row[3]
-        features[pipe_index]["properties"]["gas_" + gas_number] = row[4]
+    # for row in cur.fetchall():
+    #     pipe_name = row[1]
+    #     res_split = pipe_name.split('_')
+    #     pipe_id = int(res_split[2])
+    #     pipe_index = pipes_map[pipe_id]
+    #     gas_number = row[3]
+    #     features[pipe_index]["properties"]["gas_" + gas_number] = row[4]
 
     conn.close()
 
@@ -129,7 +129,7 @@ def generate_geojson(db_path, json_folder_path, time_step):
 
 if __name__ == "__main__":
     db_path = "../graphs/test_gasco/test_gasco.db"
-    db_path = "./example.db"
+    db_path = "./inRete.db"
     json_path = "."
 
     if not chk_conn(db_path):

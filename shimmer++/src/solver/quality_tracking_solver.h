@@ -427,7 +427,10 @@ public:
 
                 auto rho_now = rho_all_nodes_evol_(at_step,node_prop.i_snum);
                 auto rho_old = rho_all_nodes_evol_(at_step-1,node_prop.i_snum);
-                lhs_nodes(node_prop.i_snum) +=volume(*itor, infra_.graph) * (rho_now - rho_old) / dt;
+
+                auto vol_over_dt = volume(*itor, infra_.graph)/dt;
+                lhs_nodes(node_prop.i_snum) += vol_over_dt * rho_now;
+                rhs_nodes.row(node_prop.i_snum) += vol_over_dt * rho_old * massfrac_now.row(node_prop.i_snum); 
 
                 count++;
                 if(count == infra_.num_original_stations)

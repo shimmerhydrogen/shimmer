@@ -61,7 +61,7 @@ friction_factor_average(const double & Temperature, const vector_t & flux,
 }
 */
 
-/// Friction factor obtain from the numerical solution of the Colebrook-White equation
+//Friction factor obtained from the application of the Cheng Formula correlation
 double
 friction_factor_average(const edge_properties& pipe, const double & Temperature,
                         const double & flux, const double & mu)

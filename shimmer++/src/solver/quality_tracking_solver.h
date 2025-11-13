@@ -455,7 +455,7 @@ public:
         }
 
         matrix_t lhs_inv =  lhs_nodes.cwiseInverse().asDiagonal();
-        massfrac_next = lhs_inv * rhs_nodes; 
+        massfrac_next.topRows( num_nodes) = lhs_inv * rhs_nodes; 
         
         clip_and_renormalize(massfrac_next.topRows( num_nodes));
 

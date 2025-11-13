@@ -438,23 +438,19 @@ public:
             }
         }
 
+        // SOLVE Y^n+1
 
-        // Solve Y^n+1                   
+        // Find nodes with undetermination                   
+        std::vector<int> undetermine; 
         for(size_t i = 0; i < num_nodes; i++)
         {
-            if(std::abs(lhs_nodes(i)) < 1.e-12)  
-            {
-                std::string message = R"(ERROR:QT +
-                    The mass fraction Y_ig at node i of a gas g is solve by doing lhs * Y_ig = rhs.\n
-                    The lhs is filled with the therms of
-                    1. pipe ejection
-                    2. external ejection
-                    3. density variation
+            if(lhs_nodes(i) < 1.e-12)  
+            {                
+                lhs_nodes(i) = 1.0;
+                rhs_nodes.row(i) = vector_row_t::Zero(NUM_GASES);
+                rhs_nodes(i, 0) = 1.0;
 
-                    If all three are zero, lhs = 0, so Y_ig is undetermined!
-                    This can be cause by isolated chunks of network at zero flowrate
-                    and negligable density variation (for example in steady case).)";
-                std::invalid_argument(message.c_str());
+                undetermine.push_back(i);
             }
         }
 
@@ -462,7 +458,45 @@ public:
         massfrac_next = lhs_inv * rhs_nodes; 
         
         clip_and_renormalize(massfrac_next.topRows( num_nodes));
-        
+
+        if(undetermine.size() == 0) 
+        {
+            return true;
+        }
+
+        std::string message1 = R"(WARNING: QT: 
+            The mass fraction Y_ig at node i of a gas g is solve by doing lhs * Y_ig = rhs.\n
+            The lhs is filled with the therms of
+            1. pipe ejection
+            2. external ejection
+            3. density 
+
+            If all are zero (lhs = 0), Y_ig is UNDETERMINED!
+            
+            This might be cause by isolated chunks of network at zero ejection flowrates and 
+            negligable density. This violates the hypotesis of no vacuum! To give the user a 
+            bit of flexibility, despite this violation, we impose CH4 gas at these nodes as a
+            turn around.  
+            
+            BE AWARE that mass fractions on the following nodes cannot be taken into account!
+
+            List of nodes: )";
+
+        std::string message2 = R"(
+            The following are the pipes with flux close to zero!!" 
+
+            PIPE List: )";
+
+
+        std::cout << message1;
+        for(auto und : undetermine)
+        {
+            std::cout << und << " "; 
+        }
+        std::cout << message2 << std::endl;
+
+        find_zero_flow_pipes(var_all);
+
         return true;
     }
 
@@ -561,29 +595,18 @@ public:
     }
 
     void
-    check_zero_flow_pipes(variable& var)
+    find_zero_flow_pipes(const variable& var)
     {   
         std::vector<int> zero_flux_pipes;
+        zero_flux_pipes.reserve(var.flux.size());
 
         for(auto branch_num = 0; branch_num < var.flux.size(); branch_num++)
         {
-            if(var.flux(branch_num) < 1.e-12)
+            if(std::abs(var.flux(branch_num)) < 5.e-10)
             {                        
-                var.flux(branch_num) = 1.e-8;
                 zero_flux_pipes.push_back(branch_num);
             }
         }
-
-        if(zero_flux_pipes.size() == 0)
-            return;
-
-        std::string message = R"(
-        "WARNING: Flux at PIPE list is close to zero!!" 
-        "            Null flowrates are not allowed, because they might lead to undetermination of mass fractions."
-        "            Thus, this pipe is likely isolated from the network. To continue solving the remaining network"
-        "            a value of 1.e-8 is set for the flux. 
-        "  PIPE List: )";
-        std::cout<< message << std::endl;
 
         auto edge_range = boost::edges(infra_.graph);
         auto edge_begin = edge_range.first;
@@ -595,10 +618,6 @@ public:
             std::cout << ep.name.c_str() << " ";
         }
         std::cout << std::endl;
-
-        system("pause");
-
-        std::cout<< "Continuing ..." << std::endl;        
 
         return;
     }
@@ -639,8 +658,6 @@ public:
                 var_all_evol_.row(it) =  var_all_.make_vector();
                 rho_all_pipes_evol_.row(it) =  eos.density_pipes(&lfs); // needed for the computation of the velocity
                 rho_all_nodes_evol_.row(it) =  eos.density_nodes(&lfs);// needed for the mass balance on network nodes
-
-                check_zero_flow_pipes(var_all_);
 
                 return;
             }
@@ -696,8 +713,9 @@ public:
             matrix_t massfrac_next_nodes = matrix_t::Zero(boost::num_vertices(infra_.graph) , NUM_GASES);
 
             admixing(unsteady, it, dt, 
-                         var_current, 
-                         massfrac_nodes, massfrac_next_nodes);
+                     var_current, 
+                     massfrac_nodes,
+                     massfrac_next_nodes);
 
 
             auto error_pressure = (var_previous.pressure - var_current.pressure).norm(); 
@@ -787,8 +805,9 @@ public:
 
             // 3. 1. Continuity at network nodes
             admixing(unsteady, it, dt, 
-                         var_all_, 
-                         massfrac_now_nodes, massfrac_next_nodes);
+                     var_all_, 
+                     massfrac_now_nodes,
+                     massfrac_next_nodes);
 
             if(refine_)
             {

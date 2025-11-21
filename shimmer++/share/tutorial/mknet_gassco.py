@@ -30,7 +30,7 @@
 import shimmer as shmr
 
 # Set a variable with the name of the NDF to create
-ndfname = "gasco_autogen.db"
+ndfname = "gassco_autogen.db"
 
 # Create a new NDF
 shmr.create_ndf(ndfname)
@@ -117,6 +117,34 @@ cons_profile_5 = [
 shmr.add_station(ndf, 5, shmr.STATION_CONS, 0.0)
 shmr.add_cons_limit(ndf, 5, exit_limits)
 shmr.add_cons_profile(ndf, 5, cons_profile_5)
+
+# Example on how to interact with NDFs directly via SQL:
+#   add geolocation data to stations
+positions = [
+    (1, 4.84190540483235, 60.5591669220802),
+    (2, 5.53447457100365, 59.3876832153919),
+    (3, 2.46311641415397, 57.77672651248),
+    (4, 7.39936029541345, 53.6705785540498),
+    (5, 2.31392225142846, 51.0376075573638),
+]
+
+try:
+    cursor = ndf.cursor()
+    for pos in positions:
+        cursor.execute(
+            """
+            UPDATE stations
+            SET s_latitude = ?, s_longitude = ?
+            WHERE s_number = ?
+            """,
+            (pos[1], pos[2], pos[0])
+        )
+
+    ndf.commit()
+
+except sqlite3.Error as e:
+    print(f"SQLite error in updating positions: {e}")
+    ndf.rollback()
 
 # ------------------------------------------------------------------
 # Now the pipes. We are going to do quality tracking, so we need to specify

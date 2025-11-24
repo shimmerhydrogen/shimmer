@@ -366,7 +366,7 @@ public:
         }
   
 
-        // 1.3 External Injection/Ejection          
+        // 2. External Injection/Ejection          
         auto v_range = boost::vertices(infra_.graph);
         for(auto itor = v_range.first; itor != v_range.second; itor++)
         {
@@ -414,11 +414,10 @@ public:
                     throw std::invalid_argument("QT Error: station is not valid.");
             }
         }
-        
+
+        // 3. Time term Vol(drhodt): NODE_ACCUMULATES
         if(unsteady)
         {
-        // 1.4 Time term Vol(drhodt): NODE_ACCUMULATES
-
             vector_t phi = vector_t::Zero(infra_.num_original_stations);
 
             size_t count = 0; 
@@ -428,20 +427,76 @@ public:
 
                 auto rho_now = rho_all_nodes_evol_(at_step,node_prop.i_snum);
                 auto rho_old = rho_all_nodes_evol_(at_step-1,node_prop.i_snum);
-                lhs_nodes(node_prop.i_snum) +=volume(*itor, infra_.graph) * (rho_now - rho_old) / dt;
+
+                auto vol_over_dt = volume(*itor, infra_.graph)/dt;
+                lhs_nodes(node_prop.i_snum) += vol_over_dt * rho_now;
+                rhs_nodes.row(node_prop.i_snum) += vol_over_dt * rho_old * massfrac_now.row(node_prop.i_snum); 
 
                 count++;
                 if(count == infra_.num_original_stations)
                     break;
             }
         }
-        // 3. 4 Solve Y^n+1            
-        matrix_t lhs_inv =  lhs_nodes.cwiseInverse().asDiagonal();
 
+        // SOLVE Y^n+1
+
+        // Find nodes with undetermination                   
+        std::vector<int> undetermine; 
+        for(size_t i = 0; i < num_nodes; i++)
+        {
+            if(lhs_nodes(i) < 1.e-12)  
+            {                
+                lhs_nodes(i) = 1.0;
+                rhs_nodes.row(i) = vector_row_t::Zero(NUM_GASES);
+                rhs_nodes(i, 0) = 1.0;
+
+                undetermine.push_back(i);
+            }
+        }
+
+        matrix_t lhs_inv =  lhs_nodes.cwiseInverse().asDiagonal();
         massfrac_next.topRows( num_nodes) = lhs_inv * rhs_nodes; 
         
         clip_and_renormalize(massfrac_next.topRows( num_nodes));
-        
+
+        if(undetermine.size() == 0) 
+        {
+            return true;
+        }
+
+        std::string message1 = R"(WARNING: QT: 
+            The mass fraction Y_ig at node i of a gas g is solve by doing lhs * Y_ig = rhs.\n
+            The lhs is filled with the therms of
+            1. pipe ejection
+            2. external ejection
+            3. density 
+
+            If all are zero (lhs = 0), Y_ig is UNDETERMINED!
+            
+            This might be cause by isolated chunks of network at zero ejection flowrates and 
+            negligable density. This violates the hypotesis of no vacuum! To give the user a 
+            bit of flexibility, despite this violation, we impose CH4 gas at these nodes as a
+            turn around.  
+            
+            BE AWARE that mass fractions on the following nodes cannot be taken into account!
+
+            List of nodes: )";
+
+        std::string message2 = R"(
+            The following are the pipes with flux close to zero!!" 
+
+            PIPE List: )";
+
+
+        std::cout << message1;
+        for(auto und : undetermine)
+        {
+            std::cout << und << " "; 
+        }
+        std::cout << message2 << std::endl;
+
+        find_zero_flow_pipes(var_all);
+
         return true;
     }
 
@@ -539,6 +594,34 @@ public:
         }
     }
 
+    void
+    find_zero_flow_pipes(const variable& var)
+    {   
+        std::vector<int> zero_flux_pipes;
+        zero_flux_pipes.reserve(var.flux.size());
+
+        for(auto branch_num = 0; branch_num < var.flux.size(); branch_num++)
+        {
+            if(std::abs(var.flux(branch_num)) < 5.e-10)
+            {                        
+                zero_flux_pipes.push_back(branch_num);
+            }
+        }
+
+        auto edge_range = boost::edges(infra_.graph);
+        auto edge_begin = edge_range.first;
+
+        for(auto branch_num : zero_flux_pipes)        
+        {
+            auto edge_itor = std::next(edge_begin, branch_num);
+            auto ep = infra_.graph[*edge_itor]; 
+            std::cout << ep.name.c_str() << " ";
+        }
+        std::cout << std::endl;
+
+        return;
+    }
+
 
     void
     fluid_dynamics(size_t it, 
@@ -630,8 +713,9 @@ public:
             matrix_t massfrac_next_nodes = matrix_t::Zero(boost::num_vertices(infra_.graph) , NUM_GASES);
 
             admixing(unsteady, it, dt, 
-                         var_current, 
-                         massfrac_nodes, massfrac_next_nodes);
+                     var_current, 
+                     massfrac_nodes,
+                     massfrac_next_nodes);
 
 
             auto error_pressure = (var_previous.pressure - var_current.pressure).norm(); 
@@ -721,8 +805,9 @@ public:
 
             // 3. 1. Continuity at network nodes
             admixing(unsteady, it, dt, 
-                         var_all_, 
-                         massfrac_now_nodes, massfrac_next_nodes);
+                     var_all_, 
+                     massfrac_now_nodes,
+                     massfrac_next_nodes);
 
             if(refine_)
             {

@@ -536,13 +536,11 @@ compressor::fill_model( control::mode& m,
         case compressor_mode::OFF_CLOSED:
         case compressor_mode::OFF_BYPASS:
             m.set_c3(p_in < p_out);
-            std::cout<< "I am inside fill_model with BYPASS or SHUTOFF \n"; 
             break;
         case compressor_mode::ON_RATIO:
         {
             auto beta = -beta_; // p_out / p_in;
             m.set_c1(beta);
-            std::cout<< "I am inside fill_model with BETA \n"; 
             break;
         }
         case compressor_mode::ON_POWER:
@@ -565,8 +563,6 @@ compressor::fill_model( control::mode& m,
             m.set_c2( KGB / p_out);
             m.set_c3( c3);
             m.set_rhs(pwd_);//For testing purposes, here we use simplified pwd // computed_pwd);
-
-            std::cout<< "I am inside fill_model with POWER_DRIVER \n"; 
             break;
         }
         case compressor_mode::ON_IPRESS:
@@ -576,7 +572,6 @@ compressor::fill_model( control::mode& m,
         case compressor_mode::ON_OPRESS:
             //m.set_rhs(p_out);
             m.set_rhs(m.internal_.value());
-            std::cout<< "I am inside fill_model with PRESSURE_OUT \n"; 
             break;
         case compressor_mode::ON_MASSFLOW:
             //m.set_rhs(var.flux[pipe_num]);

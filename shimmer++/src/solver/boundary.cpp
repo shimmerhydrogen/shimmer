@@ -162,9 +162,8 @@ multiple_states_station::check_soft(double p, double l, size_t step)
         if(!e.check(p, l, step))
         {
             success = false;
-            std::cout << "WARNING SOFT:" << name_  << " constraint violated." << std::endl;
-            std::cout << " * Soft constraint ("<<index_ <<") : " << e.type() << " " << e.value(step) <<std::endl;     
-            std::cout << " * (press , lrate) :  ("<<p << "," << l<< ") " << std::endl;                        
+            std::cout << "WARNING: SOFT constraint violated (" << e.type() << " " << e.value(step)
+                      << " in " << name_ << "("<<index_ <<")"  << " with (p, L)=("<<p << "," << l<< ") \n";
         }
     }
 

@@ -1315,6 +1315,8 @@ discretize_pipes(const infrastructure& infrain,
         newnp.name = pipe.name;
         newnp.i_sfrom = pipe.i_sfrom;
         newnp.i_sto = pipe.i_sto;
+        //newnp.pipe_station = std::make_shared<edge_station::compressor>(pipe.pipe_station);
+
         populate_type_dependent_pipe_data(infraout, newnp, newnp.i_sfrom, newnp.i_sto);
         auto from_vtx = infraout.s_i2vd[newnp.i_sfrom];
         auto to_vtx = infraout.s_i2vd[newnp.i_sto];
@@ -1322,6 +1324,14 @@ discretize_pipes(const infrastructure& infrain,
         auto [ed, is_added] = boost::add_edge(from_vtx, to_vtx, newnp, infraout.graph);
         infraout.p_i2ed.push_back(ed);
 
+
+        auto pipe_ic = lookup(infrain.pics, pipe.i_sfrom, pipe.i_sto);
+        pipe_initial_condition pic;
+        pic.i_sfrom = pipe.i_sfrom;
+        pic.i_sto = pipe.i_sto;
+        pic.init_G = pipe_ic->init_G;
+        infraout.pics.push_back(pic);
+        
         branch_num++;
     }
 
@@ -1344,6 +1354,7 @@ refine_pipes(const infrastructure& infrain,
     infraout.num_original_stations = num_stations(infrain);
     infraout.num_original_pipes = num_pipes(infrain);
 
+
     //infraout.pics = infrain.pics;
     /* This has to be recomputed:
      * load_gas_molar_fractions() */
@@ -1353,17 +1364,19 @@ refine_pipes(const infrastructure& infrain,
 
     /* This has to be recomputed: 
      * load(db, infra.s_u2i, infra.settings_pipe) */
-    
+
+    /* This remains the same:
+     * load(db, infra.s_u2i, infra.settings_compr_stat) */
+    infraout.settings_compr_stat = infrain.settings_compr_stat;
+    infraout.settings_red_stat = infrain.settings_red_stat;
+
+
     discretize_pipes(infrain, infraout, dx);
 
     assert(infraout.sics.size() == num_vertices(infraout.graph));
     std::cout << infraout.pics.size() << " -- " << boost::num_edges(infraout.graph) << std::endl;
     assert(infraout.pics.size() == num_edges(infraout.graph));
 
-    /* This remains the same:
-     * load(db, infra.s_u2i, infra.settings_compr_stat) */
-    infraout.settings_compr_stat = infrain.settings_compr_stat;
-    infraout.settings_red_stat = infrain.settings_red_stat;
 
     
 

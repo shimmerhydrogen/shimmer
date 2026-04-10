@@ -59,7 +59,9 @@ pipes_time_intervals = zeros(num_nodes, 1);
 for p = 1:num_pipes
     pipe_extremes = [pipe_time_interval_tab.s_from(p), pipe_time_interval_tab.s_to(p)];
     pipe_index = find(all(graph.Edges.EndNodes == pipe_extremes, 2));
-    pipes_time_intervals(pipe_index) = pipe_time_interval_tab.num_time_intervals(p);
+    pipe_name = str2double(pipe_time_interval_tab.p_name(p));
+    assert(find(all(pipe_index == pipe_name, 2)) > 0);
+    pipes_time_intervals(pipe_name) = pipe_time_interval_tab.num_time_intervals(p);
 end
 
 num_pipe_time_intervals = max(pipes_time_intervals);
@@ -81,8 +83,10 @@ graph.Edges.FLOWRATES = zeros(num_pipes, num_node_time_intervals);
 for p = 1:size(pipe_solution_tab, 1)
     pipe_extremes = [pipe_solution_tab.s_from(p), pipe_solution_tab.s_to(p)];
     pipe_index = find(all(graph.Edges.EndNodes == pipe_extremes, 2));
+    pipe_name = str2double(pipe_solution_tab.p_name(p));
+    assert(find(all(pipe_index == pipe_name, 2)) > 0);
     t_index = pipe_solution_tab.timestep(p) + 1;
-    graph.Edges.FLOWRATES(pipe_index, t_index) = pipe_solution_tab.flowrate(p);
+    graph.Edges.FLOWRATES(pipe_name, t_index) = pipe_solution_tab.flowrate(p);
 end
 
 

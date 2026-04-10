@@ -52,9 +52,11 @@ graph.Edges.Epsi = zeros(num_pipes, 1);
 for p = 1:size(pipe_parameters_tab, 1)
     pipe_extremes = [pipe_parameters_tab.s_from(p), pipe_parameters_tab.s_to(p)];
     pipe_index = find(all(graph.Edges.EndNodes == pipe_extremes, 2));
-    graph.Edges.Length(pipe_index) = pipe_parameters_tab.length(p);
-    graph.Edges.Diameter(pipe_index) = pipe_parameters_tab.diameter(p);
-    graph.Edges.Epsi(pipe_index) = pipe_parameters_tab.roughness(p);
+    pipe_name = str2double(pipe_parameters_tab.p_name(p));
+    assert(find(all(pipe_index == pipe_name, 2)) > 0);
+    graph.Edges.Length(pipe_name) = pipe_parameters_tab.length(p);
+    graph.Edges.Diameter(pipe_name) = pipe_parameters_tab.diameter(p);
+    graph.Edges.Epsi(pipe_name) = pipe_parameters_tab.roughness(p);
 end
 
 end

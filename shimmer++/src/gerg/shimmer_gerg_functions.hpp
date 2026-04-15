@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <Eigen/Dense>
 #include <vector>
+#include <cassert>
 
 namespace shimmer_gerg
 {

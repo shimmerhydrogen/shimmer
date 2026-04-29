@@ -489,9 +489,10 @@ public:
 
 
         std::cout << message1;
-        for(auto und : undetermine)
+        for(auto internal_idx : undetermine)
         {
-            std::cout << und << " "; 
+            auto user_idx = convert_i2u(infra_.s_i2u, internal_idx);
+            std::cout << user_idx << " "; 
         }
         std::cout << message2 << std::endl;
 

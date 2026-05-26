@@ -227,27 +227,37 @@ public:
     }
 
     matrix_t
-    slope_limiter(const matrix_t& Q)
+    flux_limiter(const matrix_t& Q,const matrix_t& velocity_pipes)
     {
         matrix_t slope = matrix_t::Zero( Q.rows(), Q.cols());
         vector_row_t eps = 1.e-10 * vector_row_t::Ones( Q.cols());
 
+
         for (int iN = 1; iN < Q.rows()-1; iN++)
         {
-            // Limiter
+            // Limiter: low order for boundary nodes
             // inner points except num_loc_nodes-1 
-            vector_row_t num = Q.row(iN) - Q.row(iN-1);
             vector_row_t den = Q.row(iN+1) - Q.row(iN);
-    
-            //if(std::abs(num_i) < 1.e-14)
-            //    num_i = 0.;
+            vector_row_t num = vector_row_t::Zero( Q.cols());          
 
+            if(velocity_pipes(iN) > 0)
+                num = Q.row(iN) - Q.row(iN-1);
+            else
+            {
+                if (iN ==  Q.rows()-2)
+                    continue;
+                
+                num = Q.row(iN+2) - Q.row(iN+1); 
+            }
             vector_row_t theta = num.cwiseQuotient(den + eps);
+
+
             for (int iG = 1; iG < Q.cols()-1; iG++)
             {
                 slope(iN, iG) = superbee(theta(iG));
             }
         }
+
 
         return slope;
     }
@@ -278,14 +288,27 @@ public:
 
         matrix_t mean_Q = 0.5 * (Q.middleRows(1, Nx-1) + Q.topRows(Nx-1));
         matrix_t vDiag = velocity.asDiagonal();
-        matrix_t dfdq  = vDiag.block(0,0, Nx-1, Nx-1) * mean_Q;
+        matrix_t dfdq  = vDiag.block(0,0, Nx-1, Nx-1) ;
 
         matrix_t Ones = matrix_t::Ones( Nx-1, Nx-1);
-        matrix_t FH_FL = 0.5 * diff_flux.array() * ( 1.0 - 0.5 * dtdx * dfdq.array());
+        matrix_t FH_FL = 0.5 * diff_flux.array() * ( 1.0 -  dtdx * (dfdq * mean_Q).array().abs());
 
-        matrix_t lim = slope_limiter(Q); 
+        double eps = 1.e-12;
 
-        return flux.topRows(Nx-1).array() + FH_FL.array() * lim.middleRows(0, Nx-1).array(); 
+        matrix_t lim = flux_limiter(Q, velocity); 
+        matrix_t Flow = matrix_t::Zero(Nx-1, Q.cols());
+
+        for(int i = 0; i < Nx-1; i++)
+        {
+            double u = velocity(i);
+
+            if(u > 0.0)
+                Flow.row(i) = u * Q.row(i);
+            else
+                Flow.row(i) = u * Q.row(i+1);
+        }
+
+        return Flow.array() + FH_FL.array() * lim.middleRows(0, Nx-1).array(); 
     }
 
 

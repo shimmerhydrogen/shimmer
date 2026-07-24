@@ -74,7 +74,7 @@ public:
               infra_(infrain), temperature_(Tm), refine_(refine), num_time_steps_(num_steps)
     {
         MAX_ITERS_STEADY_ = 500;
-        TOL_MASSFRAC_ = 1.e-4; 
+        TOL_MASSFRAC_ = 1.e-8; 
         CFL_MAX_= 1.0;
         inc_all_ = incidence(infra_.graph);
         area_all_pipes_ = area(infra_.graph);
